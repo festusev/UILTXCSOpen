@@ -1,0 +1,49 @@
+.row:last-child{
+    background-color:white;
+    border:none;
+}
+#submitHeader{
+    margin:auto;
+    font-size:4em;
+    color:var(--head-col);
+}
+#submit{
+    display:block;
+    margin:auto;
+}
+label{
+    color:var(--prim-light);
+    font-size:1.2em;
+    font-weight:bold;
+    padding-right:1em;
+}
+input{
+
+    cursor: pointer;
+}
+#submit button{
+    display:block;
+    margin-top:1em;
+    font-size:1.2em;
+}
+#teamMsgContent{
+    font-family: 'Oswald', sans-serif;
+    text-align:center;
+    padding-top:3em;
+    font-size:4em;
+    width:9em;
+    font-weight:bold;
+    color:var(--sec-col);
+    margin:auto;
+}
+#profileRedirect{
+    font-size:0.5em;
+    color:var(--prim-light);
+}
+#profileRedirect a{
+    color:var(--prim-light);
+    text-decoration:underline;
+}
+#profileRedirect a:hover{
+    color:#9ecade;
+}

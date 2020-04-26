@@ -1,0 +1,42 @@
+#linechart_material{
+    background-color: white;
+}
+#linechart_material div{
+    margin:auto;
+}
+#teamList{
+    width:100%;
+    min-width:30em;
+    margin:auto;
+}
+#teamList td{
+    font-size:1.1em;
+    padding:0 1em 0.2em 1em;
+}
+#teamList td:first-child{
+    padding-left:1.5em;
+}
+#teamList th{
+    font-size:1.5em;
+    color:var(--sec-col);
+    padding:0.5em 1em 0.5em 1em;
+}
+#teamList tr:last-child td{
+    padding-bottom:1em;
+    border-bottom:2px solid #ededed;
+}
+td:last-child{
+    text-align: right;
+}
+th:last-child{
+    text-align: right;
+    width:1em;
+}
+body{
+    background-color:#f5f5f5;
+}
+#column{
+    width:60%;
+    margin:auto;
+    background-color:white;
+}

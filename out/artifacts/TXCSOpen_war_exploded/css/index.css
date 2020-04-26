@@ -1,0 +1,18 @@
+body{
+    overflow-y:scroll;
+}
+#body-title{
+    font-size:4em;
+    display:inline-block;
+    padding-top:0.3em;
+    color: var(--head-col);
+}
+#body-description{
+    display:inline-block;
+    width:30em;
+    margin-left:1em;
+}
+#first-row{
+    height:15em;
+    padding-top:2em;
+}
