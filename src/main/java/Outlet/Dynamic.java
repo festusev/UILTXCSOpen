@@ -84,7 +84,7 @@ public class Dynamic {
         return  "    <nav id=\"top-bar\">\n" +
                 "        <ul id=\"left-nav\">\n" +
                 "            <li class=\"nav-item\" id=\"logoCnt\">\n" +
-                "                <img src=\"./res/logo_light.svg\" id=\"logo\" onclick=\"location.href='/'\"/>\n" +
+                "                <img src=\"./res/logo_light.svg\" id=\"logo\" onclick=\"location.href='index.jsp'\"/>\n" +
                 "            </li>\n" +
                 "            <li class=\"nav-item\">\n" +
                 "                <a class=\"nav-link\" href=\"scoreboard\">Scoreboard</a>\n" +

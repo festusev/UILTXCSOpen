@@ -77,7 +77,7 @@ public class MultipleChoice extends HttpServlet{
                 }
                 body+="</li>";
             }
-            body+="</ol><button class=\"chngButton\" onclick=\"submit();\">Submit</button></div>";
+            body+="</ol><button class=\"chngButton\" onclick=\"submit();\">Submit</button></div>" + Dynamic.loadCopyright();
         }
         writer.write("<html>\n" +
                 "<head>\n" +
@@ -92,8 +92,8 @@ public class MultipleChoice extends HttpServlet{
                 "    <script src=\"./js/multiple-choice.js\"></script>" +
                 "</head>\n" +
                 "<body>\n" +
+                Dynamic.loadLoggedInNav() +
                 body +
-                Dynamic.loadCopyright() +
                 "</body></html>");
     }
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
