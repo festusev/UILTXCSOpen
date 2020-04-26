@@ -1,3 +1,0 @@
-$("#email").onclick(function(){
-
-})
