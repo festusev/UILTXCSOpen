@@ -31,7 +31,7 @@
       <%=
       Dynamic.loadCountdown()
       %>
-      <div id="body-description">Official UIL may be canceled, but that doesn’t mean you can’t compete! UIL by TXCSOpen is an online verison of Computer Science UIL created in partnership with LASACSClub to simulate the competition in a remote environment. The format is slightly altered to accommodate shifting schedules. The competition is open from May 13th at 12am to May 14th at 11:59pm. Check the <a href="rules" class="link">rules</a> page for more information.</div>
+      <div id="body-description">Official UIL may be canceled, but you can still compete! UIL by TXCSOpen is an online verison of Computer Science UIL created by LASA CS. The format is slightly altered to accommodate for competing remotely. The competition is open from May 7th at 12am to May 8th at 11:59pm. Check the <a href="rules" class="link">rules</a> page for more information.</div>
     </div>
   </div>
 </body>

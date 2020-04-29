@@ -21,7 +21,7 @@ public class Dynamic {
     public static final String DATETIME_FORMAT = "MM/dd/yyyy HH:mm:ss";
     public static SimpleDateFormat sdf;
 
-    public static final String CNTDWNCMP_DATE = "05/13/2020 00:00:00";
+    public static final String CNTDWNCMP_DATE = "05/7/2020 00:00:00";
     public static final String CNTDWNCMP_TO = "Until the Competition Begins";
     public static final String CNTDWNCMP_OVER = "Compete Now!";
 
@@ -44,13 +44,16 @@ public class Dynamic {
                 "  <nav id=\"top-bar\">\n" +
                         "    <ul id=\"left-nav\">\n" +
                         "      <li class=\"nav-item\" id=\"logoCnt\">\n" +
-                        "        <img src=\"./res/logo_light.svg\" id=\"logo\" onclick=\"location.href='index.jsp'\"/>\n" +
+                        "        <img src=\"./res/logo_light_uil.svg\" id=\"logo\" onclick=\"location.href='index.jsp'\"/>\n" +
                         "      </li>\n" +
                         "      <li class=\"nav-item\">\n" +
                         "        <a class=\"nav-link\" href=\"scoreboard\">Scoreboard</a>\n" +
                         "      </li>\n" +
                         "      <li class=\"nav-item\">\n" +
                         "            <a class=\"nav-link\" href=\"rules\">Rules</a>\n" +
+                        "       </li>\n" +
+                        "      <li class=\"nav-item\">\n" +
+                        "            <a class=\"nav-link\" href=\"/\">TXCSOpen</a>\n" +
                         "       </li>\n" +
                         "    </ul>\n" +
                         "    <ul id=\"right-nav\">\n" +
@@ -84,13 +87,16 @@ public class Dynamic {
         return  "    <nav id=\"top-bar\">\n" +
                 "        <ul id=\"left-nav\">\n" +
                 "            <li class=\"nav-item\" id=\"logoCnt\">\n" +
-                "                <img src=\"./res/logo_light.svg\" id=\"logo\" onclick=\"location.href='index.jsp'\"/>\n" +
+                "                <img src=\"./res/logo_light_uil.svg\" id=\"logo\" onclick=\"location.href='index.jsp'\"/>\n" +
                 "            </li>\n" +
                 "            <li class=\"nav-item\">\n" +
                 "                <a class=\"nav-link\" href=\"scoreboard\">Scoreboard</a>\n" +
                 "            </li>\n" +
                 "            <li class=\"nav-item\">\n" +
                 "                <a class=\"nav-link\" href=\"rules\">Rules</a>\n" +
+                "            </li>\n" +
+                "            <li class=\"nav-item\">\n" +
+                "                 <a class=\"nav-link\" href=\"/\">TXCSOpen</a>\n" +
                 "            </li>\n" +
                 "            <li class=\"nav-item\">\n" +
                 "                <a class=\"nav-link\" href=\"submit\">Submit</a>\n" +

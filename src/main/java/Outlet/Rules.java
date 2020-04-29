@@ -48,7 +48,7 @@ public class Rules extends HttpServlet{
                 "    <div id=\"column\"><div class=\"row secRow\">\n" +
                 "\n" +
                         "<p class=\"secHead\">Written Test</p><p class=\"secBody\">\n" +
-                        "<br><span class=\"tab\"></span>The test will be taken individually during any 45 minute period on May 13th. Team members do not have to test at the same time. " +
+                        "<br><span class=\"tab\"></span>The test will be taken individually during any 45 minute period on May 7th. Team members do not have to test at the same time. " +
                 "There is no designated fourth tester as in UIL for logistics reasons. " +
                 "Using any resources not provided during a typical UIL test is strictly prohibited. It is difficult to monitor this, so we ask that teams preserve the integrity of the test. There’s no prizes, so don’t bother cheating. " +
                 "The test will consist of 40 multiple choice questions, but with slightly different topics (for example we will not have a base conversion question for problem 1, as that is easy to search). " +
@@ -56,7 +56,7 @@ public class Rules extends HttpServlet{
                 "   </div>" +
                 "    <div class=\"row secRow\">\n" +
                 "       <p class=\"secHead\">Hands on Programming</p><p class=\"secBody\">" +
-                "       <br><span class=\"tab\"></span>The hands on programming portion will be taken as a group of at most three people during any 2 hour long period on May 14th. " +
+                "       <br><span class=\"tab\"></span>The hands on programming portion will be taken as a group of at most three people during any 2 hour long period on May 8th. " +
                 "Competitors will be allowed to code simultaneously on their own machines, and are allowed to use the internet. They can collaborate with their two teammates and nobody else. " +
                 "There will be 18 problems to account for every competitor being able to code at once. " +
                 "Each problem is still worth 60 points, and 5 points will be subtracted from the maximum for every unsuccessful attempt.</p>" +

@@ -39,7 +39,7 @@ public class Login extends HttpServlet{
                     "    <div class=\"row\" id=\"lowerHalf\">\n" +
                     "        <form onsubmit=\"login(); return false;\" id=\"login-box\">\n" +
                     "            <label for=\"email\">Email</label>\n" +
-                    "            <input type=\"text\" id=\"email\" name=\"email\">\n" +
+                    "            <input type=\"text\" id=\"email\" name=\"email\" maxlength=\"255\">\n" +
                     "            <label for=\"pass\">Password</label>\n" +
                     "            <input type=\"password\" id=\"pass\" name=\"pass\">\n" +
                     "            <button id=\"login\">Login</button>\n" +

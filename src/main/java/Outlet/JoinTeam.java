@@ -35,7 +35,7 @@ public class JoinTeam extends HttpServlet {
             writer.write("{\"error\":\"Password is empty\"}");
             return;
         }
-        if(tname.length() > 255) {
+        if(tname.length() > 25) {
             writer.write("{\"error\":\"Team doesn't exist.\"}");
             return;
         }

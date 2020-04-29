@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     pass = document.getElementById('pass');
     passAgain = document.getElementById("passAgain");
     regBox.onsubmit = register;
-})
+});
 var emailStored;
 function register() {
     var xhr = new XMLHttpRequest();
