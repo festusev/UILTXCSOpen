@@ -16,10 +16,10 @@ public class ScoreEngine {
     private static List<Pair<File, File> > files;
 
     public static void initialize() {
-        files = get_files(new File(TESTCASE_DIR));
+        //files = get_files(new File(TESTCASE_DIR));
     }
 
-    public static boolean run(String source_file, String exe_file, int language) throws IOException {
+    /*public static boolean run(String source_file, String exe_file, int language) throws IOException {
         String compile_cmd = "", run_cmd = "";
         if (language == 0) { // java
             compile_cmd = "javac " + source_file;
@@ -179,14 +179,15 @@ public class ScoreEngine {
             return 2; // eof mismatch
         }
         return 0;
-    }
+    } */
     /**
      * Scores a submission, returning the # districts won, the location
      * @param probNum
      * @return boolean success
      */
     public static boolean score(short probNum, byte[] bytes, String fPath){
-        String extension = "";
+        return false;
+        /*String extension = "";
         String fileName = SCORE_DIR + Paths.get(fPath).getFileName().toString();
 
         try {
@@ -222,6 +223,6 @@ public class ScoreEngine {
             e.printStackTrace();
         }
 
-        return good;
+        return good;*/
     }
 }
