@@ -12,10 +12,10 @@ import java.io.PrintWriter;
  * Created by Evan Ellis.
  */
 public class Rules extends HttpServlet{
+    private static final String PAGE_NAME = "rules";
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        Dynamic.addPageview();
         // set response headers
         response.setContentType("text/html");
         response.setCharacterEncoding("UTF-8");
@@ -36,7 +36,7 @@ public class Rules extends HttpServlet{
                 "    <script src=\"js/connect.js\"></script>\n" +
                 "</head>\n" +
                 "<body>\n" +
-                Dynamic.loadNav(request) +
+                Dynamic.loadNav(request, PAGE_NAME) +
                 "    <div class=\"row\" id=\"upperHalf\">\n" +
                 "        <div class=\"center\">\n" +
                 "            <div id=\"body-header\">\n" +

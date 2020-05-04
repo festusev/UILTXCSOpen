@@ -32,6 +32,8 @@ textarea:focus, input:focus{
 #top-bar{
     background-color: var(--prim-middle);
     color:white;
+    z-index: 2000;
+    position: relative;
 }
 #top-bar ul{
     display:inline-block;
@@ -61,6 +63,8 @@ textarea:focus, input:focus{
     color:var(--sec-dark);
 }
 #dropdownNav{
+    position: relative;
+    z-index: 2000;
     width:100%;
     display:block;
     background-color:var(--prim-middle);

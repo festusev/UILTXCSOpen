@@ -19,7 +19,7 @@
 </head>
 <body style="background-image:url('res/stars.jpg')">
 <%
-    Dynamic.addPageview();
+    Dynamic.addPageView(request, "Error404");
 %>
 <style>
     #center{

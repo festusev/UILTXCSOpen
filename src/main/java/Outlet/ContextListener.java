@@ -25,16 +25,12 @@ public class ContextListener implements ServletContextListener {
         Dynamic.sdf = sdf;
         try {
             Dynamic.cntdwnToCmp = sdf.parse(Dynamic.CNTDWNCMP_DATE);
+            Dynamic.cntdwnToMCOver = sdf.parse(Dynamic.CNTDWNMCENDS_DATE);
         } catch (ParseException e) {
             e.printStackTrace();
         }
 
-        // Load up the map file.
-        try {
-            ScoreEngine.initialize();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+        ScoreEngine.initialize();
 
         // Finally, schedule the VerificationFlusher class to be called every 15 minutes
         VerificationFlusher vflush = new VerificationFlusher();

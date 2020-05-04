@@ -1,16 +1,11 @@
 package Outlet;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Date;
-import java.util.Scanner;
 
 /***
  * Client-side library, for reusable html.
@@ -27,6 +22,12 @@ public class Dynamic {
 
     public static Date cntdwnToCmp;     // Automatically set in the ContextListener on startup
 
+    public static final String CNTDWNMCENDS_DATE = "05/8/2020 00:00:00";    // The countdown to when the multiple choice closes
+    public static Date cntdwnToMCOver;
+
+    public static final String CNTDWNCMPENDS_DATE = "05/8/2020 00:00:00";    // The countdown to when the multiple choice closes
+    public static Date cntdwnToCMPOver;
+
     public static final String DROPDOWN = "<script>" +
             "function toggleDropdownNav(){\n" +
             "   var dropdownNav = document.getElementById(\"dropdownNavList\");" +
@@ -36,10 +37,9 @@ public class Dynamic {
     public static final String RIGHT_FLAIR = "<img class=\"flair\" id=\"right_flair\" src=\"res/blue_flair.svg\">";
     public static final String LEFT_FLAIR = "<img class=\"flair\" id=\"left_flair\" src=\"res/orange_flair.svg\"/>";
 
-    public static String VIEWCOUNTER_FILE = "viewCounter.txt";
-    public static BufferedWriter viewCounter;
-    public static int pageViews = 0;
-    public static String loadLoggedOutNav(){
+    private static final String GA_URL = "https://www.google-analytics.com/collect";
+    public static String loadLoggedOutNav(HttpServletRequest request, String pageName){
+        addPageView(request, pageName);
         return
                 "  <nav id=\"top-bar\">\n" +
                         "    <ul id=\"left-nav\">\n" +
@@ -79,11 +79,12 @@ public class Dynamic {
                         "        <a class=\"nav-link\" href=\"login\">Login</a>\n" +
                         "      </li></ul></div>";
     }
-    public static String loadNav(HttpServletRequest request){
-        if(Conn.isLoggedIn(request)) return loadLoggedInNav();
-        return loadLoggedOutNav();
+    public static String loadNav(HttpServletRequest request, String pageName){
+        if(Conn.isLoggedIn(request)) return loadLoggedInNav(request, pageName);
+        return loadLoggedOutNav(request, pageName);
     }
-    public static String loadLoggedInNav(){
+    public static String loadLoggedInNav(HttpServletRequest request, String pageName){
+        addPageView(request, pageName);
         return  "    <nav id=\"top-bar\">\n" +
                 "        <ul id=\"left-nav\">\n" +
                 "            <li class=\"nav-item\" id=\"logoCnt\">\n" +
@@ -157,7 +158,7 @@ public class Dynamic {
                 "    document.getElementById(\"countdown\").innerHTML = days + \"<span>d</span> \" + hours + \"<span>h</span> \"\n" +
                 "        + minutes + \"<span>m</span> \" + seconds + \"<span>s</span>\";\n" +
                 "\n" +
-                "    if(competitionDate - (now-cntdwnLoaded)< 0){" +
+                "    if(countdownDate - (now-cntdwnLoaded)< 0){" +
                 "       clearInterval(x);" +
                 "       document.getElementById(\"countdownCnt\").innerHTML = \""+ CNTDWNCMP_OVER +"\";\n" +
                 "    }" +
@@ -238,6 +239,8 @@ public class Dynamic {
                 "\n" +
                 "    if(window.seconds - (now-window.cntdwnLoaded)< 0){" +
                 "       clearInterval(x);" +
+                "       document.getElementById(\"countdownUntil\").innerHTML = \"Times Up!\";" +
+                "       document.getElementById(\"countdown\").innerHTML = \"0<span>m</span> 0<span>s</span>\";" +
                 onTimerDone +
                 "    }" +
                 "}, 1000);}</script>";
@@ -252,6 +255,21 @@ public class Dynamic {
         return false;
     }
 
+    // Returns true if the multiple choice section is available
+    public static boolean mcOpen(){
+        Date now = new Date();
+        long diff = cntdwnToMCOver.getTime() - now.getTime();
+        if(diff >= 0) return true;
+        return false;
+    }
+
+    public static boolean frqOpen(){
+        Date now = new Date();
+        long diff = cntdwnToCmp.getTime() - now.getTime();
+        if(diff < 0) return true;
+        return false;
+    }
+
     public static String loadRightFlair(){
         return RIGHT_FLAIR;
     }
@@ -259,10 +277,57 @@ public class Dynamic {
         return LEFT_FLAIR;
     }
 
-    public static String loadErrorMsg(String message) {
-        return "<div class='error'>ERROR: " + message + "</div>";
+    public static void addPageView(HttpServletRequest request, String pageName){
+        /*User u = Conn.getUser(request);
+        short id = u == null ? Short.MAX_VALUE: u.uid;
+        try {
+            String urlParameters = "v=1&tid=UA-143422338-1&cid="+id+"&t=pageview&dp=%2F"+request.getHeader("referer")+"&ds=server&aip=1&uip="+getClientIpAddr(request)+"&ua="+ URLEncoder.encode(request.getHeader("User-Agent"),"UTF-8")+"&z="+(int)(Math.random()*10000);
+            byte[] postData = urlParameters.getBytes(StandardCharsets.UTF_8);
+
+            URL myURL = new URL(GA_URL);
+            HttpsURLConnection gaConn = (HttpsURLConnection) myURL.openConnection();
+
+            gaConn.setDoInput(true);
+            gaConn.setDoOutput(true);
+            gaConn.setRequestMethod("POST");
+            gaConn.setRequestProperty("User-Agent", "Java client");
+            gaConn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            DataOutputStream wr = new DataOutputStream(gaConn.getOutputStream());
+            wr.write(postData);
+
+            StringBuilder content;
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(gaConn.getInputStream()));
+
+            String line;
+            content = new StringBuilder();
+
+            while ((line = in.readLine()) != null) {
+                content.append(line);
+                content.append(System.lineSeparator());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }*/
     }
-    public static void addPageview(){
-        pageViews++;
+    //Credit to https://gist.github.com/c0rp-aubakirov/a4349cbd187b33138969
+    public static String getClientIpAddr(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
     }
 }

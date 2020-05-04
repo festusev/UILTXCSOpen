@@ -69,7 +69,19 @@ function addScoredBox(scored) {
 
     beginWarning.style.display = "block";
 }
+function forceSubmit() {
+    document.getElementById("warningHeader").innerText  = "Times Up!";
+    document.getElementById("warningSubtitle").innerText = "Submitting now.";
 
+    var submitBtn = document.getElementById("beginBtn");
+    submitBtn.style.display = "none";
+
+    var goBackBtn = document.getElementById("goBackBtn");
+    goBackBtn.style.display = "none";
+
+    beginWarning.style.display = "block";
+    submitFinal();
+}
 function submit() {
     document.getElementById("warningHeader").innerText  = "Are you sure you want to submit?";
     document.getElementById("warningSubtitle").innerText = "Be sure to double check your work!";

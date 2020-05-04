@@ -11,10 +11,10 @@ import javax.servlet.http.HttpServletResponse;
  * Created by Evan Ellis.
  */
 public class Console extends HttpServlet{
+    private static final String PAGE_NAME = "console";
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        Dynamic.addPageview();
         User uData = Conn.getUser(request); // We need to display the user's data
         if(uData == null || !Conn.isLoggedIn(uData.token)){
             response.sendRedirect(request.getContextPath());
@@ -109,7 +109,7 @@ public class Console extends HttpServlet{
                 "    <script src=\"./js/console.js\"></script>\n" +
                 "</head>\n" +
                 "<body>\n" +
-                Dynamic.loadLoggedInNav() +
+                Dynamic.loadLoggedInNav(request, PAGE_NAME) +
                 "    <div class=\"row\" id=\"infoRow\">\n" +
                 "        <div id=\"userInfo\">\n" +
                 "            <p id=\"username\">" +uData.uname + "</p>\n" +

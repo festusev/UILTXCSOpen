@@ -28,11 +28,9 @@ body{
     color:var(--head-col);
     user-select: none;
 }
+
 #body-title div{
-    display:inline-block;
-}
-#body-title div{
-    width:50%;
+    width:100%;
 }
 #body-title div:first-of-type img{
     float:right;
@@ -51,6 +49,25 @@ body{
     padding:0;
     color:var(--head-col);
     margin-top:10px;
+}
+#getStarted{
+    width: 100%;
+    font-size:1.6em;
+    padding: 0.2em 0.5em;
+    border-radius: 5px;
+    border:none;
+    background-color:#1f4466;
+    color:white;
+    font-weight:bold;
+    cursor: pointer;
+    display: block;
+    position: relative;
+    margin:auto;
+    margin-top:15px;
+}
+#getStarted:hover{
+    box-shadow: 0 0 10px 1px rgba(0,0,0,0.2);
+    background-color:var(--prim-middle);
 }
 @media only screen and (min-height: 670px){
     #first-row{

@@ -19,7 +19,7 @@
 </head>
 <body>
 <%
-    Dynamic.addPageview();
+    Dynamic.addPageView(request, "Error500");
 %>
 <style>
     #center{

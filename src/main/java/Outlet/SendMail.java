@@ -50,55 +50,5 @@ public class SendMail {
             return -1;
         }
         return 0;
-        /*// Get system properties
-        Properties properties = System.getProperties();
-
-        System.out.println("--TO: " + to + " SUBJECT: " + subject + " BODY: " + body);
-
-        // Setup mail server
-        properties.put("mail.smtp.host", HOST);
-        properties.put("mail.smtp.starttls.enable", "true");
-        properties.put("mail.smtp.auth", "true");
-        properties.put("mail.smtp.port", "587");
-        // properties.put("mail.smtp.ssl.enable", "true");
-
-        // Get the Session object.// and pass username and password
-        Session session = Session.getInstance(properties,            new javax.mail.Authenticator() {
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(ACCOUNT, PASSWORD);
-            }
-        } );
-
-        // Used to debug SMTP issues
-        session.setDebug(true);
-
-        try {
-            // Create a default MimeMessage object.
-            MimeMessage mimeMessage = new MimeMessage(session);
-
-            // Set From: header field of the header.
-            mimeMessage.setFrom(new InternetAddress(FROM));
-
-            // Set To: header field of the header.
-            mimeMessage.setRecipient(Message.RecipientType.TO, new InternetAddress(to));
-
-            // Set Subject: header field
-            mimeMessage.setSubject(subject);
-
-            // Now set the actual message
-            mimeMessage.setText(body);
-
-            mimeMessage.setSentDate(new Date());
-
-            System.out.println("sending...");
-
-            Transport.send(mimeMessage);
-
-            System.out.println("Sent message successfully....");
-        } catch (Exception mex) {
-            mex.printStackTrace();
-            return -1;
-        }
-        return 0;*/
     }
 }

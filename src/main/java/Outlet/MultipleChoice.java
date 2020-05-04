@@ -25,6 +25,7 @@ public class MultipleChoice extends HttpServlet{
     public static final int INCORRECT_PTS = -2;
     public static final int SKIPPED_PTS = 0;
     public static final int NUM_PROBLEMS = 40;
+    private static final String PAGE_NAME = "multiple-choice";
 
     private static Gson gson = new Gson();
 
@@ -56,7 +57,7 @@ public class MultipleChoice extends HttpServlet{
                     "                Multiple Choice\n" +
                     "            </div>\n" +
                     "        </div>" +
-                    Dynamic.loadTimer("Remaining", 45*60*1000, "submit();", false) +
+                    Dynamic.loadTimer("Remaining", 20*1000, "forceSubmit();", false) +
                     "    </div>\n" +
                     "    <div id=\"centerColumn\">" +
                     "       <p id=\"instructions\"><span>Instructions:</span> Take this test in 45 minutes without any aid. When you're done, submit your answers for scoring. You can take this anytime today, so please don't share it with anyone.</p>" +
@@ -92,7 +93,7 @@ public class MultipleChoice extends HttpServlet{
                 "    <script src=\"./js/multiple-choice.js\"></script>" +
                 "</head>\n" +
                 "<body>\n" +
-                Dynamic.loadLoggedInNav() +
+                Dynamic.loadLoggedInNav(request, PAGE_NAME) +
                 body +
                 "</body></html>");
     }

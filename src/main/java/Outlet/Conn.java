@@ -24,9 +24,11 @@ import java.sql.SQLException;
 public class Conn {
     private static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
     private static final String DB_URL = "comp.curhndcalh3n.us-east-2.rds.amazonaws.com";
+    // private static final String DB_URL = "comptest.curhndcalh3n.us-east-2.rds.amazonaws.com";
     private static final int DB_PORT = 3306;
     private static final String USER = "admin";
     private static final String PASS = "1pcdEy31lxTSp6x$";	// TODO Possibly in the future have an admin type this in.
+    // private static final String DB_NAME = "uil";
     private static final String DB_NAME = "uil";
 
     private static Gson gson = new Gson();
@@ -402,7 +404,10 @@ public class Conn {
         {
             // First, check if the email or username is already take (or both)
             Connection conn = getConnection();
-            if(conn==null) return -1; // If an error occurred making the connection
+            if(conn==null) {
+                System.out.println("--ERROR MAKING CONNECTION--");
+                return -1; // If an error occurred making the connection
+            }
             PreparedStatement stmt = conn.prepareStatement("SELECT * FROM users WHERE email = ? OR uname = ?");
             stmt.setString(1, email);
             stmt.setString(2, uname);

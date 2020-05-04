@@ -22,11 +22,11 @@ public class Scoreboard extends HttpServlet{
     private static final short NUMGRAPHED = 7;  // The number of teams to graph
     private static final double START_DATE = 5;
     private static final Logger LOGGER = LogManager.getLogger(Scoreboard.class);
+    private static final String PAGE_NAME = "scoreboard";
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        Dynamic.addPageview();
         // set response headers
         response.setContentType("text/html");
         response.setCharacterEncoding("UTF-8");
@@ -34,7 +34,7 @@ public class Scoreboard extends HttpServlet{
 
         if(preNav.isEmpty() || postNav.isEmpty())
             generateScoreboard();
-        writer.append(preNav + Dynamic.loadNav(request) + postNav);
+        writer.append(preNav + Dynamic.loadNav(request, PAGE_NAME) + postNav);
     }
 
     /**

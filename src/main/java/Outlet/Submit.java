@@ -28,12 +28,12 @@ public class Submit extends HttpServlet{
     public static final String ZIP_DIR = "/usr/share/jetty9/";
     public static final short NUM_PROBLEMS = 12;
     public static final short MAX_POINTS = 60;
-    public static HashMap<Short, String> problemMap;
+    public static HashMap<Short, String> problemMap = new HashMap<>();
 
+    private static final String PAGE_NAME = "submit";
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        Dynamic.addPageview();
         if(!Conn.isLoggedIn(request)){
             response.sendRedirect(request.getContextPath());
         }
@@ -53,7 +53,7 @@ public class Submit extends HttpServlet{
                         "    <link rel=\"stylesheet\" href=\"css/submit.css\">\n" +
                         "    <script src=\"./js/submit.js\"></script>\n" +
                         "</head>\n" +
-                        "<body>\n" + Dynamic.loadLoggedInNav());
+                        "<body>\n" + Dynamic.loadLoggedInNav(request, PAGE_NAME));
         if(!Dynamic.competitionOpen()) {
             writer.append("<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">Submission is Closed Until the Competition Begins.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\""+request.getContextPath()+"/console\">Click Here to Go back.</a></p></div>");
         } else if(Conn.getUser(request).tid >= 0) {    // If the user belongs to a team
@@ -80,7 +80,7 @@ public class Submit extends HttpServlet{
                     "<select id=\"problem\">\n" +
                     problems +
                     "</select>" +
-                    "<input type=\"file\" accept=\".java\" id=\"textfile\"/>" +
+                    "<input type=\"file\" accept=\".java|.cpp|.py\" id=\"textfile\"/>" +
                     "<button id=\"submitBtn\" class=\"chngButton\">Submit</button>" +
                     "</form><p id=\"advice\">Confused? Reread the <a href=\"problems\" class=\"link\">problems</a> and review the <a href=\"rules\" class=\"link\">rules</a>.</p></div>");
         } else {    // Otherwise, display a message saying they must be part of a team to submit
@@ -114,7 +114,7 @@ public class Submit extends HttpServlet{
 
             short probNum = Short.parseShort(request.getParameter("probNum"));
 
-            boolean success =  ScoreEngine.score(probNum, bytes);
+            boolean success =  ScoreEngine.score(probNum, bytes, filePart.getSubmittedFileName());
             t.addRun(probNum, success);
             int status = t.updateTeam();
             if(status != 0) {
@@ -126,75 +126,6 @@ public class Submit extends HttpServlet{
             Scoreboard.generateScoreboard();
 
             writer.write("{\"success\":\"You gained points!\"}");
-            /*File output = new File(ZIP_DIR + t.tid + "." + u.uid + ".7z");
-            logger.write("FilePath: " + output.getAbsolutePath());
-            output.createNewFile();
-            OutputStream oS = new FileOutputStream(output);
-            oS.write(bytes);
-            oS.close();
-
-            /*String zipPath = output.getAbsolutePath();
-            String zipName = output.getName();
-            String fname = zipName.substring(0, zipName.lastIndexOf("."));
-
-            logger.write("Zip file is located at " + zipPath + " and the unzipped file name will be " + fname + "\n");
-
-            // First, unzip
-            String[] commands = {"/bin/bash", "-c", "/usr/bin/p7zip -d -f -c " + zipPath + " > " + ZIP_DIR + fname};
-            Runtime rt = Runtime.getRuntime();
-            Process proc = rt.exec(commands);
-            LOGGER.info("EXECUTING COMMAND: " + "/usr/bin/p7zip -d -f -c " + zipPath + " > " + ZIP_DIR + fname);
-
-            logger.write("EXECUTING COMMAND: " + "/usr/bin/p7zip -d -f -c " + zipPath + " > " + ZIP_DIR + fname + "\n");
-            BufferedReader stdInput = new BufferedReader(new
-                    InputStreamReader(proc.getInputStream()));
-
-            BufferedReader stdError = new BufferedReader(new
-                    InputStreamReader(proc.getErrorStream()));
-
-            // Read the output from the command
-            String s;
-            while ((s = stdInput.readLine()) != null) {
-                logger.write(s + "\n");
-            }
-
-            // Read any errors from the attempted command
-            while ((s = stdError.readLine()) != null) {
-                logger.write(s + "\n");
-            }
-
-            // Now, score it
-            logger.write("EXECUTING COMMAND /usr/bin/ScoreEngine " + ZIP_DIR + fname + "\n");
-            proc = rt.exec("/usr/bin/ScoreEngine " + ZIP_DIR + fname);
-            LOGGER.info("EXECUTING COMMAND: " + "/usr/bin/ScoreEngine " + ZIP_DIR + fname);
-
-            stdInput = new BufferedReader(new
-                    InputStreamReader(proc.getInputStream()));
-
-            stdError = new BufferedReader(new
-                    InputStreamReader(proc.getErrorStream()));
-
-            // Read the output from the command
-            String score = "";
-            while ((s = stdInput.readLine()) != null) {
-                logger.write(s);
-                score = s;
-            }
-
-            // Read any errors from the attempted command
-            while ((s = stdError.readLine()) != null) {
-                logger.write(s);
-            }
-
-            String[] splitScore = score.split(",");
-            int distWon = Integer.parseInt(splitScore[0]);
-            double locWon = Double.parseDouble(splitScore[1]);
-
-            t.addRun(distWon, locWon);
-            t.updateTeam();
-
-            // Update the scoreboard
-            Scoreboard.generateScoreboard();*/
     }
 }
 class GZIPCompression {

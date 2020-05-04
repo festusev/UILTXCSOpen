@@ -17,12 +17,12 @@ import javax.servlet.http.HttpServletResponse;
  * Created by Evan Ellis.
  */
 public class Login extends HttpServlet{
+    private static final String PAGE_NAME = "login";
     private static Gson gson = new Gson();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        Dynamic.addPageview();
         if(Conn.isLoggedIn(request)){
             response.sendRedirect(request.getContextPath() + "/console");
         }
@@ -62,7 +62,7 @@ public class Login extends HttpServlet{
                 "    <script src=\"js/login.js\"></script>" +
                 "</head>\n" +
                 "<body>\n" +
-                Dynamic.loadLoggedOutNav() +
+                Dynamic.loadLoggedOutNav(request, PAGE_NAME) +
                 body +
                 Dynamic.loadLeftFlair() +
                 Dynamic.loadCopyright() +

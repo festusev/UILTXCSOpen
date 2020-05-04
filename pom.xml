@@ -74,9 +74,7 @@
       <artifactId>xz</artifactId>
       <version>1.8</version>
     </dependency>
-
   </dependencies>
-
   <build>
     <finalName>HashComp</finalName>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->

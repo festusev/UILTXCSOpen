@@ -18,12 +18,12 @@ import java.util.regex.Pattern;
  */
 @WebServlet(name="Outlet.Register", urlPatterns={"/register"})
 public class Register extends HttpServlet{
+    private static final String PAGE_NAME = "register";
     private static final Logger LOGGER = Logger.getLogger(Register.class.getName());
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        Dynamic.addPageview();
         if(Conn.isLoggedIn(request)){
             response.sendRedirect(request.getContextPath() + "/console");
         }
@@ -68,7 +68,7 @@ public class Register extends HttpServlet{
                 "    <script src=\"./js/register.js\"></script>\n" +
                 "</head>\n" +
                 "<body>\n" +
-                Dynamic.loadNav(request) +
+                Dynamic.loadNav(request, PAGE_NAME) +
                 body +
                 Dynamic.loadRightFlair() +
                 Dynamic.loadCopyright() +

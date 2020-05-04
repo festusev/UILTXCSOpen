@@ -19,11 +19,8 @@
     <link href="css/privacy-policy.css" rel="stylesheet">
 </head>
 <body>
-<%
-    Dynamic.addPageview();
-%>
 <%=
-Dynamic.loadNav(request)
+Dynamic.loadNav(request, "privacy-policy")
 %>
     <div id="upperHalf"  class="row"><h1 id="body-header">Privacy Policy for TXCSOpen</h1></div>
     <div id="column">
