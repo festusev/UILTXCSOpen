@@ -29,7 +29,7 @@ public class Conn {
     private static final String USER = "admin";
     private static final String PASS = "1pcdEy31lxTSp6x$";	// TODO Possibly in the future have an admin type this in.
     // private static final String DB_NAME = "uil";
-    private static final String DB_NAME = "uil";
+    private static final String DB_NAME = "comptest";
 
     private static Gson gson = new Gson();
 
@@ -598,7 +598,7 @@ public class Conn {
         try {
             // Create the points dictionary
             HashMap<Short, Short> probMap = new HashMap<>();
-            for(short s=0; s<ScoreEngine.NUM_PROBLEMS;s++) { // Loop through each problem and set 0 tries
+            for(short s=1; s<=ScoreEngine.NUM_PROBLEMS;s++) { // Loop through each problem and set 0 tries
                 probMap.put(s, (short)0);
             }
 
@@ -930,6 +930,14 @@ class Team implements Comparable<Team> {
      * @param json
      */
     public void setProblems(String json){
+        if(json == null || json.isEmpty()) {    // If empty, then fill with zeros
+            problems = new HashMap<>();
+            for(short i=1; i<=ScoreEngine.NUM_PROBLEMS; i++) {
+                problems.put(i, (short) 0);
+            }
+            return;
+        }
+
         HashMap<String, Double> tempMap = gson.fromJson(json, HashMap.class);
         Set<String> keys = tempMap.keySet();
         problems = new HashMap<>();
@@ -937,12 +945,21 @@ class Team implements Comparable<Team> {
             short problemNum = Short.parseShort(key);
             problems.put(problemNum, (short)(double)tempMap.get(key));
         }
+        Set<Short> attempted = problems.keySet();
+        for(short i=1; i<ScoreEngine.NUM_PROBLEMS; i++) {  // Now add in ProbNum: 0 for all unlisted problems
+             if(!attempted.contains(i)) {
+                 problems.put(i, (short)0);
+             }
+        }
     }
     public void setProblems(HashMap<Short, Short> p) {
         problems = p;
     }
     public String getProblemJson(){
         return gson.toJson(problems);
+    }
+    public boolean problemSolved(short probNum){
+        return problems.get(probNum) >0;
     }
     public int updateTeam(){
         Connection conn = Conn.getConnection();

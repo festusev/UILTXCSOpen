@@ -1,0 +1,97 @@
+--Data Sorted---
+BMW X4 2014
+Chevy Cruze 2009
+Chevy Cruze 2019
+Chevy Silverado 2006
+Chevy Silverado 2006
+Chevy Tahoe 2019
+Dodge Challenger 2012
+Dodge Charger 2017
+Dodge Durango 2020
+Dodge Ram1500 2008
+Dodge Ram1500 2018
+Dodge Ram1500 2019
+Ford Edge 2012
+Ford Explorer 2006
+Ford Explorer 2019
+Ford F150 2009
+Ford F150 2010
+Ford F150 2015
+Ford F150 2015
+Ford Mustang 2017
+Honda CRV 2007
+Honda CRV 2008
+Honda CRV 2014
+Honda Civic 2010
+Jeep Liberty 2018
+Jeep Wrangler 2011
+Nissan Altima 2007
+Nissan Altima 2017
+Nissan Rogue 2017
+Toyota Camry 2006
+Toyota Camry 2009
+
+Toyota Tacoma 2018
+Toyota Tacoma 2019
+Toyota Tundra 2008
+Volkswagon Atlas 2012
+Volkswagon Atlas 2012
+Volkswagon Atlas 2018
+Volkswagon Beetle 2009
+Volkswagon Jetta 2017
+Volvo S60 2015
+
+---Make Breakdown---
+BMW: 1
+Chevy: 5
+Dodge: 6
+Ford: 8
+Honda: 4
+Jeep: 2
+Nissan: 3
+Toyota: 5
+Volkswagon: 5
+Volvo: 1
+
+---Model Breakdown---
+Altima: 2
+Atlas: 3
+Beetle: 1
+CRV: 3
+Camry: 2
+Challenger: 1
+Charger: 1
+Civic: 1
+Cruze: 2
+Durango: 1
+
+Edge: 1
+Explorer: 2
+F150: 4
+Jetta: 1
+Liberty: 1
+Mustang: 1
+Ram1500: 3
+Rogue: 1
+S60: 1
+Silverado: 2
+Tacoma: 2
+Tahoe: 1
+Tundra: 1
+Wrangler: 1
+X4: 1
+
+---Year Breakdown---
+2006: 4
+2007: 2
+2008: 3
+2009: 4
+2010: 2
+2011: 1
+2012: 4
+2014: 2
+2015: 3
+2017: 5
+2018: 4
+2019: 5
+2020: 1

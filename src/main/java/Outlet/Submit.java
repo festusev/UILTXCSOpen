@@ -71,7 +71,8 @@ public class Submit extends HttpServlet{
                                 "       <p id=\"warningSubtitle\">Once you do you and your team will have 2 hours to compete.</p>" +
                                 "       <button id=\"beginBtn\" onclick=\"begin()\">Begin</button>" +
                                 "       <a id=\"goBackBtn\" href=\"console\">Go Back</a></div>" +
-                                "   </div>";
+                                "   </div>" +
+                                "   <script>document.addEventListener(\"DOMContentLoaded\", function(event) {startTimer();});</script>";
                 diff = now-u.team.start;
             }
             writer.append(
@@ -85,7 +86,7 @@ public class Submit extends HttpServlet{
                         "</select>" +
                         "<input type=\"file\" accept=\".java,.cpp,.py\" id=\"textfile\"/>" +
                         "<button id=\"submitBtn\" class=\"chngButton\">Submit</button>" +
-                        "</form><p id=\"advice\">Confused? Reread the <a href=\"problems\" class=\"link\">problems</a> and review the <a href=\"rules\" class=\"link\">rules</a>.</p></div>");
+                        "</form><p id=\"advice\">Download the <a href=\"ProgrammingFiles/programmingPacket.pdf\" class=\"link\">problems</a> and the <a href=\"ProgrammingFiles/StudentData.7z\" class=\"link\">data files</a>. Confused? Reread the <a href=\"rules\" class=\"link\">rules</a>.</p></div>");
         } else {    // Otherwise, display a message saying they must be part of a team to submit
             writer.append("<div class=\"forbidden\">You must belong to a team to submit.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Join a team here.</a></p></div>");
         }
@@ -136,24 +137,36 @@ public class Submit extends HttpServlet{
         fileContent.read(bytes);
 
         short probNum = Short.parseShort(request.getParameter("probNum"));
+        if(t.problemSolved(probNum)) {
+            writer.write("{\"error\":\"You've already solved that problem silly!\"}");
+            return;
+        }
 
-        int status =  ScoreEngine.score(probNum, bytes, filePart.getSubmittedFileName());
+        int status =  ScoreEngine.score(probNum, bytes, filePart.getSubmittedFileName(), u.uid, u.tid);
         boolean success = status == 0;
         if(status >= 0) {
+            short beforePoints = t.getProblemScore();   // The points before the submission. Used to calculate the points gained.
             t.addRun(probNum, success);
-            status = t.updateTeam();
+            int serverStatus = t.updateTeam();
 
+            if (serverStatus < 0 || status < 0) {
+                writer.write("{\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
+                return;
+            }
             if(success) {
                 // Update the scoreboard
                 Scoreboard.generateScoreboard();
 
-                writer.write("{\"success\":\"You gained points!\"}");
-                return;
+                writer.write("{\"success\":\"You gained "+(t.getProblemScore() - beforePoints)+" points!\"}");
+            } else if(status == 1) {
+                writer.write("{\"error\":\"A compile time error occurred.\"}");
+            } else if(status == 2) {
+                writer.write("{\"error\":\"A runtime error occurred. Be sure to use STDIN.\"}");
+            } else if(status == 3) {
+                writer.write("{\"error\":\"Time limit exceeded.\"}");
+            } else if(status == 4) {
+                writer.write("{\"error\":\"Wrong answer.\"}");
             }
-        }
-        if (status < 0) {
-            writer.write("{\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
-            return;
         }
     }
 }

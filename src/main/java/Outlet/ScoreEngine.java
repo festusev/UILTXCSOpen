@@ -6,7 +6,6 @@ import java.util.Scanner;
 import java.util.*;
 import java.io.*;
 import static java.lang.System.out;
-import javafx.util.Pair;
 import java.util.concurrent.TimeUnit;
 
 public class ScoreEngine {
@@ -15,12 +14,12 @@ public class ScoreEngine {
     public static final Short NUM_PROBLEMS = 18;    // The number of programming problems there are
     public static final short MAX_POINTS = 60;
     public static final String[] PROBLEM_MAP = {"1. Abril", "2. Brittany", "3. Emmanuel", "4. Guowei", "5. Ina", "6. Josefa", "7. Kenneth", "8. Magdalena", "9. Noah", "10. Ramiro", "11. Seema", "12. Wojtek", "13. Least Least Common Multiple Sum", "14. Constellations", "15. Power Walking", "16. A Long Piece of String", "17. Really Mean Question", "18. Pattern Finding"};
-    private static ArrayList<ArrayList<Pair<File, File> > > files = null;
+    private static ArrayList<ArrayList<Pair> > files = null;
 
     public static void initialize() {
         System.out.println("--Initializing Scoring Engine-- ");
         files = new ArrayList<>();
-        for (int i = 0; i < NUM_PROBLEMS; ++i) {
+        for (int i = 1; i <= NUM_PROBLEMS; ++i) {
             files.add(get_files(new File(TESTCASE_DIR + i + "/")));
         }
     }
@@ -70,10 +69,10 @@ public class ScoreEngine {
                 return 1;
             }
         }
-        ArrayList<Pair<File, File> > problem_dir = files.get(problemNum);
-        for (Pair<File, File> x : problem_dir) {
+        ArrayList<Pair> problem_dir = files.get(problemNum);
+        for (Pair x : problem_dir) {
             // out.printf("%s %s\n", x.getKey().getName(), x.getValue().getName());
-            File in_file = x.getKey(), ans_file = x.getValue();
+            File in_file = x.left, ans_file = x.right;
             Scanner scan = new Scanner(in_file);
 
             out.println("------------------------------------");
@@ -166,8 +165,8 @@ public class ScoreEngine {
         stderr.close();
     }
 
-    public static ArrayList<Pair<File, File> > get_files(final File dir) {
-        ArrayList<Pair<File, File> > ret = new ArrayList<Pair<File, File> >();
+    public static ArrayList<Pair> get_files(final File dir) {
+        ArrayList<Pair> ret = new ArrayList<>();
         for (final File test : dir.listFiles()) {
             for (final File ans : dir.listFiles()) {
                 if (ans.getName().equals(test.getName() + ".a")) {
@@ -198,11 +197,19 @@ public class ScoreEngine {
      * @param probNum
      * @return boolean success
      */
-    public static int score(short probNum, byte[] bytes, String fPath){
+    public static int score(short probNum, byte[] bytes, String fPath, short uid, short tid){
         if(files == null) initialize();
 
         String extension = "";
-        String fileName = SCORE_DIR + Paths.get(fPath).getFileName().toString();
+        String givenName = Paths.get(fPath).getFileName().toString();
+
+        int i = givenName.lastIndexOf('.');
+        if (i > 0) {
+            extension = givenName.substring(i+1);
+        }
+
+        String newName = "" + uid + "-" + tid + "-" + System.currentTimeMillis();
+        String fileName = SCORE_DIR + newName + "." + extension;
 
         try {
             OutputStream os = new FileOutputStream(new File(fileName));
@@ -211,13 +218,6 @@ public class ScoreEngine {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        int i = fileName.lastIndexOf('.');
-        if (i > 0) {
-            extension = fileName.substring(i+1);
-        }
-        String name = fileName.substring(0, i);
-
         System.out.println("--SCORING--");
         if(probNum<=0 || probNum > NUM_PROBLEMS) return -1;
 
@@ -225,13 +225,13 @@ public class ScoreEngine {
         int status = 0;
         try {
             if (extension.equals("java")) {
-                exe_file += name + ".class";
+                exe_file += newName + ".class";
                 status = run(fileName, exe_file, 0, probNum);
             } else if (extension.equals(".py")) {
-                exe_file += name + ".py";
+                exe_file += newName + ".py";
                 status = run(fileName, exe_file, 1, probNum);
             } else if (extension.equals("cpp")) {
-                exe_file += name + ".exe";
+                exe_file += newName + ".out";
                 status = run(fileName, exe_file, 2, probNum);
             }
         }catch (Exception e){
@@ -239,5 +239,14 @@ public class ScoreEngine {
         }
 
         return status;
+    }
+}
+class Pair{
+    public File left;
+    public File right;
+
+    Pair(File l, File r) {
+        left = l;
+        right = r;
     }
 }

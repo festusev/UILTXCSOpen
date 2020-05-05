@@ -48,7 +48,7 @@ public class Rules extends HttpServlet{
                 "    <div id=\"column\"><div class=\"row secRow\">\n" +
                 "\n" +
                 "<p class=\"secHead\">General</p><p class=\"secBody\">\n" +
-                "<br><ul><li>Unlike UIL, students register and maintain their own team.</li><li>If you have any questions, reach out to us at <span class=\"link\">contact@txcsopen.com</span>.</li></ul>" +
+                "<br><ul><li>Unlike UIL, students register and maintain their own team.</li><li>The multiple choice section is available on May 7th. Choose any 45 minute time period in which to take it. Team members do not have to take it at the same time.</li><li>The programming section is open on May 8th. Each team chooses a 2-hour period in which all members compete.<li>If you have any questions, reach out to us at <span class=\"link\">contact@txcsopen.com</span>.</li></ul>" +
                 "   </div>" +
                 "<div class=\"row secRow\">\n" +
                 "\n" +

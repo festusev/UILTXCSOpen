@@ -4,6 +4,7 @@
 }
 #submitHeader{
     margin:auto;
+    text-align:center;
     font-size:4em;
     color:var(--prim-light);
     font-weight:bold;
@@ -183,4 +184,11 @@ body{
     font-weight:bold;
     margin-top:10px;
     text-decoration: none;
+}
+#problem{
+    width:100%;
+}
+#textfile{
+    padding:0;
+    margin-top:10px;
 }

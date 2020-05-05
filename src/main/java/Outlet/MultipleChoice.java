@@ -20,12 +20,14 @@ import javax.servlet.http.HttpServletResponse;
  * Created by Evan Ellis.
  */
 public class MultipleChoice extends HttpServlet{
-    private static final char[] key = {'d','c','e','a','a','b','e','c','e','d','b','a','c','a','d','b','e','c','c','a','d','b','e','d','a','d','e','b','c','d','c','a','b','b','e','b','a','c','a','b'};
-    public static final int CORRECT_PTS = 6;
-    public static final int INCORRECT_PTS = -2;
+    private static final char[] key = {'e','c','a','b','b','d','a','d','c','e','b','e','a','c','d','b','b','e','c','a','d','a','b','e','a','d','c','b','d','e','a','a','b','d','e','c','a','c','a','b'};
+    public static final int CORRECT_PTS = 9;
+    public static final int INCORRECT_PTS = -3;
     public static final int SKIPPED_PTS = 0;
     public static final int NUM_PROBLEMS = 40;
+    public static final int TIME_LIMIT = 20*1000;
     private static final String PAGE_NAME = "multiple-choice";
+
 
     private static Gson gson = new Gson();
 
@@ -41,31 +43,43 @@ public class MultipleChoice extends HttpServlet{
         PrintWriter writer = response.getWriter();
         String body;
         int mcState = Dynamic.mcOpen(); // 0 if the multiple choice hasn't begun, 1 if it has, and 2 if it is over
+        long diff = 0;
+        diff = System.currentTimeMillis()-u.team.start;
         if(mcState == 0) {
-            body = "<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">The Test is Closed Until the Competition Begins.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Click Here to Go back.</a></p></div>";
+            body = "<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">The Multiple Choice Will Open May 7th<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Click Here to Go back.</a></p></div>";
         } else if(mcState == 2) {
-            body = "<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">The Test Has Now Closed.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Click Here to Go back.</a></p></div>";
-        } else if(u.start > 0) {
+            body = "<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">The Test Has Now Closed<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Click Here to Go back.</a></p></div>";
+        } else if(TIME_LIMIT-diff <=0) {
             body = "<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">You've already taken the test.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Click Here to Go back.</a></p></div>";
         } else if(u.tid <0) {
             body = "<div class=\"forbidden\">You must belong to a team to submit.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Join a team here.</a></p></div>";
         } else { // Load the multiple choice form
-            body =  "   <div id=\"beginWarning\"><div id=\"warningCnt\">" +
+            String beginWarning = "   <div id=\"beginWarning\"><div id=\"warningCnt\">" +
                     "       <p id=\"warningHeader\">Are you sure you want to begin?</p>" +
                     "       <p id=\"warningSubtitle\">Once you do you will have 45 minutes to complete the test.</p>" +
                     "       <button id=\"beginBtn\" onclick=\"begin()\">Begin</button>" +
                     "       <a id=\"goBackBtn\" href=\"console\">Go Back</a></div>" +
-                    "   </div>" +
+                    "   </div>";
+            if(u.team.start > 0) {
+                beginWarning = "   <div id=\"beginWarning\" style=\"display:none;\"><div id=\"warningCnt\">" +
+                        "       <p id=\"warningHeader\">Are you sure you want to begin?</p>" +
+                        "       <p id=\"warningSubtitle\">Once you do you will have 45 minutes to complete the test.</p>" +
+                        "       <button id=\"beginBtn\" onclick=\"begin()\">Begin</button>" +
+                        "       <a id=\"goBackBtn\" href=\"console\">Go Back</a></div>" +
+                        "   </div>" +
+                        "   <script>document.addEventListener(\"DOMContentLoaded\", function(event) {startTimer();});</script>";
+            }
+            body =  beginWarning +
                     "   <div class=\"row\" id=\"upperHalf\">\n" +
                     "        <div class=\"center\">\n" +
                     "            <div id=\"body-header\">\n" +
                     "                Multiple Choice\n" +
                     "            </div>\n" +
                     "        </div>" +
-                    Dynamic.loadTimer("Remaining", 20*1000, "forceSubmit();", false) +
+                    Dynamic.loadTimer("Remaining", TIME_LIMIT - diff, "forceSubmit();", false) +
                     "    </div>\n" +
                     "    <div id=\"centerColumn\">" +
-                    "       <p id=\"instructions\"><span>Instructions:</span> Take this test in 45 minutes without any aid. When you're done, submit your answers for scoring. You can take this anytime today, so please don't share it with anyone.</p>" +
+                    "       <p id=\"instructions\"><span>Instructions:</span> Take this test in 45 minutes without any aid. When you're done, submit your answers for scoring. You can take this anytime today, so please don't share it with anyone. Find the testing packet <a target=\"_blank\" href=\"programmingPacket.pdf\">here</a>.</p>" +
                     "        <ol class=\"column\">";
             char[] options = new char[]{'a', 'b', 'c', 'd', 'e'};
             for(short i=1; i<=20; i++) {    // Loop through the first 20 questions to add answer bubbles
@@ -128,7 +142,7 @@ public class MultipleChoice extends HttpServlet{
         PrintWriter writer = response.getWriter();
 
         // If we are not setting started, then we are taking a mc submission
-        if(System.currentTimeMillis() - u.start > 1000*60*47) { // If so, they have exceeded the time limit. Giving them 2 extra minutes in case of technical issues
+        if(System.currentTimeMillis() - u.start > TIME_LIMIT + 1000*60*2) { // If so, they have exceeded the time limit. Giving them 2 extra minutes in case of technical issues
             writer.write("{\"error\":\"Time limit exceeded. Submission forfeited. Your score is -80.\"}");
             return;
         }
