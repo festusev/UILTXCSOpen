@@ -39,12 +39,17 @@ public class MultipleChoice extends HttpServlet{
         }
         System.out.println("--- START: "  + u.start + "---");
         PrintWriter writer = response.getWriter();
-        String body = "<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">The Test is Closed Until the Competition Begins.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Click Here to Go back.</a></p></div>";
-        if(u.start > 0) {
+        String body;
+        int mcState = Dynamic.mcOpen(); // 0 if the multiple choice hasn't begun, 1 if it has, and 2 if it is over
+        if(mcState == 0) {
+            body = "<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">The Test is Closed Until the Competition Begins.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Click Here to Go back.</a></p></div>";
+        } else if(mcState == 2) {
+            body = "<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">The Test Has Now Closed.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Click Here to Go back.</a></p></div>";
+        } else if(u.start > 0) {
             body = "<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">You've already taken the test.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Click Here to Go back.</a></p></div>";
         } else if(u.tid <0) {
             body = "<div class=\"forbidden\">You must belong to a team to submit.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Join a team here.</a></p></div>";
-        } else if(Dynamic.competitionOpen()) { // Load the multiple choice form
+        } else { // Load the multiple choice form
             body =  "   <div id=\"beginWarning\"><div id=\"warningCnt\">" +
                     "       <p id=\"warningHeader\">Are you sure you want to begin?</p>" +
                     "       <p id=\"warningSubtitle\">Once you do you will have 45 minutes to complete the test.</p>" +
@@ -125,6 +130,7 @@ public class MultipleChoice extends HttpServlet{
         // If we are not setting started, then we are taking a mc submission
         if(System.currentTimeMillis() - u.start > 1000*60*47) { // If so, they have exceeded the time limit. Giving them 2 extra minutes in case of technical issues
             writer.write("{\"error\":\"Time limit exceeded. Submission forfeited. Your score is -80.\"}");
+            return;
         }
         char[] answers = gson.fromJson(request.getParameter("answers"), char[].class);  // An array of length 40 containing all of their answers in order
         ArrayList<Short> questions = new ArrayList<>();   // The questions they got correct

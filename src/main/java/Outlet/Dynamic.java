@@ -25,7 +25,7 @@ public class Dynamic {
     public static final String CNTDWNMCENDS_DATE = "05/8/2020 00:00:00";    // The countdown to when the multiple choice closes
     public static Date cntdwnToMCOver;
 
-    public static final String CNTDWNCMPENDS_DATE = "05/8/2020 00:00:00";    // The countdown to when the multiple choice closes
+    public static final String CNTDWNCMPENDS_DATE = "05/9/2020 00:00:00";    // The countdown to when the multiple choice closes
     public static Date cntdwnToCMPOver;
 
     public static final String DROPDOWN = "<script>" +
@@ -37,7 +37,16 @@ public class Dynamic {
     public static final String RIGHT_FLAIR = "<img class=\"flair\" id=\"right_flair\" src=\"res/blue_flair.svg\">";
     public static final String LEFT_FLAIR = "<img class=\"flair\" id=\"left_flair\" src=\"res/orange_flair.svg\"/>";
 
+    private static String announcement = ""; // The announcement pinned underneath the top bar
+
     private static final String GA_URL = "https://www.google-analytics.com/collect";
+
+    public static void setAnnouncement(String stmt){
+        if(stmt != null && !stmt.isEmpty())
+            announcement = "<div id=\"announcement\">" + stmt + "</div>";
+        else
+            announcement = "";
+    }
     public static String loadLoggedOutNav(HttpServletRequest request, String pageName){
         addPageView(request, pageName);
         return
@@ -77,7 +86,7 @@ public class Dynamic {
                         "      </li>\n" +
                         "      <li class=\"drop-nav-item\">\n" +
                         "        <a class=\"nav-link\" href=\"login\">Login</a>\n" +
-                        "      </li></ul></div>";
+                        "      </li></ul></div>" +announcement;
     }
     public static String loadNav(HttpServletRequest request, String pageName){
         if(Conn.isLoggedIn(request)) return loadLoggedInNav(request, pageName);
@@ -130,7 +139,7 @@ public class Dynamic {
                 "      </li>\n" +
                 "      <li class=\"drop-nav-item\">\n" +
                 "        <a class=\"nav-link\" href=\"logout\">Logout</a>\n" +
-                "      </li></ul></div>";
+                "      </li></ul></div>" + announcement;
     }
     // Gets the bottom bar which has the copyright notice
     public static String loadCopyright(){
@@ -255,19 +264,28 @@ public class Dynamic {
         return false;
     }
 
-    // Returns true if the multiple choice section is available
-    public static boolean mcOpen(){
+    /**
+     * Returns 0 if the MC section hasn't begun, 1 if it is currently open, and 2 if it has closed.
+     * @return
+     */
+    public static int mcOpen(){
         Date now = new Date();
-        long diff = cntdwnToMCOver.getTime() - now.getTime();
-        if(diff >= 0) return true;
-        return false;
+        long time = now.getTime();
+        long endsDiff = cntdwnToMCOver.getTime() - time;  // The difference between now and when the competition ends
+        long startsDiff = cntdwnToCmp.getTime() - time; // The difference between now and when the multiple choice ends
+        if(startsDiff > 0) return 0;    // It hasn't started
+        else if(endsDiff <0) return 2;  // It is over
+        return 1;   //  It is open
     }
 
-    public static boolean frqOpen(){
+    public static int frqOpen(){
         Date now = new Date();
-        long diff = cntdwnToCmp.getTime() - now.getTime();
-        if(diff < 0) return true;
-        return false;
+        long time = now.getTime();
+        long endsDiff = cntdwnToCMPOver.getTime() - time;  // The difference between now and when the competition ends
+        long startsDiff = cntdwnToMCOver.getTime() - time; // The difference between now and when the multiple choice ends
+        if(startsDiff > 0) return 0;    // It hasn't started
+        else if(endsDiff <0) return 2;  // It is over
+        return 1;   //  It is open
     }
 
     public static String loadRightFlair(){

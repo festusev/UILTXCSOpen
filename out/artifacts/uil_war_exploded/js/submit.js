@@ -3,11 +3,22 @@ document.addEventListener("DOMContentLoaded", function(event) {
     box = document.getElementById("submit");
     box.onsubmit = submit;
 });
+function begin() {
+    startTimer();
+    beginWarning.style.display = "none";
+
+    // Tell the server that they've started
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'submit', true);
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.send('started=' + window.cntdwnLoaded);
+    return false;
+}
 function submit(){
-    addSuccessBox(box, "Scoring...");
+    addScoredBox(box, "Scoring...");
 
     var probSelector = document.getElementById("problem");
-    var probId = probSelector.options[probSelector].value;
+    var probId = probSelector.options[probSelector.selectedIndex].value;
 
     let xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function(){
@@ -17,7 +28,7 @@ function submit(){
                 if(Object.keys(response).includes("reload")) {
                     window.location.href=response["reload"];
                 } else if(Object.keys(response).includes("success")) {
-                    addSuccessBox(box, "SUCCESS: " + response["success"]);
+                    addScoredBox(box, "SCORED: " + response["success"]);
                 } else {
                     addErrorBox(box, response["error"]);
                 }
@@ -44,7 +55,7 @@ function addErrorBox(box, error){
         errorBox.className = "error";
     }
 }
-function addSuccessBox(box, success) {
+function addScoredBox(box, success) {
     let errorBox = document.getElementById(box.id + "ERROR");
     if(!errorBox) {
         box.insertAdjacentHTML('afterbegin', "<div class='success' id='" + box.id + "ERROR'>" + success + "</div>");

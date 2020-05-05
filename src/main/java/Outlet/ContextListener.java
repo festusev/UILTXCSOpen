@@ -16,21 +16,20 @@ public class ContextListener implements ServletContextListener {
     /**
      * Initialize log4j when the application is being started
      */
-    public static final Logger LOGGER = Logger.getLogger(ContextListener.class.getName());
+    //public static final Logger LOGGER = Logger.getLogger(ContextListener.class.getName());
     @Override
     public void contextInitialized(ServletContextEvent event) {
-        LOGGER.info("Initializing Server Context");
+        //LOGGER.info("Initializing Server Context");
         SimpleDateFormat sdf = new SimpleDateFormat(Dynamic.DATETIME_FORMAT, Locale.ENGLISH);  // Lets us make dates easily
         sdf.setTimeZone(TimeZone.getTimeZone("CST"));
         Dynamic.sdf = sdf;
         try {
             Dynamic.cntdwnToCmp = sdf.parse(Dynamic.CNTDWNCMP_DATE);
             Dynamic.cntdwnToMCOver = sdf.parse(Dynamic.CNTDWNMCENDS_DATE);
+            Dynamic.cntdwnToCMPOver = sdf.parse(Dynamic.CNTDWNCMPENDS_DATE);
         } catch (ParseException e) {
             e.printStackTrace();
         }
-
-        ScoreEngine.initialize();
 
         // Finally, schedule the VerificationFlusher class to be called every 15 minutes
         VerificationFlusher vflush = new VerificationFlusher();

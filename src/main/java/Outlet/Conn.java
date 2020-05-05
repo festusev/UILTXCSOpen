@@ -29,14 +29,14 @@ public class Conn {
     private static final String USER = "admin";
     private static final String PASS = "1pcdEy31lxTSp6x$";	// TODO Possibly in the future have an admin type this in.
     // private static final String DB_NAME = "uil";
-    private static final String DB_NAME = "uil";
+    private static final String DB_NAME = "comptest";
 
     private static Gson gson = new Gson();
 
     private static ArrayList<User> users = new ArrayList<>();
     private static ArrayList<Team> teams = new ArrayList<>();
 
-    private static final Logger LOGGER = LogManager.getLogger(Conn.class);
+    //private static final //Logger //LOGGER = LogManager.get//Logger(Conn.class);
 
     private static final int VTOKEN_SIZE = 50;
     private static final int VCODE_SIZE = 6;
@@ -203,7 +203,7 @@ public class Conn {
             try {
                 stmt = conn.prepareStatement("SELECT * FROM teams WHERE id = ?");
                 stmt.setShort(1,(Short)identifier);
-                LOGGER.info(stmt.toString());
+                //LOGGER.info(stmt.toString());
             } catch (Exception e) {
                 e.printStackTrace();
                 return -2;  // A java-side error
@@ -213,7 +213,7 @@ public class Conn {
             try {
                 stmt = conn.prepareStatement("SELECT * FROM teams WHERE name = ?");
                 stmt.setString(1, (String)identifier);
-                LOGGER.info(stmt.toString());
+                //LOGGER.info(stmt.toString());
             } catch (Exception e) {
                 e.printStackTrace();
                 return -2;  // A java-side error
@@ -254,17 +254,17 @@ public class Conn {
                     "?autoReconnect=true&useSSL=false",USER,PASS);
         }catch(SQLException se){
             //Handle errors for JDBC
-            LOGGER.error("JDBC Error. Code="+se.getErrorCode()+". Cause="+se.getCause()
-                    +". Message="+se.getMessage());
+            //LOGGER.error("JDBC Error. Code="+se.getErrorCode()+". Cause="+se.getCause()
+                    //+". Message="+se.getMessage());
             return null;
         }catch(Exception e){
             //Handle errors for Class.forName
-            LOGGER.error("Class.forName error (likely). Cause="+e.getCause()+". Message="+e.getMessage());
+            //LOGGER.error("Class.forName error (likely). Cause="+e.getCause()+". Message="+e.getMessage());
         }
 
         // If the connection to the server was unsuccessful
         if(conn == null) {
-            LOGGER.warn("CANNOT CONNECT TO MYSQL!!! AN ERROR WILL OCCUR IMMEDIATELY");
+            //LOGGER.warn("CANNOT CONNECT TO MYSQL!!! AN ERROR WILL OCCUR IMMEDIATELY");
             throw new RuntimeException("Could not connect to MYSQL Database");
         }
         return conn;
@@ -501,7 +501,7 @@ public class Conn {
             if (con == null) return BigInteger.valueOf(-1); // If an error occurred making the connection
             stmt = con.prepareStatement("SELECT password, uname, start, questions, points, id, tid FROM users WHERE email=?");
             stmt.setString(1, email);
-            LOGGER.info(stmt.toString());
+            //LOGGER.info(stmt.toString());
             rs = stmt.executeQuery();
             if(rs.next()) { // A row matches this email
                 storedFullHash = rs.getString("password");
@@ -554,7 +554,7 @@ public class Conn {
         // Finally, remove the user from their team
         if(u.tid>=0){  // If they belong to a team
             u.team.removeUser(u);
-            LOGGER.debug("TEAM LENGTH: " + u.team.uids.length);
+            //LOGGER.debug("TEAM LENGTH: " + u.team.uids.length);
             if(u.team.uids.length<=0) { // If so, remove the team from the scoreboard
                 Scoreboard.generateScoreboard();
             }
@@ -630,19 +630,19 @@ public class Conn {
             captain.team = team;
             captain.updateUser(false);   // Change this in the database
 
-            if(LOGGER.isDebugEnabled()) {
+            /*if(//LOGGER.isDebugEnabled()) {
                 String loggedIn = "Logged in users: ";
                 for (User u : users) {
                     loggedIn += "uname:" + u.uname + ", uid:" + u.uid + ", tid:" + u.tid + " - ";
                 }
-                LOGGER.debug(loggedIn);
+                //LOGGER.debug(loggedIn);
 
                 loggedIn = "Logged in teams: ";
                 for (Team t : teams) {
                     loggedIn += "tname:" + t.tname + ", tid:" + t.tid;
                 }
-                LOGGER.debug(loggedIn);
-            }
+                //LOGGER.debug(loggedIn);
+            }*/
 
             // Finally, update the scoreboard
             Scoreboard.generateScoreboard();
@@ -701,7 +701,7 @@ public class Conn {
                 stmt.setInt(c+1, team.uids[c]);
             }
             String[] users = new String[team.uids.length];
-            LOGGER.info(stmt.toString());
+            //LOGGER.info(stmt.toString());
             ResultSet rs = stmt.executeQuery();
             int i=0;
             while (rs.next()) {
@@ -721,7 +721,7 @@ public class Conn {
             PreparedStatement stmt = conn.prepareStatement("UPDATE users SET token=? WHERE token=?");
             stmt.setNull(1, Types.CHAR);
             stmt.setString(2, token.toString(Character.MAX_RADIX));
-            LOGGER.info(stmt.toString());
+            //LOGGER.info(stmt.toString());
             int result = stmt.executeUpdate();
         } catch(SQLException e) {
             e.printStackTrace();
@@ -734,7 +734,7 @@ public class Conn {
         ArrayList<Team> allTeams = new ArrayList<>();
         try {
             PreparedStatement stmt = conn.prepareStatement("SELECT * FROM teams");
-            LOGGER.info(stmt);
+            //LOGGER.info(stmt);
             ResultSet rs= stmt.executeQuery();
             while(rs.next()) {
                 Team t = new Team();
@@ -767,7 +767,7 @@ class User implements Comparable<User>{
     public short tid;
 
     private static Gson gson = new Gson();
-    private static final Logger LOGGER = LogManager.getLogger(User.class);
+    //private static final //Logger //LOGGER = LogManager.get//Logger(User.class);
     @Override
     public int compareTo(User user) {
         if(token == null || user.token == null) return user.uid - uid;  // If we are comparing by uid
@@ -823,7 +823,7 @@ class User implements Comparable<User>{
             }
             stmt.setString(1, email);
             stmt.setString(2, uname);
-            LOGGER.info(stmt.toString());
+            //LOGGER.info(stmt.toString());
 
             System.out.println(stmt.toString());
             stmt.executeUpdate();
@@ -865,7 +865,7 @@ class User implements Comparable<User>{
             PreparedStatement stmt = conn.prepareStatement("UPDATE users SET password = ? WHERE id=?");
             stmt.setString(1, hashedPassword);
             stmt.setShort(2, uid);
-            LOGGER.info(stmt.toString());
+            //LOGGER.info(stmt.toString());
             return stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -879,7 +879,7 @@ class User implements Comparable<User>{
         try {
             PreparedStatement stmt = conn.prepareStatement("SELECT password FROM users WHERE id=?");
             stmt.setShort(1, uid);
-            LOGGER.info(stmt.toString());
+            //LOGGER.info(stmt.toString());
             ResultSet rs = stmt.executeQuery();
             if(rs.next()) {
                 String stored = rs.getString("password");
@@ -906,7 +906,7 @@ class Team implements Comparable<Team> {
     public short tid;
     private static Gson gson = new Gson();
 
-    private static final Logger LOGGER = LogManager.getLogger(Team.class);
+    //private static final //Logger //LOGGER = LogManager.get//Logger(Team.class);
 
     @Override
     public int compareTo(Team team) {
@@ -958,7 +958,7 @@ class Team implements Comparable<Team> {
             stmt.setString(5, uidString);
             stmt.setShort(6, tid);
 
-            LOGGER.info(stmt.toString());
+            //LOGGER.info(stmt.toString());
             stmt.executeUpdate();
             return 0;
         } catch (SQLException e) {
@@ -993,7 +993,7 @@ class Team implements Comparable<Team> {
             stmt.setString(4, getProblemJson());
             stmt.setString(5, uidString);
 
-            LOGGER.info(stmt.toString());
+            //LOGGER.info(stmt.toString());
             stmt.executeUpdate();
             return 0;
         } catch (SQLException e) {
@@ -1064,7 +1064,7 @@ class Team implements Comparable<Team> {
             PreparedStatement stmt = conn.prepareStatement("UPDATE teams SET password = ? WHERE id=?");
             stmt.setString(1, hashedPassword);
             stmt.setShort(2, tid);
-            LOGGER.info(stmt.toString());
+            //LOGGER.info(stmt.toString());
             return stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -1078,7 +1078,7 @@ class Team implements Comparable<Team> {
         try {
             PreparedStatement stmt = conn.prepareStatement("SELECT password FROM teams WHERE id=?");
             stmt.setShort(1, tid);
-            LOGGER.info(stmt.toString());
+            //LOGGER.info(stmt.toString());
             ResultSet rs = stmt.executeQuery();
             if(rs.next()) {
                 String stored = rs.getString("password");

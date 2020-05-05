@@ -1,15 +1,7 @@
 package Outlet;
 
-import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
-import org.apache.commons.compress.archivers.sevenz.SevenZFile;
-import org.apache.commons.compress.utils.SeekableInMemoryByteChannel;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-
 import java.io.*;
-import java.util.HashMap;
-import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+import java.util.Date;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.HttpServlet;
@@ -17,24 +9,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 /***
  * Shows a graph of the top 7 teams, then below lists the teams in order.
  * Created by Evan Ellis.
  */
 @MultipartConfig
 public class Submit extends HttpServlet{
-    public static final String ZIP_DIR = "/usr/share/jetty9/";
-    public static final short NUM_PROBLEMS = 12;
-    public static final short MAX_POINTS = 60;
-    public static HashMap<Short, String> problemMap = new HashMap<>();
+    public static final long TIME_LIMIT = 1000*60*60*2;
+
 
     private static final String PAGE_NAME = "submit";
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        if(!Conn.isLoggedIn(request)){
+        User u = Conn.getUser(request);
+        if(u==null || !Conn.isLoggedIn(u.token)){
             response.sendRedirect(request.getContextPath());
         }
         // set response headers
@@ -54,41 +43,60 @@ public class Submit extends HttpServlet{
                         "    <script src=\"./js/submit.js\"></script>\n" +
                         "</head>\n" +
                         "<body>\n" + Dynamic.loadLoggedInNav(request, PAGE_NAME));
-        if(!Dynamic.competitionOpen()) {
-            writer.append("<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">Submission is Closed Until the Competition Begins.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\""+request.getContextPath()+"/console\">Click Here to Go back.</a></p></div>");
-        } else if(Conn.getUser(request).tid >= 0) {    // If the user belongs to a team
-            /*writer.append(
-                    "   <div class=\"row\" id=\"upperHalf\"><p id=\"submitHeader\">Submit<span>Be sure to gzip your file.</p></div>" +
-                            "   <div class=\"row\" id=\"lowerHalf\">" +
-                            "       <form id=\"submit\" onsubmit=\"submit(); return false;\" enctype=\"multipart/form-data\">" +
-                            "           <label for=\"textfile\">Choose a Result File:</label>" +
-                            "           <input type=\"file\" name=\"textfile\" id=\"textfile\" enctype=\"multipart/form-data\"/>" +
-                            "           <button id=\"submit\" class=\"chngButton\">Submit</button>" +
-                            "        </form>" +
-                            "   </div>" +
-                            Dynamic.loadLeftFlair() +
-                            Dynamic.loadRightFlair() +
-                            Dynamic.loadCopyright() +
-                            "</body></html>");*/
+
+        long now = (new Date()).getTime();
+        int frqStatus = Dynamic.frqOpen();
+        if(frqStatus == 0) {
+            writer.append("<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">The Programming Section Will Open On May 8th<p class=\"forbiddenRedirect\"><a class=\"link\" href=\""+request.getContextPath()+"/console\">Click Here to Go back.</a></p></div>");
+        } else if(frqStatus == 2){
+            writer.append("<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">The Competition Has Closed<p class=\"forbiddenRedirect\"><a class=\"link\" href=\""+request.getContextPath()+"/console\">Click Here to Go back.</a></p></div>");
+        } else if(u.team.start > 0 && now - u.team.start > TIME_LIMIT) {
+            writer.append("<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">Your Team Has Already Competed<p class=\"forbiddenRedirect\"><a class=\"link\" href=\""+request.getContextPath()+"/console\">Click Here to Go back.</a></p></div>");
+        } else if(u.tid >= 0) {    // If the user belongs to a team
             String problems = "";
-            int numProblems = problemMap.keySet().size();
-            for(int i=1; i<=numProblems;i++){
-                problems += "  <option value=\""+i+"\">"+problemMap.get(i)+"</option>\n";
+            int numProblems = ScoreEngine.NUM_PROBLEMS;
+            for(int i=0; i<numProblems;i++){
+                problems += "  <option value=\""+i+"\">"+ScoreEngine.PROBLEM_MAP[i]+"</option>\n";
             }
-            writer.append("<div id=\"centerBox\"><p id=\"submitHeader\">Submit</p><p id=\"inst\">Choose a problem to submit:</p>" +
-                    "<form id=\"submit\" onsubmit=\"submit(); return false;\" enctype=\"multipart/form-data\">" +
-                    "<select id=\"problem\">\n" +
-                    problems +
-                    "</select>" +
-                    "<input type=\"file\" accept=\".java|.cpp|.py\" id=\"textfile\"/>" +
-                    "<button id=\"submitBtn\" class=\"chngButton\">Submit</button>" +
-                    "</form><p id=\"advice\">Confused? Reread the <a href=\"problems\" class=\"link\">problems</a> and review the <a href=\"rules\" class=\"link\">rules</a>.</p></div>");
+            String beginWarning = "   <div id=\"beginWarning\"><div id=\"warningCnt\">" +
+                    "       <p id=\"warningHeader\">Are you sure you want to begin?</p>" +
+                    "       <p id=\"warningSubtitle\">Once you do you and your team will have 2 hours to compete.</p>" +
+                    "       <button id=\"beginBtn\" onclick=\"begin()\">Begin</button>" +
+                    "       <a id=\"goBackBtn\" href=\"console\">Go Back</a></div>" +
+                    "   </div>";
+            long diff = 0;
+            if(u.team.start > 0) {
+                beginWarning = "   <div id=\"beginWarning\" style=\"display:none;\"><div id=\"warningCnt\">" +
+                                "       <p id=\"warningHeader\">Are you sure you want to begin?</p>" +
+                                "       <p id=\"warningSubtitle\">Once you do you and your team will have 2 hours to compete.</p>" +
+                                "       <button id=\"beginBtn\" onclick=\"begin()\">Begin</button>" +
+                                "       <a id=\"goBackBtn\" href=\"console\">Go Back</a></div>" +
+                                "   </div>";
+                diff = now-u.team.start;
+            }
+            writer.append(
+                        beginWarning+
+                        "<div id=\"centerBox\"><p id=\"submitHeader\">Submit</p>" +
+                        Dynamic.loadTimer("Remaining", TIME_LIMIT - diff, "location.reload();", true) +
+                        "<p id=\"inst\">Choose a problem to submit:</p>" +
+                        "<form id=\"submit\" onsubmit=\"submit(); return false;\" enctype=\"multipart/form-data\">" +
+                        "<select id=\"problem\">\n" +
+                        problems +
+                        "</select>" +
+                        "<input type=\"file\" accept=\".java,.cpp,.py\" id=\"textfile\"/>" +
+                        "<button id=\"submitBtn\" class=\"chngButton\">Submit</button>" +
+                        "</form><p id=\"advice\">Confused? Reread the <a href=\"problems\" class=\"link\">problems</a> and review the <a href=\"rules\" class=\"link\">rules</a>.</p></div>");
         } else {    // Otherwise, display a message saying they must be part of a team to submit
             writer.append("<div class=\"forbidden\">You must belong to a team to submit.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Join a team here.</a></p></div>");
         }
     }
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        int frqStatus = Dynamic.frqOpen();
+        if(frqStatus != 1) {
+            response.sendRedirect(request.getContextPath());
+            return;
+        }
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         PrintWriter writer = response.getWriter();
@@ -97,84 +105,55 @@ public class Submit extends HttpServlet{
             writer.write("{\"reload\":\"" +request.getContextPath() + "\"}");
             return;
         }
-            if (u == null) { // User isn't logged in
-                writer.append("{\"error\":\"User isn't logged in.\"}");
-                return;
-            } else if (u.team == null || u.tid < 0) {
-                writer.append("{\"error\":\"User doesn't belong to a team.\"}");
-                return;
-            }
 
-            Team t = u.team;
-            Part filePart = request.getPart("textfile");
-            InputStream fileContent = filePart.getInputStream();
+        Team t = u.team;
+        if (u == null) { // User isn't logged in
+            writer.append("{\"error\":\"User isn't logged in.\"}");
+            return;
+        } else if (t == null || u.tid < 0) {
+            writer.append("{\"error\":\"User doesn't belong to a team.\"}");
+            return;
+        }
+        String s = request.getParameter("started");
+        if(t.start > 0 && System.currentTimeMillis() - t.start > TIME_LIMIT + 2*60*1000) { // If so, they have exceeded the time limit. Giving them 2 extra minutes in case of technical issues
+            writer.write("{\"error\":\"Time limit exceeded. Submission forfeited.\"}");
+            return;
+        }
 
-            byte[] bytes = new byte[fileContent.available()];
-            fileContent.read(bytes);
+        if(s != null) {
+            Long started = Long.parseLong(s);
+            if(started <= 0) return;
+            t.start = started;
+            t.updateTeam();
+            return;
+        }
 
-            short probNum = Short.parseShort(request.getParameter("probNum"));
+        // If we are not setting started, then we are taking a file submission
+        Part filePart = request.getPart("textfile");
+        InputStream fileContent = filePart.getInputStream();
 
-            boolean success =  ScoreEngine.score(probNum, bytes, filePart.getSubmittedFileName());
+        byte[] bytes = new byte[fileContent.available()];
+        fileContent.read(bytes);
+
+        short probNum = Short.parseShort(request.getParameter("probNum"));
+
+        int status =  ScoreEngine.score(probNum, bytes, filePart.getSubmittedFileName());
+        boolean success = status == 0;
+        if(status >= 0) {
             t.addRun(probNum, success);
-            int status = t.updateTeam();
-            if(status != 0) {
-                writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
+            status = t.updateTeam();
+
+            if(success) {
+                // Update the scoreboard
+                Scoreboard.generateScoreboard();
+
+                writer.write("{\"success\":\"You gained points!\"}");
                 return;
             }
-
-            // Update the scoreboard
-            Scoreboard.generateScoreboard();
-
-            writer.write("{\"success\":\"You gained points!\"}");
-    }
-}
-class GZIPCompression {
-    public static byte[] compress(final String stringToCompress) {
-        if (stringToCompress==null || stringToCompress.length() == 0) {
-            return null;
         }
-
-        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             final GZIPOutputStream gzipOutput = new GZIPOutputStream(baos)) {
-            gzipOutput.write(stringToCompress.getBytes(UTF_8));
-            gzipOutput.finish();
-            return baos.toByteArray();
-        } catch (IOException e) {
-            throw new UncheckedIOException("Error while compressing!", e);
+        if (status < 0) {
+            writer.write("{\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
+            return;
         }
-    }
-
-    public static String decompress(final byte[] compressed) {
-        System.out.println("--DECOMPRESSING. LENGTH = " +compressed.length+"--");
-        if (compressed == null || compressed.length == 0) {
-            return null;
-        }
-        GZIPInputStream gis = null;
-        try {
-            gis = new GZIPInputStream(new ByteArrayInputStream(compressed));
-            BufferedReader bf = new BufferedReader(new InputStreamReader(gis, "UTF-8"));
-            String outStr = "";
-            String line;
-            System.out.println("--DONE UNZIPPING, COPYING OVER RESULT NOW--");
-            outStr = bf.lines().collect(Collectors.joining());
-            System.out.println("--UNZIPPING WAS SUCCESSFUL--");
-            return outStr;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-}
-class P7zipCompression {
-    public static String decompress(final byte[] compressed) throws IOException {
-        SevenZFile sevenZFile = new SevenZFile(new SeekableInMemoryByteChannel(compressed));
-        SevenZArchiveEntry entry = sevenZFile.getNextEntry();
-        if(entry!=null){
-            byte[] content = new byte[(int) entry.getSize()];
-            sevenZFile.read(content, 0, content.length);
-            return new String(content);
-        }
-        sevenZFile.close();
-        return null;
     }
 }

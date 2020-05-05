@@ -13,7 +13,7 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 
 public class JoinTeam extends HttpServlet {
-    private static final Logger LOGGER = LogManager.getLogger(JoinTeam.class);
+    //private static final Logger LOGGER = LogManager.getLogger(JoinTeam.class);
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("application/json");

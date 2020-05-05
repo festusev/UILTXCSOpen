@@ -13,13 +13,19 @@ public class ScoreEngine {
     private static final String SCORE_DIR = "/opt/UILScoring/";
     private static final String TESTCASE_DIR = "/opt/UILTestcases/";
     public static final Short NUM_PROBLEMS = 18;    // The number of programming problems there are
-    private static List<Pair<File, File> > files;
+    public static final short MAX_POINTS = 60;
+    public static final String[] PROBLEM_MAP = {"1. Abril", "2. Brittany", "3. Emmanuel", "4. Guowei", "5. Ina", "6. Josefa", "7. Kenneth", "8. Magdalena", "9. Noah", "10. Ramiro", "11. Seema", "12. Wojtek", "13. Least Least Common Multiple Sum", "14. Constellations", "15. Power Walking", "16. A Long Piece of String", "17. Really Mean Question", "18. Pattern Finding"};
+    private static ArrayList<ArrayList<Pair<File, File> > > files = null;
 
     public static void initialize() {
-        //files = get_files(new File(TESTCASE_DIR));
+        System.out.println("--Initializing Scoring Engine-- ");
+        files = new ArrayList<>();
+        for (int i = 0; i < NUM_PROBLEMS; ++i) {
+            files.add(get_files(new File(TESTCASE_DIR + i + "/")));
+        }
     }
 
-    /*public static boolean run(String source_file, String exe_file, int language) throws IOException {
+    public static int run(String source_file, String exe_file, int language, short problemNum) throws IOException {
         String compile_cmd = "", run_cmd = "";
         if (language == 0) { // java
             compile_cmd = "javac " + source_file;
@@ -33,10 +39,15 @@ public class ScoreEngine {
             compile_cmd = "g++ " + source_file + " -o " + exe_file;
             run_cmd = exe_file;
         }
-        return grade(source_file, exe_file, compile_cmd, run_cmd);
+        return grade(source_file, exe_file, compile_cmd, run_cmd, problemNum);
     }
 
-    public static boolean grade(String source_file, String exe_file, String compile_cmd, String run_cmd) throws IOException {
+    // 0 is AC
+    // 1 is compile error
+    // 2 is runtime error
+    // 3 is time limit exceeded
+    // 4 is wrong answer
+    public static int grade(String source_file, String exe_file, String compile_cmd, String run_cmd, short problemNum) throws IOException {
         out.printf("Compiling %s\n", source_file);
         out.printf("Compiling %s\n", compile_cmd);
         if (compile_cmd.equals("")) {
@@ -49,16 +60,18 @@ public class ScoreEngine {
                 if (ret != 0) {
                     out.println("Program exited with code: " + ret);
                     out.println("Compilation failure");
-                    return false;
+                    return 1;
                 }
                 out.println("Compilation success");
             }
             catch (InterruptedException e) {
                 out.printf("Compilation failure");
-                return false;
+                e.printStackTrace();
+                return 1;
             }
         }
-        for (Pair<File, File> x : files) {
+        ArrayList<Pair<File, File> > problem_dir = files.get(problemNum);
+        for (Pair<File, File> x : problem_dir) {
             // out.printf("%s %s\n", x.getKey().getName(), x.getValue().getName());
             File in_file = x.getKey(), ans_file = x.getValue();
             Scanner scan = new Scanner(in_file);
@@ -78,21 +91,21 @@ public class ScoreEngine {
             stdin_redirect.close();
 
             long a = System.currentTimeMillis();
-            // terminate after 3 seconds
+            // terminate after 5 seconds
             int xcode = 0;
             try {
                 if (!r.waitFor(5, TimeUnit.SECONDS)) {
                     out.println("Time limit exceeded");
                     r.destroyForcibly();
                     close(stdin, stdout, stderr);
-                    return false;
+                    return 3;
                 }
                 xcode = r.waitFor();
             }
             catch (InterruptedException e) {
-                out.println("uh oh");
+                e.printStackTrace();
                 close(stdin, stdout, stderr);
-                return false;
+                return 2;
             }
             long b = System.currentTimeMillis();
 
@@ -106,15 +119,15 @@ public class ScoreEngine {
             String errors = error_bytes.toString("UTF-8");
             if (!errors.equals("")) {
                 out.println("Runtime error");
-                out.println("<" + errors + ">");
+                out.println(errors);
                 close(stdin, stdout, stderr);
-                return false;
+                return 2;
             }
             if (xcode != 0) {
                 out.println("Runtime error");
                 out.println("Program exited with code: " + xcode);
                 close(stdin, stdout, stderr);
-                return false;
+                return 2;
             }
 
             // get output
@@ -141,10 +154,10 @@ public class ScoreEngine {
 
             close(stdin, stdout, stderr);
 
-            if (judge_code != 0) return false;
+            if (judge_code != 0) return 4;
 
         }
-        return true;
+        return 0;
     }
 
     public static void close(OutputStream stdin, InputStream stdout, InputStream stderr) throws IOException {
@@ -153,8 +166,8 @@ public class ScoreEngine {
         stderr.close();
     }
 
-    public static List<Pair<File, File> > get_files(final File dir) {
-        List<Pair<File, File> > ret = new ArrayList<Pair<File, File> >();
+    public static ArrayList<Pair<File, File> > get_files(final File dir) {
+        ArrayList<Pair<File, File> > ret = new ArrayList<Pair<File, File> >();
         for (final File test : dir.listFiles()) {
             for (final File ans : dir.listFiles()) {
                 if (ans.getName().equals(test.getName() + ".a")) {
@@ -179,15 +192,16 @@ public class ScoreEngine {
             return 2; // eof mismatch
         }
         return 0;
-    } */
+    }
     /**
      * Scores a submission, returning the # districts won, the location
      * @param probNum
      * @return boolean success
      */
-    public static boolean score(short probNum, byte[] bytes, String fPath){
-        return false;
-        /*String extension = "";
+    public static int score(short probNum, byte[] bytes, String fPath){
+        if(files == null) initialize();
+
+        String extension = "";
         String fileName = SCORE_DIR + Paths.get(fPath).getFileName().toString();
 
         try {
@@ -202,27 +216,28 @@ public class ScoreEngine {
         if (i > 0) {
             extension = fileName.substring(i+1);
         }
+        String name = fileName.substring(0, i);
 
         System.out.println("--SCORING--");
-        if(probNum<0 || probNum >= NUM_PROBLEMS) return false;
+        if(probNum<=0 || probNum > NUM_PROBLEMS) return -1;
 
         String exe_file = SCORE_DIR;
-        boolean good = false;
+        int status = 0;
         try {
             if (extension.equals("java")) {
-                exe_file += fileName + ".class";
-                good = run(fileName, exe_file, 0);
-            } else if (extension.equals("-python")) {
-                exe_file += fileName + ".py";
-                good = run(fileName, exe_file, 1);
+                exe_file += name + ".class";
+                status = run(fileName, exe_file, 0, probNum);
+            } else if (extension.equals(".py")) {
+                exe_file += name + ".py";
+                status = run(fileName, exe_file, 1, probNum);
             } else if (extension.equals("cpp")) {
-                exe_file += fileName + ".exe";
-                good = run(fileName, exe_file, 2);
+                exe_file += name + ".exe";
+                status = run(fileName, exe_file, 2, probNum);
             }
         }catch (Exception e){
             e.printStackTrace();
         }
 
-        return good;*/
+        return status;
     }
 }

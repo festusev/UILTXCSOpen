@@ -12,7 +12,7 @@ import java.io.PrintWriter;
 import java.sql.SQLException;
 
 public class DeleteUser extends HttpServlet {
-    private static final Logger LOGGER = LogManager.getLogger(DeleteUser.class);
+    //private static final Logger LOGGER = LogManager.getLogger(DeleteUser.class);
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("application/json");

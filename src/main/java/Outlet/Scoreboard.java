@@ -21,7 +21,7 @@ public class Scoreboard extends HttpServlet{
     private static String postNav="";   // The scoreboard html after the dynamic navigation
     private static final short NUMGRAPHED = 7;  // The number of teams to graph
     private static final double START_DATE = 5;
-    private static final Logger LOGGER = LogManager.getLogger(Scoreboard.class);
+    //private static final Logger LOGGER = LogManager.getLogger(Scoreboard.class);
     private static final String PAGE_NAME = "scoreboard";
 
     @Override
@@ -41,13 +41,13 @@ public class Scoreboard extends HttpServlet{
      * Store the scoreboard html so that it doesn't need to be recreated every time
      */
     public static void generateScoreboard() {
-        LOGGER.info("--- GENERATING SCOREBOARD ----");
+        //LOGGER.info("--- GENERATING SCOREBOARD ----");
         // Get a json encoded string of all of the teams
         ArrayList<Team> teams = Conn.getAllTeams();
         Collections.sort(teams, new SortTeams());
 
         int maxTestSum = MultipleChoice.NUM_PROBLEMS * MultipleChoice.CORRECT_PTS;
-        int maxProbSum = Submit.NUM_PROBLEMS * Submit.MAX_POINTS;
+        int maxProbSum = ScoreEngine.NUM_PROBLEMS * ScoreEngine.MAX_POINTS;
         double maxScore = maxProbSum + maxTestSum;
 
         // The table row list of teams in order of points

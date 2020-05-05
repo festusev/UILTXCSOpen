@@ -260,6 +260,13 @@ input{
     border-radius:4px;
     color:var(--success-dark);
 }
+#announcement{
+    background-color:#fff6b3;
+    font-size:18px;
+    text-align: center;
+    padding:0px 20px 5px 20px;
+    color:var(--head-col);
+}
 @media only screen and (min-width: 900px){
     #logo{
         width:initial;

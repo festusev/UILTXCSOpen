@@ -15,7 +15,7 @@ import java.util.logging.Logger;
  * Created by Evan Ellis.
  */
 public class Verify extends HttpServlet{
-    private static final Logger LOGGER = Logger.getLogger(Register.class.getName());
+    //private static final Logger LOGGER = Logger.getLogger(Register.class.getName());
 
     // If they are getting, they are sending a 50 character string
     @Override
