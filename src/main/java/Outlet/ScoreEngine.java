@@ -15,6 +15,7 @@ public class ScoreEngine {
     public static final short MAX_POINTS = 60;
     public static final String[] PROBLEM_MAP = {"1. Abril", "2. Brittany", "3. Emmanuel", "4. Guowei", "5. Ina", "6. Josefa", "7. Kenneth", "8. Magdalena", "9. Noah", "10. Ramiro", "11. Seema", "12. Wojtek", "13. Least Least Common Multiple Sum", "14. Constellations", "15. Power Walking", "16. A Long Piece of String", "17. Really Mean Question", "18. Pattern Finding"};
     private static ArrayList<ArrayList<Pair> > files = null;
+    private static boolean initialized = false;
 
     public static void initialize() {
         System.out.println("--Initializing Scoring Engine-- ");
@@ -22,6 +23,7 @@ public class ScoreEngine {
         for (int i = 1; i <= NUM_PROBLEMS; ++i) {
             files.add(get_files(new File(TESTCASE_DIR + i + "/")));
         }
+        initialized = true;
     }
 
     public static int run(String source_file, String exe_file, int language, short problemNum) throws IOException {
@@ -198,7 +200,7 @@ public class ScoreEngine {
      * @return boolean success
      */
     public static int score(short probNum, byte[] bytes, String fPath, short uid, short tid){
-        if(files == null) initialize();
+        if(!initialized) initialize();
 
         String extension = "";
         String givenFName = Paths.get(fPath).getFileName().toString();
