@@ -201,17 +201,23 @@ public class ScoreEngine {
         if(files == null) initialize();
 
         String extension = "";
-        String givenName = Paths.get(fPath).getFileName().toString();
+        String givenFName = Paths.get(fPath).getFileName().toString();
 
-        int i = givenName.lastIndexOf('.');
+        int i = givenFName.lastIndexOf('.');
+        String givenName = givenFName.substring(0, i+1);    // Removes the extension
         if (i > 0) {
-            extension = givenName.substring(i+1);
+            extension = givenFName.substring(i+1);
         }
 
-        String newName = "" + uid + "-" + tid + "-" + System.currentTimeMillis();
-        String fileName = SCORE_DIR + newName + "." + extension;
+        String directory = "" + uid + "-" + tid + "-" + System.currentTimeMillis()+"/"; // We make a new dir to run it in
+        String fileName = SCORE_DIR + directory + givenFName;
 
         try {
+            // First, create this directory
+            File dir = new File(SCORE_DIR + directory);
+            boolean dirMade = dir.mkdir();
+            if(!dirMade) return -1; // The directory could not be created
+
             OutputStream os = new FileOutputStream(new File(fileName));
             os.write(bytes);
             os.close();
@@ -221,17 +227,20 @@ public class ScoreEngine {
         System.out.println("--SCORING--");
         if(probNum<=0 || probNum > NUM_PROBLEMS) return -1;
 
-        String exe_file = SCORE_DIR;
+        String exe_file = SCORE_DIR + directory;
         int status = 0;
         try {
             if (extension.equals("java")) {
-                exe_file += newName + ".class";
+                exe_file += givenName + ".class";
+                System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
                 status = run(fileName, exe_file, 0, probNum);
             } else if (extension.equals(".py")) {
-                exe_file += newName + ".py";
+                exe_file += givenName + ".py";
+                System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
                 status = run(fileName, exe_file, 1, probNum);
             } else if (extension.equals("cpp")) {
-                exe_file += newName + ".out";
+                exe_file += givenName + ".out";
+                System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
                 status = run(fileName, exe_file, 2, probNum);
             }
         }catch (Exception e){

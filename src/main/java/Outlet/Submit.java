@@ -55,8 +55,8 @@ public class Submit extends HttpServlet{
         } else if(u.tid >= 0) {    // If the user belongs to a team
             String problems = "";
             int numProblems = ScoreEngine.NUM_PROBLEMS;
-            for(int i=0; i<numProblems;i++){
-                problems += "  <option value=\""+i+"\">"+ScoreEngine.PROBLEM_MAP[i]+"</option>\n";
+            for(int i=1; i<=numProblems;i++){
+                problems += "  <option value=\""+i+"\">"+ScoreEngine.PROBLEM_MAP[i-1]+"</option>\n";
             }
             String beginWarning = "   <div id=\"beginWarning\"><div id=\"warningCnt\">" +
                     "       <p id=\"warningHeader\">Are you sure you want to begin?</p>" +
@@ -167,6 +167,10 @@ public class Submit extends HttpServlet{
             } else if(status == 4) {
                 writer.write("{\"error\":\"Wrong answer.\"}");
             }
+        }
+        else {
+            writer.write("{\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
+            return;
         }
     }
 }

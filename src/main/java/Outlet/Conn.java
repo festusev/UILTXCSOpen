@@ -29,7 +29,7 @@ public class Conn {
     private static final String USER = "admin";
     private static final String PASS = "1pcdEy31lxTSp6x$";	// TODO Possibly in the future have an admin type this in.
     // private static final String DB_NAME = "uil";
-    private static final String DB_NAME = "uil";
+    private static final String DB_NAME = "comptest";
 
     private static Gson gson = new Gson();
 
@@ -959,7 +959,9 @@ class Team implements Comparable<Team> {
         return gson.toJson(problems);
     }
     public boolean problemSolved(short probNum){
-        return problems.get(probNum) >0;
+        if(problems != null && problems.containsKey(probNum))
+            return problems.get(probNum) >0;
+        else return false;
     }
     public int updateTeam(){
         Connection conn = Conn.getConnection();
