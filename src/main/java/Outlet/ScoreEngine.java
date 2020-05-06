@@ -22,6 +22,7 @@ public class ScoreEngine {
         try {
             files = new ArrayList<>();
             for (int i = 1; i <= NUM_PROBLEMS; ++i) {
+                System.out.println("--Getting files for probNum " + i);
                 files.add(get_files(new File(TESTCASE_DIR + i + "/")));
             }
         } catch(Exception e) {
@@ -172,14 +173,18 @@ public class ScoreEngine {
     }
 
     public static ArrayList<Pair> get_files(final File dir) {
+        System.out.println("--Getting Files in directory " + dir.getAbsolutePath() + " which has " + dir.listFiles().length + " files");
         ArrayList<Pair> ret = new ArrayList<>();
         for (final File test : dir.listFiles()) {
+            System.out.println(">Looking at file " + test.getAbsolutePath());
             for (final File ans : dir.listFiles()) {
                 if (ans.getName().equals(test.getName() + ".a")) {
+                    System.out.println(">Found input-output match of " + test.getName() + " and " + ans.getName());
                     ret.add(new Pair(test, ans));
                 }
             }
         }
+        System.out.println(">Found " + ret.size() + " test cases.");
         return ret;
     }
 
@@ -205,6 +210,7 @@ public class ScoreEngine {
      */
     public static int score(short probNum, byte[] bytes, String fPath, short uid, short tid){
         if(!initialized) initialize();
+        if(!initialized) return -1; // An error occurred;
 
         String extension = "";
         String givenFName = Paths.get(fPath).getFileName().toString();
