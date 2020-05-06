@@ -19,9 +19,13 @@ public class ScoreEngine {
 
     public static void initialize() {
         System.out.println("--Initializing Scoring Engine-- ");
-        files = new ArrayList<>();
-        for (int i = 1; i <= NUM_PROBLEMS; ++i) {
-            files.add(get_files(new File(TESTCASE_DIR + i + "/")));
+        try {
+            files = new ArrayList<>();
+            for (int i = 1; i <= NUM_PROBLEMS; ++i) {
+                files.add(get_files(new File(TESTCASE_DIR + i + "/")));
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
         }
         initialized = true;
     }
