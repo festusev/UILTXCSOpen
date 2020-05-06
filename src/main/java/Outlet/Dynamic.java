@@ -16,7 +16,7 @@ public class Dynamic {
     public static final String DATETIME_FORMAT = "MM/dd/yyyy HH:mm:ss";
     public static SimpleDateFormat sdf;
 
-    public static final String CNTDWNCMP_DATE = "04/7/2020 00:00:00";
+    public static final String CNTDWNCMP_DATE = "05/7/2020 00:00:00";
     public static final String CNTDWNCMP_TO = "Until the Competition Begins";
     public static final String CNTDWNCMP_OVER = "Compete Now!";
 
