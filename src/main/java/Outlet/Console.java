@@ -18,7 +18,7 @@ public class Console extends HttpServlet{
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         User uData = Conn.getUser(request); // We need to display the user's data
-        if(uData == null || !Conn.isLoggedIn(uData.token)){
+        if(uData == null || uData.token == null || !Conn.isLoggedIn(uData.token)){
             response.sendRedirect(request.getContextPath());
         }
         // Get the user's team, if they belong to one

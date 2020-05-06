@@ -228,11 +228,21 @@ public class ScoreEngine {
             // First, create this directory
             File dir = new File(SCORE_DIR + directory);
             boolean dirMade = dir.mkdir();
-            if(!dirMade) return -1; // The directory could not be created
+            if(!dirMade) {
+                System.out.println("ERROR: Cannot create directory, trying another method");
 
-            OutputStream os = new FileOutputStream(new File(fileName));
-            os.write(bytes);
-            os.close();
+                Runtime.getRuntime().exec("mkdir " + SCORE_DIR+directory);
+            }
+
+            try {
+                OutputStream os = new FileOutputStream(new File(fileName));
+                os.write(bytes);
+                os.close();
+            } catch(Exception e){
+                e.printStackTrace();
+                System.out.println("--Could not write file, trying another method");
+                Runtime.getRuntime().exec("touch " + fileName);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
