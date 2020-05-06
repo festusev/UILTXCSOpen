@@ -80,7 +80,7 @@ public class MultipleChoice extends HttpServlet{
                     Dynamic.loadTimer("Remaining", TIME_LIMIT - diff, "forceSubmit();", false) +
                     "    </div>\n" +
                     "    <div id=\"centerColumn\">" +
-                    "       <p id=\"instructions\"><span>Instructions:</span> Take this test in 45 minutes without any aid. When you're done, submit your answers for scoring. You can take this anytime today, so please don't share it with anyone. Find the testing packet <a target=\"_blank\" href=\"programmingPacket.pdf\">here</a>.</p>" +
+                    "       <p id=\"instructions\"><span>Instructions:</span> Take this test in 45 minutes without any aid. When you're done, submit your answers for scoring. You can take this anytime today, so please don't share it with anyone. Find the testing packet <a target=\"_blank\" href=\"mc.pdf\" class=\"link\">here</a>.</p>" +
                     "        <ol class=\"column\">";
             char[] options = new char[]{'a', 'b', 'c', 'd', 'e'};
             for(short i=1; i<=20; i++) {    // Loop through the first 20 questions to add answer bubbles
@@ -93,12 +93,12 @@ public class MultipleChoice extends HttpServlet{
             body+="</ol><ol class=\"column\" start=\"21\">";
             for(short i=21; i<=40; i++) {    // Loop through the first 20 questions to add answer bubbles
                 body += "<li>";
-                for(char c: options){
-                    body +="<label for=\""+i+c+"\">"+c+"</label><input type=\"radio\" value=\""+c+"\" name=\""+i+"\" id=\""+i+c+"\">";
+                for (char c : options) {
+                    body += "<label for=\"" + i + c + "\">" + c + "</label><input type=\"radio\" value=\"" + c + "\" name=\"" + i + "\" id=\"" + i + c + "\">";
                 }
-                body+="</li>";
+                body += "</li>";
             }
-            body+="</ol><button class=\"chngButton\" onclick=\"submit();\">Submit</button></div>" + Dynamic.loadCopyright();
+            body+="</ol><button class=\"chngButton\" onclick=\"submit();\">Submit</button><script>    window.onbeforeunload = beforeUnload;</script></div>" + Dynamic.loadCopyright();
         }
         writer.write("<html>\n" +
                 "<head>\n" +
@@ -159,9 +159,9 @@ public class MultipleChoice extends HttpServlet{
             qArray[i]=questions.get(i);
         }
         short score = (short)(qArray.length*CORRECT_PTS + skipped*SKIPPED_PTS + (40-qArray.length - skipped)*INCORRECT_PTS);
-        u.addScoringReport(score, qArray);
+        u.addScoringReport(score, qArray);  // Will also set 'start' well in the past
 
-        writer.write("{\"scored\":\"You got " + qArray.length + " correct and " + (40 - qArray.length) + " incorrect. Your final score is " + score + "\"}");
+        writer.write("{\"scored\":\"You got " + qArray.length + " correct, " + (40 - qArray.length-skipped) + " incorrect, and left "+skipped+" unanswered. Your final score is " + score + "\"}");
 
         // Finally, update the scoreboard
         Scoreboard.generateScoreboard();

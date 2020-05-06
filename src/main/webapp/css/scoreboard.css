@@ -34,7 +34,6 @@ th:last-child{
 }
 .bar div{
     display:inline-block;
-    top:62%;
     height:1.5em;
     cursor:pointer;
 }
@@ -46,6 +45,11 @@ th:last-child{
 }
 .testSum{
     background-color:var(--prim-light);
+}
+.numScore{
+    cursor:auto !important;
+    padding-left:10px;
+    margin-top:-37px;
 }
 #center{
     margin:auto;

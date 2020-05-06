@@ -50,6 +50,7 @@ function addErrorBox(error){
     var goBackBtn = document.getElementById("goBackBtn");
     goBackBtn.href="console";
     goBackBtn.innerText = "Go Home"
+    window.removeEventListener("onbeforeunload", beforeUnload);
 
     var beginBtn = document.getElementById("beginBtn");
     beginBtn.innerText = "Try Again";
@@ -64,9 +65,10 @@ function addScoredBox(scored) {
     document.getElementById("warningSubtitle").innerText = scored;
     var goBackBtn = document.getElementById("goBackBtn");
     goBackBtn.href="console";
-    goBackBtn.innerText = "Go Home"
+    goBackBtn.innerText = "Go Home";
     document.getElementById("beginBtn").style.display = "none";
 
+    window.removeEventListener("onbeforeunload", beforeUnload);
     beginWarning.style.display = "block";
 }
 function forceSubmit() {
@@ -92,8 +94,12 @@ function submit() {
 
     var goBackBtn = document.getElementById("goBackBtn");
     goBackBtn.innerText = "Not yet";
-    goBackBtn.href="";
+    goBackBtn.removeAttribute("href");
+    goBackBtn.style.cursor="pointer";
     goBackBtn.onclick = function(){document.getElementById('beginWarning').style.display = 'none';};
 
     beginWarning.style.display = "block";
+}
+function beforeUnload(){
+    return true;
 }

@@ -685,8 +685,8 @@ public class Conn {
      * Returns a list of unames that belong to the team.
      * @return
      */
-    public static String[] getTeamUsers(Team team) {
-        String selection = "SELECT uname FROM users WHERE ";
+    public static HashMap<String, Short> getTeamUsers(Team team) {
+        String selection = "SELECT uname, points FROM users WHERE ";
         if(team == null || team.uids == null) return null;
         for(int i = 0; i<team.uids.length; i++) {
             selection += "(id = ?)";
@@ -700,13 +700,11 @@ public class Conn {
             for(int c = 0; c<team.uids.length; c++) {   // Set the uids as the ?
                 stmt.setInt(c+1, team.uids[c]);
             }
-            String[] users = new String[team.uids.length];
+            HashMap<String, Short> users = new HashMap<>();
             //LOGGER.info(stmt.toString());
             ResultSet rs = stmt.executeQuery();
-            int i=0;
             while (rs.next()) {
-                users[i] = rs.getString("uname");
-                i++;
+                users.put(rs.getString("uname"), rs.getShort("points"));
             }
             return users;
         } catch (SQLException e) {
@@ -841,14 +839,16 @@ class User implements Comparable<User>{
     public int addScoringReport(short points, short[] questions){
         this.points = points;
         this.questions = questions;
+        this.start = System.currentTimeMillis() - MultipleChoice.TIME_LIMIT - 60*1000*2; // So that it locks them out
 
         Connection conn = Conn.getConnection();
         if(conn==null) return -1;
         try{
-            PreparedStatement stmt = conn.prepareStatement("UPDATE users SET questions = ?, points = ? WHERE id =?");
+            PreparedStatement stmt = conn.prepareStatement("UPDATE users SET questions = ?, points = ?, start = ? WHERE id =?");
             stmt.setString(1, gson.toJson(questions));
             stmt.setShort(2, points);
-            stmt.setShort(3, uid);
+            stmt.setLong(3, this.start);
+            stmt.setShort(4, uid);
             stmt.executeUpdate();
 
             // Now add this run to the team's score
@@ -1021,7 +1021,7 @@ class Team implements Comparable<Team> {
         }
     }
     public int addUser(User u) {
-        if(uids.length > 3) {  // The team is full
+        if(uids.length >= 3) {  // The team is full
             return -2;
         }
         short[] newUids = new short[uids.length+1];   // We have to create a new array to add the user

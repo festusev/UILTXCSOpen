@@ -141,14 +141,6 @@ public class Register extends HttpServlet{
         } catch (NoSuchAlgorithmException | SQLException e) {
             e.printStackTrace();
         }
-        /*if (user != null && !user.trim().isEmpty()) {
-            writer.append("	Welcome " + user + ".\r\n");
-            writer.append("	You successfully completed this javatutorial.net example.\r\n");
-        } else {
-            writer.append("	You did not entered a name!\r\n");
-        }
-        writer.append("		</body>\r\n")
-                .append("</html>\r\n");*/
     }
     public static boolean isValid(String email) {
         String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\."+

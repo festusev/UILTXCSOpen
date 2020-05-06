@@ -56,7 +56,7 @@ public class Scoreboard extends HttpServlet{
         for(Team t: teams) {
             teamList+="<tr><td>" + rank + "</td><td>" + t.tname + "</td><td>" + t.affiliation + "</td>" +
                     "<td class=\"bar\"><div class=\"testSum\" style=\"width:calc(50% * "+(t.testSum/maxScore)+");\" title=\""+t.testSum+"\"></div><div class=\"probSum\" style=\"width:"+
-                    "calc(50% *"+(t.getProblemScore()/maxScore)+");\" title=\""+t.getProblemScore()+"\"></div></td></tr>";
+                    "calc(50% *"+(t.getProblemScore()/maxScore)+");\" title=\""+t.getProblemScore()+"\"></div><div class=\"numScore\" style=\"box-shadow:none;\">"+t.getPts()+"</div></td></tr>";
             rank ++;
         }
 

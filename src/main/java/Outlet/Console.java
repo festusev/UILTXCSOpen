@@ -1,6 +1,8 @@
 package Outlet;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -38,9 +40,11 @@ public class Console extends HttpServlet{
                     "                <p class=\"secTitle\" id=\"memConfTitle\">Current Team Members</p>\n" +
                     "                <div class=\"secBody\">\n" +
                     "                    <ul id=\"memList\">\n";
-            String[] users = Conn.getTeamUsers(uTeam);
-            for(String u: users) {
-                tSection += "                        <li class=\"memName\">" + u + "</li>\n";
+            HashMap<String,Short> users = Conn.getTeamUsers(uTeam);
+            Set<String> userNames = users.keySet();
+            for(String uname: userNames) {
+                String points ="" + (users.get(uname) >= MultipleChoice.NUM_PROBLEMS*MultipleChoice.INCORRECT_PTS?(""+users.get(uname) + "/"+(MultipleChoice.NUM_PROBLEMS*MultipleChoice.CORRECT_PTS)):"No MC score");
+                tSection += "                        <li class=\"memName\">" + uname + " - " + points + "</li>\n";
             }
             tSection +=        "                    </ul>\n" +
                     "                </div>\n" +
