@@ -922,6 +922,9 @@ class Team implements Comparable<Team> {
         }
         return score;
     }
+    public short getProblemStatus(short probNum){
+        return problems.get(probNum);
+    }
     public short getPts() {
         return (short)(testSum + getProblemScore());
     }

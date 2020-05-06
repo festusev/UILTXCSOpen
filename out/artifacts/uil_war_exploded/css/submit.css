@@ -1,3 +1,6 @@
+body{
+    overflow-y:scroll;
+}
 .row:last-child{
     background-color:white;
     border:none;
@@ -45,17 +48,6 @@ input{
 }
 #copyright_notice{
     position:fixed;
-}
-#centerBox{
-    width:26em;
-    max-width:100%;
-    padding:2em;
-    border-radius:15px;
-    box-shadow:0 0 10px 1px rgba(0,0,0,0.12);
-    margin:auto;
-    margin-top:8em;
-    color:var(--head-col);
-    background-color:white;
 }
 #advice{
     padding-top:1em;
@@ -110,15 +102,36 @@ input{
     position:fixed;
 }
 #centerBox{
-    width:26em;
+    box-sizing:content-box;
+    width:52em;
     max-width:100%;
-    padding:2em;
-    border-radius:15px;
     box-shadow:0 0 10px 1px rgba(0,0,0,0.12);
     margin:auto;
     margin-top:8em;
     color:var(--head-col);
     background-color:white;
+    padding:0;
+}
+#submissionLeft{
+    width:26em;
+    display: inline-block;
+    padding:2em;
+    float:left;
+}
+#submissionRight{
+    width:26em;
+    display: inline-block;
+    padding:1em 10px;
+    box-shadow: -5px 0 10px 0 rgba(0,0,0,0.05);
+}
+#submissionRight ol{
+    list-style: none;
+    padding:0 0 0 20px;
+}
+#rightTitle{
+    font-size:1.8em;
+    font-weight:bold;
+    color:var(--prim-light);
 }
 #advice{
     padding-top:1em;
@@ -191,4 +204,9 @@ body{
 #textfile{
     padding:0;
     margin-top:10px;
+}
+@media only screen and (min-height: 680px) {
+    body{
+        overflow-y:hidden;
+    }
 }

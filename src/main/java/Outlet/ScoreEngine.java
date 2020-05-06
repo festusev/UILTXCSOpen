@@ -31,21 +31,21 @@ public class ScoreEngine {
         initialized = true;
     }
 
-    public static int run(String source_file, String exe_file, int language, short problemNum) throws IOException {
+    public static int run(String source_file, String exe_file, String sourceDir, int language, short problemNum) throws IOException {
         String compile_cmd = "", run_cmd = "";
         if (language == 0) { // java
             compile_cmd = "javac " + source_file;
-            run_cmd = "java " + exe_file;
+            run_cmd = "cd " + sourceDir + " && java " + exe_file;
         }
         else if (language == 1) { // python
             compile_cmd = "";
-            run_cmd = "python " + source_file;
+            run_cmd = "cd " + sourceDir + " && python " + source_file;
         }
         else if (language == 2) { // cpp
-            compile_cmd = "g++ " + source_file + " -o " + exe_file;
-            run_cmd = exe_file;
+            compile_cmd = "cd " + sourceDir + " && g++ " + source_file + " -o " + exe_file;
+            run_cmd = "cd " + sourceDir + " && ./" + exe_file;
         }
-        return grade(source_file, exe_file, compile_cmd, run_cmd, problemNum);
+        return grade(source_file, compile_cmd, run_cmd, problemNum);
     }
 
     // 0 is AC
@@ -53,30 +53,26 @@ public class ScoreEngine {
     // 2 is runtime error
     // 3 is time limit exceeded
     // 4 is wrong answer
-    public static int grade(String source_file, String exe_file, String compile_cmd, String run_cmd, short problemNum) throws IOException {
+    public static int grade(String source_file, String compile_cmd, String run_cmd, short problemNum) throws IOException {
         out.printf("Compiling %s\n", source_file);
         out.printf("Compiling %s\n", compile_cmd);
-        if (compile_cmd.equals("")) {
 
-        }
-        else {
-            Process p = Runtime.getRuntime().exec(compile_cmd);
-            try {
-                int ret = p.waitFor();
-                if (ret != 0) {
-                    out.println("Program exited with code: " + ret);
-                    out.println("Compilation failure");
-                    return 1;
-                }
-                out.println("Compilation success");
-            }
-            catch (InterruptedException e) {
-                out.printf("Compilation failure");
-                e.printStackTrace();
+        Process p = Runtime.getRuntime().exec(new String[]{"bash","-c",compile_cmd});
+        try {
+            int ret = p.waitFor();
+            if (ret != 0) {
+                out.println("Program exited with code: " + ret);
+                out.println("Compilation failure");
                 return 1;
             }
+            out.println("Compilation success");
         }
-        ArrayList<Pair> problem_dir = files.get(problemNum);
+        catch (InterruptedException e) {
+            out.printf("Compilation failure");
+            e.printStackTrace();
+            return 1;
+        }
+        ArrayList<Pair> problem_dir = files.get(problemNum-1);
         for (Pair x : problem_dir) {
             // out.printf("%s %s\n", x.getKey().getName(), x.getValue().getName());
             File in_file = x.left, ans_file = x.right;
@@ -84,7 +80,8 @@ public class ScoreEngine {
 
             out.println("------------------------------------");
             out.println("Test Case " + in_file.getName());
-            Process r = Runtime.getRuntime().exec(run_cmd);
+            System.out.println("--Executing command '" + run_cmd + "'");
+            Process r = Runtime.getRuntime().exec(new String[]{"bash", "-c", run_cmd});
             InputStream stdout = r.getInputStream();
             InputStream stderr = r.getErrorStream();
             OutputStream stdin = r.getOutputStream();
@@ -223,7 +220,7 @@ public class ScoreEngine {
         String givenFName = Paths.get(fPath).getFileName().toString();
 
         int i = givenFName.lastIndexOf('.');
-        String givenName = givenFName.substring(0, i+1);    // Removes the extension
+        String givenName = givenFName.substring(0, i);    // Removes the extension
         if (i > 0) {
             extension = givenFName.substring(i+1);
         }
@@ -256,21 +253,21 @@ public class ScoreEngine {
         System.out.println("--SCORING--");
         if(probNum<=0 || probNum > NUM_PROBLEMS) return -1;
 
-        String exe_file = SCORE_DIR + directory;
+        String exe_file;
         int status = 0;
         try {
             if (extension.equals("java")) {
-                exe_file += givenName + ".class";
+                exe_file = givenName;
                 System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
-                status = run(fileName, exe_file, 0, probNum);
+                status = run(fileName, exe_file, SCORE_DIR+directory, 0, probNum);
             } else if (extension.equals(".py")) {
-                exe_file += givenName + ".py";
+                exe_file= givenName + ".py";
                 System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
-                status = run(fileName, exe_file, 1, probNum);
+                status = run(fileName, exe_file, SCORE_DIR+directory, 1, probNum);
             } else if (extension.equals("cpp")) {
-                exe_file += givenName + ".out";
+                exe_file= givenName + ".out";
                 System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
-                status = run(fileName, exe_file, 2, probNum);
+                status = run(fileName, exe_file, SCORE_DIR+directory, 2, probNum);
             }
         }catch (Exception e){
             e.printStackTrace();

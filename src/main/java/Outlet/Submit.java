@@ -54,10 +54,21 @@ public class Submit extends HttpServlet{
             writer.append("<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">Your Team Has Already Competed<p class=\"forbiddenRedirect\"><a class=\"link\" href=\""+request.getContextPath()+"/console\">Click Here to Go back.</a></p></div>");
         } else if(u.tid >= 0) {    // If the user belongs to a team
             String problems = "";
+            String problemStatusList = "<ol id=\"problemStatusList\">";  // The list of where the team is on each problem. Displayed to the right
             int numProblems = ScoreEngine.NUM_PROBLEMS;
             for(int i=1; i<=numProblems;i++){
                 problems += "  <option value=\""+i+"\">"+ScoreEngine.PROBLEM_MAP[i-1]+"</option>\n";
+                short status = u.team.getProblemStatus((short)i);
+                String statusQuote = "";
+                if(status > 0) {    // They've solved it
+                    statusQuote = "Solved (" + (ScoreEngine.MAX_POINTS - (status-1)*5) + "pts)";
+                } else {    // It's still unsolved
+                    statusQuote = Math.abs(status) + " tries";
+                }
+                problemStatusList += "<li>" + ScoreEngine.PROBLEM_MAP[i-1] + " - " + statusQuote + "</li>";
             }
+            problemStatusList += "</ol>";
+
             String beginWarning = "   <div id=\"beginWarning\"><div id=\"warningCnt\">" +
                     "       <p id=\"warningHeader\">Are you sure you want to begin?</p>" +
                     "       <p id=\"warningSubtitle\">Once you do you and your team will have 2 hours to compete.</p>" +
@@ -77,7 +88,7 @@ public class Submit extends HttpServlet{
             }
             writer.append(
                         beginWarning+
-                        "<div id=\"centerBox\"><p id=\"submitHeader\">Submit</p>" +
+                        "<div id=\"centerBox\"><div id=\"submissionLeft\"><p id=\"submitHeader\">Submit</p>" +
                         Dynamic.loadTimer("Remaining", TIME_LIMIT - diff, "location.reload();", true) +
                         "<p id=\"inst\">Choose a problem to submit:</p>" +
                         "<form id=\"submit\" onsubmit=\"submit(); return false;\" enctype=\"multipart/form-data\">" +
@@ -86,7 +97,9 @@ public class Submit extends HttpServlet{
                         "</select>" +
                         "<input type=\"file\" accept=\".java,.cpp,.py\" id=\"textfile\"/>" +
                         "<button id=\"submitBtn\" class=\"chngButton\">Submit</button>" +
-                        "</form><p id=\"advice\">Download the <a href=\"ProgrammingFiles/programmingPacket.pdf\" class=\"link\">problems</a> and the <a href=\"ProgrammingFiles/StudentData.7z\" class=\"link\">data files</a>. Confused? Reread the <a href=\"rules\" class=\"link\">rules</a>.</p></div>");
+                        "</form><p id=\"advice\">Download the <a target=\"_blank\" href=\"ProgrammingFiles/programmingPacket.pdf\"" +
+                        " class=\"link\" >problems</a> and the <a href=\"ProgrammingFiles/StudentData.zip\" class=\"link\">data files</a>. Be sure to take input from System.in. Confused? Reread the <a target=\"_blank\" href=\"rules\" class=\"link\">rules</a>.</p></div>" +
+                        "<div id=\"submissionRight\"><div id=\"rightTitle\">Problems</div>" + problemStatusList);
         } else {    // Otherwise, display a message saying they must be part of a team to submit
             writer.append("<div class=\"forbidden\">You must belong to a team to submit.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Join a team here.</a></p></div>");
         }
