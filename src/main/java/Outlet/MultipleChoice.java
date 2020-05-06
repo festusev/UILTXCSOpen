@@ -25,7 +25,7 @@ public class MultipleChoice extends HttpServlet{
     public static final int INCORRECT_PTS = -3;
     public static final int SKIPPED_PTS = 0;
     public static final int NUM_PROBLEMS = 40;
-    public static final int TIME_LIMIT = 20*1000;
+    public static final int TIME_LIMIT = 45*60*1000;
     private static final String PAGE_NAME = "multiple-choice";
 
 
@@ -44,7 +44,8 @@ public class MultipleChoice extends HttpServlet{
         String body;
         int mcState = Dynamic.mcOpen(); // 0 if the multiple choice hasn't begun, 1 if it has, and 2 if it is over
         long diff = 0;
-        diff = System.currentTimeMillis()-u.team.start;
+        diff = System.currentTimeMillis()-u.start;
+        if(u.start < 0)  diff = 0;  // If they haven't started
         if(mcState == 0) {
             body = "<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">The Multiple Choice Will Open May 7th<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Click Here to Go back.</a></p></div>";
         } else if(mcState == 2) {
@@ -60,7 +61,7 @@ public class MultipleChoice extends HttpServlet{
                     "       <button id=\"beginBtn\" onclick=\"begin()\">Begin</button>" +
                     "       <a id=\"goBackBtn\" href=\"console\">Go Back</a></div>" +
                     "   </div>";
-            if(u.team.start > 0) {
+            if(u.start > 0) {
                 beginWarning = "   <div id=\"beginWarning\" style=\"display:none;\"><div id=\"warningCnt\">" +
                         "       <p id=\"warningHeader\">Are you sure you want to begin?</p>" +
                         "       <p id=\"warningSubtitle\">Once you do you will have 45 minutes to complete the test.</p>" +
