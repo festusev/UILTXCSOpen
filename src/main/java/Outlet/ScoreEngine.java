@@ -9,8 +9,8 @@ import static java.lang.System.out;
 import java.util.concurrent.TimeUnit;
 
 public class ScoreEngine {
-    private static final String SCORE_DIR = "/usr/share/jetty9/UILScoring/";
-    private static final String TESTCASE_DIR = "/usr/share/jetty9/UILTestcases/";
+    private static final String SCORE_DIR = "/usr/share/jetty9/webapps/data/UILScoring/";
+    private static final String TESTCASE_DIR = "/usr/share/jetty9/webapps/data/UILTestcases/";
     public static final Short NUM_PROBLEMS = 18;    // The number of programming problems there are
     public static final short MAX_POINTS = 60;
     public static final String[] PROBLEM_MAP = {"1. Abril", "2. Brittany", "3. Emmanuel", "4. Guowei", "5. Ina", "6. Josefa", "7. Kenneth", "8. Magdalena", "9. Noah", "10. Ramiro", "11. Seema", "12. Wojtek", "13. Least Least Common Multiple Sum", "14. Constellations", "15. Power Walking", "16. A Long Piece of String", "17. Really Mean Question", "18. Pattern Finding"};
