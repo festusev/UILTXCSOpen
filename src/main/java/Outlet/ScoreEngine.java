@@ -81,7 +81,6 @@ public class ScoreEngine {
             //Symlink the first dat file to the directory
             Runtime.getRuntime().exec(new String[]{"bash", "-c", "ln -s " + in_file.getAbsolutePath() + " " + dir + DAT_MAP[problemNum-1]});
 
-            out.println("------------------------------------");
             out.println("Test Case " + in_file.getName());
             System.out.println("--Executing command '" + run_cmd + "'");
             Process r = Runtime.getRuntime().exec(new String[]{"bash", "-c", run_cmd});
@@ -92,7 +91,7 @@ public class ScoreEngine {
             // terminate after 5 seconds
             int xcode = 0;
             try {
-                if (!r.waitFor(5, TimeUnit.SECONDS)) {
+                if (!r.waitFor(30, TimeUnit.SECONDS)) {
                     out.println("Time limit exceeded");
                     r.destroyForcibly();
                     close(stdout, stderr);
@@ -179,20 +178,16 @@ public class ScoreEngine {
         return ret;
     }
 
-    public static int judge(File ans_key, String output) throws IOException {
-        Scanner s1 = new Scanner(ans_key);
-        Scanner s2 = new Scanner(output);
-        while (s1.hasNext() && s2.hasNext()) {
-            String t1 = s1.next(), t2 = s2.next();
-            if (t1.equals(t2)) continue;
-            return 1; // token mismatch
-        }
-        if (s1.hasNext() || s2.hasNext()) {
-            // if (s1.hasNext()) out.println("1");
-            // else out.println(s2.next());
-            return 2; // eof mismatch
-        }
-        return 0;
+    public static int judge(File ans_keyFile, String output) throws IOException {
+        Scanner s1 = new Scanner(ans_keyFile);
+        String ans_key = "";
+        while(s1.hasNextLine()) ans_key += s1.nextLine();
+
+        ans_key = ans_key.replaceAll("\\s+","");
+        output = output.replaceAll("\\s+","");
+
+        if(ans_key.equals(output)) return 0;
+        else return 1;
     }
     /**
      * Scores a submission, returning the # districts won, the location
@@ -237,7 +232,7 @@ public class ScoreEngine {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println("--SCORING--");
+        out.println("------------------------------------");
         if(probNum<=0 || probNum > NUM_PROBLEMS) return -1;
 
         String exe_file;

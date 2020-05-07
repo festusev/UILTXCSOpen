@@ -108,7 +108,7 @@ public class MultipleChoice extends HttpServlet{
                 "    <link rel=\"icon\" type=\"image/png\" href=\"res/icon.png\">" +
                 "    <link rel=\"stylesheet\" href=\"./css/bootstrap.min.css\">\n" +
                 "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
-                "    <link rel=\"stylesheet\" href=\"./css/style.css\">\n" +
+                "    <link rel=\"stylesheet\" href=\"./css/style2.css\">\n" +
                 "    <link rel=\"stylesheet\" href=\"./css/multiple-choice.css\">\n" +
                 "    <script src=\"./js/multiple-choice.js\"></script>" +
                 "</head>\n" +

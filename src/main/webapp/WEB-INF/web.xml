@@ -149,7 +149,7 @@
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>Submit</servlet-name>
-    <url-pattern>/submit</url-pattern>
+    <url-pattern>/programming</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>Rules</servlet-name>

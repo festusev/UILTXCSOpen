@@ -9,7 +9,7 @@ function begin() {
 
     // Tell the server that they've started
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'submit', true);
+    xhr.open('POST', 'programming', true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send('started=' + window.cntdwnLoaded);
     return false;
@@ -37,7 +37,7 @@ function submit(){
             }
         }
     }
-    xhr.open('POST', "submit", true);
+    xhr.open('POST', "programming", true);
     // xhr.setRequestHeader('Content-type', 'multipart/form-data');
     var formData = new FormData();
     var file = document.getElementById("textfile");

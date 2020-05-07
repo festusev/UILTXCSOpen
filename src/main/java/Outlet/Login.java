@@ -56,7 +56,7 @@ public class Login extends HttpServlet{
                 "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n" +
                 "<link rel=\"icon\" type=\"image/png\" href=\"res/icon.png\">" +
                 "    <link rel=\"stylesheet\" href=\"./css/bootstrap.min.css\">\n" +
-                "    <link rel=\"stylesheet\" href=\"./css/style.css\">\n" +
+                "    <link rel=\"stylesheet\" href=\"./css/style2.css\">\n" +
                 "    <link rel=\"stylesheet\" href=\"./css/login.css\">\n" +
                 "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
                 "    <script src=\"js/login.js\"></script>" +

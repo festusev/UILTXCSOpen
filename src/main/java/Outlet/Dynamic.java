@@ -109,7 +109,7 @@ public class Dynamic {
                 "                 <a class=\"nav-link\" href=\"/\">TXCSOpen</a>\n" +
                 "            </li>\n" +
                 "            <li class=\"nav-item\">\n" +
-                "                <a class=\"nav-link\" href=\"submit\">Submit</a>\n" +
+                "                <a class=\"nav-link\" href=\"programming\">Programming</a>\n" +
                 "            </li>\n" +
                 "            <li class=\"nav-item\">\n" +
                 "                <a class=\"nav-link\" href=\"multiple-choice\">Multiple Choice</a>\n" +
@@ -132,7 +132,7 @@ public class Dynamic {
                 "            <a class=\"nav-link\" href=\"rules\">Rules</a>\n" +
                 "       </li>\n" +
                 "       <li class=\"drop-nav-item\">\n" +
-                "            <a class=\"nav-link\" href=\"submit\">Submit</a>\n" +
+                "            <a class=\"nav-link\" href=\"programming\">Programming</a>\n" +
                 "      </li>\n" +
                 "      <li class=\"drop-nav-item\">\n" +
                 "        <a class=\"nav-link\" href=\"console\">Profile</a>\n" +

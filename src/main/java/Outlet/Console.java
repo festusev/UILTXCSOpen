@@ -108,7 +108,7 @@ public class Console extends HttpServlet{
                         "<link rel=\"icon\" type=\"image/png\" href=\"res/icon.png\">" +
                 "    <link rel=\"stylesheet\" href=\"./css/bootstrap.min.css\">\n" +
                 "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&amp;family=Work+Sans&amp;display=swap\" rel=\"stylesheet\">" +
-                "    <link rel=\"stylesheet\" href=\"./css/style.css\">\n" +
+                "    <link rel=\"stylesheet\" href=\"./css/style2.css\">\n" +
                 "    <link rel=\"stylesheet\" href=\"./css/console.css\">\n" +
                 "    <script src=\"./js/console.js\"></script>\n" +
                 "</head>\n" +
