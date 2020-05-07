@@ -81,6 +81,7 @@ function addErrorBox(box, error){
         errorBox.innerHTML = "ERROR: " + error;
         errorBox.className = "error";
     }
+    grabProblems(); // Update the problems list
 }
 function addScoredBox(box, success) {
     let errorBox = document.getElementById(box.id + "ERROR");
