@@ -1,7 +1,7 @@
 var box;
 document.addEventListener("DOMContentLoaded", function(event) {
     box = document.getElementById("submit");
-    box.onsubmit = submit;
+    box.onsubmit = submit2;
 });
 function begin() {
     startTimer();
@@ -14,7 +14,7 @@ function begin() {
     xhr.send('started=' + window.cntdwnLoaded);
     return false;
 }
-function submit(){
+function submit2(){
     addScoredBox(box, "Scoring...");
 
     var probSelector = document.getElementById("problem");

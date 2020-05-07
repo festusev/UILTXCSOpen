@@ -91,7 +91,7 @@ public class ScoreEngine {
             // terminate after 5 seconds
             int xcode = 0;
             try {
-                if (!r.waitFor(30, TimeUnit.SECONDS)) {
+                if (!r.waitFor(60*5, TimeUnit.SECONDS)) {
                     out.println("Time limit exceeded");
                     r.destroyForcibly();
                     close(stdout, stderr);
