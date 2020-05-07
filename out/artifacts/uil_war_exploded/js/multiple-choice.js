@@ -85,7 +85,7 @@ function forceSubmit() {
     submitFinal();
 }
 function submit() {
-    document.getElementById("warningHeader").innerText  = "Are you sure you want to submit2?";
+    document.getElementById("warningHeader").innerText  = "Are you sure you want to submit?";
     document.getElementById("warningSubtitle").innerText = "Be sure to double check your work!";
 
     var submitBtn = document.getElementById("beginBtn");

@@ -53,7 +53,7 @@ public class MultipleChoice extends HttpServlet{
         } else if(TIME_LIMIT-diff <=0) {
             body = "<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">You've already taken the test.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Click Here to Go back.</a></p></div>";
         } else if(u.tid <0) {
-            body = "<div class=\"forbidden\">You must belong to a team to submit2.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Join a team here.</a></p></div>";
+            body = "<div class=\"forbidden\">You must belong to a team to submit.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Join a team here.</a></p></div>";
         } else { // Load the multiple choice form
             String beginWarning = "   <div id=\"beginWarning\"><div id=\"warningCnt\">" +
                     "       <p id=\"warningHeader\">Are you sure you want to begin?</p>" +
@@ -80,7 +80,7 @@ public class MultipleChoice extends HttpServlet{
                     Dynamic.loadTimer("Remaining", TIME_LIMIT - diff, "forceSubmit();", false) +
                     "    </div>\n" +
                     "    <div id=\"centerColumn\">" +
-                    "       <p id=\"instructions\"><span>Instructions:</span> Take this test in 45 minutes without any aid. When you're done, submit2 your answers for scoring. You can take this anytime today, so please don't share it with anyone. Find the testing packet <a target=\"_blank\" href=\"mc.pdf\" class=\"link\">here</a>.</p>" +
+                    "       <p id=\"instructions\"><span>Instructions:</span> Take this test in 45 minutes without any aid. When you're done, submit your answers for scoring. You can take this anytime today, so please don't share it with anyone. Find the testing packet <a target=\"_blank\" href=\"mc.pdf\" class=\"link\">here</a>.</p>" +
                     "        <ol class=\"column\">";
             char[] options = new char[]{'a', 'b', 'c', 'd', 'e'};
             for(short i=1; i<=20; i++) {    // Loop through the first 20 questions to add answer bubbles
@@ -98,7 +98,7 @@ public class MultipleChoice extends HttpServlet{
                 }
                 body += "</li>";
             }
-            body+="</ol><button class=\"chngButton\" onclick=\"submit2();\">Submit</button><script>    window.onbeforeunload = beforeUnload;</script></div>" + Dynamic.loadCopyright();
+            body+="</ol><button class=\"chngButton\" onclick=\"submit();\">Submit</button><script>    window.onbeforeunload = beforeUnload;</script></div>" + Dynamic.loadCopyright();
         }
         writer.write("<html>\n" +
                 "<head>\n" +
