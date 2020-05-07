@@ -1,7 +1,14 @@
 var box;
+var problemCnt;
 document.addEventListener("DOMContentLoaded", function(event) {
     box = document.getElementById("submit");
-    box.onsubmit = submit2;
+    box.onsubmit = submit;
+    problemCnt = document.getElementById("submissionRight");
+
+    // Every 10 seconds, grab the updated Problems list
+    var x = setInterval(function() {
+        grabProblems()
+    }, 1000*10);
 });
 function begin() {
     startTimer();
@@ -14,7 +21,7 @@ function begin() {
     xhr.send('started=' + window.cntdwnLoaded);
     return false;
 }
-function submit2(){
+function submit(){
     addScoredBox(box, "Scoring...");
 
     var probSelector = document.getElementById("problem");
@@ -48,6 +55,22 @@ function submit2(){
     file.value = "";
 
     return false;
+}
+function grabProblems(){
+    let xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function(){
+        if (xhr.readyState === 4) {
+            if (xhr.status == 200) { // If an error occurred
+                const response = JSON.parse(xhr.responseText);
+                if(Object.keys(response).includes("problems")) {
+                    problemCnt.innerHTML = response["problems"];
+                }
+            }
+        }
+    }
+    xhr.open('POST', "programming", true);
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.send("grabproblems=true");
 }
 function addErrorBox(box, error){
     let errorBox = document.getElementById(box.id + "ERROR");

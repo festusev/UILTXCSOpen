@@ -17,8 +17,25 @@ import javax.servlet.http.Part;
 public class Submit extends HttpServlet{
     public static final long TIME_LIMIT = 1000*60*60*2;
 
+    public static String getProblems(Team t) {
+        String problemStatusList = "<ol id='problemStatusList'>";  // The list of where the team is on each problem. Displayed to the right
+        int numProblems = ScoreEngine.NUM_PROBLEMS;
+        for(int i=1; i<=numProblems;i++){
+            short status = t.getProblemStatus((short)i);
+            String statusQuote = "";
+            if(status > 0) {    // They've solved it
+                statusQuote = "Solved (" + (ScoreEngine.MAX_POINTS - (status-1)*5) + "pts)";
+            } else {    // It's still unsolved
+                statusQuote = Math.abs(status) + " tries";
+            }
+            problemStatusList += "<li>" + ScoreEngine.PROBLEM_MAP[i-1] + " - " + statusQuote + "</li>";
+        }
+        problemStatusList += "</ol>";
 
-    private static final String PAGE_NAME = "submit2";
+        return "<div id='rightTitle'>Problems - " +t.getProblemScore()+ "pts</div>" + problemStatusList + "</div>";
+    }
+
+    private static final String PAGE_NAME = "submit";
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -26,10 +43,12 @@ public class Submit extends HttpServlet{
         if(u==null || !Conn.isLoggedIn(u.token)){
             response.sendRedirect(request.getContextPath());
         }
+
+        PrintWriter writer = response.getWriter();
+
         // set response headers
         response.setContentType("text/html");
         response.setCharacterEncoding("UTF-8");
-        PrintWriter writer = response.getWriter();
         writer.append("<html>\n" +
                         "<head>\n" +
                         "    <title>Programming - TXCSOpen</title>\n" +
@@ -90,8 +109,8 @@ public class Submit extends HttpServlet{
                         beginWarning+
                         "<div id=\"centerBox\"><div id=\"submissionLeft\"><p id=\"submitHeader\">Submit</p>" +
                         Dynamic.loadTimer("Remaining", TIME_LIMIT - diff, "location.reload();", true) +
-                        "<p id=\"inst\">Choose a problem to submit2:</p>" +
-                        "<form id=\"submit2\" onsubmit=\"submit2(); return false;\" enctype=\"multipart/form-data\">" +
+                        "<p id=\"inst\">Choose a problem to submit:</p>" +
+                        "<form id=\"submit\" onsubmit=\"submit(); return false;\" enctype=\"multipart/form-data\">" +
                         "<select id=\"problem\">\n" +
                         problems +
                         "</select>" +
@@ -99,9 +118,9 @@ public class Submit extends HttpServlet{
                         "<button id=\"submitBtn\" class=\"chngButton\">Submit</button>" +
                         "</form><p id=\"advice\">Download the <a target=\"_blank\" href=\"ProgrammingFiles/programmingPacket.pdf\"" +
                         " class=\"link\" >problems</a> and the <a href=\"ProgrammingFiles/StudentData.zip\" class=\"link\">data files</a>. Confused? Reread the <a target=\"_blank\" href=\"rules\" class=\"link\">rules</a>.</p></div>" +
-                        "<div id=\"submissionRight\"><div id=\"rightTitle\">Problems - " +u.team.getProblemScore()+ "pts</div>" + problemStatusList);
-        } else {    // Otherwise, display a message saying they must be part of a team to submit2
-            writer.append("<div class=\"forbidden\">You must belong to a team to submit2.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Join a team here.</a></p></div>");
+                        "<div id=\"submissionRight\">" + getProblems(u.team) + "</div></div>");
+        } else {    // Otherwise, display a message saying they must be part of a team to submit
+            writer.append("<div class=\"forbidden\">You must belong to a team to submit.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Join a team here.</a></p></div>");
         }
     }
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -128,6 +147,16 @@ public class Submit extends HttpServlet{
             writer.append("{\"error\":\"User doesn't belong to a team.\"}");
             return;
         }
+
+        String getproblems = request.getParameter("grabproblems");
+        System.out.println("Get Problems: " + getproblems);
+        if(getproblems!=null && getproblems.equals("true")) {
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            writer.write("{\"problems\":\""+getProblems(u.team)+"\"}");
+            return;
+        }
+
         String s = request.getParameter("started");
         if(t.start > 0 && System.currentTimeMillis() - t.start > TIME_LIMIT + 2*60*1000) { // If so, they have exceeded the time limit. Giving them 2 extra minutes in case of technical issues
             writer.write("{\"error\":\"Time limit exceeded. Submission forfeited.\"}");
