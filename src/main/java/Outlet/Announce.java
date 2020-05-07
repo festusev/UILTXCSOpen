@@ -39,7 +39,7 @@ public class Announce extends HttpServlet{
                 "<form method=\"POST\" action=\"announce-qm30b0cwerev8cf3k22d\">" +
                 "<input type=\"text\" value=\"Announcement\" name=\"announcement\">" +
                 "<input type=\"password\" name=\"password\">" +
-                "<input type=\"submit\">Submit Announcement</input>" +
+                "<input type=\"submit2\">Submit Announcement</input>" +
                 "</form>"+
                 "</body>\n" +
                 "</html>");

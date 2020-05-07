@@ -18,7 +18,7 @@ public class Submit extends HttpServlet{
     public static final long TIME_LIMIT = 1000*60*60*2;
 
 
-    private static final String PAGE_NAME = "submit";
+    private static final String PAGE_NAME = "submit2";
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -40,7 +40,7 @@ public class Submit extends HttpServlet{
                         "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
                         "    <link rel=\"stylesheet\" href=\"css/style2.css\">\n" +
                         "    <link rel=\"stylesheet\" href=\"css/submit2.css\">\n" +
-                        "    <script src=\"./js/submit.js\"></script>\n" +
+                        "    <script src=\"./js/submit2.js\"></script>\n" +
                         "</head>\n" +
                         "<body>\n" + Dynamic.loadLoggedInNav(request, PAGE_NAME));
 
@@ -90,8 +90,8 @@ public class Submit extends HttpServlet{
                         beginWarning+
                         "<div id=\"centerBox\"><div id=\"submissionLeft\"><p id=\"submitHeader\">Submit</p>" +
                         Dynamic.loadTimer("Remaining", TIME_LIMIT - diff, "location.reload();", true) +
-                        "<p id=\"inst\">Choose a problem to submit:</p>" +
-                        "<form id=\"submit\" onsubmit=\"submit(); return false;\" enctype=\"multipart/form-data\">" +
+                        "<p id=\"inst\">Choose a problem to submit2:</p>" +
+                        "<form id=\"submit2\" onsubmit=\"submit2(); return false;\" enctype=\"multipart/form-data\">" +
                         "<select id=\"problem\">\n" +
                         problems +
                         "</select>" +
@@ -100,8 +100,8 @@ public class Submit extends HttpServlet{
                         "</form><p id=\"advice\">Download the <a target=\"_blank\" href=\"ProgrammingFiles/programmingPacket.pdf\"" +
                         " class=\"link\" >problems</a> and the <a href=\"ProgrammingFiles/StudentData.zip\" class=\"link\">data files</a>. Confused? Reread the <a target=\"_blank\" href=\"rules\" class=\"link\">rules</a>.</p></div>" +
                         "<div id=\"submissionRight\"><div id=\"rightTitle\">Problems - " +u.team.getProblemScore()+ "pts</div>" + problemStatusList);
-        } else {    // Otherwise, display a message saying they must be part of a team to submit
-            writer.append("<div class=\"forbidden\">You must belong to a team to submit.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Join a team here.</a></p></div>");
+        } else {    // Otherwise, display a message saying they must be part of a team to submit2
+            writer.append("<div class=\"forbidden\">You must belong to a team to submit2.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Join a team here.</a></p></div>");
         }
     }
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
