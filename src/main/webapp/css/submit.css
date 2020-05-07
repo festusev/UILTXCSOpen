@@ -111,6 +111,7 @@ input{
     color:var(--head-col);
     background-color:white;
     padding:0;
+    height:35em;
 }
 #submissionLeft{
     width:26em;
@@ -123,10 +124,14 @@ input{
     display: inline-block;
     padding:1em 10px;
     box-shadow: -5px 0 10px 0 rgba(0,0,0,0.05);
+    height:100%;
 }
 #submissionRight ol{
     list-style: none;
     padding:0 0 0 20px;
+}
+#submissionRight li{
+    margin:2px 0;
 }
 #rightTitle{
     font-size:1.8em;

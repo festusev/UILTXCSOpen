@@ -40,9 +40,13 @@ function submit(){
     xhr.open('POST', "submit", true);
     // xhr.setRequestHeader('Content-type', 'multipart/form-data');
     var formData = new FormData();
-    formData.append("textfile", document.getElementById("textfile").files[0]);
+    var file = document.getElementById("textfile");
+    formData.append("textfile", file.files[0]);
     formData.append("probNum", probId)
     xhr.send(formData);
+
+    file.value = "";
+
     return false;
 }
 function addErrorBox(box, error){

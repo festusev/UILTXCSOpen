@@ -14,6 +14,7 @@ public class ScoreEngine {
     public static final Short NUM_PROBLEMS = 18;    // The number of programming problems there are
     public static final short MAX_POINTS = 60;
     public static final String[] PROBLEM_MAP = {"1. Abril", "2. Brittany", "3. Emmanuel", "4. Guowei", "5. Ina", "6. Josefa", "7. Kenneth", "8. Magdalena", "9. Noah", "10. Ramiro", "11. Seema", "12. Wojtek", "13. Least Least Common Multiple Sum", "14. Constellations", "15. Power Walking", "16. A Long Piece of String", "17. Really Mean Question", "18. Pattern Finding"};
+    private static final String[] DAT_MAP = {"abril.dat", "brittany.dat", "emmanuel.dat", "guowei.dat", "ina.dat", "josefa.dat", "kenneth.dat", "magdalena.dat", "noah.dat", "ramiro.dat", "seema.dat", "wojtek.dat", "llcms.dat", "constellations.dat", "powerwalking.dat", "longstring.dat", "rmq.dat", "patternfinding.dat"};
     private static ArrayList<ArrayList<Pair> > files = null;
     private static boolean initialized = false;
 
@@ -45,7 +46,7 @@ public class ScoreEngine {
             compile_cmd = "cd " + sourceDir + " && g++ " + source_file + " -o " + exe_file;
             run_cmd = "cd " + sourceDir + " && ./" + exe_file;
         }
-        return grade(source_file, compile_cmd, run_cmd, problemNum);
+        return grade(source_file, compile_cmd,sourceDir, run_cmd, problemNum);
     }
 
     // 0 is AC
@@ -53,7 +54,7 @@ public class ScoreEngine {
     // 2 is runtime error
     // 3 is time limit exceeded
     // 4 is wrong answer
-    public static int grade(String source_file, String compile_cmd, String run_cmd, short problemNum) throws IOException {
+    public static int grade(String source_file, String compile_cmd, String dir, String run_cmd, short problemNum) throws IOException {
         out.printf("Compiling %s\n", source_file);
         out.printf("Compiling %s\n", compile_cmd);
 
@@ -76,7 +77,9 @@ public class ScoreEngine {
         for (Pair x : problem_dir) {
             // out.printf("%s %s\n", x.getKey().getName(), x.getValue().getName());
             File in_file = x.left, ans_file = x.right;
-            Scanner scan = new Scanner(in_file);
+
+            //Symlink the first dat file to the directory
+            Runtime.getRuntime().exec(new String[]{"bash", "-c", "ln -s " + in_file.getAbsolutePath() + " " + dir + DAT_MAP[problemNum-1]});
 
             out.println("------------------------------------");
             out.println("Test Case " + in_file.getName());
@@ -84,14 +87,6 @@ public class ScoreEngine {
             Process r = Runtime.getRuntime().exec(new String[]{"bash", "-c", run_cmd});
             InputStream stdout = r.getInputStream();
             InputStream stderr = r.getErrorStream();
-            OutputStream stdin = r.getOutputStream();
-            PrintWriter stdin_redirect = new PrintWriter(stdin);
-            while (scan.hasNextLine()) {
-                String s = scan.nextLine();
-                stdin_redirect.println(s);
-                // out.println(s);
-            }
-            stdin_redirect.close();
 
             long a = System.currentTimeMillis();
             // terminate after 5 seconds
@@ -100,14 +95,14 @@ public class ScoreEngine {
                 if (!r.waitFor(5, TimeUnit.SECONDS)) {
                     out.println("Time limit exceeded");
                     r.destroyForcibly();
-                    close(stdin, stdout, stderr);
+                    close(stdout, stderr);
                     return 3;
                 }
                 xcode = r.waitFor();
             }
             catch (InterruptedException e) {
                 e.printStackTrace();
-                close(stdin, stdout, stderr);
+                close(stdout, stderr);
                 return 2;
             }
             long b = System.currentTimeMillis();
@@ -123,13 +118,13 @@ public class ScoreEngine {
             if (!errors.equals("")) {
                 out.println("Runtime error");
                 out.println(errors);
-                close(stdin, stdout, stderr);
+                close(stdout, stderr);
                 return 2;
             }
             if (xcode != 0) {
                 out.println("Runtime error");
                 out.println("Program exited with code: " + xcode);
-                close(stdin, stdout, stderr);
+                close(stdout, stderr);
                 return 2;
             }
 
@@ -155,7 +150,7 @@ public class ScoreEngine {
             long c = b - a;
             out.println("Execution time: " + c + " ms");
 
-            close(stdin, stdout, stderr);
+            close(stdout, stderr);
 
             if (judge_code != 0) return 4;
 
@@ -163,8 +158,7 @@ public class ScoreEngine {
         return 0;
     }
 
-    public static void close(OutputStream stdin, InputStream stdout, InputStream stderr) throws IOException {
-        stdin.close();
+    public static void close(InputStream stdout, InputStream stderr) throws IOException {
         stdout.close();
         stderr.close();
     }
@@ -206,13 +200,6 @@ public class ScoreEngine {
      * @return boolean success
      */
     public static int score(short probNum, byte[] bytes, String fPath, short uid, short tid){
-        File temp = new File("doesThisWork.txt");
-        try {
-            temp.createNewFile();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         if(!initialized) initialize();
         if(!initialized) return -1; // An error occurred;
 

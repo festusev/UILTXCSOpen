@@ -98,8 +98,8 @@ public class Submit extends HttpServlet{
                         "<input type=\"file\" accept=\".java,.cpp,.py\" id=\"textfile\"/>" +
                         "<button id=\"submitBtn\" class=\"chngButton\">Submit</button>" +
                         "</form><p id=\"advice\">Download the <a target=\"_blank\" href=\"ProgrammingFiles/programmingPacket.pdf\"" +
-                        " class=\"link\" >problems</a> and the <a href=\"ProgrammingFiles/StudentData.zip\" class=\"link\">data files</a>. Be sure to take input from System.in. Confused? Reread the <a target=\"_blank\" href=\"rules\" class=\"link\">rules</a>.</p></div>" +
-                        "<div id=\"submissionRight\"><div id=\"rightTitle\">Problems</div>" + problemStatusList);
+                        " class=\"link\" >problems</a> and the <a href=\"ProgrammingFiles/StudentData.zip\" class=\"link\">data files</a>. Confused? Reread the <a target=\"_blank\" href=\"rules\" class=\"link\">rules</a>.</p></div>" +
+                        "<div id=\"submissionRight\"><div id=\"rightTitle\">Problems - " +u.team.getProblemScore()+ "pts</div>" + problemStatusList);
         } else {    // Otherwise, display a message saying they must be part of a team to submit
             writer.append("<div class=\"forbidden\">You must belong to a team to submit.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"console\">Join a team here.</a></p></div>");
         }
@@ -143,6 +143,11 @@ public class Submit extends HttpServlet{
         }
 
         // If we are not setting started, then we are taking a file submission
+        if(t.start <= 0) {
+            writer.write("{\"error\":\"You haven't started yet.\"}");
+            return;
+        }
+
         Part filePart = request.getPart("textfile");
         InputStream fileContent = filePart.getInputStream();
 
@@ -174,7 +179,7 @@ public class Submit extends HttpServlet{
             } else if(status == 1) {
                 writer.write("{\"error\":\"A compile time error occurred.\"}");
             } else if(status == 2) {
-                writer.write("{\"error\":\"A runtime error occurred. Be sure to use STDIN.\"}");
+                writer.write("{\"error\":\"A runtime error occurred. Make sure you're using System.in.\"}");
             } else if(status == 3) {
                 writer.write("{\"error\":\"Time limit exceeded.\"}");
             } else if(status == 4) {
