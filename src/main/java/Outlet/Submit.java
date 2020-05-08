@@ -24,6 +24,9 @@ public class Submit extends HttpServlet{
             short status = t.getProblemStatus((short)i);
             String statusQuote = "";
             if(status > 0) {    // They've solved it
+                if(status >= 12) {   // If they have more than 13 submissions, their points will freeze at 5
+                    status = 12;
+                }
                 statusQuote = "Solved (" + (ScoreEngine.MAX_POINTS - (status-1)*5) + "pts)";
             } else {    // It's still unsolved
                 statusQuote = Math.abs(status) + " tries";
