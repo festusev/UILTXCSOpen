@@ -83,6 +83,7 @@ public class Submit extends HttpServlet{
                 short status = u.team.getProblemStatus((short)i);
                 String statusQuote = "";
                 if(status > 0) {    // They've solved it
+                    if(status >= 12) status = 12;    // Set minimum at 5 points
                     statusQuote = "Solved (" + (ScoreEngine.MAX_POINTS - (status-1)*5) + "pts)";
                 } else {    // It's still unsolved
                     statusQuote = Math.abs(status) + " tries";

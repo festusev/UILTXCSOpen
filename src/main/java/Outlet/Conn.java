@@ -29,7 +29,7 @@ public class Conn {
     private static final String USER = "admin";
     private static final String PASS = "1pcdEy31lxTSp6x$";	// TODO Possibly in the future have an admin type this in.
     // private static final String DB_NAME = "uil";
-    private static final String DB_NAME = "uil";
+    private static final String DB_NAME = "comptest";
 
     private static Gson gson = new Gson();
 
@@ -76,18 +76,31 @@ public class Conn {
         }
     }
     public static User getUser(HttpServletRequest request) {
-        User temp = new User();
-        temp.token = getToken(request);
-        int index = Collections.binarySearch(users, temp);
-        if(temp.token != null && index >=0) return users.get(index);
-        return null;
+        return getUser(getToken(request));
     }
     public static User getUser(BigInteger token) {
         if(token == null) return null;
         User temp = new User();
         temp.token = token;
         int index = Collections.binarySearch(users, temp);
-        if(index >= 0) return users.get(index);
+        if(temp.token != null && index >=0) return users.get(index);
+        else {  // Load them from the database
+            try {
+                Connection con = getConnection();
+                if (con == null) return null; // If an error occurred making the connection
+                PreparedStatement stmt = con.prepareStatement("SELECT email,uname, start, questions, points, id, tid FROM users WHERE token=?");
+                stmt.setString(1, temp.token.toString(Character.MAX_RADIX));
+                //LOGGER.info(stmt.toString());
+                ResultSet rs = stmt.executeQuery();
+                if(rs.next()) { // A row matches this email
+                    return loadUser(rs.getString("email"), rs.getString("uname"), rs.getLong("start"), rs.getString("questions"), rs.getShort("points"), temp.token, rs.getShort("id"), rs.getShort("tid"));
+                }
+            }
+            catch (SQLException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
         return null;
     }
     public static Team getLoadedTeam(short tid) {
@@ -144,7 +157,7 @@ public class Conn {
         byte[] salt = generateSalt();
         return Base64.getEncoder().encodeToString(salt) + "." + hashPassword(password, salt);
     }
-    public static void loadUser(String email, String uname, long start, String questions, short points, BigInteger token, short uid, short tid) throws SQLException {
+    public static User loadUser(String email, String uname, long start, String questions, short points, BigInteger token, short uid, short tid) throws SQLException {
         User user = new User();
         user.email = email;
         user.uname = uname;
@@ -166,7 +179,7 @@ public class Conn {
                 /* Now we search the database for the team information based off of the tid. We will load it into
                    the team variable and then add that to the teams list. */
                 Connection conn = getConnection();
-                if (conn == null) return; // If an error occurred making the connection
+                if (conn == null) return null; // If an error occurred making the connection
                 PreparedStatement stmt = conn.prepareStatement("SELECT * FROM teams WHERE id=?");
                 stmt.setShort(1, tid);
                 ResultSet rs = stmt.executeQuery();
@@ -188,6 +201,7 @@ public class Conn {
         user.team = team;
         users.add(user);
         Collections.sort(users);    // TODO: Make this more efficient
+        return user;
     }
 
     /**
@@ -914,9 +928,9 @@ class Team implements Comparable<Team> {
         return score;
     }
     public short getProblemStatus(short probNum){
-
-        return problems.get(probNum);
-
+        if(problems != null && problems.containsKey(probNum))
+            return problems.get(probNum);
+        return 0;
     }
     public short getPts() {
         return (short)(testSum + getProblemScore());
