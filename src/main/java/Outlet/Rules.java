@@ -48,7 +48,7 @@ public class Rules extends HttpServlet{
                 "    <div id=\"column\"><div class=\"row secRow\">\n" +
                 "\n" +
                 "<p class=\"secHead\">General</p><p class=\"secBody\">\n" +
-                "<br><ul><li>Unlike UIL, students register and maintain their own team.</li><li>The multiple choice section is available on May 7th. Choose any 45 minute time period in which to take it. Team members do not have to take it at the same time.</li><li>The programming section is open on May 8th. Each team chooses a 2-hour period in which all members compete.</li><li>Teams are 3 people with no 4th designated tester for logistics reasons.</li><li>You can program in Java, Python, or CPP. The programming packet shows example program names in Java as well as an example input method for assistance.</li><li>If you have any questions, reach out to us at <span class=\"link\">contact@txcsopen.com</span>.</li></ul>" +
+                "<br><ul><li>Unlike UIL, students register and maintain their own team.</li><li>The multiple choice section is available on May 7th. Choose any 45 minute time period in which to take it. Team members do not have to take it at the same time.</li><li>The programming section is open on May 8th. Each team chooses a 2-hour period in which all members compete.</li><li>Teams are 3 people with no 4th designated tester for logistics reasons.</li><li>You can program in Java 11, Python 3, or C++ 17. The programming packet shows example program names in Java as well as an example input method for assistance.</li><li>If you have any questions, reach out to us at <span class=\"link\">contact@txcsopen.com</span>.</li></ul>" +
                 "   </div>" +
                 "<div class=\"row secRow\">\n" +
                 "\n" +
@@ -64,7 +64,7 @@ public class Rules extends HttpServlet{
                 "       <br><span class=\"tab\"></span>The hands on programming portion will be taken as a group of at most three people during any 2 hour long period on May 8th. " +
                 "Competitors will be allowed to code simultaneously on their own machines, and are allowed to use the internet. They can collaborate with their two teammates and nobody else. " +
                 "There will be 18 problems to account for every competitor having their own computer. " +
-                "Each problem is still worth 60 points, and 5 points will be subtracted from the maximum for every unsuccessful attempt.</p>" +
+                "Each problem is still worth 60 points, and 5 points will be subtracted from the maximum for every unsuccessful attempt. Each submission has a time limit of 15 seconds before quitting.</p>" +
                 "   </div>" +
                 "    <div class=\"row secRow\">\n" +
                 "       <p class=\"secHead\">Scoring</p><p class=\"secBody\">" +

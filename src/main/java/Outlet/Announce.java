@@ -33,13 +33,15 @@ public class Announce extends HttpServlet{
                 "    <link rel=\"stylesheet\" href=\"./css/style2.css\">\n" +
                 "    <link rel=\"stylesheet\" href=\"./css/register.css\">\n" +
                 "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
-                "    <script src=\"./js/register.js\"></script>\n" +
                 "</head>\n" +
                 "<body>\n" +
                 "<form method=\"POST\" action=\"announce-qm30b0cwerev8cf3k22d\">" +
                 "<input type=\"text\" value=\"Announcement\" name=\"announcement\">" +
                 "<input type=\"password\" name=\"password\">" +
-                "<input type=\"submit2\">Submit Announcement</input>" +
+                "<input type=\"submit\">Submit Announcement</input>" +
+                "</form>"+
+                "<form method=\"POST\" action=\"announce-qm30b0cwerev8cf3k22d\">" +
+                "<input type=\"submit\" value=\"reloadDat\">Reload Dat Files</input>" +
                 "</form>"+
                 "</body>\n" +
                 "</html>");
@@ -49,6 +51,12 @@ public class Announce extends HttpServlet{
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        if(request.getParameter("reloadDat")!=null) {   // We are re-initializing the dat files
+            ScoreEngine.initialize();
+            response.sendRedirect("index.jsp");
+            return;
+        }
+
         String announcement = request.getParameter("announcement");
         String pass = request.getParameter("password");
 

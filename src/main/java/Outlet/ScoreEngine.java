@@ -7,6 +7,8 @@ import java.util.*;
 import java.io.*;
 import static java.lang.System.out;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ScoreEngine {
     private static final String SCORE_DIR = "/tmp/";
@@ -43,7 +45,7 @@ public class ScoreEngine {
             run_cmd = "cd " + sourceDir + " && python " + source_file;
         }
         else if (language == 2) { // cpp
-            compile_cmd = "cd " + sourceDir + " && g++ " + source_file + " -o " + exe_file;
+            compile_cmd = "cd " + sourceDir + " && g++ -std=c++17 " + source_file + " -o " + exe_file;
             run_cmd = "cd " + sourceDir + " && ./" + exe_file;
         }
         return grade(source_file, compile_cmd,sourceDir, run_cmd, problemNum);
@@ -91,7 +93,7 @@ public class ScoreEngine {
             // terminate after 5 seconds
             int xcode = 0;
             try {
-                if (!r.waitFor(60*5, TimeUnit.SECONDS)) {
+                if (!r.waitFor(15, TimeUnit.SECONDS)) {
                     out.println("Time limit exceeded");
                     r.destroyForcibly();
                     close(stdout, stderr);
@@ -201,7 +203,13 @@ public class ScoreEngine {
         String extension = "";
         String givenFName = Paths.get(fPath).getFileName().toString();
 
+        Pattern pattern = Pattern.compile("\\s");
+        Matcher matcher = pattern.matcher(givenFName);
+        boolean cntWhitespace = matcher.find(); // If the file name contains whitespace
+        if(cntWhitespace) return -10;
+
         int i = givenFName.lastIndexOf('.');
+        if(i<0) return -11; // The file has no extension
         String givenName = givenFName.substring(0, i);    // Removes the extension
         if (i > 0) {
             extension = givenFName.substring(i+1);
@@ -242,7 +250,7 @@ public class ScoreEngine {
                 exe_file = givenName;
                 System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
                 status = run(fileName, exe_file, SCORE_DIR+directory, 0, probNum);
-            } else if (extension.equals(".py")) {
+            } else if (extension.equals("py")) {
                 exe_file= givenName + ".py";
                 System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
                 status = run(fileName, exe_file, SCORE_DIR+directory, 1, probNum);
@@ -250,9 +258,12 @@ public class ScoreEngine {
                 exe_file= givenName + ".out";
                 System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
                 status = run(fileName, exe_file, SCORE_DIR+directory, 2, probNum);
+            } else{
+                return -12; // Incorrect extension
             }
         }catch (Exception e){
             e.printStackTrace();
+            return -1;
         }
 
         return status;

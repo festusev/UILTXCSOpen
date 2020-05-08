@@ -144,7 +144,7 @@ public class MultipleChoice extends HttpServlet{
 
         // If we are not setting started, then we are taking a mc submission
         if(System.currentTimeMillis() - u.start > TIME_LIMIT + 1000*60*2) { // If so, they have exceeded the time limit. Giving them 2 extra minutes in case of technical issues
-            writer.write("{\"error\":\"Time limit exceeded. Submission forfeited. Your score is -80.\"}");
+            writer.write("{\"error\":\"Time limit exceeded. Submission forfeited.\"}");
             return;
         }
         char[] answers = gson.fromJson(request.getParameter("answers"), char[].class);  // An array of length 40 containing all of their answers in order

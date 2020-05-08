@@ -92,4 +92,5 @@ function addScoredBox(box, success) {
         errorBox.innerHTML = success;
         errorBox.className = "success";
     }
+    grabProblems(); // Update the problems list
 }

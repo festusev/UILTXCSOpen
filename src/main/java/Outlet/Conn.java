@@ -177,7 +177,7 @@ public class Conn {
                     team.start = rs.getLong("start");
                     team.testSum = rs.getShort("testSum");
                     team.tid = rs.getShort("id");
-                    team.uids = gson.fromJson(rs.getString("uids"), short[].class);
+                    team.setUids(rs.getString("uids"));
                     teams.add(team);
                     Collections.sort(teams);    // TODO: Make this more efficient
                 }
@@ -229,7 +229,7 @@ public class Conn {
             team.affiliation = rs.getString("affiliation");
             team.setProblems(rs.getString("problems"));
             team.tid = rs.getShort("id");
-            team.uids = gson.fromJson(rs.getString("uids"), short[].class);
+            team.setUids(rs.getString("uids"));
 
             // Finish off by loading the team
             teams.add(team);
@@ -555,7 +555,7 @@ public class Conn {
         if(u.tid>=0){  // If they belong to a team
             u.team.removeUser(u);
             //LOGGER.debug("TEAM LENGTH: " + u.team.uids.length);
-            if(u.team.uids.length<=0) { // If so, remove the team from the scoreboard
+            if(u.team.uids.size()<=0) { // If so, remove the team from the scoreboard
                 Scoreboard.generateScoreboard();
             }
         }
@@ -572,7 +572,7 @@ public class Conn {
         Connection conn = getConnection();
 
         // First, remove the team's tid from all of the team's users
-        if(team.uids.length >= 0) {     // Provided that it has any users
+        if(team.uids.size() >= 0) {     // Provided that it has any users
             // TODO
         }
 
@@ -582,7 +582,7 @@ public class Conn {
             stmt.setShort(1,team.tid);
             int index = Collections.binarySearch(teams, team);
             if(index>=0) teams.remove(index);
-            team.uids = new short[0]; // Set the uids to an empty array
+            team.setUids(new short[0]); // Set the uids to an empty array
             return stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -609,7 +609,7 @@ public class Conn {
             team.tname = tname;
             team.affiliation = affiliation;
             team.setProblems(probMap);
-            team.uids = uids;
+            team.setUids(uids);
             int status = team.updateTeam(hashedPassword);    // Write it into the database
             if(status == -2) {  // this team name is already registered
                 return -2;
@@ -629,20 +629,6 @@ public class Conn {
             captain.tid = tid;
             captain.team = team;
             captain.updateUser(false);   // Change this in the database
-
-            /*if(//LOGGER.isDebugEnabled()) {
-                String loggedIn = "Logged in users: ";
-                for (User u : users) {
-                    loggedIn += "uname:" + u.uname + ", uid:" + u.uid + ", tid:" + u.tid + " - ";
-                }
-                //LOGGER.debug(loggedIn);
-
-                loggedIn = "Logged in teams: ";
-                for (Team t : teams) {
-                    loggedIn += "tname:" + t.tname + ", tid:" + t.tid;
-                }
-                //LOGGER.debug(loggedIn);
-            }*/
 
             // Finally, update the scoreboard
             Scoreboard.generateScoreboard();
@@ -674,6 +660,7 @@ public class Conn {
         }
         int success = team.addUser(user);
         if(success == -2) return -2;    // If the team is full
+        else if(success == 1) return 1; // If they belong to a team
         else if(success!=0) return -8;  // If a server error occurred
 
         user.tid = team.tid;
@@ -688,17 +675,18 @@ public class Conn {
     public static HashMap<String, Short> getTeamUsers(Team team) {
         String selection = "SELECT uname, points FROM users WHERE ";
         if(team == null || team.uids == null) return null;
-        for(int i = 0; i<team.uids.length; i++) {
+        for(int i = 0; i<team.uids.size(); i++) {
             selection += "(id = ?)";
-            if(i < team.uids.length-1) {    // Put OR in between the statements
+            if(i < team.uids.size()-1) {    // Put OR in between the statements
                 selection += " OR ";
             }
         }
         Connection conn = getConnection();
         try {
             PreparedStatement stmt = conn.prepareStatement(selection);
-            for(int c = 0; c<team.uids.length; c++) {   // Set the uids as the ?
-                stmt.setInt(c+1, team.uids[c]);
+            ArrayList<Short> uidsTemp = new ArrayList<>(team.uids);
+            for(int c = 0; c<team.uids.size(); c++) {   // Set the uids as the ?
+                stmt.setInt(c+1, uidsTemp.get(c));
             }
             HashMap<String, Short> users = new HashMap<>();
             //LOGGER.info(stmt.toString());
@@ -742,10 +730,10 @@ public class Conn {
                 t.start = rs.getLong("start");
                 t.testSum = rs.getShort("testSum");
                 t.tid = rs.getShort("id");
-                t.uids = gson.fromJson(rs.getString("uids"), short[].class);
+                t.setUids(rs.getString("uids"));
                 allTeams.add(t);
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -902,7 +890,7 @@ class Team implements Comparable<Team> {
     private HashMap<Short, Short> problems;
     public long start = -1;
     public short testSum = 0;
-    public short[] uids;  // The user at index 0 is the team captain and has special privileges
+    public Set<Short> uids;  // The user at index 0 is the team captain and has special privileges
     public short tid;
     private static Gson gson = new Gson();
 
@@ -918,6 +906,9 @@ class Team implements Comparable<Team> {
         Set<Short> keys = problems.keySet();
         for(short s: keys) {
             short tries = problems.get(s);
+            if(tries >= 12) {   // If they have more than 13 submissions, their points will freeze at 5
+                tries = 12;
+            }
             if(tries>0) score += 60 - (tries-1)*5;  // If they have solved a problem. Do (tries-1) so if they solved it in 1 try they get full points
         }
         return score;
@@ -954,6 +945,16 @@ class Team implements Comparable<Team> {
                  problems.put(i, (short)0);
              }
         }
+    }
+    public void setUids(short[] temp) {
+        uids = new HashSet<>();
+        for(short uid: temp) {
+            uids.add(uid);
+        }
+    }
+    public void setUids(String s) {
+        short[] temp = gson.fromJson(s, short[].class);
+        setUids(temp);
     }
     public void setProblems(HashMap<Short, Short> p) {
         problems = p;
@@ -1026,37 +1027,18 @@ class Team implements Comparable<Team> {
         }
     }
     public int addUser(User u) {
-        if(uids.length >= 3) {  // The team is full
+
+        if(uids.size() >= 3) {  // The team is full
             return -2;
         }
-        short[] newUids = new short[uids.length+1];   // We have to create a new array to add the user
-
-        // First fill in the existing users
-        for(int i=0; i<uids.length; i++) {
-            newUids[i] = uids[i];
-        }
-        newUids[uids.length] = u.uid;   // Now add in the new user
-        uids = newUids;
+        uids.add(u.uid);
         return updateTeam();
     }
     public void removeUser(User u) {
-        if(uids.length-1<=0) {   // If The team only has one user, delete the team.
+        if(uids.size()-1<=0) {   // If The team only has one user, delete the team.
             Conn.delTeam(this);
         } else {
-            short[] newUids = new short[uids.length - 1]; // The new list of uids
-
-            int oc = 0;   // The counter for the position in the old array
-            int nc = 0;   // The counter for the position in the new array
-            while (oc < uids.length) {
-                if (uids[oc] == u.uid) {   // If we have found the location of the user to be deleted in the team array
-                    oc++;
-                } else {    // Otherwise, copy over the uid.
-                    newUids[nc] = uids[oc];
-                    oc++;
-                    nc++;
-                }
-            }
-            uids = newUids;
+            uids.remove(u.uid);
 
             // Remove their test score as well
             testSum -= u.points;

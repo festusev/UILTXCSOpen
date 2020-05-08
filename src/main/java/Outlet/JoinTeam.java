@@ -47,6 +47,9 @@ public class JoinTeam extends HttpServlet {
                 writer.write("{\"error\":\"Team doesn't exist.\"}");
             } else if(status ==-2) {    // The team is full
                 writer.write("{\"error\":\"This team is full.\"}");
+            } else if(status ==1) { // They already belong to this team
+                writer.write("{\"error\":\"You already belong to this team!\"}");
+                return;
             } else if(status !=0) {
                 writer.write("{\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
             }

@@ -149,7 +149,6 @@ public class Submit extends HttpServlet{
         }
 
         String getproblems = request.getParameter("grabproblems");
-        System.out.println("Get Problems: " + getproblems);
         if(getproblems!=null && getproblems.equals("true")) {
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
@@ -215,7 +214,16 @@ public class Submit extends HttpServlet{
                 writer.write("{\"error\":\"Wrong answer.\"}");
             }
         }
-        else {
+        else if(status == -10) {    // The fname contains whitespace
+            writer.write("{\"error\":\"Filename cannot contain whitespace.\"}");
+            return;
+        } else if(status == -11) {  // The fname has no extension
+            writer.write("{\"error\":\"Your file must have an extension.\"}");
+            return;
+        } else if(status == -12) {  // The fname has a wrong extension.
+            writer.write("{\"error\":\"Only .cpp, .py., and .java files are supported.\"}");
+            return;
+        }  else {
             writer.write("{\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
             return;
         }
