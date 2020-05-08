@@ -207,7 +207,7 @@ public class Submit extends HttpServlet{
             } else if(status == 1) {
                 writer.write("{\"error\":\"A compile time error occurred.\"}");
             } else if(status == 2) {
-                writer.write("{\"error\":\"A runtime error occurred. Make sure you're using System.in.\"}");
+                writer.write("{\"error\":\"A runtime error occurred.\"}");
             } else if(status == 3) {
                 writer.write("{\"error\":\"Time limit exceeded.\"}");
             } else if(status == 4) {

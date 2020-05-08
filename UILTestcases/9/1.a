@@ -1,4 +1,4 @@
---Data Sorted---
+---Data Sorted---
 BMW X4 2014
 Chevy Cruze 2009
 Chevy Cruze 2019
@@ -30,7 +30,6 @@ Nissan Altima 2017
 Nissan Rogue 2017
 Toyota Camry 2006
 Toyota Camry 2009
-
 Toyota Tacoma 2018
 Toyota Tacoma 2019
 Toyota Tundra 2008
@@ -64,7 +63,6 @@ Charger: 1
 Civic: 1
 Cruze: 2
 Durango: 1
-
 Edge: 1
 Explorer: 2
 F150: 4
@@ -95,3 +93,4 @@ X4: 1
 2018: 4
 2019: 5
 2020: 1
+
