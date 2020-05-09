@@ -11,11 +11,11 @@
     <param-name>log4j-config-location</param-name>
     <param-value>WEB-INF/log4j2.properties</param-value>
   </context-param>
-  <servlet>
+  <!--<servlet>
     <servlet-name>Login</servlet-name>
     <servlet-class>Outlet.Login</servlet-class>
     <load-on-startup>1</load-on-startup>
-  </servlet>
+  </servlet>-->
   <error-page>
     <error-code>404</error-code>
     <location>/Error404.jsp</location>
@@ -36,17 +36,17 @@
     <servlet-class>Outlet.Register</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>-->
-  <servlet>
+  <!--<servlet>
     <servlet-name>Console</servlet-name>
     <servlet-class>Outlet.Console</servlet-class>
     <load-on-startup>1</load-on-startup>
-  </servlet>
+  </servlet>-->
   <servlet>
     <servlet-name>Scoreboard</servlet-name>
     <servlet-class>Outlet.Scoreboard</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
-  <servlet>
+  <!--<servlet>
     <servlet-name>Logout</servlet-name>
     <servlet-class>Outlet.Logout</servlet-class>
     <load-on-startup>1</load-on-startup>
@@ -91,31 +91,31 @@
       <max-request-size>10485760</max-request-size>
       <file-size-threshold>0</file-size-threshold>
     </multipart-config>
-  </servlet>
+  </servlet>-->
   <servlet>
     <servlet-name>Rules</servlet-name>
     <servlet-class>Outlet.Rules</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
-  <servlet>
+  <!--<servlet>
     <servlet-name>MultipleChoice</servlet-name>
     <servlet-class>Outlet.MultipleChoice</servlet-class>
     <load-on-startup>1</load-on-startup>
-  </servlet>
+  </servlet>-->
   <servlet>
     <servlet-name>Announce</servlet-name>
     <servlet-class>Outlet.Announce</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
-  <servlet-mapping>
+  <!--<servlet-mapping>
     <servlet-name>Login</servlet-name>
     <url-pattern>/login</url-pattern>
-  </servlet-mapping>
+  </servlet-mapping>-->
   <!--<servlet-mapping>
     <servlet-name>Outlet.Register</servlet-name>
     <url-pattern>/register</url-pattern>
   </servlet-mapping>-->
-  <servlet-mapping>
+  <!--<servlet-mapping>
     <servlet-name>Console</servlet-name>
     <url-pattern>/console</url-pattern>
   </servlet-mapping>
@@ -142,27 +142,27 @@
   <servlet-mapping>
     <servlet-name>DeleteUser</servlet-name>
     <url-pattern>/delete-user</url-pattern>
-  </servlet-mapping>
+  </servlet-mapping>-->
   <servlet-mapping>
     <servlet-name>Scoreboard</servlet-name>
     <url-pattern>/scoreboard</url-pattern>
   </servlet-mapping>
-  <servlet-mapping>
+  <!--<servlet-mapping>
     <servlet-name>Submit</servlet-name>
     <url-pattern>/programming</url-pattern>
-  </servlet-mapping>
+  </servlet-mapping>-->
   <servlet-mapping>
     <servlet-name>Rules</servlet-name>
     <url-pattern>/rules</url-pattern>
   </servlet-mapping>
-  <servlet-mapping>
+  <!--<servlet-mapping>
     <servlet-name>Verify</servlet-name>
     <url-pattern>/verify</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>MultipleChoice</servlet-name>
     <url-pattern>/multiple-choice</url-pattern>
-  </servlet-mapping>
+  </servlet-mapping>-->
   <servlet-mapping>
     <servlet-name>Announce</servlet-name>
     <url-pattern>/announce-qm30b0cwerev8cf3k22d</url-pattern>

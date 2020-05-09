@@ -64,7 +64,7 @@ public class Dynamic {
                         "      <li class=\"nav-item\">\n" +
                         "            <a class=\"nav-link\" href=\"/\">TXCSOpen</a>\n" +
                         "       </li>\n" +
-                        "    </ul>\n" +
+                        "    </ul>\n" + /*
                         "    <ul id=\"right-nav\">\n" +
                         "      <li class=\"nav-item\">\n" +
                         "        <a class=\"nav-link\" href=\"register\">Register</a>\n" +
@@ -72,7 +72,7 @@ public class Dynamic {
                         "      <li class=\"nav-item\">\n" +
                         "        <a class=\"nav-link\" href=\"login\">Login</a>\n" +
                         "      </li>\n" +
-                        "    </ul>\n" +
+                        "    </ul>\n" +*/
                         "  </nav>" +
                         DROPDOWN +
                         "      <li class=\"drop-nav-item\">\n" +
@@ -82,11 +82,12 @@ public class Dynamic {
                         "            <a class=\"nav-link\" href=\"rules\">Rules</a>\n" +
                         "       </li>\n" +
                         "      <li class=\"drop-nav-item\">\n" +
-                        "        <a class=\"nav-link\" href=\"register\">Register</a>\n" +
+                        /*"        <a class=\"nav-link\" href=\"register\">Register</a>\n" +
                         "      </li>\n" +
                         "      <li class=\"drop-nav-item\">\n" +
                         "        <a class=\"nav-link\" href=\"login\">Login</a>\n" +
-                        "      </li></ul></div>" +announcement;
+                        "      </li>"*/
+                        "       </ul></div>" +announcement;
     }
     public static String loadNav(HttpServletRequest request, String pageName){
         if(Conn.isLoggedIn(request)) return loadLoggedInNav(request, pageName);

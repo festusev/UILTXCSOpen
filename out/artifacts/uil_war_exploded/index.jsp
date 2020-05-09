@@ -31,9 +31,10 @@
   <div class="row" id="headRow">
     <div class="center" id="first-row">
       <div id="body-title"><div><img alt="LASACSClub" src="res/lasacslogo_dark.svg"></div></div>
-      <%=
+      <div id="countdownCnt">The Competition Has Ended!</div>
+      <!--<%=
       Dynamic.loadCountdown()
-      %>
+      %>-->
       <div id="body-description">Official UIL may be canceled, but you can still compete! UIL by TXCSOpen is an online verison of Computer Science UIL created by LASA CS. The format is slightly altered to accommodate for competing remotely. The competition is open from May 7th at 12am to May 8th at 11:59pm. Unlike UIL, students sign up and manage their own team. Check the <a href="rules" class="link">rules</a> page for more information.</div>
       <button id="getStarted" onclick="window.location.href='register';">Get Started</button>
     </div>
