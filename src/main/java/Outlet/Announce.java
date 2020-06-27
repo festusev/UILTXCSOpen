@@ -1,14 +1,12 @@
 package Outlet;
+import Outlet.uil.ScoreEngine;
+
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.math.BigInteger;
 import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import java.util.logging.Logger;
 
 /***
  * The page that lets me create server-wide announcements.

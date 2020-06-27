@@ -2,8 +2,10 @@ package Outlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -40,11 +42,9 @@ public class Console extends HttpServlet{
                     "                <p class=\"secTitle\" id=\"memConfTitle\">Current Team Members</p>\n" +
                     "                <div class=\"secBody\">\n" +
                     "                    <ul id=\"memList\">\n";
-            HashMap<String,Short> users = Conn.getTeamUsers(uTeam);
-            Set<String> userNames = users.keySet();
-            for(String uname: userNames) {
-                String points ="" + (users.get(uname) >= MultipleChoice.NUM_PROBLEMS*MultipleChoice.INCORRECT_PTS?(""+users.get(uname) + "/"+(MultipleChoice.NUM_PROBLEMS*MultipleChoice.CORRECT_PTS)):"No MC score");
-                tSection += "                        <li class=\"memName\">" + uname + " - " + points + "</li>\n";
+            HashSet<String> users = Conn.getTeamUsers(uTeam);
+            for(String uname: users) {
+                tSection += "                        <li class=\"memName\">" + uname + "</li>\n";
             }
             tSection +=        "                    </ul>\n" +
                     "                </div>\n" +
@@ -63,7 +63,6 @@ public class Console extends HttpServlet{
                     "            </div>\n" +
                     "        </div>\n" +
                     "    </div>\n";
-            tPoints = "<p id=\"distWon\" class=\"scorePart\">" + uTeam.getPts() + "<span>Team Score</span></p>\n";
         } else {    // They do not belong to a team
             tName = "No Team";
             tPoints = "<p id=\"distWon\"></p>";
@@ -102,23 +101,16 @@ public class Console extends HttpServlet{
         writer.append(
                 "<html>\n" +
                 "<head>\n" +
-                "    <title>Console - TXCSOpen</title>\n" +
-                "    <meta charset=\"utf-8\">\n" +
-                "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n" +
-                        "<link rel=\"icon\" type=\"image/png\" href=\"res/icon.png\">" +
-                "    <link rel=\"stylesheet\" href=\"./css/bootstrap.min.css\">\n" +
-                "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&amp;family=Work+Sans&amp;display=swap\" rel=\"stylesheet\">" +
-                "    <link rel=\"stylesheet\" href=\"./css/style2.css\">\n" +
+                "    <title>Console - TXCSOpen</title>\n" + Dynamic.loadHeaders()+
                 "    <link rel=\"stylesheet\" href=\"./css/console.css\">\n" +
                 "    <script src=\"./js/console.js\"></script>\n" +
                 "</head>\n" +
                 "<body>\n" +
-                Dynamic.loadLoggedInNav(request, PAGE_NAME) +
+                Dynamic.loadLoggedInNav() +
                 "    <div class=\"row\" id=\"infoRow\">\n" +
                 "        <div id=\"userInfo\">\n" +
                 "            <p id=\"username\">" +uData.uname + "</p>\n" +
                 "            <p id=\"team\">" + tName + "</p>\n" +
-                        tPoints +
                 "        </div>\n" +
                 "    </div>\n" +
                         tSection +
@@ -147,9 +139,6 @@ public class Console extends HttpServlet{
                 "            </div>\n" +
                 "        </div>\n" +
                 "    </div>\n" +
-                        Dynamic.loadLeftFlair() +
-                        Dynamic.loadRightFlair()+
-                        Dynamic.loadCopyright() +
                 "</body>\n" +
                 "</html>");
     }

@@ -1,11 +1,12 @@
 package Outlet;
 
-import com.sun.org.apache.xpath.internal.operations.Mult;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import Outlet.challenge.Challenge;
+import Outlet.uil.CS;
+
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.SQLException;
 import java.util.*;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -20,13 +21,16 @@ public class Scoreboard extends HttpServlet{
     private static String preNav="";   // The scoreboard html before the dynamic navigation
     private static String postNav="";   // The scoreboard html after the dynamic navigation
     private static final short NUMGRAPHED = 7;  // The number of teams to graph
-    private static final double START_DATE = 5;
-    //private static final Logger LOGGER = LogManager.getLogger(Scoreboard.class);
-    private static final String PAGE_NAME = "scoreboard";
+    private static boolean initialized = false;
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        if(!initialized) {
+            Scoreboard.generateScoreboard();
+            initialized = true;
+        }
+
         // set response headers
         response.setContentType("text/html");
         response.setCharacterEncoding("UTF-8");
@@ -34,64 +38,77 @@ public class Scoreboard extends HttpServlet{
 
         if(preNav.isEmpty() || postNav.isEmpty())
             generateScoreboard();
-        writer.append(preNav + Dynamic.loadNav(request, PAGE_NAME) + postNav);
+        writer.append(preNav + Dynamic.loadNav(request) + postNav);
     }
 
     /**
      * Store the scoreboard html so that it doesn't need to be recreated every time
      */
     public static void generateScoreboard() {
-        //LOGGER.info("--- GENERATING SCOREBOARD ----");
-        // Get a json encoded string of all of the teams
+        HashMap<Short, Double> challengeZScores = null;
+        HashMap<Short, Double> csZScores = null;
+        try {
+            challengeZScores = Challenge.template.end();
+            csZScores = CS.template.end();
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+            return;
+        }
+
         ArrayList<Team> teams = Conn.getAllTeams();
-        Collections.sort(teams, new SortTeams());
 
-        int maxTestSum = MultipleChoice.NUM_PROBLEMS * MultipleChoice.CORRECT_PTS;
-        int maxProbSum = ScoreEngine.NUM_PROBLEMS * ScoreEngine.MAX_POINTS;
-        double maxScore = maxProbSum + maxTestSum;
-
-        // The table row list of teams in order of points
-        String teamList = "";
-        int rank = 1;
+        ArrayList<ZTeam> zTeams = new ArrayList<>();
         for(Team t: teams) {
-            teamList+="<tr><td>" + rank + "</td><td>" + t.tname + "</td><td>" + t.affiliation + "</td>" +
-                    "<td class=\"bar\"><div class=\"testSum\" style=\"width:calc(50% * "+(t.testSum/maxScore)+");\" title=\""+t.testSum+"\"></div><div class=\"probSum\" style=\"width:"+
-                    "calc(50% *"+(t.getProblemScore()/maxScore)+");\" title=\""+t.getProblemScore()+"\"></div><div class=\"numScore\" style=\"box-shadow:none;\">"+t.getPts()+"</div></td></tr>";
-            rank ++;
+            int zScore = 0;
+            if(t.comps.containsKey(1)) {
+                zScore += csZScores.get(t.tid);
+            }
+            if(t.comps.containsKey(2)) {
+                zScore += challengeZScores.get(t.tid);
+            }
+            zTeams.add(new ZTeam(t, zScore));
         }
+        Collections.sort(zTeams);
 
-        String script = ""; // Set to empty string if registration is not open
-        String body = "";
-        if(Dynamic.competitionOpen()) {
-            body = "<div id=\"upperHalf\" class=\"row\"><p id=\"center\">Scoreboard</p></div>" +
-                    "<div id=\"column\"><table id=\"teamList\"><tr><th>Rank</th><th>Team Name</th><th>Affiliation</th><th>MC Score - Programming Score</th>" +
-                    "</tr>" + teamList + "</table></div>";
-        } else {
-            body = "<style>#copyright_notice{position:fixed;}body{overflow:hidden;}</style><div class=\"forbidden\">The Scoreboard is Closed Until the Competition Begins.<p class=\"forbiddenRedirect\"><a class=\"link\" href=\"index.jsp\">Click Here to Go back.</a></p></div>";
+        String teamList =
+                "<table id=\"teamList\"><tr><th>#</th><th>Team</th><th>Affiliation</th><th></th><th class=\"right\">Total Score</th>" +
+                "</tr>";
+        int rank=1;
+        for(ZTeam t: zTeams) {
+            teamList += "<tr><td>" + rank + "</td><td>" + t.team.tname + "</td><td>" + t.team.affiliation + "</td>" +
+                    "<td></td><td class=\"right\">" + t.zScore + "</td></tr>";
+            rank++;
         }
-
         // create HTML
         preNav= "<html>\n" +
                         "<head>\n" +
-                        "    <title>Scoreboard - TXCSOpen</title>\n" +
-                        "    <meta charset=\"utf-8\">\n" +
-                        "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n" +
-                        "<link rel=\"icon\" type=\"image/png\" href=\"res/icon.png\">" +
-                        "    <link rel=\"stylesheet\" href=\"./css/bootstrap.min.css\">\n" +
-                        "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
-                        "    <link rel=\"stylesheet\" href=\"./css/style2.css\">\n" +
+                        "    <title>Scoreboard - TXCSOpen</title>\n" + Dynamic.loadHeaders() +
                         "    <link rel=\"stylesheet\" href=\"./css/scoreboard.css\">\n" +
-                        "</head>\n" +
-                        "<body>\n";
-        postNav=        body+
-                        Dynamic.loadLeftFlair() +
+                        "</head>\n";
+        postNav =       "<body><div class='column' id='scoreboardColumn'><h1>Scoreboard</h1><h2>Sum of competition <a href='https://www.statisticshowto.com/probability-and-statistics/z-score/'>z-scores</a> for each team.</h2>" +
+                        teamList + "</table></div>"+
                         "</body>\n" +
                         "</html>";
+    }
+}
+
+/**
+ * A simple wrapper that adds in zScore and allows teams to be sorted by it
+ */
+class ZTeam implements Comparable<ZTeam>{
+    Team team;
+    int zScore;
+    public ZTeam(Team team, int zScore) {
+        this.team = team; this.zScore = zScore;
+    }
+    public int compareTo(ZTeam otherTeam){
+        return otherTeam.zScore - zScore;
     }
 }
 class SortTeams implements Comparator<Team>
 {
     public int compare(Team a, Team b) {
-        return b.getPts()-a.getPts();
+        return 1; //b.getPts()-a.getPts();
     }
 }

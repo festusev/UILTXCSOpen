@@ -1,63 +1,25 @@
 body{
     overflow-y:scroll;
 }
+#scoreboardColumn{
+    width:60%;
+    margin:auto;
+    padding-top:2em;
+}
+#scoreboardColumn h1{
+    font-weight:bold;
+    font-family:var(--head-font);
+    color:var(--prim-light);
+}
+#scoreboardColumn h2{
+    font-size:1rem;
+}
 #teamList{
     margin:auto;
+    text-align: left;
 }
-#teamList th{
-    font-size:1.2em;
-    color:var(--sec-col);
-}
-td{
-    padding:0 10px;
-}
-tr{
-    height:3.5em;
-    font-size:1.2em;
-}
-th:first-child{
-    width:3.5em;
-}
-td:last-child{
-    display:none;
-}
-th:last-child{
-    display:none;
-}
-#column{
-    background-color:white;
-    padding:1em 2em;
-    margin-top:3em;
-}
-.bar{
-    width:50%;
-}
-.bar div{
-    display:inline-block;
-    height:1.5em;
-    cursor:pointer;
-}
-.bar div:hover{
-    box-shadow:0 0 4px 1px rgba(0,0,0,0.2);
-}
-.probSum{
-    background-color:var(--sec-col);
-}
-.testSum{
-    background-color:var(--prim-light);
-}
-.numScore{
-    cursor:auto !important;
-    padding-left:10px;
-    margin-top:-37px;
-}
-#center{
-    margin:auto;
-    font-size:3em;
-    color:var(--head-col);
-}
-#upperHalf{
-    padding:4em;
+#teamList th:last-of-type{
+    width:10em;
 }
 @media only screen and (min-width:770px) {
     td:last-child{
@@ -81,18 +43,6 @@ th:last-child{
         z-index:0;
         position:relative;
     }
-    #linechart_material{
-        position:relative;
-        display:block;
-        z-index:100;
-        background-color:white;
-        border-bottom:none;
-        box-shadow:0 10px 10px -10px rgba(0,0,0,.12);
-    }
-    #linechart_material div{
-        margin:auto;
-    }
-
 }
 @media only screen and (min-width: 1050px) {
     #column{

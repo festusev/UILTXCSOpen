@@ -1,6 +1,7 @@
 package Outlet;
 
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -24,19 +25,11 @@ public class Rules extends HttpServlet{
         PrintWriter writer = response.getWriter();
         writer.append("<html>\n" +
                 "<head>\n" +
-                "    <title>Rules - TXCSOpen</title>\n" +
-                "    <meta charset=\"utf-8\">\n" +
-                "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n" +
-                "<link rel=\"icon\" type=\"image/png\" href=\"res/icon.png\">" +
-                "    <link rel=\"stylesheet\" href=\"./css/bootstrap.min.css\">\n" +
-                "    <link rel=\"stylesheet\" href=\"./css/style2.css\">\n" +
+                "    <title>Rules - TXCSOpen</title>\n" + Dynamic.loadHeaders() +
                 "    <link rel=\"stylesheet\" href=\"./css/rules.css\">\n" +
-                "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
-                "    <script src=\"./js/jquery.min.js\"></script>\n" +
-                "    <script src=\"js/connect.js\"></script>\n" +
                 "</head>\n" +
                 "<body>\n" +
-                Dynamic.loadNav(request, PAGE_NAME) +
+                Dynamic.loadNav(request) +
                 "    <div class=\"row\" id=\"upperHalf\">\n" +
                 "        <div class=\"center\">\n" +
                 "            <div id=\"body-header\">\n" +

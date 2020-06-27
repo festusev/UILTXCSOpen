@@ -11,11 +11,8 @@
     <param-name>log4j-config-location</param-name>
     <param-value>WEB-INF/log4j2.properties</param-value>
   </context-param>
-  <!--<servlet>
-    <servlet-name>Login</servlet-name>
-    <servlet-class>Outlet.Login</servlet-class>
-    <load-on-startup>1</load-on-startup>
-  </servlet>-->
+
+  <!-- Error Pages -->
   <error-page>
     <error-code>404</error-code>
     <location>/Error404.jsp</location>
@@ -31,59 +28,142 @@
   <error-page>
     <location>/ErrorDefault.jsp</location>
   </error-page>
-  <!--<servlet>
+
+  <!-- Servlets -->
+  <servlet>
+    <servlet-name>Login</servlet-name>
+    <servlet-class>Outlet.Login</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Login</servlet-name>
+    <url-pattern>/login</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
     <servlet-name>Outlet.Register</servlet-name>
     <servlet-class>Outlet.Register</servlet-class>
     <load-on-startup>1</load-on-startup>
-  </servlet>-->
-  <!--<servlet>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Outlet.Register</servlet-name>
+    <url-pattern>/register</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
     <servlet-name>Console</servlet-name>
     <servlet-class>Outlet.Console</servlet-class>
     <load-on-startup>1</load-on-startup>
-  </servlet>-->
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Console</servlet-name>
+    <url-pattern>/console</url-pattern>
+  </servlet-mapping>
+
   <servlet>
     <servlet-name>Scoreboard</servlet-name>
     <servlet-class>Outlet.Scoreboard</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
-  <!--<servlet>
+  <servlet-mapping>
+    <servlet-name>Scoreboard</servlet-name>
+    <url-pattern>/scoreboard</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
     <servlet-name>Logout</servlet-name>
     <servlet-class>Outlet.Logout</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
+  <servlet-mapping>
+    <servlet-name>Logout</servlet-name>
+    <url-pattern>/logout</url-pattern>
+  </servlet-mapping>
+
   <servlet>
     <servlet-name>CreateTeam</servlet-name>
     <servlet-class>Outlet.CreateTeam</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
+  <servlet-mapping>
+    <servlet-name>CreateTeam</servlet-name>
+    <url-pattern>/create-team</url-pattern>
+  </servlet-mapping>
+
   <servlet>
     <servlet-name>JoinTeam</servlet-name>
     <servlet-class>Outlet.JoinTeam</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
+  <servlet-mapping>
+    <servlet-name>JoinTeam</servlet-name>
+    <url-pattern>/join-team</url-pattern>
+  </servlet-mapping>
+
   <servlet>
     <servlet-name>UpdateUserPassword</servlet-name>
     <servlet-class>Outlet.UpdateUserPassword</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
+  <servlet-mapping>
+    <servlet-name>UpdateUserPassword</servlet-name>
+    <url-pattern>/update-user-pass</url-pattern>
+  </servlet-mapping>
+
   <servlet>
     <servlet-name>UpdateTeamPassword</servlet-name>
     <servlet-class>Outlet.UpdateTeamPassword</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
+  <servlet-mapping>
+    <servlet-name>UpdateTeamPassword</servlet-name>
+    <url-pattern>/update-team-pass</url-pattern>
+  </servlet-mapping>
+
   <servlet>
     <servlet-name>DeleteUser</servlet-name>
     <servlet-class>Outlet.DeleteUser</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
+  <servlet-mapping>
+    <servlet-name>DeleteUser</servlet-name>
+    <url-pattern>/delete-user</url-pattern>
+  </servlet-mapping>
+
   <servlet>
     <servlet-name>Verify</servlet-name>
     <servlet-class>Outlet.Verify</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
+  <servlet-mapping>
+    <servlet-name>Verify</servlet-name>
+    <url-pattern>/verify</url-pattern>
+  </servlet-mapping>
+
   <servlet>
-    <servlet-name>Submit</servlet-name>
-    <servlet-class>Outlet.Submit</servlet-class>
+    <servlet-name>Announce</servlet-name>
+    <servlet-class>Outlet.Announce</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Announce</servlet-name>
+    <url-pattern>/announce-qm30b0cwerev8cf3k22d</url-pattern>
+  </servlet-mapping>
+
+  <!-- Begin UIL Servlets -->
+  <servlet>
+    <servlet-name>UIL</servlet-name>
+    <servlet-class>Outlet.uil.UIL</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>UIL</servlet-name>
+    <url-pattern>/uil</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>UIL_CS</servlet-name>
+    <servlet-class>Outlet.uil.CS</servlet-class>
     <load-on-startup>1</load-on-startup>
     <multipart-config>
       <location>/usr/share/jetty9/TXCSSubmissions/</location>
@@ -91,80 +171,26 @@
       <max-request-size>10485760</max-request-size>
       <file-size-threshold>0</file-size-threshold>
     </multipart-config>
-  </servlet>-->
-  <servlet>
-    <servlet-name>Rules</servlet-name>
-    <servlet-class>Outlet.Rules</servlet-class>
-    <load-on-startup>1</load-on-startup>
   </servlet>
-  <!--<servlet>
-    <servlet-name>MultipleChoice</servlet-name>
-    <servlet-class>Outlet.MultipleChoice</servlet-class>
-    <load-on-startup>1</load-on-startup>
-  </servlet>-->
+  <servlet-mapping>
+    <servlet-name>UIL_CS</servlet-name>
+    <url-pattern>/uil/cs</url-pattern>
+  </servlet-mapping>
+
+  <!-- Challenge Servlet -->
   <servlet>
-    <servlet-name>Announce</servlet-name>
-    <servlet-class>Outlet.Announce</servlet-class>
+    <servlet-name>Challenge</servlet-name>
+    <servlet-class>Outlet.challenge.Challenge</servlet-class>
     <load-on-startup>1</load-on-startup>
+    <multipart-config>
+      <location>/usr/share/jetty9/TXCSSubmissions/</location>
+      <max-file-size>30485760</max-file-size>
+      <max-request-size>30485760</max-request-size>
+      <file-size-threshold>0</file-size-threshold>
+    </multipart-config>
   </servlet>
-  <!--<servlet-mapping>
-    <servlet-name>Login</servlet-name>
-    <url-pattern>/login</url-pattern>
-  </servlet-mapping>-->
-  <!--<servlet-mapping>
-    <servlet-name>Outlet.Register</servlet-name>
-    <url-pattern>/register</url-pattern>
-  </servlet-mapping>-->
-  <!--<servlet-mapping>
-    <servlet-name>Console</servlet-name>
-    <url-pattern>/console</url-pattern>
-  </servlet-mapping>
   <servlet-mapping>
-    <servlet-name>Logout</servlet-name>
-    <url-pattern>/logout</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-    <servlet-name>CreateTeam</servlet-name>
-    <url-pattern>/create-team</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-    <servlet-name>JoinTeam</servlet-name>
-    <url-pattern>/join-team</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-    <servlet-name>UpdateTeamPassword</servlet-name>
-    <url-pattern>/update-team-pass</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-    <servlet-name>UpdateUserPassword</servlet-name>
-    <url-pattern>/update-user-pass</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-    <servlet-name>DeleteUser</servlet-name>
-    <url-pattern>/delete-user</url-pattern>
-  </servlet-mapping>-->
-  <servlet-mapping>
-    <servlet-name>Scoreboard</servlet-name>
-    <url-pattern>/scoreboard</url-pattern>
-  </servlet-mapping>
-  <!--<servlet-mapping>
-    <servlet-name>Submit</servlet-name>
-    <url-pattern>/programming</url-pattern>
-  </servlet-mapping>-->
-  <servlet-mapping>
-    <servlet-name>Rules</servlet-name>
-    <url-pattern>/rules</url-pattern>
-  </servlet-mapping>
-  <!--<servlet-mapping>
-    <servlet-name>Verify</servlet-name>
-    <url-pattern>/verify</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-    <servlet-name>MultipleChoice</servlet-name>
-    <url-pattern>/multiple-choice</url-pattern>
-  </servlet-mapping>-->
-  <servlet-mapping>
-    <servlet-name>Announce</servlet-name>
-    <url-pattern>/announce-qm30b0cwerev8cf3k22d</url-pattern>
+    <servlet-name>Challenge</servlet-name>
+    <url-pattern>/challenge</url-pattern>
   </servlet-mapping>
 </web-app>

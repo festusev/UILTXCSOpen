@@ -19,7 +19,7 @@ function register() {
             if (xhr.status == 200) { // If an error occurred
                 var response = JSON.parse(xhr.responseText);
                 if(Object.keys(response).includes("success")) {
-                    document.getElementById("upperHalf").innerHTML = response["success"].replace("EMAIL_REPLACE", email.value);
+                    document.getElementById("center").innerHTML = response["success"].replace("EMAIL_REPLACE", email.value);
                     code = document.getElementById("code");
                     regBox = document.getElementById("codeErrorBox");    // So that addErrorBox works correctly
                     errorBox = null;

@@ -2,10 +2,6 @@ body{
   overflow-y:scroll;
   padding-bottom:1.5em;
 }
-input{
-  border-radius:0;
-  padding-left:10px;
-}
 .row{
   background-color:transparent;
   border: none;
@@ -42,7 +38,7 @@ input{
   font-size:1em;
 }
 #delAccount button{
-  margin-top:8px;
+  /*! margin-top:8px; */
   background-color:var(--warn-col);
 }
 #delAccount button:hover{
@@ -50,9 +46,12 @@ input{
 }
 input{
   width:100%;
+  padding-left:10px;
+  display:inline;
 }
 label{
   width:100%;
+  display:block;
 }
 #team{
   color:var(--sec-dark);
@@ -106,15 +105,15 @@ label{
 @media only screen and (min-width: 650px){
   label{
     width:50%;
+    display: inline-block;
   }
   input{
     display:inline-block;
-    float:right;
-    width:50%;
+    width:48%;
   }
 
   .chngButton{
-    margin:0;
+    /*! margin:0; */
   }
 }
 @media only screen and (min-width: 900px){
@@ -140,9 +139,6 @@ label{
   }
   #myPass{
     width:29em;
-  }
-  #myPass input{
-    float:right;
   }
   #delAccount{
     width:25em;

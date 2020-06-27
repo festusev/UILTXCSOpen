@@ -16,7 +16,6 @@ import java.util.regex.Pattern;
  * The page that lets the user register a new account. Redirects to Console.java once done.
  * Created by Evan Ellis.
  */
-@WebServlet(name="Outlet.Register", urlPatterns={"/register"})
 public class Register extends HttpServlet{
     private static final String PAGE_NAME = "register";
     private static final Logger LOGGER = Logger.getLogger(Register.class.getName());
@@ -29,14 +28,9 @@ public class Register extends HttpServlet{
         }
         Conn.setHTMLHeaders(response);
 
-        String body =  "<div class=\"row\" id=\"upperHalf\">\n" +
-                    "        <div class=\"center\">\n" +
-                    "            <div id=\"body-header\">\n" +
-                    "                Register\n" +
-                    "            </div>\n" +
-                    "        </div>\n" +
-                    "    </div>\n" +
-                    "    <div class=\"row\" id=\"lowerHalf\">\n" +
+        String body =
+                    "    <div id=\"center\">\n" +
+                            "<h1>Register</h1>" +
                     "        <form onsubmit=\"register(); return false;\" id=\"reg-box\">\n" +
                     "            <label for=\"email\">Email</label>\n" +
                     "            <p class=\"warning\" id=\"passWarning\">(Just for verification. We won't email you after this.)</p>\n" +
@@ -57,20 +51,14 @@ public class Register extends HttpServlet{
         PrintWriter writer = response.getWriter();
         writer.append("<html>\n" +
                 "<head>\n" +
-                "    <title>Register - TXCSOpen</title>\n" +
-                "    <meta charset=\"utf-8\">\n" +
-                "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n" +
-                "<link rel=\"icon\" type=\"image/png\" href=\"res/icon.png\">" +
-                "    <link rel=\"stylesheet\" href=\"./css/bootstrap.min.css\">\n" +
-                "    <link rel=\"stylesheet\" href=\"./css/style2.css\">\n" +
+                "    <title>Register - TXCSOpen</title>\n" + Dynamic.loadHeaders() +
                 "    <link rel=\"stylesheet\" href=\"./css/register.css\">\n" +
                 "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
                 "    <script src=\"./js/register.js\"></script>\n" +
                 "</head>\n" +
                 "<body>\n" +
-                Dynamic.loadNav(request, PAGE_NAME) +
+                Dynamic.loadNav(request) +
                 body +
-                Dynamic.loadRightFlair() +
                 Dynamic.loadCopyright() +
                 "</body>\n" +
                 "</html>");
@@ -127,7 +115,7 @@ public class Register extends HttpServlet{
 
             // Perform the register update. If the user doesn't already exist and no errors occurred, then we tell the page to show the "input code" box for verification
             if(status >= 0){    // The page will wait for a code to be entered. The user can also follow the link
-                writer.write("{\"success\":\"<style>#codeTitle span span{ font-size:1em; display:inline-block; font-weight:bold; }#code{text-transform:uppercase;font-family:monospace;}.link2{ color:var(--sec-col); font-weight:bold; } .link2:hover{ color:var(--sec-dark); }#lowerHalf{display:none;}#codeCnt{ display:block; width:100%; background-color:white; box-shadow:0 0px 6px 1px rgba(0,0,0,.12); margin:auto; padding:2em; margin-top:6em; } #codeTitle{ font-size:2em; font-weight:bold; color:var(--prim-middle); } #codeTitle span{ font-size:0.45em; display:block; font-weight:normal; color:var(--head-col); } #code{ width:100%; font-size:5em; height:1em; padding:0; text-align:center; color:var(--prim-light); } #bottomText{ margin-top:1em; } #upperHalf{ box-shadow:none; } #copyright_notice{ display:none; } @media only screen and (min-width:395px){ #codeTitle{ font-size:2.5em; } } @media only screen and (min-width:531px){ #code{ font-size:8em; } } @media only screen and (min-width:600px){ #codeCnt{ width:90%; } } @media only screen and (min-width:700px){ #codeCnt{ width:80%; } } @media only screen and (min-width:780px){ #codeCnt{ width:70%; } } @media only screen and (min-width:900px){ #codeCnt{ width:60%; } } @media only screen and (min-width:1225px){ #codeCnt{ width:50%; } } @media only screen and (min-width:1425px){ #codeCnt{ width:40%; } } @media only screen and (min-width:1807px){ #codeCnt{ width:30%; } }</style><div id='codeCnt'><p id='codeTitle'>Verify your email<span>A verification code was sent to <span>EMAIL_REPLACE</span>. It will expire in 15 minutes.</p><div id='codeErrorBox'></div><input id='code' type='text' maxlength='6' oninput='codeEntered()'><p id='bottomText'>Didn't get the email? <a class='link2' style='color:var(--sec-col);cursor:pointer;font-weight:bold;' onclick='resend();'>Resend</a> the verification code.</div>\"}");
+                writer.write("{\"success\":\"<style>#codeTitle span span{ font-size:1em; display:inline-block; font-weight:bold; }#code{text-transform:uppercase;font-family:var(--mono);}.link2{ color:var(--sec-col); font-weight:bold; } .link2:hover{ color:var(--sec-dark); }#lowerHalf{display:none;}#codeCnt{ display:block; width:100%; background-color:white; box-shadow:0 0px 6px 1px rgba(0,0,0,.12); margin:auto; padding:2em; margin-top:6em; } #codeTitle{ font-size:2em; font-weight:bold; color:var(--prim-middle); } #codeTitle span{ font-size:0.45em; display:block; font-weight:normal; color:var(--head-col); } #code{ width:100%; font-size:5em; height:1em; padding:0; text-align:center; color:var(--prim-light); } #bottomText{ margin-top:1em; } #upperHalf{ box-shadow:none; } #copyright_notice{ display:none; }</style><div id='codeCnt'><p id='codeTitle'>Verify your email<span>A verification code was sent to <span>EMAIL_REPLACE</span>. It will expire in 15 minutes.</p><div id='codeErrorBox'></div><input id='code' type='text' maxlength='6' oninput='codeEntered()'><p id='bottomText'>Didn't get the email? <a class='link2' style='color:var(--sec-col);cursor:pointer;font-weight:bold;' onclick='resend();'>Resend</a> the verification code.</div>\"}");
             }
             else if(status == -2){ // The email is already taken
                 writer.write("{\"error\":\"Email is already taken by another user.\"}");

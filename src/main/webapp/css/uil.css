@@ -1,0 +1,31 @@
+#column{
+    max-width:40em;
+    margin:auto;
+    text-align: center;
+}
+#header h1{
+    font-size:5em;
+    font-weight:bold;
+    color:var(--prim-light);
+}
+#tiles{
+    width:100%;
+    text-align: center;
+    border-collapse:separate;
+    border-spacing: 1em;
+}
+#tiles td{
+    height:17em;
+    background-color:var(--light-gray);
+    cursor:pointer;
+}
+#tiles td:hover{
+    background-color:#e6e6e6;
+}
+#tiles a{
+    color:var(--head-col);
+    text-decoration:none;
+}
+#tiles td h2{
+    font-weight:bold;
+}

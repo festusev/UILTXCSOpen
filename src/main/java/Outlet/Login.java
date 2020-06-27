@@ -7,6 +7,7 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -29,14 +30,9 @@ public class Login extends HttpServlet{
         // set response headers
         response.setContentType("text/html");
         response.setCharacterEncoding("UTF-8");
-        String body = "    <div class=\"row\" id=\"upperHalf\">\n" +
-                    "        <div class=\"center\">\n" +
-                    "            <div id=\"body-header\">\n" +
-                    "                Login\n" +
-                    "            </div>\n" +
-                    "        </div>\n" +
-                    "    </div>\n" +
-                    "    <div class=\"row\" id=\"lowerHalf\">\n" +
+        String body =
+                    "    <div id=\"center\">\n" +
+                            "<h1>Login</h1>" +
                     "        <form onsubmit=\"login(); return false;\" id=\"login-box\">\n" +
                     "            <label for=\"email\">Email</label>\n" +
                     "            <input type=\"text\" id=\"email\" name=\"email\" maxlength=\"255\">\n" +
@@ -51,20 +47,14 @@ public class Login extends HttpServlet{
         // create HTML form
         writer.write("<html>\n" +
                 "<head>\n" +
-                "    <title>Login - TXCSOpen</title>\n" +
-                "    <meta charset=\"utf-8\">\n" +
-                "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n" +
-                "<link rel=\"icon\" type=\"image/png\" href=\"res/icon.png\">" +
-                "    <link rel=\"stylesheet\" href=\"./css/bootstrap.min.css\">\n" +
-                "    <link rel=\"stylesheet\" href=\"./css/style2.css\">\n" +
+                "    <title>Login - TXCSOpen</title>\n" + Dynamic.loadHeaders() +
                 "    <link rel=\"stylesheet\" href=\"./css/login.css\">\n" +
                 "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
                 "    <script src=\"js/login.js\"></script>" +
                 "</head>\n" +
                 "<body>\n" +
-                Dynamic.loadLoggedOutNav(request, PAGE_NAME) +
+                Dynamic.loadLoggedOutNav() +
                 body +
-                Dynamic.loadLeftFlair() +
                 Dynamic.loadCopyright() +
                 "</body>\n" +
                 "</html>\n");

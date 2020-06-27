@@ -20,7 +20,7 @@
 </head>
 <body>
 <%=
-Dynamic.loadNav(request, "privacy-policy")
+Dynamic.loadNav(request)
 %>
     <div id="upperHalf"  class="row"><h1 id="body-header">Privacy Policy for TXCSOpen</h1></div>
     <div id="column">

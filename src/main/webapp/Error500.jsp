@@ -18,9 +18,6 @@
     <link rel="stylesheet" href="./css/style2.css">
 </head>
 <body>
-<%
-    Dynamic.addPageView(request, "Error500");
-%>
 <style>
     #center{
         font-size:2em;

@@ -23,13 +23,13 @@ import java.sql.SQLException;
  */
 public class Conn {
     private static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
+    //private static final String DB_URL = "comp.curhndcalh3n.us-east-2.rds.amazonaws.com";
     private static final String DB_URL = "comp.curhndcalh3n.us-east-2.rds.amazonaws.com";
-    // private static final String DB_URL = "comptest.curhndcalh3n.us-east-2.rds.amazonaws.com";
     private static final int DB_PORT = 3306;
     private static final String USER = "admin";
     private static final String PASS = "1pcdEy31lxTSp6x$";	// TODO Possibly in the future have an admin type this in.
     // private static final String DB_NAME = "uil";
-    private static final String DB_NAME = "uil";
+    private static final String DB_NAME = "comptest";
 
     private static Gson gson = new Gson();
 
@@ -88,12 +88,12 @@ public class Conn {
             try {
                 Connection con = getConnection();
                 if (con == null) return null; // If an error occurred making the connection
-                PreparedStatement stmt = con.prepareStatement("SELECT email,uname, start, questions, points, id, tid FROM users WHERE token=?");
+                PreparedStatement stmt = con.prepareStatement("SELECT email,uname, uid, tid FROM users WHERE token=?");
                 stmt.setString(1, temp.token.toString(Character.MAX_RADIX));
                 //LOGGER.info(stmt.toString());
                 ResultSet rs = stmt.executeQuery();
                 if(rs.next()) { // A row matches this email
-                    return loadUser(rs.getString("email"), rs.getString("uname"), rs.getLong("start"), rs.getString("questions"), rs.getShort("points"), temp.token, rs.getShort("id"), rs.getShort("tid"));
+                    return loadUser(rs.getString("email"), rs.getString("uname"), temp.token, rs.getShort("uid"), rs.getShort("tid"));
                 }
             }
             catch (SQLException e) {
@@ -102,6 +102,27 @@ public class Conn {
             }
         }
         return null;
+    }
+    public static Team getTeam(ResultSet rs) throws SQLException {
+        Team team = new Team();
+        if(rs.next()) { // A row matches this email
+            team.tid = rs.getShort("tid");
+            team.tname = rs.getString("name");
+            team.affiliation = rs.getString("affiliation");
+            team.setComps(rs.getString("comps"));
+            team.setUids(rs.getString("uids"));
+
+            Team temp = getLoadedTeam(team.tid);
+            if(temp == null){
+                teams.add(team);
+                Collections.sort(teams);    // TODO: Make this more efficient
+                return team;
+            } else {
+                return temp;
+            }
+        } else {
+            return null;
+        }
     }
     public static Team getLoadedTeam(short tid) {
         if(tid <=0) return null;
@@ -129,7 +150,7 @@ public class Conn {
     public static boolean isLoggedIn(BigInteger token){
         return getUser(token)!=null;
     }
-    public static BigInteger generateToken() {
+    public static BigInteger  generateToken() {
         return new BigInteger(255, new Random());  // How the user will remain logged in;
     }
     public static byte[] generateSalt() {
@@ -157,13 +178,10 @@ public class Conn {
         byte[] salt = generateSalt();
         return Base64.getEncoder().encodeToString(salt) + "." + hashPassword(password, salt);
     }
-    public static User loadUser(String email, String uname, long start, String questions, short points, BigInteger token, short uid, short tid) throws SQLException {
+    public static User loadUser(String email, String uname, BigInteger token, short uid, short tid) throws SQLException {
         User user = new User();
         user.email = email;
         user.uname = uname;
-        user.start = start;
-        user.setQuestions(questions);
-        user.points = points;
         user.token = token;
         user.uid = uid;
         user.tid = tid;
@@ -174,27 +192,19 @@ public class Conn {
         team.tid = tid;
 
         if(tid != -1) { // If the user belongs to a team.
+            System.out.println("-- Teams:" + teams + ", team:" + team);
             int teamIndex = Collections.binarySearch(teams, team);
             if(teamIndex<0) {    // If the team is not loaded into the team list
                 /* Now we search the database for the team information based off of the tid. We will load it into
                    the team variable and then add that to the teams list. */
                 Connection conn = getConnection();
                 if (conn == null) return null; // If an error occurred making the connection
-                PreparedStatement stmt = conn.prepareStatement("SELECT * FROM teams WHERE id=?");
+                PreparedStatement stmt = conn.prepareStatement("SELECT * FROM teams WHERE tid=?");
                 stmt.setShort(1, tid);
                 ResultSet rs = stmt.executeQuery();
-                if(rs.next()) { // A row matches this email
-                    team.tname = rs.getString("name");
-                    team.affiliation = rs.getString("affiliation");
-                    team.setProblems(rs.getString("problems"));
-                    team.start = rs.getLong("start");
-                    team.testSum = rs.getShort("testSum");
-                    team.tid = rs.getShort("id");
-                    team.setUids(rs.getString("uids"));
-                    teams.add(team);
-                    Collections.sort(teams);    // TODO: Make this more efficient
-                }
-            } else {    // The team is loaded into the team list, just search for it
+                team = getTeam(rs);
+            }
+            else {    // The team is loaded into the team list, just search for it
                 team = teams.get(teamIndex);
             }
         }
@@ -215,7 +225,7 @@ public class Conn {
         if(idIsId) {    // identifier is an integer
             if(getLoadedTeam((Short)identifier) != null ) return 0;    // The team is already loaded
             try {
-                stmt = conn.prepareStatement("SELECT * FROM teams WHERE id = ?");
+                stmt = conn.prepareStatement("SELECT * FROM teams WHERE tid = ?");
                 stmt.setShort(1,(Short)identifier);
                 //LOGGER.info(stmt.toString());
             } catch (Exception e) {
@@ -238,15 +248,7 @@ public class Conn {
         try {
             rs = stmt.executeQuery();
             if(!rs.next()) return -3;   // The team doesn't exist
-            Team team = new Team();
-            team.tname = rs.getString("name");
-            team.affiliation = rs.getString("affiliation");
-            team.setProblems(rs.getString("problems"));
-            team.tid = rs.getShort("id");
-            team.setUids(rs.getString("uids"));
-
-            // Finish off by loading the team
-            teams.add(team);
+            getTeam(rs);
             return 0;
         } catch (Exception e) {
             e.printStackTrace();
@@ -259,7 +261,7 @@ public class Conn {
     public static int loadTeam(String tname) {
         return loadTeamHelper(tname, false);
     }
-    static Connection getConnection(){
+    public static Connection getConnection(){
         Connection conn = null;
 
         try{
@@ -303,10 +305,10 @@ public class Conn {
             if(success<=0) return BigInteger.valueOf(-1);   // If an error occurs
 
             // Get uid
-            stmt = conn.prepareStatement("SELECT id FROM users WHERE email=?");
+            stmt = conn.prepareStatement("SELECT uid FROM users WHERE email=?");
             stmt.setString(1, email);
             ResultSet rs = stmt.executeQuery();
-            if(rs.next()) uid = rs.getShort("id");
+            if(rs.next()) uid = rs.getShort("uid");
         }
         catch(Exception e)
         {
@@ -315,7 +317,7 @@ public class Conn {
             else if(e.getMessage().contains("for key 'uname'")) return BigInteger.valueOf(-3);  // If the error message is about the user having the same uname as another
             else return BigInteger.valueOf(-1);  // If an error occurred making the connection that is not one of the above
         }
-        loadUser(email, uname, -1, null, (short) -1, token, uid, (short) -1);
+        loadUser(email, uname,  token, uid, (short) -1);
         return token;
     }
 
@@ -513,17 +515,13 @@ public class Conn {
         try {
             con = getConnection();
             if (con == null) return BigInteger.valueOf(-1); // If an error occurred making the connection
-            stmt = con.prepareStatement("SELECT password, uname, start, questions, points, id, tid FROM users WHERE email=?");
+            stmt = con.prepareStatement("SELECT password, uname, uid, tid FROM users WHERE email=?");
             stmt.setString(1, email);
-            //LOGGER.info(stmt.toString());
             rs = stmt.executeQuery();
             if(rs.next()) { // A row matches this email
                 storedFullHash = rs.getString("password");
                 uname = rs.getString("uname");
-                start = rs.getLong("start");
-                questions = rs.getString("questions");
-                points = rs.getShort("points");
-                uid = rs.getShort("id");
+                uid = rs.getShort("uid");
                 tid = rs.getShort("tid");
             }
             else return BigInteger.valueOf(-2);     // If no row is found for this email
@@ -554,7 +552,7 @@ public class Conn {
             return BigInteger.valueOf(-1);
         }
 
-        loadUser(email, uname, start, questions, points, token, uid, tid);
+        loadUser(email, uname, token, uid, tid);
         return token;
     }
     // NOTE: DOES NOT remove the token from the cookie
@@ -575,7 +573,7 @@ public class Conn {
         }
 
         // Next, remove the user's row from the database
-        PreparedStatement stmt = conn.prepareStatement("DELETE FROM users WHERE id=?");
+        PreparedStatement stmt = conn.prepareStatement("DELETE FROM users WHERE uid=?");
         stmt.setShort(1, u.uid);
         int status = stmt.executeUpdate();
 
@@ -592,7 +590,7 @@ public class Conn {
 
         // Finally, delete the team
         try {
-            PreparedStatement stmt = conn.prepareStatement("DELETE FROM teams WHERE id=?");
+            PreparedStatement stmt = conn.prepareStatement("DELETE FROM teams WHERE uid=?");
             stmt.setShort(1,team.tid);
             int index = Collections.binarySearch(teams, team);
             if(index>=0) teams.remove(index);
@@ -610,19 +608,13 @@ public class Conn {
             return -3;
         }
         try {
-            // Create the points dictionary
-            HashMap<Short, Short> probMap = new HashMap<>();
-            for(short s=1; s<=ScoreEngine.NUM_PROBLEMS;s++) { // Loop through each problem and set 0 tries
-                probMap.put(s, (short)0);
-            }
-
             short[] uids = {captain.uid};
 
             String hashedPassword = getHashedFull(password);
             Team team = new Team();
             team.tname = tname;
             team.affiliation = affiliation;
-            team.setProblems(probMap);
+            team.setComps("[]");
             team.setUids(uids);
             int status = team.updateTeam(hashedPassword);    // Write it into the database
             if(status == -2) {  // this team name is already registered
@@ -633,11 +625,11 @@ public class Conn {
             teams.add(team);
 
             // Get the team's id
-            PreparedStatement stmt = conn.prepareStatement("SELECT id FROM teams WHERE name=?");
+            PreparedStatement stmt = conn.prepareStatement("SELECT tid FROM teams WHERE name=?");
             stmt.setString(1, tname);
             ResultSet rs = stmt.executeQuery();
             short tid = -1;
-            if(rs.next()) tid = rs.getShort("id");
+            if(rs.next()) tid = rs.getShort("tid");
             team.tid = tid;
 
             captain.tid = tid;
@@ -686,11 +678,11 @@ public class Conn {
      * Returns a list of unames that belong to the team.
      * @return
      */
-    public static HashMap<String, Short> getTeamUsers(Team team) {
-        String selection = "SELECT uname, points FROM users WHERE ";
+    public static HashSet<String> getTeamUsers(Team team) {
+        String selection = "SELECT uname FROM users WHERE ";
         if(team == null || team.uids == null) return null;
         for(int i = 0; i<team.uids.size(); i++) {
-            selection += "(id = ?)";
+            selection += "(uid = ?)";
             if(i < team.uids.size()-1) {    // Put OR in between the statements
                 selection += " OR ";
             }
@@ -702,11 +694,11 @@ public class Conn {
             for(int c = 0; c<team.uids.size(); c++) {   // Set the uids as the ?
                 stmt.setInt(c+1, uidsTemp.get(c));
             }
-            HashMap<String, Short> users = new HashMap<>();
+            HashSet<String> users = new HashSet<>();
             //LOGGER.info(stmt.toString());
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
-                users.put(rs.getString("uname"), rs.getShort("points"));
+                users.add(rs.getString("uname"));
             }
             return users;
         } catch (SQLException e) {
@@ -736,385 +728,15 @@ public class Conn {
             PreparedStatement stmt = conn.prepareStatement("SELECT * FROM teams");
             //LOGGER.info(stmt);
             ResultSet rs= stmt.executeQuery();
-            while(rs.next()) {
-                Team t = new Team();
-                t.tname = rs.getString("name");
-                t.affiliation = rs.getString("affiliation");
-                t.setProblems(rs.getString("problems"));
-                t.start = rs.getLong("start");
-                t.testSum = rs.getShort("testSum");
-                t.tid = rs.getShort("id");
-                t.setUids(rs.getString("uids"));
+            Team t = getTeam(rs);
+            while(t!=null) {
                 allTeams.add(t);
+                t = getTeam(rs);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         return allTeams;
-    }
-}
-
-class User implements Comparable<User>{
-    public String email;
-    public String uname;
-    public long start = Long.MIN_VALUE;
-    short[] questions = null;  // An array of the questions they got correct
-    short points = Short.MIN_VALUE;   // Their score on the mc test
-    public Team team;
-    public BigInteger token;
-    public short uid;
-    public short tid;
-
-    private static Gson gson = new Gson();
-    //private static final //Logger //LOGGER = LogManager.get//Logger(User.class);
-    @Override
-    public int compareTo(User user) {
-        if(token == null || user.token == null) return user.uid - uid;  // If we are comparing by uid
-        return token.compareTo(user.token);
-    }
-
-    public void setQuestions(String json){
-        if(json == null || json.isEmpty()) return;
-        questions = gson.fromJson(json, short[].class);
-    }
-
-    /**
-     * Make the database entry referred to by the uid is equal to this user class.
-     * WILL NOT UPDATE the uid.
-     * @param insert, if true insert, if false update
-     * @return The status code.
-     */
-    public int updateUser(boolean insert) throws NoSuchAlgorithmException, SQLException {
-        // Make the actual update query
-        try
-        {
-            // Establishing Connection
-            Connection con = Conn.getConnection();
-            if(con==null) return -1; // If an error occurred making the connection
-            String query;
-            PreparedStatement stmt;
-            if(insert)  {
-                stmt = con.prepareStatement("INSERT INTO users(email, uname, token, tid) VALUES (?, ?, ?, ?)");
-                stmt.setString(3, token.toString(Character.MAX_RADIX));
-                stmt.setShort(4, tid);
-            } else {
-                if(start < 0) {   // They haven't started yet
-                    stmt = con.prepareStatement("UPDATE users SET email=?, uname=?, token=?, tid=? WHERE id=?");
-                    stmt.setString(3, token.toString(Character.MAX_RADIX));
-                    stmt.setShort(4, tid);
-                    stmt.setShort(5, uid);
-                } else if(points == Short.MIN_VALUE) {   // They haven't finished yet, but they have started
-                    stmt = con.prepareStatement("UPDATE users SET email=?, uname=?, start=?, token=?, tid=? WHERE id=?");
-                    stmt.setLong(3, start);
-                    stmt.setString(4, token.toString(Character.MAX_RADIX));
-                    stmt.setShort(5, tid);
-                    stmt.setShort(6, uid);
-                    System.out.println("-- Executing 'UPDATE users SET email="+email+", uname="+uname+", start="+start+", token="+token+", tid="+tid+" WHERE id="+uid);
-                } else{ // They've started and finished the mc test
-                    stmt = con.prepareStatement("UPDATE users SET email=?, uname=?, start=?, questions=?, points=?, token=?, tid=? WHERE id=?");
-                    stmt.setLong(3, start);
-                    stmt.setString(4, gson.toJson(questions));
-                    stmt.setShort(5, points);
-                    stmt.setString(6, token.toString(Character.MAX_RADIX));
-                    stmt.setShort(7, tid);
-                    stmt.setShort(8, uid);
-                }
-            }
-            stmt.setString(1, email);
-            stmt.setString(2, uname);
-            //LOGGER.info(stmt.toString());
-
-            System.out.println(stmt.toString());
-            stmt.executeUpdate();
-            return 0;
-        }
-        catch(Exception e)
-        {
-            e.printStackTrace();
-            if(e.getMessage().contains("for key 'email'")) return -2; // If the error message is about the user having the same email as another
-            else if(e.getMessage().contains("for key 'uname'")) return -3;  // If the error message is about the user having the same uname as another
-            else return -1;  // If an error occurred making the connection that is not one of the above
-        }
-    }
-    /** Sets the points and questions values in the database */
-    public int addScoringReport(short points, short[] questions){
-        this.points = points;
-        this.questions = questions;
-        this.start = System.currentTimeMillis() - MultipleChoice.TIME_LIMIT - 60*1000*2; // So that it locks them out
-
-        Connection conn = Conn.getConnection();
-        if(conn==null) return -1;
-        try{
-            PreparedStatement stmt = conn.prepareStatement("UPDATE users SET questions = ?, points = ?, start = ? WHERE id =?");
-            stmt.setString(1, gson.toJson(questions));
-            stmt.setShort(2, points);
-            stmt.setLong(3, this.start);
-            stmt.setShort(4, uid);
-            stmt.executeUpdate();
-
-            // Now add this run to the team's score
-            return team.addUserTest(points);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return -1;
-        }
-    }
-    public int changePassword(String hashedPassword) {
-        Connection conn = Conn.getConnection();
-        if(conn==null) return -1;   // Error making connection;
-        try {
-            PreparedStatement stmt = conn.prepareStatement("UPDATE users SET password = ? WHERE id=?");
-            stmt.setString(1, hashedPassword);
-            stmt.setShort(2, uid);
-            //LOGGER.info(stmt.toString());
-            return stmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return -1;
-        }
-    }
-    public boolean verifyPassword(String password) {
-        Connection conn = Conn.getConnection();
-        if(conn==null) return false;
-
-        try {
-            PreparedStatement stmt = conn.prepareStatement("SELECT password FROM users WHERE id=?");
-            stmt.setShort(1, uid);
-            //LOGGER.info(stmt.toString());
-            ResultSet rs = stmt.executeQuery();
-            if(rs.next()) {
-                String stored = rs.getString("password");
-                // Extract the salt from the storedFull Hash
-                String storedSalt = stored.substring(0, stored.indexOf("."));
-                String storedHashed = stored.substring(stored.indexOf(".")+1);
-                String givenHashed = Conn.hashPassword(password, Base64.getDecoder().decode(storedSalt));  // The hash of the password supplied by the user
-                if(givenHashed.equals(storedHashed)) return true;
-                return false;
-            }
-        } catch (SQLException | NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-}
-class Team implements Comparable<Team> {
-    public String tname;
-    public String affiliation;
-    private HashMap<Short, Short> problems;
-    public long start = -1;
-    public short testSum = 0;
-    public Set<Short> uids;  // The user at index 0 is the team captain and has special privileges
-    public short tid;
-    private static Gson gson = new Gson();
-
-    //private static final //Logger //LOGGER = LogManager.get//Logger(Team.class);
-
-    @Override
-    public int compareTo(Team team) {
-        return tid - team.tid;
-    }
-
-    public short getProblemScore(){
-        short score =0;
-        Set<Short> keys = problems.keySet();
-        for(short s: keys) {
-            short tries = problems.get(s);
-            if(tries >= 12) {   // If they have more than 13 submissions, their points will freeze at 5
-                tries = 12;
-            }
-            if(tries>0) score += 60 - (tries-1)*5;  // If they have solved a problem. Do (tries-1) so if they solved it in 1 try they get full points
-        }
-        return score;
-    }
-    public short getProblemStatus(short probNum){
-        if(problems != null && problems.containsKey(probNum))
-            return problems.get(probNum);
-        return 0;
-    }
-    public short getPts() {
-        return (short)(testSum + getProblemScore());
-    }
-    /**
-     * The string is formatted as such: {prob#: #tries, prob#: #tries...}. If #tries is negative, the problem remains unsolved
-     * @param json
-     */
-    public void setProblems(String json){
-        if(json == null || json.isEmpty()) {    // If empty, then fill with zeros
-            problems = new HashMap<>();
-            for(short i=1; i<=ScoreEngine.NUM_PROBLEMS; i++) {
-                problems.put(i, (short) 0);
-            }
-            return;
-        }
-
-        HashMap<String, Double> tempMap = gson.fromJson(json, HashMap.class);
-        Set<String> keys = tempMap.keySet();
-        problems = new HashMap<>();
-        for(String key: keys) {
-            short problemNum = Short.parseShort(key);
-            problems.put(problemNum, (short)(double)tempMap.get(key));
-        }
-        Set<Short> attempted = problems.keySet();
-        for(short i=1; i<ScoreEngine.NUM_PROBLEMS; i++) {  // Now add in ProbNum: 0 for all unlisted problems
-             if(!attempted.contains(i)) {
-                 problems.put(i, (short)0);
-             }
-        }
-    }
-    public void setUids(short[] temp) {
-        uids = new HashSet<>();
-        for(short uid: temp) {
-            uids.add(uid);
-        }
-    }
-    public void setUids(String s) {
-        short[] temp = gson.fromJson(s, short[].class);
-        setUids(temp);
-    }
-    public void setProblems(HashMap<Short, Short> p) {
-        problems = p;
-    }
-    public String getProblemJson(){
-        return gson.toJson(problems);
-    }
-    public boolean problemSolved(short probNum){
-        if(problems != null && problems.containsKey(probNum))
-            return problems.get(probNum) >0;
-        else return false;
-    }
-    public int updateTeam(){
-        Connection conn = Conn.getConnection();
-        PreparedStatement stmt = null;
-        try {
-            stmt = conn.prepareStatement("UPDATE teams SET affiliation=?, problems = ?, start = ?, testSum = ?, uids=? WHERE id = ?");
-            String uidString = gson.toJson(uids);
-
-            stmt.setString(1, affiliation);
-            stmt.setString(2, getProblemJson());
-            stmt.setLong(3, start);
-            stmt.setShort(4, testSum);
-            stmt.setString(5, uidString);
-            stmt.setShort(6, tid);
-
-            //LOGGER.info(stmt.toString());
-            stmt.executeUpdate();
-            return 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return -1;
-        }
-    }
-    public int addUserTest(short points){
-        testSum += points;
-
-        Connection conn = Conn.getConnection();
-        try{
-            PreparedStatement stmt = conn.prepareStatement("UPDATE teams SET testSum = ? WHERE id =?");
-            stmt.setShort(1, testSum);
-            stmt.setShort(2, tid);
-            return stmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return -1;
-        }
-    }
-    public int updateTeam(String hashedPassword){
-        Connection conn = Conn.getConnection();
-        PreparedStatement stmt = null;
-        try {
-            stmt = conn.prepareStatement("INSERT INTO teams(name, password, affiliation, problems, uids) VALUES (?, ?, ?, ?, ?)");
-            String uidString = gson.toJson(uids);
-
-            stmt.setString(1, tname);
-            stmt.setString(2, hashedPassword);
-            stmt.setString(3, affiliation);
-            stmt.setString(4, getProblemJson());
-            stmt.setString(5, uidString);
-
-            //LOGGER.info(stmt.toString());
-            stmt.executeUpdate();
-            return 0;
-        } catch (SQLException e) {
-            System.out.println("--- ERROR MESSAGE: " + e.getMessage());
-            if(e.getMessage().contains("for key 'name'")) return -2;    // If so, this team already exists
-            e.printStackTrace();
-            return -1;
-        }
-    }
-    public int addUser(User u) {
-
-        if(uids.size() >= 3) {  // The team is full
-            return -2;
-        }
-        uids.add(u.uid);
-        return updateTeam();
-    }
-    public void removeUser(User u) {
-        if(uids.size()-1<=0) {   // If The team only has one user, delete the team.
-            Conn.delTeam(this);
-        } else {
-            uids.remove(u.uid);
-
-            // Remove their test score as well
-            testSum -= u.points;
-
-            updateTeam();   // Make it permanent.
-        }
-    }
-
-    /**
-     * Adds a run to the team. If success, then makes # tries positive and increments by 1. Otherwise, decrements
-     * by 1.
-     * @param probNum
-     * @param success
-     */
-    public void addRun(short probNum, boolean success) {
-        short tries = (short) Math.abs(problems.get(probNum));
-        if(success){
-            tries++;
-            Scoreboard.generateScoreboard();    // Update the scoreboard, they just gained points
-        } else{ // A failure
-            tries ++;
-            tries = (short) (0 - tries);
-        }
-        problems.put(probNum, tries);
-    }
-    public int changePassword(String hashedPassword) {
-        Connection conn = Conn.getConnection();
-        if(conn==null) return -1;   // Error making connection;
-        try {
-            PreparedStatement stmt = conn.prepareStatement("UPDATE teams SET password = ? WHERE id=?");
-            stmt.setString(1, hashedPassword);
-            stmt.setShort(2, tid);
-            //LOGGER.info(stmt.toString());
-            return stmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return -1;
-        }
-    }
-    public boolean verifyPassword(String password) {
-        Connection conn = Conn.getConnection();
-        if(conn==null) return false;
-
-        try {
-            PreparedStatement stmt = conn.prepareStatement("SELECT password FROM teams WHERE id=?");
-            stmt.setShort(1, tid);
-            //LOGGER.info(stmt.toString());
-            ResultSet rs = stmt.executeQuery();
-            if(rs.next()) {
-                String stored = rs.getString("password");
-                // Extract the salt from the storedFull Hash
-                String storedSalt = stored.substring(0, stored.indexOf("."));
-                String storedHashed = stored.substring(stored.indexOf(".")+1);
-                String givenHashed = Conn.hashPassword(password, Base64.getDecoder().decode(storedSalt));  // The hash of the password supplied by the user
-                if(givenHashed.equals(storedHashed)) return true;
-                return false;
-            }
-        } catch (SQLException | NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-        return false;
     }
 }

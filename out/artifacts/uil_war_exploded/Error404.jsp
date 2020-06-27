@@ -18,9 +18,6 @@
     <link rel="stylesheet" href="./css/style2.css">
 </head>
 <body style="background-image:url('res/stars.jpg')">
-<%
-    Dynamic.addPageView(request, "Error404");
-%>
 <style>
     #center{
         font-size:2em;
