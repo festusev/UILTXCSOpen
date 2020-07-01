@@ -57,7 +57,7 @@ public class ChallengeEntry extends UILEntry {
         ChallengeEntry newEntry = new ChallengeEntry(tid, eligible, 0, 0);
 
         Connection conn = Conn.getConnection();
-        PreparedStatement stmt = conn.prepareStatement("INSERT INTO `c" + Challenge.CID + "` VALUES (?, ?, ?, ?, ?)");
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO `c" + Challenge.CID + "` VALUES (?, ?, ?, ?)");
         stmt.setShort(1, newEntry.tid);
         stmt.setBoolean(2, eligible);
         stmt.setInt(3, 0);

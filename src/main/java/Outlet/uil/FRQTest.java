@@ -315,7 +315,7 @@ public class FRQTest {
      * @return
      */
     public short calcScore(short numTries) {
-        return (short)(MAX_POINTS - Math.abs(numTries)*INCORRECT_PENALTY);
+        return (short)(MAX_POINTS - Math.abs(numTries-1)*INCORRECT_PENALTY);
     }
     public Countdown getTimer(long started) {
         Countdown timer = new Countdown(TIME, started, "frqTimer");

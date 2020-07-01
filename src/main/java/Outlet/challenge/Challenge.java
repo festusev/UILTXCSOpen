@@ -30,8 +30,8 @@ public class Challenge extends HttpServlet {
     /**
      * Timing constants
      */
-    private static String opensString = "09/11/2019 10:50:32";
-    private static String closesString = "09/15/2020 10:50:32";
+    private static String opensString = "09/11/2020 18:00:00";
+    private static String closesString = "09/16/2020 18:00:00";
     private static Countdown opens;
     private static Countdown closes;
 
@@ -39,9 +39,9 @@ public class Challenge extends HttpServlet {
      * Text constants like names and descriptions.
      */
     public static final String NAME = "TXCSOpen Challenge";
-    public static final String WHAT_IT_IS = "A difficult but rewarding competition.";
-    public static final String RULES = "You may use the internet, but do not post anything competition-specific online.";
-    public static final String PRACTICE = "Brush up on algorithms and the like.";
+    public static final String WHAT_IT_IS = "A unique and challenging algorithmic challenge. Teams receive an np-hard problem, a single large test case, and 5 days to design the best solution. Submit the output of your program rather than your program itself to be judged on the quality of your output.";
+    public static final String RULES = "<ol><li>Use 7zip to zip up your output file. The format will be specified in the challenge packet.</li><li>Write your program in any language you'd like, or even do the challenge by hand if you're batty. You'll only need to submit the output.</li><li>You may use any tools you have or can find on the web; the only restriction is that you may not collaborate with other teams in any way nor may you share or use shared challenge-specific information. Doing so will result in immediate disqualification.</li><li>Don't use any illegitimate means to gain points, subject to moderator judgement.</li>";
+    public static final String PRACTICE = "We recommend brushing up on algorithms and data structures. You may also want to look at <a href='https://codingcompetitions.withgoogle.com/hashcode/archive' class='link'>old HashCode problems</a> for practice.";
 
 
     public static void initialize() {
@@ -93,6 +93,7 @@ public class Challenge extends HttpServlet {
                     switch(status){
                         case 0:
                             writer.write("{\"status\":\"success\",\"scored\":\"Correct answer!\"}");
+                            template.updateScoreboard();
                             return;
                         case 1:
                             writer.write("{\"status\":\"error\",\"error\":\"Output format error.\"}");

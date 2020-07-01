@@ -31,7 +31,7 @@ public class Login extends HttpServlet{
         response.setContentType("text/html");
         response.setCharacterEncoding("UTF-8");
         String body =
-                    "    <div id=\"center\">\n" +
+                    "    <div class=\"column\"><div id=\"center\" class=\"head-row row\">\n" +
                             "<h1>Login</h1>" +
                     "        <form onsubmit=\"login(); return false;\" id=\"login-box\">\n" +
                     "            <label for=\"email\">Email</label>\n" +
@@ -39,9 +39,9 @@ public class Login extends HttpServlet{
                     "            <label for=\"pass\">Password</label>\n" +
                     "            <input type=\"password\" id=\"pass\" name=\"pass\">\n" +
                     "            <button id=\"login\">Login</button>\n" +
-                    "            <p id=\"regWrapper\">Don't have an account? <a href=\"register\">Register.</a></p>\n" +
+                    "            <p id=\"regWrapper\">Don't have an account? <a class='link' href=\"register\">Register.</a></p>\n" +
                     "        </form>\n" +
-                    "    </div>\n";
+                    "    </div></div>\n";
 
         PrintWriter writer = response.getWriter();
         // create HTML form

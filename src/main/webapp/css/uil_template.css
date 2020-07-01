@@ -1,61 +1,40 @@
 body{
     overflow-y:visible;
-}
-.row {
-    background-color:white;
-}
-.secRow{
-    padding:1em 0 1em 0;
-}
-.secRow:last-child{
-    border:none;
-}
-.secHead{
-    display:block;
-    width:100%;
-    font-size:2em;
-    color:var(--prim-light);
-    margin:0;
-    padding-left:1.5em;
-}
-.secBody{
-    color: black;
-    text-align: left;
-    padding:0 3em 0 3em;
+    position:relative;
+    z-index:-1000;
 }
 .tab{
     padding-left:2em;
 }
-.row{
-    position:relative;
-    border:none;
-}
-.row:last-child{
-    padding-bottom:8em;
-}
 #columns{
     position:relative;
-    z-index:-2;
-}
-body{
-    position:relative;
-    z-index:-1000;
+    z-index: 1;
 }
 .column{
-    margin-bottom:5em;
-    background-color:white;
+    width:40em;
+    max-width:100%;
+    margin:auto;
+    padding-bottom:10em;
+}
+.column h1, .column .subtitle{
+    text-align: center;
+}
+.column h1{
+    padding-bottom:5px;
 }
 #upperHalf{
     list-style: none;
     background-color:white;
     padding:0;
     margin:0;
-    font-size:1.2em;
+    font-size:1em;
+    box-shadow: 0 10px 10px -9px rgba(0,0,0,0.1);
 }
 #upperHalf li{
     display:inline-block;
     padding:0.5em 1em;
     cursor: pointer;
+    border-right:2px solid var(--light-gray);
 }
 #upperHalf li:hover{
     background-color:var(--light-gray);
@@ -63,27 +42,19 @@ body{
 #upperHalf #nav_compname{
     cursor:default;
     width:15em;
-    border-right:2px solid var(--light-gray);
 }
 #upperHalf #nav_compname, #upperHalf #countdownCnt:hover{
     background-color:white;
 }
 #upperHalf #countdownCnt{
     cursor:default;
-    border-left:2px solid var(--light-gray);
+    border:none;
 }
-.column h1{
-    display:block;
+#scoreboardColumn table{
     width:100%;
-    text-align: center;
-    font-weight:bold;
-    color:var(--prim-light);
-    font-size:4em;
-    font-family:var(--head-font);
 }
 #signUp{
     display:block;
-    margin:auto;
     border:none;
     background-color:var(--sec-col);
     padding:0.5em 1em;
@@ -91,6 +62,7 @@ body{
     font-weight:bold;
     color:white;
     cursor:pointer;
+    margin:auto;
 }
 #signUp:hover{
     background-color: var(--sec-dark);
@@ -105,24 +77,21 @@ body{
     width:100%;
     text-align:center;
 }
-#mcColumn, #frqColumn{
-    padding:3em 1em;
+#frqColumn .head-row{
+    display:flex;
+    flex-flow:row;
 }
-#mcColumn h1, #frqColumn h1{
-    padding-top:5px;
-    font-size:1.5em;
-}
-#mcColumn .chngButton, #frqColumn .chngButton{
+
+#mcColumn .chngButton{
     margin:auto;
     margin-top:10px;
 }
-.subtitle{
-    margin:0;
-    text-align: center;
-    width:100%;
-}
+
 #mcColumn{
-    width:30%;
+    width:32%;
+}
+#mcColumn ol{
+    font-family: var(--mono);
 }
 #mcColumn .subtitle span{
     font-weight:bold;
@@ -146,7 +115,6 @@ body{
 .mcColumn:last-of-type{
     float:right;
     width:initial;
-    margin-right:1.8em;
 }
 .mcColumn label{
     margin-right:2px;
@@ -160,13 +128,6 @@ body{
 .mcQuestion input{
     cursor: pointer;
 }
-#scoreboardColumn{
-    width:60%;
-}
-#frqSelection{
-    vertical-align: top;
-    padding-right:20px;
-}
 #frqSubmitHeader{
     font-family:var(--head-font);
     font-size:1.5em;
@@ -179,44 +140,35 @@ body{
     border:none;
     padding:0;
     cursor:pointer;
+    margin-top:10px;
+}
+#frqSelection{
+    box-sizing:border-box;
+    width:50%;
+    padding-right:1em;
 }
 #frqSelection, #frqProblems{
     display:inline-block;
-    width:50%;
 }
-#frqProblems h1{
+#frqProblems{
+    flex-grow:1;
+}
+#challenge-frq-row h1, #challenge-frq-row .subtitle{
     text-align:left;
 }
-@media only screen and (min-width: 900px){
-    .tab{
-        padding-left:5em;
-    }
-    .column{
-        width:80%;
-        margin:auto;
-    }
+#challenge-frq-row .subtitle{
+    padding:0.5em 0;
 }
-@media only screen and (min-width:1200px) {
-    .column{
-        width:70%;
-    }
+#challenge-frq-row .chngButton{
+    margin:10px 0 0 0;
 }
-@media only screen and (min-width:1400px) {
-    .column{
-        width:60%;
-    }
+.running-frq h1{
+    font-size:2rem;
+    text-align:left;
 }
-@media only screen and (min-width:1600px) {
-    .column{
-        width:50%;
-    }
+.running-frq #frqProblems{
+    padding-left:1em;
 }
-@media only screen and (min-width:1800px) {
-    .column{
-        width:40%;
-    }
-}
-
 .probSum{
     background-color:var(--sec-col);
 }
@@ -227,37 +179,4 @@ body{
     cursor:auto !important;
     padding-left:10px;
     margin-top:-37px;
-}
-@media only screen and (min-width:770px) {
-    td:last-child{
-        display:table-cell;
-    }
-    th:last-child{
-        display:table-cell;
-    }
-}
-@media only screen and (min-width:850px) {
-    #teamList{
-        width:100%;
-        min-width:30em;
-        margin:auto;
-    }
-}
-@media only screen and (min-width: 900px){
-    #column{
-        width:95%;
-        margin:auto;
-        z-index:0;
-        position:relative;
-    }
-}
-@media only screen and (min-width: 1050px) {
-    #column{
-        width:80%;
-    }
-}
-@media only screen and (min-width: 1420px){
-    #column{
-        width:70%;
-    }
 }

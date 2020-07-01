@@ -45,34 +45,30 @@ public class Dynamic {
                 " </script>";
     }
     public static String loadLoggedOutNav(){
-        return
-                "  <nav id=\"top-bar\">\n" +
-                        "    <ul id=\"left-nav\">\n" +
-                        "      <li class=\"nav-item\" id=\"logoCnt\">\n" +
-                        "        <img draggable=\"false\" src=\"/res/logo_dark_texasless.svg\" id=\"logo\" onclick=\"location.href='index.jsp'\"/>\n" +
-                        "      </li>\n" +
-                        "      <li class=\"nav-item\">\n" +
-                        "        <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
-                        "      </li>\n" +
-                        "            <li class=\"nav-item\" id=\"uil_nav\">\n" +
-                        "                <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
-                        "                <ul id=\"uil_dropdown\">" +
-                        "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/cs\">CS</a></li>" +
-                        "                </ul>" +
-                        "            </li>\n" +
-                        "            <li class=\"nav-item\">\n" +
-                        "                <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
-                        "            </li>\n" +
-                        "    </ul>\n" +
-                        "    <ul id=\"right-nav\">\n" +
-                        "      <li class=\"nav-item\">\n" +
-                        "        <a class=\"nav-link\" href=\"/register\">Register</a>\n" +
-                        "      </li>\n" +
-                        "      <li class=\"nav-item\">\n" +
-                        "        <a class=\"nav-link\" href=\"/login\">Login</a>\n" +
-                        "      </li>\n" +
-                        "    </ul>\n" +
-                        "  </nav>" +
+        return  "    <ul id=\"top-bar\">\n" +
+                "            <li class=\"nav-item\" id=\"logoCnt\">\n" +
+                "                <img draggable=\"false\" src=\"/res/logo_dark_texasless.svg\" id=\"logo\" onclick=\"location.href='/'\"/>\n" +
+                "            </li>\n" +
+                "            <li class=\"nav-item\">\n" +
+                "                <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
+                "            </li>\n" +
+                "            <li class=\"nav-item\" id=\"uil_nav\">\n" +
+                "                <a class=\"nav-link\">UIL</a>\n" +
+                "                <ul id=\"uil_dropdown\">" +
+                "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/cs\">CS</a></li><br>" +
+                "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/math\">Math</a></li>" +
+                "                </ul>" +
+                "            </li>\n" +
+                "            <li class=\"nav-item\">\n" +
+                "                <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
+                "            </li>\n" +
+                "      <li class=\"nav-item rightNav\">\n" +
+                "        <a class=\"nav-link\" href=\"/login\">Login</a>\n" +
+                "      </li>\n" +
+                "      <li class=\"nav-item rightNav\">\n" +
+                "        <a class=\"nav-link\" href=\"/register\">Register</a>\n" +
+                "      </li>\n" +
+                "        </ul>\n" +
                         DROPDOWN +
                         "      <li class=\"drop-nav-item\">\n" +
                         "        <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
@@ -104,9 +100,10 @@ public class Dynamic {
                 "                <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
                 "            </li>\n" +
                 "            <li class=\"nav-item\" id=\"uil_nav\">\n" +
-                "                <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
+                "                <a class=\"nav-link\">UIL</a>\n" +
                 "                <ul id=\"uil_dropdown\">" +
-                "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/cs\">CS</a></li>" +
+                "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/cs\">CS</a></li><br>" +
+                "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/math\">Math</a></li>" +
                 "                </ul>" +
                 "            </li>\n" +
                 "            <li class=\"nav-item\">\n" +

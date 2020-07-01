@@ -2,17 +2,7 @@ body{
     overflow-y:scroll;
 }
 #scoreboardColumn{
-    width:60%;
-    margin:auto;
-    padding-top:2em;
-}
-#scoreboardColumn h1{
-    font-weight:bold;
-    font-family:var(--head-font);
-    color:var(--prim-light);
-}
-#scoreboardColumn h2{
-    font-size:1rem;
+    padding:5em 0 10em 0;
 }
 #teamList{
     margin:auto;

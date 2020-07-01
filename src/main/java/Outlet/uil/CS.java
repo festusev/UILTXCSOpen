@@ -54,8 +54,8 @@ public class CS extends HttpServlet{
     /**
      * Timing constants
      */
-    private static String opensString = "08/22/2019 10:50:32";
-    private static String closesString = "08/24/2020 10:50:32";
+    private static String opensString = "07/31/2020 18:00:00";
+    private static String closesString = "08/02/2020 18:00:00";
     private static Countdown opens;
     private static Countdown closes;
     public static final String MC_TIME_TEXT = "45 minutes";
@@ -65,10 +65,18 @@ public class CS extends HttpServlet{
      * Text constants like names and descriptions.
      */
     public static final String NAME = "UIL CS";
-    public static final String WHAT_IT_IS = "A terrifically fun competition. Consists of an individual test and a group test.";
-    public static final String RULES = "Don't cheat please.";
-    public static final String PRACTICE = "Practice by getting gud.";
-    public static final String MC_INSTRUCTIONS = "Here are some instructions, don't cheat pls.";
+    public static final String WHAT_IT_IS = "A challenging and unique computer science competition, testing skills in" +
+            " general programming and Java syntax. Consists of a 45-minute 40-question multiple choice test and a two-hour" +
+            " 12-question algorithmic programming contest. ";
+    public static final String RULES = "<ol><li>Take the MC individually anytime during the 2-day period. Team members do not have to take it at the same time.</li>" +
+            "<li>Each MC question correct is 6 pts and each incorrect is -2 pts. Skipped questions are 0pts.</li>" +
+            "<li>You cannot use any resources for the MC.</li>" +
+            "<li>Take the Programming section with your team anytime during the 2-day period.</li>" +
+            "<li>Each Programming question has a max score of 60 pts where each incorrect submission reduces that value by 5pts.</li>" +
+            "<li>You may use textbooks or offline resources for the Programming but don't google problems.</li>" +
+            "<li>You can program in Java 11, Python 3, or C++ 17.</li>";
+    public static final String PRACTICE = "You can download the MC and Programming solutions from our last UIL CS <a href='/samples/cs_sample_packet.zip' class='link'>here.</a> You can also visit https://www.uiltexas.org/academics/stem/computer-science to view their sample tests.";
+    public static final String MC_INSTRUCTIONS = "Take these 40 questions in 45 minutes. If you can't reasonably eliminate any answers, leave the question blank. You are only allowed your brain, Google will not help you.";
 
 
     public static void initialize() {
@@ -350,8 +358,8 @@ class CSEntry extends UILEntry{
         probNum--;  // We only use probNum for indexes
         if(status>0) frqResponses[probNum]--;
         else if(status==0) {
-            frqScore += Math.max(CS.template.frqTest.calcScore(frqResponses[probNum]), FRQ_MIN);
-            frqResponses[probNum] = (short)(Math.abs(frqResponses[probNum]) + 1);
+            frqScore += java.lang.Math.max(CS.template.frqTest.calcScore(frqResponses[probNum]), FRQ_MIN);
+            frqResponses[probNum] = (short)(java.lang.Math.abs(frqResponses[probNum]) + 1);
         }
         if(status >= 0) update();
     }

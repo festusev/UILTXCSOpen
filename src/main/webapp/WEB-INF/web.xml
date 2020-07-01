@@ -152,16 +152,6 @@
 
   <!-- Begin UIL Servlets -->
   <servlet>
-    <servlet-name>UIL</servlet-name>
-    <servlet-class>Outlet.uil.UIL</servlet-class>
-    <load-on-startup>1</load-on-startup>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>UIL</servlet-name>
-    <url-pattern>/uil</url-pattern>
-  </servlet-mapping>
-
-  <servlet>
     <servlet-name>UIL_CS</servlet-name>
     <servlet-class>Outlet.uil.CS</servlet-class>
     <load-on-startup>1</load-on-startup>
@@ -175,6 +165,16 @@
   <servlet-mapping>
     <servlet-name>UIL_CS</servlet-name>
     <url-pattern>/uil/cs</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>UIL_Math</servlet-name>
+    <servlet-class>Outlet.uil.Mathematics</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>UIL_Math</servlet-name>
+    <url-pattern>/uil/math</url-pattern>
   </servlet-mapping>
 
   <!-- Challenge Servlet -->

@@ -1,7 +1,57 @@
+/***
+Setup document standards.
+ */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 1rem;
+    font: inherit;
+    vertical-align: baseline;
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+    display: block;
+}
+
+ul {
+    list-style: none;
+}
+ol {
+    list-style-position: inside;
+}
+blockquote, q {
+    quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+    content: '';
+    content: none;
+}
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+p{
+    font-size:1rem;
+}
 body{
-    margin:0;
-    padding:0;
-    overflow:hidden;
+    /**
+    Document variables
+     */
     --prim-col: #262626;
     --sec-col: #edad3e;
     --sec-dark: #d18b11;
@@ -15,12 +65,17 @@ body{
     --light-gray:#f9f9f9;
     --head-col: #404040;
     --body-col: #333;
-    --head-font: 'Anton',sans-serif;
+
     --head-font: 'Francois One', sans-serif;
     --body-font: 'Poppins', sans-serif;
     --mono: 'Space Mono', monospace;
-    font-family: var(--body-font);
+
+
+    margin:0;
+    padding:0;
     min-height: 100%;
+    overflow:hidden;
+    font-family: var(--body-font);
     background-color:white;
     color:var(--body-col);
 }
@@ -32,19 +87,28 @@ html {
 textarea:focus, input:focus{
     outline:none;
 }
-.form-control:focus {
-    border-color: inherit;
-    -webkit-box-shadow: none;
-    box-shadow: none;
+input{
+    border:1px solid #b5b5b5;
+    border-radius:3px;
+    padding-left:1em;
 }
+input:focus{
+    border:1px solid var(--prim-light);
+}
+
+
+/***
+Everything to do with the navigation bar
+ */
 #top-bar{
-    /*! z-index: 2000; */
-    /*! position: relative; */
-    box-shadow: 0px 0px 7px 1px rgba(0,0,0,0.1);
+    z-index: 5;
+    position: relative;
+    box-shadow: 0 0 7px 1px rgba(0,0,0,0.1);
     list-style-type: none;
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    /*! overflow: hidden; */
+    /*! width: 100vw; */
 }
 #top-bar *{
     box-sizing:border-box;
@@ -53,14 +117,16 @@ textarea:focus, input:focus{
     list-style: none;
     margin: 0;
     padding:0;
-    display: block;
-    float: left;
+    display: inline-block;
+    /*! float: left; */
+    vertical-align: top;
 }
 #top-bar li a, #top-bar li img{
     display: block;
     text-align: center;
-    padding: 14px 16px;
+    padding: 10px 9px;
     text-decoration: none;
+    cursor: pointer;
 }
 .nav-item{
     display: none;
@@ -77,13 +143,36 @@ textarea:focus, input:focus{
 }
 #logo{
     box-sizing:border-box;
-    width:100%;
-    height:50px;
+    height:44px;
     cursor:pointer;
 }
 .link{
     font-weight:bold;
 }
+#uil_dropdown{
+    display: none;
+    position:absolute;
+    padding:0;
+    box-shadow:0 3px 5px 0 rgba(0,0,0,0.05);
+    z-index: 3;
+    background-color: white;
+}
+#uil_dropdown a{
+    border-top:none;
+    color:var(--body-col);
+    font-weight:normal;
+    font-size:1rem;
+}
+#uil_dropdown li{
+    float:unset;
+}
+#top-bar .rightNav{
+    float:right;
+}
+
+/*
+The navigation bar for mobile.
+ */
 #dropdownNav{
     position: relative;
     z-index: 2000;
@@ -118,37 +207,19 @@ textarea:focus, input:focus{
 .drop-nav-item:hover{
     color:#e8e8e8;
 }
-#uil_dropdown{
-    display: none;
-    position:absolute;
-    padding:0;
-    box-shadow:0 3px 5px 0 rgba(0,0,0,0.05);
-}
-#uil_dropdown a{
-    border-top:none;
-    color:var(--body-col);
-    font-weight:normal;
-    font-size:1rem;
-}
-#top-bar .rightNav{
-    float:right;
+
+
+/***
+Everything to do with the content css.
+ */
+.column{
+    padding-top:4rem;
 }
 .row{
-    margin:3.2em 0 0 0;
+    margin:1.5rem 0 0 0;
 }
-#copyright_notice{
-    width:100%;
-    font-size:0.6em;
-    color:var(--head-col);
-    text-align:center;
-    font-family:var(--body-font);
-    padding:5px;
-    position:relative;
-    bottom:0;
-    z-index: 100;
-}
-#copyright_notice a{
-    color:inherit;
+.head-row{
+    margin:0;
 }
 .center{
     margin:auto;
@@ -172,15 +243,6 @@ a:focus{
 .flair{
     display:none;
 }
-#upperHalf{
-    box-shadow:0 10px 10px -10px rgba(0,0,0,.12);
-    z-index:100;
-    border:none;
-    position:relative;
-    padding-bottom:2em;
-    z-index:-1;
-    position: relative;
-}
 #lowerHalf{
     width:100%;
     border:none;
@@ -198,6 +260,14 @@ a:focus{
     -ms-user-select: none;
     user-select: none;
     width:100%;
+}
+
+.link{
+    color:var(--sec-col);
+    text-decoration: none;
+}
+.link:hover{
+    color:var(--sec-dark);
 }
 
 /* Hide the browser's default checkbox */
@@ -253,16 +323,9 @@ a:focus{
     -ms-transform: rotate(45deg);
     transform: rotate(45deg);
 }
-input{
-    border:1px solid #b5b5b5;
-    border-radius:3px;
-    padding-left:1em;
-}
-input:focus{
-    border:1px solid var(--prim-light);
-}
 .error{
     display:block;
+    box-sizing:border-box;
     width:100%;
     margin-bottom:10px;
     border:1px solid var(--warn-col);
@@ -272,12 +335,31 @@ input:focus{
 }
 .success{
     display:block;
+    box-sizing:border-box;
     width:100%;
     margin-bottom:10px;
     border:1px solid var(--success-col);
     padding:0.5em 1em;
     border-radius:4px;
     color:var(--success-dark);
+}
+.column h1{
+    display:block;
+    width:100%;
+    font-weight:bold;
+    color:var(--prim-light);
+    font-size:3.5rem;
+    font-family:var(--head-font);
+    padding-bottom:0.4em;
+}
+.column h2{
+    font-size:1.8rem;
+    padding-bottom:0.4rem;
+    font-weight:bold;
+    color:var(--prim-middle);
+}
+.subtitle{
+    font-size:1.2rem;
 }
 #announcement{
     background-color:#ffef87;
@@ -286,36 +368,20 @@ input:focus{
     padding:0px 20px 5px 20px;
     color:black;
 }
-#big_copyright{
-    text-align: center;
-    padding:2em 0 1em 0;
-}
-#copyright_contact {
-    display:inline-block;
-}
-#copyright_contact img{
-    height:30px;
-    margin: 0 1em;
-}
-#copyright_privacy a{
-    margin:0 1em;
-    color: rgb(255, 255, 255);
-    mix-blend-mode: difference;
-}
-#copyright_notice{
-    color: rgb(255, 255, 255);
-    mix-blend-mode: difference;
-}
+
+/* How a scoreboard is styled */
 #scoreboardColumn{
-    padding-top: 1.1em;
-    font-size:1.5em;
     text-align:left;
+    width:60%;
+    margin:auto;
 }
 #scoreboardColumn tr{
-    border-bottom:1px solid #d6d6d6;
+    border-bottom:1px solid #e8e8e8;
 }
 #scoreboardColumn th{
     padding:8px 0;
+    text-align: left;
+    font-weight:bold;
 }
 #scoreboardColumn td{
     padding:13px 0;
@@ -323,33 +389,13 @@ input:focus{
 #scoreboardColumn .right{
     text-align:right;
 }
-@media only screen and (min-width: 900px){
-    #dropdownNav{
-        display:none;
-    }
-    a{
-        text-decoration: none;
-        color:var(--sec-col);
-    }
-    a:hover{
-        color:var(--sec-dark);
-        text-decoration:none;
-    }
-    .center{
-        margin:auto;
-        display:flex;
-    }
-    .row{
-        padding:4em 0 4em 0;
-        /*! background-color: #f5f5f5; */
-        border-bottom: 2px solid #ededed;
-        margin:0;
-    }
-    .forbidden{
-        margin-top:15%;
-        font-size:3em;
-        padding:0 32% 0 32%;
-    }
+#scoreboardColumn h1{
+    font-weight:bold;
+    font-family:var(--head-font);
+    color:var(--prim-light);
+}
+#scoreboardColumn h2{
+    font-size:1rem;
 }
 .chngButton{
     border:none;
@@ -366,20 +412,63 @@ input:focus{
 .chngButton:hover{
     background-color:var(--sec-dark);
 }
-@media only screen and (min-width: 1250px) {
-    .flair {
-        bottom: 3em;
-        display: block;
-        position: fixed;
-        width: 8em;
-        z-index: 1000;
-    }
 
-    #left_flair {
-        left: 3em;
-    }
 
-    #right_flair {
-        right: 3em;
+/***
+Everything to do with the copyright.
+ */
+#copyright_notice{
+    width:100%;
+    font-size:0.6em;
+    color:var(--head-col);
+    text-align:center;
+    font-family:var(--body-font);
+    padding:5px;
+    position:relative;
+    bottom:0;
+    z-index: 100;
+}
+#copyright_notice a{
+    color:inherit;
+}
+#big_copyright{
+    text-align: center;
+    padding:2em 0 1em 0;
+}
+#copyright_contact {
+    display:inline-block;
+}
+#copyright_contact img{
+    height:30px;
+    margin: 0 1em;
+}
+#copyright_privacy a{
+    margin:0 1em;
+    color: rgb(255, 255, 255);
+    mix-blend-mode: difference;
+    text-decoration: none;
+}
+#copyright_notice{
+    color: rgb(255, 255, 255);
+    mix-blend-mode: difference;
+}
+
+
+
+/***
+Media queries
+*/
+@media only screen and (min-width: 900px){
+    #dropdownNav{
+        display:none;
+    }
+    .center{
+        margin:auto;
+        display:flex;
+    }
+    .forbidden{
+        margin-top:15%;
+        font-size:3em;
+        padding:0 32% 0 32%;
     }
 }

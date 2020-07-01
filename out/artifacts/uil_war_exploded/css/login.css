@@ -1,7 +1,6 @@
 #center{
     width:30em;
     margin:auto;
-    margin-top:7em;
 }
 #center h1{
     font-weight:bold;
@@ -39,9 +38,11 @@
     padding:4px 10px 4px 10px;
     display:block;
     border-radius:5px;
-    margin-top:1em;
     cursor:pointer;
     font-size:1.2em;
+
+    margin:auto;
+    margin-top:1em;
 }
 #login:hover{
     background-color:var(--prim-col);
@@ -49,6 +50,7 @@
 #regWrapper{
     display:block;
     padding-top:1.2em;
+    text-align:center;
 }
 #regWrapper a{
     color: var(--sec-col);

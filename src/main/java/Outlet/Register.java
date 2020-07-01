@@ -29,11 +29,10 @@ public class Register extends HttpServlet{
         Conn.setHTMLHeaders(response);
 
         String body =
-                    "    <div id=\"center\">\n" +
+                    "    <div class=\"column\"><div id=\"center\" class=\"row head-row\">\n" +
                             "<h1>Register</h1>" +
                     "        <form onsubmit=\"register(); return false;\" id=\"reg-box\">\n" +
                     "            <label for=\"email\">Email</label>\n" +
-                    "            <p class=\"warning\" id=\"passWarning\">(Just for verification. We won't email you after this.)</p>\n" +
                     "            <input type=\"text\" id=\"email\" name=\"email\" class=\"form-input\" maxlength=\"255\">\n" +
                     "            <label for=\"uname\">Username</label>\n" +
                     "            <input type=\"text\" id=\"uname\" name=\"uname\" class=\"form-input\" maxlength=\"15\">\n" +
@@ -42,9 +41,9 @@ public class Register extends HttpServlet{
                     "            <label for=\"passAgain\">Re-Type Your Password</label>\n" +
                     "            <input type=\"password\" id=\"passAgain\" name=\"passAgain\" class=\"form-input\">\n" +
                     "            <button id=\"reg\">Register</button>\n" +
-                    "            <p id=\"logWrapper\">Already have an account? <a href=\"login\">Login.</a></p>\n" +
+                    "            <p id=\"logWrapper\">Already have an account? <a href=\"login\" class='link'>Login.</a></p>\n" +
                     "        </form>\n" +
-                    "    </div>\n" +
+                    "    </div></div>\n" +
                     "</div>";
 
         // create HTML form

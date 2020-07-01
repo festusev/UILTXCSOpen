@@ -17,28 +17,28 @@ public class ChallengeTemplate extends Template {
         // "you must be logged in to sign up for this competition"
         String actMessage = "<button id='signUp' onclick='signUp()'>Sign Up</button>";
         if(competeStatus == 1){
-            actMessage = "<p class='subtitle'>Log in to compete</p>";
+            actMessage = "<h3 class='subtitle'>Log in to compete</h3>";
         } else if(competeStatus == 2) {
-            actMessage = "<p class='subtitle'>Join a team to compete</p>";
+            actMessage = "<h3 class='subtitle'>Join a team to compete</h3>";
         } else if(competeStatus == 0) { // If they are already signed up for this competition
-            actMessage = "<p class='subtitle'>Your team has signed up for this competition</p>";
+            actMessage = "<h3 class='subtitle'>Your team has signed up for this competition</h3>";
         }
         String about = "<div class='column' id='aboutColumn'>" +
-                "<div class='row secRow'>" +
+                "<div class='row head-row'>" +
                 "<h1 id='compName'>" + name + "</h1>" +
                 actMessage + "" +
                 "</div>" +
-                "<div class='row secRow'>" +
+                "<div class='row'>" +
                 "<h2 class='secHead'>What it is</h2>" +
-                "<p class='secBody'><br>" + whatItIs + "</p>" +
+                "<p class='secBody'>" + whatItIs + "</p>" +
                 "</div>" +
-                "<div class='row secRow'>" +
+                "<div class='row'>" +
                 "<h2 class='secHead'>Rules</h2>" +
-                "<p class='secBody'><br>" + rules + "</p>" +
+                "<p class='secBody'>" + rules + "</p>" +
                 "</div>" +
-                "<div class='row secRow'>" +
+                "<div class='row'>" +
                 "<h2 class='secHead'>Practice</h2>" +
-                "<p class='secBody'><br>" + practice + "</p>" +
+                "<p class='secBody'>" + practice + "</p>" +
                 "</div>" +
                 "</div>";
         return about + scoreboardHTML + getFRQHTML(uData, competeStatus);
@@ -70,34 +70,43 @@ public class ChallengeTemplate extends Template {
     }
     public String getRunningFRQ(ChallengeEntry entry){
         return "<script>grabFRQProblemsTimer = setInterval(function() {grabFRQProblems()}, 1000*10);</script>" +
-                "<div id='frqColumn' class='column' style='display:none'><div id='frqSelection'><p id='frqSubmitHeader'>Challenge</p>" +
-                "<p id='frqInst'>Choose an output file to submit:</p>" +
+                "<div id='frqColumn' class='column' style='display:none'><div id='challenge-frq-row' class='row head-row'>" +
+                getFRQProblems(entry) +
+                "<div id='frqSelection'>" +
+                "<h3 class='subtitle'>Choose an output file to submit:</h3>" +
                 "<form id='submit' onsubmit='submitChallenge(); return false;' enctype='multipart/form-data'><input type='file' id='frqTextfile' accept='.7z'/><button id='submitBtn' class='chngButton'>Submit</button></form></div>"+
-                getFRQProblems(entry)+"</div>";
+                "</div></div>";
     }
     public String getFinishedFRQ(ChallengeEntry entry){
         return "<div id='frqColumn' class='column' class='column'>"+getFRQProblems(entry)+"</div>";
     }
     public String getFRQProblems(ChallengeEntry entry) {
-        return "<div id='frqProblems'><h1>Scoring<br>Districts Won: "+entry.won+"<br>Locality: "+entry.locality+"</h1></div>";
+        return "<div id='frqProblems'><h1>Scoring</h1><h3 class='subtitle'>Districts Won: "+entry.won+" Locality: "+entry.locality+"</h3></div>";
     }
     public void updateScoreboard(){
         ArrayList<Team> teams = ChallengeEntry.getAllEntries();
         Collections.sort(teams, sorter);
+
+        boolean compOpen = opens.done();
 
         // The table row list of teams in order of points
         String teamList = "";
         int rank = 1;
         for(Team t: teams) {
             ChallengeEntry entry = (ChallengeEntry)t.comps.get(cid);
-            teamList+="<tr><td>" + rank + "</td><td>" + t.tname + "</td><td class='leastImportant'>" + t.affiliation + "</td><td>" + entry.won +
-                    "</td><td class='leastImportant'>" + entry.locality+"</td></tr>";
+            teamList+="<tr><td>" + rank + "</td><td>" + t.tname + "</td><td class='leastImportant'>" + t.affiliation + "</td><td class='right'>" + (compOpen?entry.won:"") +
+                    "</td><td class='leastImportant right'>" + (compOpen?entry.locality:"") +"</td></tr>";
             rank ++;
         }
 
         // create HTML
-        scoreboardHTML = "<div class='column' id='scoreboardColumn' style='display:none;'>" +
-                "<table id='teamList'><tr><th>#</th><th>Team</th><th class='leastImportant' class='right'>School</th>" +
-                "<th>Districts Won</th><th class='leastImportant' class='right'>Locality</th></tr></tr>" + teamList + "</table></div>";
+        scoreboardHTML = "<div class='column' id='scoreboardColumn' style='display:none;'><div class='row head-row'>" +
+                "<h1>Scoreboard</h1>" +
+                "<table id='teamList'><tr><th>#</th><th>Team</th><th class='leastImportant' class='right'>School</th>";
+        if(compOpen) {
+            scoreboardHTML+="<th class='right'>Districts Won</th><th class='leastImportant right'>Locality</th></tr>" + teamList + "</table></div></div>";
+        } else {
+            scoreboardHTML+="<th class='right'></th><th class='leastImportant right'></th></tr>" + teamList + "</table></div></div>";
+        }
     }
 }

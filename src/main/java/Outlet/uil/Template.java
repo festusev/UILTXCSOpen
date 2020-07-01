@@ -50,13 +50,13 @@ public class Template {
             mcHTML = new String[4];
             compOpenNavBar = "<li onclick='showMC();'>MC</li>";
             mcHTML[0] = "<div id='mcColumn' class='column' style='display:none;'>" +
-                    "<h1>Are you sure you want to begin the "+mcTest.NAME+"?</h1>" +
+                    "<h1>Begin "+mcTest.NAME+"?</h1>" +
                     "<p class='subtitle'>Once you do, you will have " + mc.TIME_TEXT + " to finish.</p>" +
                     "<buttom id='mcBegin' onclick='beginMC()' class='chngButton'>Begin</button>" +
                     "</div>";
             mcHTML[1] = "<div id='mcColumn' class='column' style='display:none;'>" +
                     "<h1>"+mcTest.NAME+"</h1>" +
-                    "<p class='subtitle'><span>Instructions:</span>" + mcTest.INSTRUCTIONS + "</p><div id='mcTestTimer'>";
+                    "<p class='subtitle'><span>Instructions: </span>" + mcTest.INSTRUCTIONS + "</p><div id='mcTestTimer'>";
 
             mcHTML[2] = "</div><div id='mcQuestions'><ol class='mcColumn'>";
             short firstHalf = (short)Math.ceil(mcTest.NUM_PROBLEMS/2.0);
@@ -81,7 +81,7 @@ public class Template {
         if(fr.exists) {
             compOpenNavBar += "<li onclick='showFRQ();'>FRQ</li>";
             frqHTML[0] = "<div id='frqColumn' class='column' style='display:none;'>" +
-                    "<h1>Are you sure you want to begin the "+frqTest.NAME+"?</h1>" +
+                    "<h1>Begin the "+frqTest.NAME+"?</h1>" +
                     "<p class='subtitle'>Once you do, you and your team will have " + frqTest.TIME_TEXT + " to finish.</p>" +
                     "<buttom id='mcBegin' onclick='beginFRQ()' class='chngButton'>Begin</button>" +
                     "</div>";
@@ -147,28 +147,28 @@ public class Template {
         // "you must be logged in to sign up for this competition"
         String actMessage = "<button id='signUp' onclick='signUp()'>Sign Up</button>";
         if(competeStatus == 1){
-            actMessage = "<p class='subtitle'>Log in to compete</p>";
+            actMessage = "<h3 class='subtitle'>Log in to compete</h3>";
         } else if(competeStatus == 2) {
-            actMessage = "<p class='subtitle'>Join a team to compete</p>";
+            actMessage = "<h3 class='subtitle'>Join a team to compete</h3>";
         } else if(competeStatus == 0) { // If they are already signed up for this competition
-            actMessage = "<p class='subtitle'>Your team has signed up for this competition</p>";
+            actMessage = "<h3 class='subtitle'>Your team has signed up for this competition</h3>";
         }
         String about = "<div class='column' id='aboutColumn'>" +
-                "<div class='row secRow'>" +
-                "<h1 id='compName'>" + name + "</h1>" +
+                "<div class='row head-row'>" +
+                "<h1>" + name + "</h1>" +
                 actMessage + "" +
                 "</div>" +
-                "<div class='row secRow'>" +
-                "<h2 class='secHead'>What it is</h2>" +
-                "<p class='secBody'><br>" + whatItIs + "</p>" +
+                "<div class='row'>" +
+                "<h2>What it is</h2>" +
+                "<p>" + whatItIs + "</p>" +
                 "</div>" +
-                "<div class='row secRow'>" +
-                "<h2 class='secHead'>Rules</h2>" +
-                "<p class='secBody'><br>" + rules + "</p>" +
+                "<div class='row'>" +
+                "<h2>Rules</h2>" +
+                "<p>" + rules + "</p>" +
                 "</div>" +
-                "<div class='row secRow'>" +
-                "<h2 class='secHead'>Practice</h2>" +
-                "<p class='secBody'><br>" + practice + "</p>" +
+                "<div class='row'>" +
+                "<h2>Practice</h2>" +
+                "<p>" + practice + "</p>" +
                 "</div>" +
                 "</div>";
         return about + scoreboardHTML + getMCHTML(uData, competeStatus) + getFRQHTML(uData, competeStatus);
@@ -183,13 +183,13 @@ public class Template {
                     "<h1 class='forbiddenPage'>You must belong to a team to compete</h1>" +
                     "</div>";
         } else if(competeStatus == 3) {
-            return "<div id='mcColumn' class='column' style='display:none;'>" +
+            return "<div id='mcColumn' class='column' style='display:none;'><div class='row'>" +
                     "<h1 class='forbiddenPage'>Sign up for this competition to compete</h1>" +
                     "<p class='subtitle' onclick='showAbout()' style='cursor:pointer'>Sign up in the <b>About</b> page</p>" +
-                    "</div>";
+                    "</div></div>";
         }
         UILEntry entry = u.team.comps.get(cid);
-        if(!entry.mc.keySet().contains(u.uid))
+        if(!entry.mc.containsKey(u.uid))
             return mcHTML[0];
 
         if(entry.finishedMC(u.uid)) {
@@ -202,10 +202,10 @@ public class Template {
         return mcHTML[1]+mcTest.getTimer(started).toString()+mcHTML[2];
     }
     public String getFinishedMC(short[] scoringReport) {
-        return "<div id='mcColumn' class='column' style='display:none;'>" +
+        return "<div id='mcColumn' class='column' style='display:none;'><div class='row head-row'>" +
                 "<h1>"+mcTest.NAME+": "+scoringReport[0]+"/"+mcTest.MAX_POINTS+"</h1>" +
-                "<p class='subtitle'>"+scoringReport[1]+" correct, "+scoringReport[3]+" incorrect, "+scoringReport[2]+" skipped</p>" +
-                "</div>";
+                "<h3 class='subtitle'>"+scoringReport[1]+" correct, "+scoringReport[3]+" incorrect, "+scoringReport[2]+" skipped</h3>" +
+                "</div></div>";
     }
 
     public String getFRQHTML(User u, int competeStatus) {
@@ -219,10 +219,10 @@ public class Template {
                     "<h1 class='forbiddenPage'>You must belong to a team to compete</h1>" +
                     "</div>";
         } else if(competeStatus == 3) {
-            return "<div id='frqColumn' class='column' style='display:none;'>" +
+            return "<div id='frqColumn' class='column' style='display:none;'><div class='row'>" +
                     "<h1 class='forbiddenPage'>Sign up for this competition to compete</h1>" +
                     "<p class='subtitle' onclick='showAbout()' style='cursor:pointer'>Sign up in the <b>About</b> page</p>" +
-                    "</div>";
+                    "</div></div>";
         }
 
         CSEntry entry = (CSEntry) u.team.comps.get(cid);
@@ -235,10 +235,17 @@ public class Template {
         }
     }
     public String getRunningFRQ(CSEntry entry){
-        return "<script>grabFRQProblemsTimer = setInterval(function() {grabFRQProblems()}, 1000*10);</script><div id='frqColumn' class='column' style='display:none'><div id='frqSelection'><p id='frqSubmitHeader'>"+frqTest.NAME+"</p><div id='frqTimer'>"+frqTest.getTimer(entry.frqStarted)+"</div>"+frqHTML[1]+"</div>"+getFRQProblems(entry)+"</div>";
+        return "<script>grabFRQProblemsTimer = setInterval(function() {grabFRQProblems()}, 1000*10);</script>" +
+                "<div id='frqColumn' class='column' style='display:none'><div class='row head-row running-frq'>" +
+                "<div id='frqSelection'>" +
+                "<h1>"+frqTest.NAME+"</h1>" +
+                "<div id='frqTimer'>"+frqTest.getTimer(entry.frqStarted)+"</div>"+
+                frqHTML[1]+"</div>"+
+                getFRQProblems(entry)+"</div></div>";
     }
     public String getFinishedFRQ(CSEntry entry){
-        return "<div id='frqColumn' class='column' class='column' style='display:none'>"+getFRQProblems(entry)+"</div>";
+        return "<div id='frqColumn' class='column' class='column' style='display:none'><div class='row head-row'>"+
+                getFRQProblems(entry)+"</div></div>";
     }
     public String getFRQProblems(CSEntry entry){
         String problems = "<div id='frqProblems'><h1>Problems - " + entry.frqScore +"pts</h1>";
@@ -254,6 +261,7 @@ public class Template {
         }
         return problems += "</div>";
     }
+
     /**
      * Returns 0 if the competition has not yet begun, 1 if the competition is currently running,
      * and 2 if the competition is over.
@@ -296,16 +304,16 @@ public class Template {
         }
 
         // create HTML
-        scoreboardHTML = "<div class='column' id='scoreboardColumn' style='display:none;'>" +
+        scoreboardHTML = "<div class='column' id='scoreboardColumn' style='display:none;'><div class='row head-row'><h1>Scoreboard</h1>" +
                 "<table id='teamList'><tr><th>#</th><th>Team</th><th>School</th><th class='right'>"+((frqTest.exists&&mcTest.exists)?"MC":"")+"</th><th class='right'>"+(frqTest.exists?"FRQ":"MC")+"</th>" +
-                "</tr>" + teamList + "</table></div>";
+                "</tr>" + teamList + "</table></div></div>";
     }
 
 
     /**
-     * Checks if there is a zscore column in this database. If there isn't, adds a zscore column and calculates each
-     * team's zscore.
-     * return a hashmap mapping the team's tid to its z-score.
+     * Checks if there is a 'normals' column in this database. If there isn't, adds a 'normals' column and calculates each
+     * team's normalized score.
+     * return a hashmap mapping the team's tid to its normalized score.
      * @return
      */
     public HashMap<Short, Double> end() throws SQLException {
@@ -315,64 +323,46 @@ public class Template {
         ResultSet rs = stmt.executeQuery();
         try {
             if(rs.next())
-                rs.getDouble("zscore");
-        } catch (Exception e) {
-            stmt = conn.prepareStatement("ALTER TABLE `c"+this.cid+"` ADD COLUMN zscore DOUBLE");
+                rs.getDouble("normals");
+        } catch (Exception e) { // In this case there is no z-score column so we add it
+            stmt = conn.prepareStatement("ALTER TABLE `c"+this.cid+"` ADD COLUMN normals DOUBLE");
             stmt.executeUpdate();
 
-            double average = 0;
+            int max = 0;    // The max score of this competition
             ArrayList<Team> allTeams = Conn.getAllTeams();
             ArrayList<UILEntry> teams = new ArrayList<>();
-            ArrayList<Integer> scores = new ArrayList<>();
             for(Team t: allTeams) {
-                if(t.comps.keySet().contains(this.cid)){
+                if(t.comps.containsKey(this.cid)){
                     UILEntry comp = t.comps.get(this.cid);
                     teams.add(comp);
+
                     int score = comp.getScore();
-                    average += score;
-                    scores.add(score);
+                    if(max < score) max = score;
                 }
             }
-            average /= teams.size();
 
-            double standardDeviation = 0;
-            for(int score: scores) {
-                standardDeviation += Math.pow(score - average, 2);
-            }
-
-            standardDeviation = Math.sqrt(standardDeviation/teams.size());
-
-            HashMap<Short, Double> zScoreMap = new HashMap<>();
+            HashMap<Short, Double> normalScores = new HashMap<>();
             for(UILEntry t: teams) {
-                zScoreMap.put(t.tid, (t.getScore() - average)/standardDeviation);
+                normalScores.put(t.tid, ((double)t.getScore())/max*100);
             }
-            makePositive(zScoreMap);
 
-            String updateMysql = "UPDATE `c"+this.cid+"` SET zscore = (case ";
-            for(short i:zScoreMap.keySet()) {
-                updateMysql += "when tid = '" + i + "' then " + zScoreMap.get(i) + " ";
+            String updateMysql = "UPDATE `c"+this.cid+"` SET normals = (case ";
+            for(short i:normalScores.keySet()) {
+                updateMysql += "when tid = '" + i + "' then " + normalScores.get(i) + " ";
             }
             updateMysql += "end) WHERE 1=1;";
 
             stmt = conn.prepareStatement(updateMysql);
             stmt.executeUpdate();
 
-            return zScoreMap;
+            return normalScores;
         }
         rs.first();
-        HashMap<Short, Double> zScoreMap = new HashMap<>();
+        HashMap<Short, Double> normalScoreMap = new HashMap<>();
         while(rs.next()) {
-            zScoreMap.put(rs.getShort("tid"), rs.getDouble("zscore"));
+            normalScoreMap.put(rs.getShort("tid"), rs.getDouble("normals"));
         }
-        makePositive(zScoreMap);
-        return zScoreMap;
-    }
-
-    // Adds 4 to every z score
-    public static void makePositive(HashMap<Short, Double> zScoreMap) {
-        for(short i: zScoreMap.keySet()) {
-            zScoreMap.put(i, zScoreMap.get(i)+4);
-        }
+        return normalScoreMap;
     }
 }
 

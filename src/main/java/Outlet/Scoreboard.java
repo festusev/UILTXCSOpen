@@ -6,6 +6,9 @@ import Outlet.uil.CS;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import javax.servlet.ServletException;
@@ -45,11 +48,32 @@ public class Scoreboard extends HttpServlet{
      * Store the scoreboard html so that it doesn't need to be recreated every time
      */
     public static void generateScoreboard() {
-        HashMap<Short, Double> challengeZScores = null;
-        HashMap<Short, Double> csZScores = null;
+        HashMap<Short, Double> firstCSScores = null;    // The archived scores of the first competition
+        HashMap<Short, Double> challengeScores = null;
+        HashMap<Short, Double> csScores = null;
         try {
-            challengeZScores = Challenge.template.end();
-            csZScores = CS.template.end();
+            // First, get the normal scores from the first competition
+            Connection conn = Conn.getConnection();
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM `c0`");
+
+            ResultSet rs = stmt.executeQuery();
+            firstCSScores = new HashMap<>();
+            if(rs.next()) {
+                while(rs.next()) {
+                    double normal = rs.getDouble("normals");
+                    short tid = rs.getShort("tid");
+                    firstCSScores.put(tid, normal);
+                }
+            }
+
+            if(Challenge.template.closes.done())
+                challengeScores = Challenge.template.end();
+            else
+                challengeScores = new HashMap<>();
+            if(CS.template.closes.done())
+                csScores = CS.template.end();
+            else
+                csScores = new HashMap<>();
         }
         catch (SQLException e) {
             e.printStackTrace();
@@ -58,36 +82,41 @@ public class Scoreboard extends HttpServlet{
 
         ArrayList<Team> teams = Conn.getAllTeams();
 
-        ArrayList<ZTeam> zTeams = new ArrayList<>();
+        ArrayList<NormalTeam> normalTeams = new ArrayList<>();
         for(Team t: teams) {
-            int zScore = 0;
+            double normalScore = 0;
+            System.out.println("<< Team " + t.tid + " containsKey is " + t.comps.containsKey(0));
+            if(firstCSScores.containsKey(t.tid)) {
+                normalScore += firstCSScores.get(t.tid);
+            }
             if(t.comps.containsKey(1)) {
-                zScore += csZScores.get(t.tid);
+                normalScore += csScores.get(t.tid);
             }
             if(t.comps.containsKey(2)) {
-                zScore += challengeZScores.get(t.tid);
+                normalScore += challengeScores.get(t.tid);
             }
-            zTeams.add(new ZTeam(t, zScore));
+            normalTeams.add(new NormalTeam(t, normalScore));
         }
-        Collections.sort(zTeams);
+        Collections.sort(normalTeams);
 
         String teamList =
                 "<table id=\"teamList\"><tr><th>#</th><th>Team</th><th>Affiliation</th><th></th><th class=\"right\">Total Score</th>" +
                 "</tr>";
         int rank=1;
-        for(ZTeam t: zTeams) {
+        for(NormalTeam t: normalTeams) {
             teamList += "<tr><td>" + rank + "</td><td>" + t.team.tname + "</td><td>" + t.team.affiliation + "</td>" +
-                    "<td></td><td class=\"right\">" + t.zScore + "</td></tr>";
+                    "<td></td><td class=\"right\">" + String.format("%.2f", t.normalScore) + "</td></tr>";
             rank++;
         }
+
         // create HTML
         preNav= "<html>\n" +
                         "<head>\n" +
                         "    <title>Scoreboard - TXCSOpen</title>\n" + Dynamic.loadHeaders() +
                         "    <link rel=\"stylesheet\" href=\"./css/scoreboard.css\">\n" +
                         "</head>\n";
-        postNav =       "<body><div class='column' id='scoreboardColumn'><h1>Scoreboard</h1><h2>Sum of competition <a href='https://www.statisticshowto.com/probability-and-statistics/z-score/'>z-scores</a> for each team.</h2>" +
-                        teamList + "</table></div>"+
+        postNav =       "<body><div class='column' id='scoreboardColumn'><div class='head-row'><h1>Scoreboard</h1><h3 class='subtitle'>Sum of each team's competition scores adjusted to a min-max normalization.</h3>" +
+                        teamList + "</table></div></div>"+ Dynamic.loadBigCopyright() +
                         "</body>\n" +
                         "</html>";
     }
@@ -96,14 +125,14 @@ public class Scoreboard extends HttpServlet{
 /**
  * A simple wrapper that adds in zScore and allows teams to be sorted by it
  */
-class ZTeam implements Comparable<ZTeam>{
+class NormalTeam implements Comparable<NormalTeam>{
     Team team;
-    int zScore;
-    public ZTeam(Team team, int zScore) {
-        this.team = team; this.zScore = zScore;
+    double normalScore;
+    public NormalTeam(Team team, double normalScore) {
+        this.team = team; this.normalScore = normalScore;
     }
-    public int compareTo(ZTeam otherTeam){
-        return otherTeam.zScore - zScore;
+    public int compareTo(NormalTeam otherTeam){
+        return Double.compare(otherTeam.normalScore,normalScore);
     }
 }
 class SortTeams implements Comparator<Team>

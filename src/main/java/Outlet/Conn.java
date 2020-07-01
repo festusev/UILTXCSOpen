@@ -29,7 +29,7 @@ public class Conn {
     private static final String USER = "admin";
     private static final String PASS = "1pcdEy31lxTSp6x$";	// TODO Possibly in the future have an admin type this in.
     // private static final String DB_NAME = "uil";
-    private static final String DB_NAME = "comptest";
+    private static final String DB_NAME = "uil";
 
     private static Gson gson = new Gson();
 
@@ -583,14 +583,8 @@ public class Conn {
         if(team == null) return -3;
         Connection conn = getConnection();
 
-        // First, remove the team's tid from all of the team's users
-        if(team.uids.size() >= 0) {     // Provided that it has any users
-            // TODO
-        }
-
-        // Finally, delete the team
         try {
-            PreparedStatement stmt = conn.prepareStatement("DELETE FROM teams WHERE uid=?");
+            PreparedStatement stmt = conn.prepareStatement("DELETE FROM teams WHERE tid=?");
             stmt.setShort(1,team.tid);
             int index = Collections.binarySearch(teams, team);
             if(index>=0) teams.remove(index);

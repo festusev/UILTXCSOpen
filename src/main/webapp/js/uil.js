@@ -282,6 +282,7 @@ function finishFRQ(){
             clearInterval(grabFRQProblemsTimer);
             if(result!=null) {
                 frq.replaceWith(result["frqHTML"]);
+                columns = $(".column");
             }
         }
     })
