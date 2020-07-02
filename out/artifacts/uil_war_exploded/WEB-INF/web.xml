@@ -177,6 +177,26 @@
     <url-pattern>/uil/math</url-pattern>
   </servlet-mapping>
 
+  <servlet>
+    <servlet-name>UIL_NumberSense</servlet-name>
+    <servlet-class>Outlet.uil.NumberSense</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>UIL_NumberSense</servlet-name>
+    <url-pattern>/uil/number_sense</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>UIL_CalcApp</servlet-name>
+    <servlet-class>Outlet.uil.CalculatorApplications</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>UIL_CalcApp</servlet-name>
+    <url-pattern>/uil/calculator_applications</url-pattern>
+  </servlet-mapping>
+
   <!-- Challenge Servlet -->
   <servlet>
     <servlet-name>Challenge</servlet-name>

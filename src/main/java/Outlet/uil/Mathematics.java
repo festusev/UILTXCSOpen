@@ -24,7 +24,7 @@ public class Mathematics extends HttpServlet{
     public static Template template;
     public static final short cid = 3;
     private static Gson gson = new Gson();
-    static boolean initialized = false;
+    public static boolean initialized = false;
 
     /***
      * MC test constants
@@ -61,7 +61,7 @@ public class Mathematics extends HttpServlet{
             "<ol><li>Take the MC individually anytime during the 2-day period. Team members do not have to take it at the same time.</li>" +
             "<li>Each MC question correct is 6 pts and each incorrect is -2 pts. Skipped questions are 0pts.</li>" +
             "<li>You cannot use any resources except a calculator for the MC, and you should be ashamed if you have to (0_0)</li>";
-    public static final String PRACTICE = "You can download practice MC tests from the <a href='/samples/cs_sample_packet.zip' class='link'>UIL Website.</a> Note that our test will cover a little bit more content to keep things interesting.";
+    public static final String PRACTICE = "You can download practice MC tests from the <a href='/samples/mathematics_sample_packet.zip' class='link'>UIL Website.</a> Note that our test will cover a little bit more content to keep things interesting.";
     public static final String MC_INSTRUCTIONS = "Take these 60 questions in 40 minutes. If you can't reasonably eliminate any answers, leave the question blank. You are only allowed your brain and a calculator, feel shame if you have to cheat on this.";
 
 

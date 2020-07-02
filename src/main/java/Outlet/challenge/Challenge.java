@@ -19,7 +19,7 @@ public class Challenge extends HttpServlet {
     public static ChallengeTemplate template;
     public static final short CID = 2;
     private static Gson gson = new Gson();
-    static boolean  initialized = false;
+    public static boolean  initialized = false;
 
     /***
      * FRQ test constants

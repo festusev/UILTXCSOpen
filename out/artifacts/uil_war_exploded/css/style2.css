@@ -107,8 +107,7 @@ Everything to do with the navigation bar
     list-style-type: none;
     margin: 0;
     padding: 0;
-    /*! overflow: hidden; */
-    /*! width: 100vw; */
+    display:none;
 }
 #top-bar *{
     box-sizing:border-box;
@@ -179,12 +178,17 @@ The navigation bar for mobile.
     width:100%;
     display:block;
 }
-#dropdownNav img{
+#dropdownNav .topBar{
+    display:flex;
+    flex-flow:row;
+    box-sizing:unset;
+    height:50px;
+    padding:10px;
+    box-shadow:0 0 10px 0 rgba(0,0,0,0.1);
+}
+#dropdownNav #hamburger{
     width:50px;
     cursor: pointer;
-    float:left;
-    padding-right:10px;
-    height:50px;
     border-bottom-right-radius:20px;
 }
 #dropdownNav ul{
@@ -192,28 +196,35 @@ The navigation bar for mobile.
     width:100%;
     list-style: none;
     text-align:left;
-    padding:45px 0 0.5em 0;
-}
-#dropdownNav ul li{
-    padding:0;
+    padding:0.5em 0 0.5em 0;
+    background-color:rgba(0,0,0,0.04);
 }
 .drop-nav-item{
     font-size:1.5em;
     font-weight:bold;
+    padding: 0 1em;
+    text-align: center;
+    width:100%;
+}
+.drop-nav-item:hover{
+    background-color:rgba(0,0,0,0.03);
 }
 .drop-nav-item a{
-    color:white;
+    color:var(--body-col);
+    text-decoration: none;
+    width:100%;
+    text-align: left !important;
 }
 .drop-nav-item:hover{
     color:#e8e8e8;
 }
-
 
 /***
 Everything to do with the content css.
  */
 .column{
     padding-top:4rem;
+    box-sizing: border-box;
 }
 .row{
     margin:1.5rem 0 0 0;
@@ -365,14 +376,14 @@ a:focus{
     background-color:#ffef87;
     font-size:18px;
     text-align: center;
-    padding:0px 20px 5px 20px;
-    color:black;
+    padding:5px 20px 5px 20px;
 }
 
 /* How a scoreboard is styled */
 #scoreboardColumn{
     text-align:left;
-    width:60%;
+    width:70em;
+    max-width:100%;
     margin:auto;
 }
 #scoreboardColumn tr{
@@ -461,6 +472,9 @@ Media queries
 @media only screen and (min-width: 900px){
     #dropdownNav{
         display:none;
+    }
+    #top-bar{
+        display:block;
     }
     .center{
         margin:auto;

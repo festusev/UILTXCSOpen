@@ -131,13 +131,13 @@ public class Template {
         );
     }
     public int getCompeteStatus(User u){
-        int competeStatus = 0;
+        int competeStatus = 0;  // They have signed up
         if(u==null || u.token == null || !Conn.isLoggedIn(u.token)) {
-            competeStatus = 1;
+            competeStatus = 1;  // They are not logged in
         } else if(u.tid <=0) {
-            competeStatus = 2;
-        } else if(!u.team.comps.keySet().contains(cid)) {
-            competeStatus = 3;
+            competeStatus = 2;  // They are logged in but have no team
+        } else if(!u.team.comps.containsKey(cid)) {
+            competeStatus = 3;  // They have not signed up
         }
         return competeStatus;
     }

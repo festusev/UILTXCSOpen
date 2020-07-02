@@ -32,7 +32,8 @@ body{
   padding:1em 1em 1em 1em;
 }
 #infoRow{
-  display:none;
+  padding-bottom:0;
+  padding-top:3.5em;
 }
 #delWarning{
   font-size:1em;
@@ -68,11 +69,6 @@ label{
     padding-left:1em;
     padding-right:1.2em;
     margin-top:0;
-  }
-  #infoRow{
-    display:block;
-    padding-bottom:0;
-    padding-top:3.5em;
   }
   .scorePart{
     float:right;

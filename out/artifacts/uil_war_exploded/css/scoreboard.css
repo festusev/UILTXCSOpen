@@ -2,7 +2,7 @@ body{
     overflow-y:scroll;
 }
 #scoreboardColumn{
-    padding:5em 0 10em 0;
+    padding:5em 1em 10em 1em;
 }
 #teamList{
     margin:auto;

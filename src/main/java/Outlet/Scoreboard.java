@@ -2,6 +2,9 @@ package Outlet;
 
 import Outlet.challenge.Challenge;
 import Outlet.uil.CS;
+import Outlet.uil.CalculatorApplications;
+import Outlet.uil.Mathematics;
+import Outlet.uil.NumberSense;
 
 
 import java.io.IOException;
@@ -51,6 +54,9 @@ public class Scoreboard extends HttpServlet{
         HashMap<Short, Double> firstCSScores = null;    // The archived scores of the first competition
         HashMap<Short, Double> challengeScores = null;
         HashMap<Short, Double> csScores = null;
+        HashMap<Short, Double> mathScores;
+        HashMap<Short, Double> numberSenseScores;
+        HashMap<Short, Double> calcAppScores;
         try {
             // First, get the normal scores from the first competition
             Connection conn = Conn.getConnection();
@@ -66,6 +72,23 @@ public class Scoreboard extends HttpServlet{
                 }
             }
 
+            /* First, make sure all of the competitions are initialized */
+            if(!Challenge.initialized) {
+                Challenge.initialize();
+            }
+            if(!CS.initialized) {
+                CS.initialize();
+            }
+            if(!Mathematics.initialized) {
+                Mathematics.initialize();
+            }
+            if(!NumberSense.initialized) {
+                NumberSense.initialize();
+            }
+            if(!CalculatorApplications.initialized) {
+                CalculatorApplications.initialize();
+            }
+
             if(Challenge.template.closes.done())
                 challengeScores = Challenge.template.end();
             else
@@ -74,6 +97,18 @@ public class Scoreboard extends HttpServlet{
                 csScores = CS.template.end();
             else
                 csScores = new HashMap<>();
+            if(Mathematics.template.closes.done())
+                mathScores = Mathematics.template.end();
+            else
+                mathScores = new HashMap<>();
+            if(NumberSense.template.closes.done())
+                numberSenseScores = NumberSense.template.end();
+            else
+                numberSenseScores = new HashMap<>();
+            if(CalculatorApplications.template.closes.done())
+                calcAppScores = CalculatorApplications.template.end();
+            else
+                calcAppScores = new HashMap<>();
         }
         catch (SQLException e) {
             e.printStackTrace();
@@ -94,6 +129,12 @@ public class Scoreboard extends HttpServlet{
             }
             if(t.comps.containsKey(2)) {
                 normalScore += challengeScores.get(t.tid);
+            }
+            if(t.comps.containsKey(3)) {
+                normalScore += mathScores.get(t.tid);
+            }
+            if(t.comps.containsKey(4)) {
+                normalScore += numberSenseScores.get(t.tid);
             }
             normalTeams.add(new NormalTeam(t, normalScore));
         }

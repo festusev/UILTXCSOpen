@@ -23,7 +23,6 @@ import java.sql.SQLException;
  */
 public class Conn {
     private static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
-    //private static final String DB_URL = "comp.curhndcalh3n.us-east-2.rds.amazonaws.com";
     private static final String DB_URL = "comp.curhndcalh3n.us-east-2.rds.amazonaws.com";
     private static final int DB_PORT = 3306;
     private static final String USER = "admin";

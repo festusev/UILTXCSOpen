@@ -6,7 +6,7 @@ body{
 }
 #body-title{
     width:100%;
-    display:block;
+    display:none;
     font-size:6em;
     font-weight:bold;
     font-family:var(--head-font);
@@ -88,7 +88,7 @@ body{
     margin: 2em 0;
 }
 #schedule{
-    padding:2em 0;
+    padding:2em 1em;
     background-color:black;
     color:white;
     width:100%;
@@ -100,6 +100,7 @@ body{
 }
 #schedule table{
     width:58em;
+    max-width:100%;
     margin:auto;
     text-align:left;
     color:white;
@@ -107,11 +108,16 @@ body{
     border-collapse:separate;
     border-spacing:0 15px;
 }
+#schedule table td{
+    padding:5px;
+}
 #big_copyright{
     background-color:black;
 }
 @media only screen and (min-width: 900px){
-
+    #body-title{
+        display:block;
+    }
     .attribution{
         color:var(--prim-light);
     }

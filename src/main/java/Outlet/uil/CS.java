@@ -24,7 +24,7 @@ public class CS extends HttpServlet{
     public static Template template;
     public static final short cid = 1;
     private static Gson gson = new Gson();
-    static boolean initialized = false;
+    public static boolean initialized = false;
 
     /***
      * MC test constants
@@ -75,7 +75,7 @@ public class CS extends HttpServlet{
             "<li>Each Programming question has a max score of 60 pts where each incorrect submission reduces that value by 5pts.</li>" +
             "<li>You may use textbooks or offline resources for the Programming but don't google problems.</li>" +
             "<li>You can program in Java 11, Python 3, or C++ 17.</li>";
-    public static final String PRACTICE = "You can download the MC and Programming solutions from our last UIL CS <a href='/samples/cs_sample_packet.zip' class='link'>here.</a> You can also visit https://www.uiltexas.org/academics/stem/computer-science to view their sample tests.";
+    public static final String PRACTICE = "You can download the MC and Programming solutions from our last UIL CS <a href='/samples/cs_sample_packet.zip' class='link'>here.</a> You can also visit <a href='https://www.uiltexas.org/academics/stem/computer-science' class='link'>official UIL</a> to view their sample tests.";
     public static final String MC_INSTRUCTIONS = "Take these 40 questions in 45 minutes. If you can't reasonably eliminate any answers, leave the question blank. You are only allowed your brain, Google will not help you.";
 
 

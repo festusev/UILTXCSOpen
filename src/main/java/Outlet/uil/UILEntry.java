@@ -23,8 +23,12 @@ public abstract class UILEntry {
             }
             else if(cid == 2) {
                 return ChallengeEntry.loadEntry(tid);
-            } else if(cid == 3){
+            } else if(cid == 3) {
                 return MathEntry.loadEntry(tid);
+            } else if(cid == 4) {
+                return NumberSenseEntry.loadEntry(tid);
+            } else if(cid == 5) {
+                return CalcAppEntry.loadEntry(tid);
             }
         } catch (SQLException e) {
             e.printStackTrace();

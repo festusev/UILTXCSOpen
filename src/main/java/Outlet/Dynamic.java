@@ -19,7 +19,7 @@ public class Dynamic {
             "   var dropdownNav = document.getElementById(\"dropdownNavList\");" +
             "   if(dropdownNav.style.display == \"none\"){dropdownNav.style.display = \"block\";} else{dropdownNav.style.display = \"none\";} \n" +
             "}</script>" +
-            "<div id=\"dropdownNav\"><img src=\"res/HamburgerIcon.svg\" onclick=\"toggleDropdownNav()\"/><ul id=\"dropdownNavList\" style=\"display:none;\">";
+            "<div id=\"dropdownNav\"><div class=\"topBar\"><img src=\"res/HamburgerIcon.svg\" onclick=\"toggleDropdownNav()\" id=\"hamburger\"/><img src=\"/res/logo_dark_texasless.svg\" class=\"logo\" onclick=\"location.href='/'\"/></div><ul id=\"dropdownNavList\" style=\"display:none;\">";
     public static final String RIGHT_FLAIR = "<img class=\"flair\" id=\"right_flair\" src=\"res/blue_flair.svg\">";
     public static final String LEFT_FLAIR = "<img class=\"flair\" id=\"left_flair\" src=\"res/orange_flair.svg\"/>";
 
@@ -55,9 +55,11 @@ public class Dynamic {
                 "            <li class=\"nav-item\" id=\"uil_nav\">\n" +
                 "                <a class=\"nav-link\">UIL</a>\n" +
                 "                <ul id=\"uil_dropdown\">" +
-                "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/cs\">CS</a></li><br>" +
-                "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/math\">Math</a></li>" +
-                "                </ul>" +
+                "                    <li class=\"drop-nav-item\" onclick=\"window.location.href='/uil/cs'\"><a class=\"nav-link\" href=\"/uil/cs\">CS</a></li><br>" +
+                "                    <li class=\"drop-nav-item\" onclick=\"window.location.href='/uil/calculator_applications'\"><a class=\"nav-link\" href=\"/uil/calculator_applications\">Calculator Applications</a></li><br>" +
+                "                    <li class=\"drop-nav-item\" onclick=\"window.location.href='/uil/math'\"><a class=\"nav-link\" href=\"/uil/math\">Math</a></li><br>" +
+                "                    <li class=\"drop-nav-item\" onclick=\"window.location.href='/uil/number_sense'\"><a class=\"nav-link\" href=\"/uil/number_sense\">Number Sense</a></li>" +
+                 "                </ul>" +
                 "            </li>\n" +
                 "            <li class=\"nav-item\">\n" +
                 "                <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
@@ -103,7 +105,9 @@ public class Dynamic {
                 "                <a class=\"nav-link\">UIL</a>\n" +
                 "                <ul id=\"uil_dropdown\">" +
                 "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/cs\">CS</a></li><br>" +
-                "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/math\">Math</a></li>" +
+                "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/calculator_applications\">Calculator Applications</a></li><br>" +
+                "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/math\">Math</a></li><br>" +
+                "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/number_sense\">Number Sense</a></li>" +
                 "                </ul>" +
                 "            </li>\n" +
                 "            <li class=\"nav-item\">\n" +
