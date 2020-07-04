@@ -99,7 +99,7 @@ public class Team implements Comparable<Team> {
         for(short comp: temp) {
             comps.put(comp, UILEntry.loadUILEntry(comp, tid));
         }
-        System.out.println("<< Comp length is " + comps.keySet().size() + " values are " +comps.keySet().toArray()[0] + " contains key " + comps.keySet().contains((Short)(short)0));
+        // System.out.println("<< Comp length is " + comps.keySet().size() + " values are " +comps.keySet().toArray()[0] + " contains key " + comps.keySet().contains((Short)(short)0));
     }
     public int addUser(User u) {
 

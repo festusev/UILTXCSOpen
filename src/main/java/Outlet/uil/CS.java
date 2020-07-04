@@ -188,6 +188,7 @@ public class CS extends HttpServlet{
             try {
                 user.team.comps.put(cid,CSEntry.signup(user.tid));
                 user.team.updateComps();
+                template.updateScoreboard();
                 writer.write("{\"status\":\"success\",\"updatedHTML\":\""+template.getColumnsHTML(user, template.getCompeteStatus(user))+"\"}");
                 return;
             } catch (Exception e) {

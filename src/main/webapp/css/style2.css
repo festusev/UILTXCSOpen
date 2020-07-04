@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;900&display=swap');
+
 /***
 Setup document standards.
  */
@@ -55,8 +57,8 @@ body{
     --prim-col: #262626;
     --sec-col: #edad3e;
     --sec-dark: #d18b11;
-    --prim-light: #52677b;
-    --prim-middle:#16334d;
+    --prim-light: #124f67;
+    --prim-middle:#124f67;
     --warn-col: #db4125;
     --warn-dark: #b83018;
     --success-col:#1ccf00;
@@ -66,8 +68,8 @@ body{
     --head-col: #404040;
     --body-col: #333;
 
-    --head-font: 'Passion One', sans-serif;
-    --body-font: 'Poppins', sans-serif;
+    --head-font: 'Noto Sans JP', sans-serif;
+    --body-font: 'Noto Sans JP', sans-serif;
     --mono: 'Space Mono', monospace;
 
 

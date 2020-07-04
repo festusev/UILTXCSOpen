@@ -22,6 +22,7 @@ public class Console extends HttpServlet{
         User uData = Conn.getUser(request); // We need to display the user's data
         if(uData == null || uData.token == null || !Conn.isLoggedIn(uData.token)){
             response.sendRedirect(request.getContextPath());
+            return;
         }
         // Get the user's team, if they belong to one
         Team uTeam = Conn.getLoadedTeam(uData.tid);

@@ -31,6 +31,7 @@ public class Template {
     public String navBarHTML;   // For the competition-specific nav bar that goes underneath the header nav bar
     public String compOpenNavBar = "";   // HTML to append to navBarHTML if the competition is open
     public String scoreboardHTML;  // The scoreboard page html after the nav bars
+
     /**
      * The multiple choice page's html. First element is what to show if you haven't started yet,
      * second element is the multiple choice head, third element is the multiple choice body
@@ -285,7 +286,14 @@ public class Template {
     }
 
     public void updateScoreboard(){
-        ArrayList<Team> teams = CSEntry.getAllEntries();
+        ArrayList<Team> allTeams = Conn.getAllTeams();
+        ArrayList<Team> teams = new ArrayList<>();
+        for(Team t: allTeams) {
+            if(t.comps.keySet().contains(cid)){
+                teams.add(t);
+            }
+        }
+
         Collections.sort(teams, sorter);
 
 
@@ -294,6 +302,7 @@ public class Template {
         int rank = 1;
         for(Team t: teams) {
             UILEntry entry = t.comps.get(cid);
+            entry.getMCScore();
             double frqScore = 0;
             if(frqTest.exists){
                 frqScore = ((CSEntry) entry).frqScore;

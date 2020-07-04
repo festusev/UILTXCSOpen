@@ -113,6 +113,7 @@ public class Challenge extends HttpServlet {
             try {
                 user.team.comps.put(CID,ChallengeEntry.signup(user.tid, request.getParameter("eligible").equals("true")));
                 user.team.updateComps();
+                template.updateScoreboard();
                 writer.write("{\"status\":\"success\",\"updatedHTML\":\""+template.getColumnsHTML(user, template.getCompeteStatus(user))+"\"}");
                 return;
             } catch (Exception e) {

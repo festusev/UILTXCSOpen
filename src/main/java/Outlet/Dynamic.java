@@ -35,7 +35,6 @@ public class Dynamic {
         return "  <meta charset=\"utf-8\">\n" +
                 "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n" +
                 "  <link rel=\"icon\" type=\"image/png\" href=\"/res/icon.png\">\n" +
-                "  <link href=\"https://fonts.googleapis.com/css2?family=Passion+One&family=Poppins&display=swap\" rel=\"stylesheet\">" +
                 "  <link rel=\"stylesheet\" href=\"/css/style2.css\">" +
                 " <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js\"></script>" +
                 " <script>" +

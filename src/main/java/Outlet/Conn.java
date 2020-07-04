@@ -1,5 +1,6 @@
 package Outlet;
 
+import Outlet.uil.UILEntry;
 import com.google.gson.Gson;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -583,6 +584,13 @@ public class Conn {
         Connection conn = getConnection();
 
         try {
+            Set<Short> keys = team.comps.keySet();
+            for(short cid: keys) {
+                PreparedStatement stmt = conn.prepareStatement("DELETE FROM `c" + cid + "` WHERE tid= ?");
+                stmt.setShort(1, team.tid);
+                stmt.executeUpdate();
+            }
+
             PreparedStatement stmt = conn.prepareStatement("DELETE FROM teams WHERE tid=?");
             stmt.setShort(1,team.tid);
             int index = Collections.binarySearch(teams, team);
