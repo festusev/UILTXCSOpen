@@ -39,7 +39,7 @@
 <div id="center">
     <p id="errorCode">403</p>
     <p id="comment">Hey, you shouldn't be here.</p>
-    <a href="index.jsp" class="link">Return home</a>
+    <a href="/index.jsp" class="link">Return home</a>
 </div>
 </body>
 </html>

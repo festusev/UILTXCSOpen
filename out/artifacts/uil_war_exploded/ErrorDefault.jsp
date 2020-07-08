@@ -38,7 +38,7 @@
 <div id="center">
     <p id="errorCode">An Error Occurred</p>
     <p id="comment">We're not quite sure what happened. Fill out this error report <a href="https://forms.gle/eKJSTFn7BTp6Gu538" class="link">form</a> to help us fix the issue.</p>
-    <a href="index.jsp" class="link">Return home</a>
+    <a href="/index.jsp" class="link">Return home</a>
 </div>
 </body>
 </html>

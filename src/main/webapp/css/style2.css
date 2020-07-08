@@ -361,7 +361,7 @@ a:focus{
     width:100%;
     font-weight:bold;
     color:var(--prim-light);
-    font-size:3.5rem;
+    font-size:3rem;
     font-family:var(--head-font);
     padding-bottom:0.4em;
 }

@@ -17,7 +17,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./css/style2.css">
 </head>
-<body style="background-image:url('res/stars.jpg')">
+<body style="background-image:url('/res/stars.jpg')">
 <style>
     #center{
         font-size:2em;
@@ -39,7 +39,7 @@
 <div id="center">
     <p id="errorCode">404</p>
     <p id="comment">Nothing but stars and hidden servlets out here.</p>
-    <a href="index.jsp" class="link">Return home</a>
+    <a href="/" class="link">Return home</a>
 </div>
 </body>
 </html>

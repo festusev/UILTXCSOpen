@@ -65,17 +65,17 @@ public class CS extends HttpServlet{
      * Text constants like names and descriptions.
      */
     public static final String NAME = "UIL CS";
-    public static final String WHAT_IT_IS = "A challenging and unique computer science competition, testing skills in" +
-            " general programming and Java syntax. Consists of a 45-minute 40-question multiple choice test and a two-hour" +
+    public static final String WHAT_IT_IS = "A challenging and general computer science competition, testing skills in" +
+            " algorithms, data structures, and Java syntax. Consists of a 45-minute 40-question multiple choice test and a two-hour" +
             " 12-question algorithmic programming contest. ";
     public static final String RULES = "<ol><li>Take the MC individually anytime during the 2-day period. Team members do not have to take it at the same time.</li>" +
             "<li>Each MC question correct is 6 pts and each incorrect is -2 pts. Skipped questions are 0pts.</li>" +
-            "<li>You cannot use any resources for the MC.</li>" +
+            "<li>The MC allows for use of the internet and personal notes. The questions ask more about programming concepts and code interpretation than a standard UIL test because of this.</li>" +
             "<li>Take the Programming section with your team anytime during the 2-day period.</li>" +
             "<li>Each Programming question has a max score of 60 pts where each incorrect submission reduces that value by 5pts.</li>" +
-            "<li>You may use textbooks or offline resources for the Programming but don't google problems.</li>" +
+            "<li>The Programming section allows for you to use online resources as well as use code you find online. This functions similarly to the rules of USACO. Cite any code copied from online. You may copy snippets of code, but not entire algorithms.\n</li>" +
             "<li>You can program in Java 11, Python 3, or C++ 17.</li>";
-    public static final String PRACTICE = "You can download the MC and Programming solutions from our last UIL CS <a href='/samples/cs_sample_packet.zip' class='link'>here.</a> You can also visit <a href='https://www.uiltexas.org/academics/stem/computer-science' class='link'>official UIL</a> to view their sample tests.";
+    public static final String PRACTICE = "Download the MC and Programming solutions from our last UIL CS <a href='/samples/cs_sample_packet.zip' class='link'>here.</a> Visit <a href='https://www.uiltexas.org/academics/stem/computer-science' class='link'>official UIL</a> to view their sample tests. <br><br>The Multiple choice test has a different question structure. Gone are the questions where you are asked what the output of code is (As you could just run those). Instead, the test will focus on code interpretation and more abstract, non-googleable, programming questions. All questions in this test are something you can find in a standard UIL test. <br><br>The Programming section (Hands-On) will consist of 12 questions. You may use online resources as described in the rules. The questions themselves are harder and generally range in difficulty from USACO silver to gold problems, and will require abstract programming thinking that can’t just be googled.";
     public static final String MC_INSTRUCTIONS = "Take these 40 questions in 45 minutes. If you can't reasonably eliminate any answers, leave the question blank. You are only allowed your brain, Google will not help you.";
 
 

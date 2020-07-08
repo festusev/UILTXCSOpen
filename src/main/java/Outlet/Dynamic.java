@@ -19,7 +19,7 @@ public class Dynamic {
             "   var dropdownNav = document.getElementById(\"dropdownNavList\");" +
             "   if(dropdownNav.style.display == \"none\"){dropdownNav.style.display = \"block\";} else{dropdownNav.style.display = \"none\";} \n" +
             "}</script>" +
-            "<div id=\"dropdownNav\"><div class=\"topBar\"><img src=\"res/HamburgerIcon.svg\" onclick=\"toggleDropdownNav()\" id=\"hamburger\"/><img src=\"/res/logo_dark_texasless.svg\" class=\"logo\" onclick=\"location.href='/'\"/></div><ul id=\"dropdownNavList\" style=\"display:none;\">";
+            "<div id=\"dropdownNav\"><div class=\"topBar\"><img src=\"/res/HamburgerIcon.svg\" onclick=\"toggleDropdownNav()\" id=\"hamburger\"/><img src=\"/res/logo_dark_texasless.svg\" class=\"logo\" onclick=\"location.href='/'\"/></div><ul id=\"dropdownNavList\" style=\"display:none;\">";
     public static final String RIGHT_FLAIR = "<img class=\"flair\" id=\"right_flair\" src=\"res/blue_flair.svg\">";
     public static final String LEFT_FLAIR = "<img class=\"flair\" id=\"left_flair\" src=\"res/orange_flair.svg\"/>";
 
@@ -139,7 +139,7 @@ public class Dynamic {
         return "<div id=\"copyright_notice\">© 2020. All rights reserved. <a href=\"/privacy-policy.jsp\">Privacy Policy.</a></div>";
     }
     public static String loadBigCopyright(){
-        return "<div id=\"big_copyright\"><div id=\"copyright_contact\"><a href=\"https://twitter.com/TXCSOpen\"><img src=\"/res/contact/twitter.png\"/></a><a href=\"https://discord.gg/ukT4QnZ\"><img src=\"/res/contact/discord.png\"/></a><a href=\"mailto:contact@txcsopen.com\"><img src=\"/res/contact/gmail.png\"/></a></div><div id=\"copyright_privacy\"><a href=\"/privacy-policy.jsp\">Privacy Policy</a><a href=\"https://forms.gle/eKJSTFn7BTp6Gu538\">Report and Issue</a></div><div id=\"copyright_notice\">© 2020. All rights reserved.</div></div>";
+        return "<div id=\"big_copyright\"><div id=\"copyright_contact\"><a href=\"https://twitter.com/TXCSOpen\"><img src=\"/res/contact/twitter.png\"/></a><a href=\"https://discord.gg/ukT4QnZ\"><img src=\"/res/contact/discord.png\"/></a><a href=\"mailto:contact@txcsopen.com\"><img src=\"/res/contact/gmail.png\"/></a></div><div id=\"copyright_privacy\"><a href=\"/privacy-policy.jsp\">Privacy Policy</a><a href=\"https://forms.gle/eKJSTFn7BTp6Gu538\">Report an Issue</a></div><div id=\"copyright_notice\">© 2020. All rights reserved.</div></div>";
     }
     public static String loadTimer(String timerTo, long milli, String onTimerDone, boolean includeHour) {
         Instant instant = Instant.now();

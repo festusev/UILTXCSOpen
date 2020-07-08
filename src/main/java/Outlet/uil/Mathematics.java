@@ -56,12 +56,12 @@ public class Mathematics extends HttpServlet{
      */
     public static final String NAME = "UIL Math";
     public static final String WHAT_IT_IS = "A general math competition covering everything from algebra through " +
-            "calculus with a little higher math sprinkled in :P. A 40-minute 60-question multiple choice test.";
+            "calculus with a little higher math sprinkled in. A 40-minute 60-question multiple choice test.";
     public static final String RULES =
             "<ol><li>Take the MC individually anytime during the 2-day period. Team members do not have to take it at the same time.</li>" +
             "<li>Each MC question correct is 6 pts and each incorrect is -2 pts. Skipped questions are 0pts.</li>" +
-            "<li>You cannot use any resources except a calculator for the MC, and you should be ashamed if you have to (0_0)</li>";
-    public static final String PRACTICE = "You can download practice MC tests from the <a href='/samples/mathematics_sample_packet.zip' class='link'>UIL Website.</a> Note that our test will cover a little bit more content to keep things interesting.";
+            "<li>You cannot use any resources except a calculator for the MC. Online calculators like Wolfram Alpha are permitted.</li>";
+    public static final String PRACTICE = "Download practice MC tests from the <a href='/samples/mathematics_sample_packet.zip' class='link'>UIL Website.</a> Note that our test will cover a little bit more content to keep things interesting.";
     public static final String MC_INSTRUCTIONS = "Take these 60 questions in 40 minutes. If you can't reasonably eliminate any answers, leave the question blank. You are only allowed your brain and a calculator, feel shame if you have to cheat on this.";
 
 

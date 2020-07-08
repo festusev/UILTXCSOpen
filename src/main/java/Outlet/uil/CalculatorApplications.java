@@ -60,7 +60,7 @@ public class CalculatorApplications extends HttpServlet{
             "<ol><li>Take the MC individually anytime during the 2-day period. Team members do not have to take it at the same time.</li>" +
                     "<li>Each MC question correct is 6 pts and each incorrect is -2 pts. Skipped questions are 0pts.</li>" +
                     "<li>You cannot use any resources except a calculator for the MC. Tools like Wolfram Alpha are allowed, as is any handheld calculator.</li>";
-    public static final String PRACTICE = "You can download practice MC tests from the <a href='/samples/calcapp_sample_packet.zip' class='link'>UIL Website.</a> Note that our test will be multiple choice to prevent input confusion.";
+    public static final String PRACTICE = "Download practice MC tests from the <a href='/samples/calcapp_sample_packet.zip' class='link'>UIL Website.</a> Note that our test will be multiple choice to prevent input confusion.";
     public static final String MC_INSTRUCTIONS = "Take these 80 questions in 10 minutes. If you can't reasonably eliminate any answers, leave the question blank. You are only allowed your brain and a calculator. Speed is key.";
 
 
