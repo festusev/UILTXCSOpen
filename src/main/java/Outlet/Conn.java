@@ -75,6 +75,67 @@ public class Conn {
             users.remove(index);
         }
     }
+
+    /**
+     * This is a dangerous method, be sure to never let it get in the hands of someone.
+     * @return
+     */
+    public static User getUserByEmail(String email) {
+        if(email == null || email.isEmpty()) return null;
+        for(User u: users) {
+            if(u.email.equals(email)) return u;
+        }
+        BigInteger token = generateToken();
+
+        // First, we query the database for the password entry matching the email
+        Connection con;
+        PreparedStatement stmt;
+        ResultSet rs;
+        String storedFullHash;
+        String uname;
+        long start;
+        String questions;
+        short points;
+        short uid = -1;
+        short tid = -1;
+        try {
+            con = getConnection();
+            if (con == null) return null; // If an error occurred making the connection
+            stmt = con.prepareStatement("SELECT password, uname, uid, tid FROM users WHERE email=?");
+            stmt.setString(1, email);
+            rs = stmt.executeQuery();
+            if(rs.next()) { // A row matches this email
+                storedFullHash = rs.getString("password");
+                uname = rs.getString("uname");
+                uid = rs.getShort("uid");
+                tid = rs.getShort("tid");
+            }
+            else return null;     // If no row is found for this email
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        // Update the token in the db entry for this user
+        try {
+            stmt = con.prepareStatement("UPDATE users SET token=? WHERE email=?");
+            stmt.setString(1, token.toString(Character.MAX_RADIX));
+            stmt.setString(2, email);
+            stmt.executeUpdate();
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+        User u = null;
+        try {
+            u = loadUser(email, uname, token, uid, tid);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return u;
+    }
     public static User getUser(HttpServletRequest request) {
         return getUser(getToken(request));
     }
@@ -341,8 +402,6 @@ public class Conn {
      * @return bToken
      */
     private static BigInteger verifyHelper(String format, String value){
-        BigInteger bToken = generateToken();
-
         // First, retrieve the information from the `verification` database row that matches vToken
         Connection conn = getConnection();
         if(conn==null) return BigInteger.valueOf(-1);   // If an error occurred making the connection
@@ -384,6 +443,103 @@ public class Conn {
     }
     public static BigInteger verifyCode(String code){
         return verifyHelper("code = ?", code);
+    }
+
+    public static boolean verifyResetCode(String code, String email) {
+        // First, retrieve the information from the `verification` database row that matches vToken
+        Connection conn = getConnection();
+        if(conn==null) return false;   // If an error occurred making the connection
+        try {
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM reset_password WHERE code=? AND email=?");
+            stmt.setString(1, code);
+            stmt.setString(2,email);
+            ResultSet rs = stmt.executeQuery();
+
+            if(rs.next()) { // A row matches this vToken
+                if(rs.getLong("expires")<System.currentTimeMillis()) {  // If the token has expired. Should be already deleted, but stuff happens
+                    // Remove this row from the database
+                    stmt = conn.prepareStatement("DELETE FROM reset_password WHERE code=? AND email=?");
+                    stmt.setString(1, code);
+                    stmt.setString(2,email);
+                    stmt.executeUpdate();
+                    return false;  // The token has expired
+                }
+
+                return true;    // Finally, return the browser token
+            } else {    // no vToken matches this one in the database
+                return false;  // The token has expired. Should be already deleted, but stuff happens
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /***
+     * Sends a resetPassword email to the user and stores their email along with a vToken, code, and expiration date
+     * in the 'reset_password' database.
+     * @param email
+     * @return
+     */
+    public static int ResetPassword(String email) {
+        /**
+         * Generate the random 8 character code
+         */
+        int leftLimit = 48; // numeral '0'
+        int rightLimit = 90; // letter 'Z'
+        Random random = new Random();
+
+        String code = random.ints(leftLimit, rightLimit + 1)
+                .filter(i -> (i <= 57 || i >= 65) && (i <= 90))
+                .limit(VCODE_SIZE)
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
+
+
+        // Make the actual update query
+        try
+        {
+            // First, check if the email or username is already take (or both)
+            Connection conn = getConnection();
+            if(conn==null) {
+                System.out.println("--ERROR MAKING CONNECTION--");
+                return -1; // If an error occurred making the connection
+            }
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM users WHERE email = ?");
+            stmt.setString(1, email);
+            ResultSet rs = stmt.executeQuery();
+            boolean emailTaken = false;
+            while(rs.next()) {  // Loop through matching rows
+                if(rs.getString("email").equals(email)) emailTaken = true;
+            }
+            if(!emailTaken) return -2;
+
+            // Purge any entries in the 'reset_pass' database which match the email
+            stmt = conn.prepareStatement("DELETE FROM reset_password WHERE email = ?");
+            stmt.setString(1, email);   // TODO: Right now, if someone is in the process of registering with this email or uname, they will be interrupted by another person attempting to register with the same email or uname.
+            stmt.executeUpdate();
+
+            if(conn==null) return -1; // If an error occurred making the connection
+            stmt = conn.prepareStatement("INSERT INTO reset_password(email, expires, vtoken, code) VALUES (?, ?, ?, ?)");
+            stmt.setString(1, email);
+            stmt.setLong(2, System.currentTimeMillis() + 15*60*1000);   // Expires in 15 minutes
+            stmt.setString(3, "");
+            stmt.setString(4, code);
+
+            int success = stmt.executeUpdate();
+            if(success<0) return -1;   // If some error occurred
+
+            // And now we send the email asynchronously
+            new Thread(() -> {
+                SendMail.sendVerification(email, code);
+            }).start();
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            return -1;  // If an error occurred making the connection that is not one of the above
+        }
+        return 0;
     }
 
     /**
@@ -449,7 +605,7 @@ public class Conn {
             stmt.setString(2, passHashFull);
             stmt.setString(3, uname);
             stmt.setLong(4, System.currentTimeMillis() + 15*60*1000);   // Expires in 15 minutes
-            stmt.setString(5, vtoken.toString(Character.MAX_RADIX));
+            stmt.setString(5, "");
             stmt.setString(6, code);
 
             int success = stmt.executeUpdate();
@@ -457,7 +613,7 @@ public class Conn {
 
             // And now we send the email asynchronously
             new Thread(() -> {
-                SendMail.sendVerification(email, code,vtoken.toString(Character.MAX_RADIX));
+                SendMail.sendVerification(email, code);
             }).start();
         }
         catch(Exception e)
@@ -481,7 +637,34 @@ public class Conn {
 
                 // And now we send the email asynchronously
                 new Thread(() -> {
-                    SendMail.sendVerification(email, code,vtoken);
+                    SendMail.sendVerification(email, code);
+                }).start();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+        return 0;
+    }
+
+    /**
+     * Resends the reset password verification email
+     * @param email
+     * @return
+     */
+    public static int resendResetVerification(String email) {
+        Connection conn = getConnection();
+        PreparedStatement stmt = null;
+        try {
+            stmt = conn.prepareStatement("SELECT * FROM reset_password WHERE email = ?");
+            stmt.setString(1,email);
+            ResultSet rs = stmt.executeQuery();
+            if(rs.next()){
+                String code = rs.getString("code");
+
+                // And now we send the email asynchronously
+                new Thread(() -> {
+                    SendMail.sendVerification(email, code);
                 }).start();
             }
         } catch (Exception e) {

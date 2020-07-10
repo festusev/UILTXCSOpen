@@ -149,6 +149,7 @@ Everything to do with the navigation bar
 }
 .link{
     font-weight:bold;
+    cursor:pointer;
 }
 #uil_dropdown{
     display: none;

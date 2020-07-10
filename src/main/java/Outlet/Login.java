@@ -39,7 +39,7 @@ public class Login extends HttpServlet{
                     "            <label for=\"pass\">Password</label>\n" +
                     "            <input type=\"password\" id=\"pass\" name=\"pass\">\n" +
                     "            <button id=\"login\">Login</button>\n" +
-                    "            <p id=\"regWrapper\">Don't have an account? <a class='link' href=\"register\">Register.</a></p>\n" +
+                    "            <p id=\"regWrapper\">Don't have an account? <a class='link' href=\"register\">Register.</a><br><a class='link' onclick=\"resetPassword()\">Reset password.</a></p>\n" +
                     "        </form>\n" +
                     "    </div></div>\n";
 
@@ -69,7 +69,39 @@ public class Login extends HttpServlet{
             writer.write("{\"success\":\"" +request.getContextPath() + "/console\"}");
             return;
         }
+
         String email = request.getParameter("email");
+        String resendS = request.getParameter("resend");    // If the change password email should be resent
+        boolean resend = resendS!=null && resendS.equals("true");
+
+        if(email == null || email.isEmpty()) {
+            writer.write("{\"error\":\"Email is empty.\"}");
+            return;
+        }
+        if(resend) {
+            int status = Conn.resendResetVerification(email);
+            if(status != 0) writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
+            else writer.write("{\"success\":\"Resent verification email.\"}");
+            return;
+        }
+        String resetS = request.getParameter("reset");   // If this person is changing their password
+        boolean reset = resetS!=null && resetS.equals("true");
+        if(reset) { // Put their hashed code into the 'reset_pass' database along with their email
+            int status = Conn.ResetPassword(email); // Put the data into the 'reset_pass' database
+
+            // Perform the reset update. If the user doesn't already exist and no errors occurred, then we tell the page to show the "input code" box for verification
+            if (status >= 0) {    // The page will wait for a code to be entered. The user can also follow the link
+                writer.write("{\"success\":\"<style>#codeTitle span span{ font-size:1em; display:inline-block; font-weight:bold; }#code{text-transform:uppercase;font-family:var(--mono);}.link2{ color:var(--sec-col); font-weight:bold; } .link2:hover{ color:var(--sec-dark); }#lowerHalf{display:none;}#codeCnt{ display:block; width:100%; background-color:white; box-shadow:0 0px 6px 1px rgba(0,0,0,.12); margin:auto; padding:2em; margin-top:6em; } #codeTitle{ font-size:2em; font-weight:bold; color:var(--prim-middle); } #codeTitle span{ font-size:0.45em; display:block; font-weight:normal; color:var(--head-col); } #code{ width:100%; font-size:5em; height:1em; padding:0; text-align:center; color:var(--prim-light); } #bottomText{ margin-top:1em; } #upperHalf{ box-shadow:none; } #copyright_notice{ display:none; }</style><div id='codeCnt'><p id='codeTitle'>Verify your email<span>A verification code was sent to <span>EMAIL_REPLACE</span>. It will expire in 15 minutes.</p><div id='codeErrorBox'></div><input id='code' type='text' maxlength='6' oninput='codeEntered()'><p id='bottomText'>Didn't get the email? <a class='link2' style='color:var(--sec-col);cursor:pointer;font-weight:bold;' onclick='resend();'>Resend</a> the verification code.</div>\"}");
+                return;
+            } else if (status == -2) { // The email doesn't exist
+                writer.write("{\"error\":\"No account with that email exists.\"}");
+                return;
+            } else {   // A server error occurred. token should be = -1, but who knows
+                writer.write("{\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
+                return;
+            }
+        }
+
         String pass = request.getParameter("pass");
 
         if(email == null || email.isEmpty()) {

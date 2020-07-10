@@ -15,14 +15,14 @@ public class SendMail {
     private static final String HOST = "smtp.gmail.com";
     private static final String PASSWORD = "7NNGztFcKv%&M9nt";
 
-    public static int sendVerification(String to, String code, String vtoken) {
+    public static int sendVerification(String to, String code) {
         try {
             new Thread(() -> {
             }).start();
             String[] cmds = {
                     "/bin/sh",
                     "-c",
-                    "printf \"Subject: Your TXCSOpen Confirmation Code is: "+code+"\\r\\nMIME-Version: 1.0\\r\\nContent-Type: text/html; charset=utf-8\\r\\n\\r\\n<div style='color:#404040;font-family:sans-serif;font-size:20px;padding:2em;width:30em;margin: auto;/*! border: 0 0 5px 0px rgba(0,0,0,0.12); */border: 1px solid rgba(0,0,0,0.12);'> <p style=' font-size:45px;font-weight:bold;margin:0;color:#404040;'>Welcome to TXCSOpen</p> <p style='color:#404040;'>Enter the following code to confirm your email. It's secret, so be sure not to forward this email.</p> <div style='font-family:monospace;font-size:60px; font-weight:bold;text-align:center;color:#52677b;border: 1px solid rgba(0,0,0,0.12);'>"+code+"</div> <p>Didn't work? Follow this link: <span style='color:#edad3e; font-weight:bold;font-family:monospace;display:block;'>txcsopen.com/uil/verify?vtoken="+vtoken+"</span></p> </div>\" | ssmtp " + to
+                    "printf \"Subject: Your TXCSOpen Confirmation Code is: "+code+"\\r\\nMIME-Version: 1.0\\r\\nContent-Type: text/html; charset=utf-8\\r\\n\\r\\n<div style='color:#404040;font-family:sans-serif;font-size:20px;padding:2em;width:30em;margin: auto;/*! border: 0 0 5px 0px rgba(0,0,0,0.12); */border: 1px solid rgba(0,0,0,0.12);'> <p style=' font-size:45px;font-weight:bold;margin:0;color:#404040;'>Welcome to TXCSOpen</p> <p style='color:#404040;'>Enter the following code to confirm your email. It's secret, so be sure not to forward this email.</p> <div style='font-family:monospace;font-size:60px; font-weight:bold;text-align:center;color:#52677b;border: 1px solid rgba(0,0,0,0.12);'>"+code+"</div></div>\" | ssmtp " + to
             };
             Process proc = Runtime.getRuntime().exec(cmds);
             proc.waitFor();

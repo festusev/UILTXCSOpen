@@ -20,12 +20,12 @@
     box-sizing: border-box;
     width:33em;
 }
-#login-box input{
+#login-box input, #codeCnt div input{
     display: block;
     height:2.5em;
     width:100%;
 }
-#login-box label {
+#login-box label{
     font-size: 1.2em;
     color:var(--head-col);
     font-weight:bold;
@@ -63,4 +63,10 @@
 }
 .error{
     margin-top:-20px;
+}
+#codeErrorBox .error{
+    margin-top:0;
+}
+#code{
+    padding:40px 0 !important;
 }

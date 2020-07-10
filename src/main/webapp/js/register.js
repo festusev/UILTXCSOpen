@@ -103,6 +103,6 @@ function codeEntered() {
         }
         xhr.open('POST', 'verify', true);
         xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-        xhr.send('code=' + code.value);
+        xhr.send('action=register&code=' + code.value);
     }
 }
