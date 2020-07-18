@@ -1,15 +1,16 @@
-console.log("checkin");
 var columns;
 var about;
 var scoreboard;
 var mc;
 var frq;
+var answers;
 $(document).ready(function(){
     columns = $(".column");
     about = $("#aboutColumn");
     scoreboard = $("#scoreboardColumn");
     mc = $("#mcColumn");
     frq = $("#frqColumn");
+    answers = $("#answersColumn");
 
     showColumn();
 })
@@ -22,6 +23,10 @@ function showColumn(){
         showMC();
     } else if(window.location.hash=="#frq") {
         showFRQ();
+    } else if(window.location.hash=="#answers") {
+        showAnswers();
+    } else {
+        showAbout();
     }
 }
 
@@ -42,39 +47,30 @@ function showMC(){
 function showFRQ(){
     showHelper(frq, "frq");
 }
+function showAnswers(){
+    showHelper(answers, "answers");
+}
 
 // Uses ajax to update the navigation bar. Called whenever a countdown finished
 function updateNav(){
-    $.ajax({
-        url: window.location.href,
-        method: "GET",
-        cache: false,
-        data: {"updatenav": "true"},
-        success: function(result) {
-            $("#upperHalf").replaceWith(result);
-        }
-    });
+    location.reload();
 }
 
 // Signup for this competition
 function signUp(){
+    $("#signUp").replaceWith("<p id=\"signUpMsg\" class=\"error_text\">Signing Up...</p>");
     $.ajax({
         url: window.location.href,
         method: "POST",
         data: {"action": "signup", "eligible": false},
         success: function(result) {
-            if(result == null)
+            if(result == null || result["status"]==="error")
                 $("#signUp").replaceWith("<p id=\"signUpMsg\" class=\"error_text\">An error occurred, try again later.</p>");
             if(result["status"] === "success") {
-                $("#columns").replaceWith(result["updatedHTML"]);
-                columns = $(".column");
-                about = $("#aboutColumn");
-                scoreboard = $("#scoreboardColumn");
-                mc = $("#mcColumn");
-                frq = $("#frqColumn");
+                location.reload();
             }
         }
-    })
+    });
 }
 
 // Signup for a competition with an elible data point competition
@@ -118,32 +114,26 @@ function beginMC(){
     })
 }
 
-// Begin the free response
-function beginFRQ(){
-    $.ajax({
-        url: window.location.href,
-        method: "POST",
-        data: {"action": "beginFRQ"},
-        success: function(result) {
-            if(result!=null){
-                if(result["status"]==="success"){
-                    frq.replaceWith(result["frqHTML"]);
-                    frq = $("#frqColumn");
-                    frq.show();
-                    columns = $(".column");
-                    showColumn();
-                }
-            }
-        }
-    })
+
+let choices = {};   // MC choices. Not necessarily full
+function setChoice(question, dom) {
+    let $dom = $(dom);
+    let choice = dom.dataset.val;
+    if(choices[question] === choice) {  // They are clicking a selected bubble
+        choices[question] = null;
+        $dom.removeClass("mcSelected");
+        return;
+    }
+    choices[question] = choice;
+    $dom.parent().parent().children().children().removeClass("mcSelected");
+    $dom.addClass("mcSelected");
 }
 
 function submitMC() {
     var numQuestions = document.getElementsByClassName("mcQuestion").length;
     var answers = "[";
     for(var i=1; i<=numQuestions; i++) {
-        var tmp = document.querySelector('input[name="'+i+'"]:checked');
-        if(tmp != null) answers+=tmp.value;
+        if(choices[i] != null) answers+=choices[i];
         else answers+='SK';  // The character if they skipped it
         if(i<numQuestions) answers +=",";
     }
@@ -208,9 +198,10 @@ function beginFRQ() {
         data: {"action": "beginFRQ"},
         success: function(result) {
             if(result!=null && result["status"] == "success") {
-                $("#frqColumn").replaceWith(result["frqHTML"]);
-                frq = $("#frqCenterBox")
+                frq.replaceWith(result["frqHTML"]);
+                frq = $("#frqColumn")
                 columns = $(".column");
+                showColumn();
             }
         }
     })

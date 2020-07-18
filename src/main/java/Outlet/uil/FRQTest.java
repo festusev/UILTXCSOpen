@@ -17,6 +17,8 @@ public class FRQTest {
     public final String NAME;
     public final String TIME_TEXT;
     public final long TIME;
+    public final String STUDENT_PACKET; // Link to the student packet
+    public final String JUDGE_PACKET;   // Link to the judge packet
 
     public static final String SCORE_DIR_ROOT = "/tmp/"; // Where the score_dirs are stores
     public final String SCORE_DIR; // Must end in a "/"
@@ -33,12 +35,12 @@ public class FRQTest {
     private static ArrayList<ArrayList<Pair>> files = null;
 
     public FRQTest() {
-        exists = false; NAME = "";TIME_TEXT="";TIME=0;DAT_MAP= new String[0];
+        exists = false; NAME = "";TIME_TEXT="";TIME=0;DAT_MAP= new String[0];STUDENT_PACKET="";JUDGE_PACKET="";
         SCORE_DIR = ""; TESTCASE_DIR = ""; NUM_PROBLEMS = 0; MAX_POINTS = 0; INCORRECT_PENALTY = 0; PROBLEM_MAP = new String[0];
     }
-    public FRQTest (String sd, String td, short np, short mp, short ip, String[] pm, String na, String timeText, long time, String[] datMap) {
+    public FRQTest (String sd, String td, short np, short mp, short ip, String[] pm, String na, String timeText, String studentPacket, String judgePacket, long time, String[] datMap) {
         SCORE_DIR = SCORE_DIR_ROOT+sd; TESTCASE_DIR = TESTCASE_DIR_ROOT+td; NUM_PROBLEMS = np; MAX_POINTS = mp; INCORRECT_PENALTY = ip; PROBLEM_MAP = pm;
-        NAME = na;exists = true;TIME_TEXT=timeText;TIME=time;DAT_MAP=datMap;
+        NAME = na;exists = true;TIME_TEXT=timeText;TIME=time;DAT_MAP=datMap;STUDENT_PACKET=studentPacket;JUDGE_PACKET=judgePacket;
 
         try {
             files = new ArrayList();

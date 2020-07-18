@@ -138,7 +138,8 @@ function takePassword() {
     console.log("taking passwords");
     document.getElementById("codeTitle").innerHTML = "Enter a new password";
     document.getElementById("bottomText").innerHTML = "<button onclick='changePassword()' class='chngButton'>Change Password</button>";
-    // document.getElementById("errorBox").remove();
+    document.getElementById("errorBox").remove();
+    errorBox = null;
     let passwords = document.createElement("div");
     passwords.innerHTML = "            <label for=\"pass\">Password</label>" +
                         "            <input type=\"password\" id=\"pass\" name=\"pass\" class=\"form-input\">" +

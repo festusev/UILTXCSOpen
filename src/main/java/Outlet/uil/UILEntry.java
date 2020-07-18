@@ -1,6 +1,7 @@
 package Outlet.uil;
 
 import Outlet.Countdown;
+import Outlet.challenge.Challenge;
 import Outlet.challenge.ChallengeEntry;
 
 import java.sql.SQLException;
@@ -36,6 +37,35 @@ public abstract class UILEntry {
 
         return null;
     }
+
+    /**
+     * Returns true if the competition 'cid' is currently running.
+     * @param cid
+     * @return
+     */
+    public static boolean compRunning(short cid) {
+        Template template = getTemplate(cid);
+
+        return template.opens.done() && !template.closes.done();
+    }
+
+    public static Template getTemplate(short cid) {
+        if(cid==1) {
+            return CS.template;
+        }
+        else if(cid == 2) {
+            return Challenge.template;
+        } else if(cid == 3) {
+            return Mathematics.template;
+        } else if(cid == 4) {
+            return NumberSense.template;
+        } else if(cid == 5) {
+            return CalculatorApplications.template;
+        } else {
+            return null;
+        }
+    }
+
     abstract public void update();  // Updates entry in the database
     abstract public long beginMC(short uid);    // Returns the time started, even if they have already begun
     abstract public short[] scoreMC(short uid, String[] answers);

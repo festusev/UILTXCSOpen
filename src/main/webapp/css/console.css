@@ -56,6 +56,19 @@ label{
 #team{
   color:var(--sec-dark);
 }
+#memConfTitle button{
+  float:right;
+  cursor:pointer;
+  border:none;
+  background-color:white;
+  font-weight:bold;
+  padding-top:3px;
+}
+#memConfTitle button:active, #memConfTitle button:focus {
+  outline: 0;
+  border: none;
+  -moz-outline-style: none;
+}
 @media only screen and (min-width: 467px){
   .sec{
     box-shadow:0 0 3px 0px rgba(0, 0, 0, 0.12);

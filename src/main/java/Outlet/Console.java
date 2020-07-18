@@ -40,8 +40,8 @@ public class Console extends HttpServlet{
             tSection = "    <div class=\"row\">\n" +
                     "        <div id=\"teamDiv\" class=\"rowCenter\">\n" +
                     "            <div id=\"memConf\" class=\"sec\">\n" +
-                    "                <p class=\"secTitle\" id=\"memConfTitle\">Current Team Members</p>\n" +
-                    "                <div class=\"secBody\">\n" +
+                    "                <p class=\"secTitle\" id=\"memConfTitle\">Current Team Members<button onclick=\"leaveTeam()\">Leave</button></p>\n" +
+                    "                <div class=\"secBody\" id=\"leaveTeamBox\">\n" +
                     "                    <ul id=\"memList\">\n";
             HashSet<String> users = Conn.getTeamUsers(uTeam);
             for(String uname: users) {

@@ -101,6 +101,16 @@
   </servlet-mapping>
 
   <servlet>
+    <servlet-name>LeaveTeam</servlet-name>
+    <servlet-class>Outlet.LeaveTeam</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>LeaveTeam</servlet-name>
+    <url-pattern>/leave-team</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
     <servlet-name>UpdateUserPassword</servlet-name>
     <servlet-class>Outlet.UpdateUserPassword</servlet-class>
     <load-on-startup>1</load-on-startup>

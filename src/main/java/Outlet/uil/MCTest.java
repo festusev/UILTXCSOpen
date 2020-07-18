@@ -20,17 +20,32 @@ public class MCTest {
     public final String INSTRUCTIONS;   // Multiple Choice instructions
     public char[] options = new char[]{'a', 'b', 'c', 'd', 'e'};
     public final long TIME;  // The length of time in milliseconds that they have to test
+    public final String TEST_LINK;  // The url to the test
+    public final String ANSWERS;    // Either a url to an answer packet or a text list of the answers for each question.
+    public final boolean ANSWERS_LINK;  // True if the ANSWERS variable is a link
 
     public static final String SKIP_CODE = "SK";  // The code entered to signify a skipped problem
 
     public MCTest() {
         exists = false;KEY= new String[0];NUM_PROBLEMS = 0; CORRECT_PTS =0;INCORRECT_PTS=0;SKIPPED_PTS=0;NAME="";
-        PROBLEM_MAP = new short[0]; TIME_TEXT = ""; INSTRUCTIONS = ""; TIME = 0; MAX_POINTS=0;
+        PROBLEM_MAP = new short[0]; TIME_TEXT = ""; INSTRUCTIONS = ""; TIME = 0; MAX_POINTS=0;TEST_LINK="";ANSWERS="";ANSWERS_LINK=false;
     }
 
-    public MCTest (String[] k, short[] problemMap, int n, int c, int i, int s, String na, String timeText, String instructions, long time) {
+    public MCTest (String[] k, short[] problemMap, int n, int c, int i, int s, String na, String timeText, String instructions, String testLink, String answers, long time) {
         KEY = k; NUM_PROBLEMS = n; CORRECT_PTS = c; INCORRECT_PTS = i; SKIPPED_PTS = s; exists = true; NAME = na;
-        PROBLEM_MAP = problemMap;TIME_TEXT = timeText;INSTRUCTIONS = instructions;this.TIME = time;MAX_POINTS = NUM_PROBLEMS*CORRECT_PTS;
+        PROBLEM_MAP = problemMap;TIME_TEXT = timeText;INSTRUCTIONS = instructions;TEST_LINK=testLink;this.TIME = time;MAX_POINTS = NUM_PROBLEMS*CORRECT_PTS;
+
+        if(answers.isEmpty()) { // In this case, we generate a text list of the answers
+            answers="";
+            ANSWERS_LINK=false;
+            for(int counter=1; counter<=KEY.length;counter++) {
+                answers+=counter+". " + KEY[counter-1]+" ";
+            }
+        } else {
+            ANSWERS_LINK=true;
+        }
+        ANSWERS=answers;
+
     }
 
     public short[] score(String[] answers){

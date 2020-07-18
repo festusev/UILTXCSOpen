@@ -38,6 +38,7 @@ public class Template {
      */
     public String[] mcHTML;
     public String[] frqHTML; // First element is what to show if you haven't started yet, second is the frq body
+    public String answersHTML;  // Displays the answer sheets and testing materials.
 
     protected SortUILTeams sorter;    // Used to sort teams for the scoreboard
 
@@ -47,36 +48,38 @@ public class Template {
         name = n;whatItIs = w;rules = r;practice = p;mcTest = mc;frqTest = fr;opens = op;closes = cl;this.cid = cid; this.sorter = sorter;
 
         navBarHTML = "<ul id='upperHalf'><li id='nav_compname'>"+name+"</li><li onclick='showAbout();'>About</li><li onclick='showScoreboard();'>Scoreboard</li>";
+        answersHTML = "<div id='answersColumn' class='column' style='display:none'><div class='row head-row'><h1>Answers</h1></div>";
         if(mc.exists) {
             mcHTML = new String[4];
             compOpenNavBar = "<li onclick='showMC();'>MC</li>";
             mcHTML[0] = "<div id='mcColumn' class='column' style='display:none;'>" +
                     "<h1>Begin "+mcTest.NAME+"?</h1>" +
                     "<p class='subtitle'>Once you do, you will have " + mc.TIME_TEXT + " to finish.</p>" +
-                    "<buttom id='mcBegin' onclick='beginMC()' class='chngButton'>Begin</button>" +
+                    "<button id='mcBegin' onclick='beginMC()' class='chngButton'>Begin</button>" +
                     "</div>";
             mcHTML[1] = "<div id='mcColumn' class='column' style='display:none;'>" +
                     "<h1>"+mcTest.NAME+"</h1>" +
-                    "<p class='subtitle'><span>Instructions: </span>" + mcTest.INSTRUCTIONS + "</p><div id='mcTestTimer'>";
+                    "<p class='subtitle'><span>Instructions: </span>" + mcTest.INSTRUCTIONS + "<br><b>Test Packet: </b><a href='"+mcTest.TEST_LINK+"' class='link'>"+mcTest.TEST_LINK+"</a></p><div id='mcTestTimer'>";
 
-            mcHTML[2] = "</div><div id='mcQuestions'><ol class='mcColumn'>";
-            short firstHalf = (short)Math.ceil(mcTest.NUM_PROBLEMS/2.0);
-            for(int i=1; i<= firstHalf; i++) {    // Loop through the first half of questions to add answer bubbles
-                mcHTML[2] += "<li class='mcQuestion'>";
-                for(char c: mcTest.options){
-                    mcHTML[2] +="<label for='"+i+c+"'>"+c+"</label><input type='radio' value='"+c+"' name='"+i+"' id='"+i+c+"'>";
-                }
-                mcHTML[2]+="</li>";
+            mcHTML[2] = "</div><table id='mcQuestions'><tr><th>#</th>";
+            for(char c: mcTest.options) {
+                mcHTML[2] += "<th>"+c+"</th>";
             }
-            mcHTML[2]+="</ol><ol class='mcColumn' start='"+(firstHalf+1)+"'>";
-            for(int i=firstHalf+1; i<=mcTest.NUM_PROBLEMS; i++) {    // Loop through the first 20 questions to add answer bubbles
-                mcHTML[2] += "<li class='mcQuestion'>";
+            // mcHTML[2] += "<th>Skip</th><tr>";
+            // short firstHalf = (short)Math.ceil(mcTest.NUM_PROBLEMS/2.0);
+            for(int i=1; i<= mcTest.NUM_PROBLEMS; i++) {
+                mcHTML[2] += "<tr class='mcQuestion'><td>"+i+"</td>";
                 for(char c: mcTest.options){
-                    mcHTML[2] +="<label for='"+i+c+"'>"+c+"</label><input type='radio' value='"+c+"' name='"+i+"' id='"+i+c+"'>";
+                    mcHTML[2] +="<td><div class='mcBubble' onclick='setChoice("+i+",this)' data-val='"+c+"'></div></td>";
                 }
-                mcHTML[2]+="</li>";
             }
-            mcHTML[2]+="</ol><button class='chngButton' onclick='submitMC();'>Submit</button></div></div>";
+            mcHTML[2]+="<button class='chngButton' onclick='submitMC();'>Submit</button></div>";
+
+            String answers = mcTest.ANSWERS;    // Default if the MC ANSWERS variable is not a link
+            if(mcTest.ANSWERS_LINK) {   // If the variable is a link
+                answers ="<a href='"+mcTest.ANSWERS+"' class='link'>"+mcTest.ANSWERS+"</a>";
+            }
+            answersHTML+="<div class='row'><h2>MC</h2><p><b>Test Packet: </b><a href='"+mcTest.TEST_LINK+"' class='link'>"+mcTest.TEST_LINK+"</a><br><b>Answers: </b>"+answers+"<p></div>";
         }
         frqHTML = new String[2];
         if(fr.exists) {
@@ -84,9 +87,9 @@ public class Template {
             frqHTML[0] = "<div id='frqColumn' class='column' style='display:none;'>" +
                     "<h1>Begin the "+frqTest.NAME+"?</h1>" +
                     "<p class='subtitle'>Once you do, you and your team will have " + frqTest.TIME_TEXT + " to finish.</p>" +
-                    "<buttom id='mcBegin' onclick='beginFRQ()' class='chngButton'>Begin</button>" +
+                    "<button id='mcBegin' onclick='beginFRQ()' class='chngButton'>Begin</button>" +
                     "</div>";
-            frqHTML[1] =  "<p id='frqInst'>Choose a problem to submit:</p>" +
+            frqHTML[1] =  "<p id='frqInst'><b>Problem Packet: </b><a href='"+frqTest.STUDENT_PACKET+"' class='link'>"+frqTest.STUDENT_PACKET+"</a><br>Choose a problem to submit:</p>" +
                         "<form id='submit' onsubmit='submitFRQ(); return false;' enctype='multipart/form-data'>" +
                         "<select id='frqProblem'>";
             for(int i=1; i<=frqTest.NUM_PROBLEMS;i++){
@@ -96,7 +99,10 @@ public class Template {
                     "<input type='file' accept='.java,.cpp,.py' id='frqTextfile'/>" +
                     "<button id='submitBtn' class='chngButton'>Submit</button>" +
                     "</form><p id='advice'>Confused? Review the <a href='#' class='link' onclick='showAbout();'>rules</a>.</p>";
+            answersHTML+="<div class='row'><h2>FRQ</h2><p><b>Student Packet: </b><a href='"+frqTest.STUDENT_PACKET+
+                    "' class='link'>"+frqTest.STUDENT_PACKET+"</a><br><b>Judge Packet: </b><a href='"+frqTest.JUDGE_PACKET+"' class='link'>"+frqTest.JUDGE_PACKET+"</a></p></div>";
         }
+        answersHTML+="</div>";
 
         HEADERS = "<html><head><title>" + name + " - TXCSOpen</title>" +
                 Dynamic.loadHeaders() +
@@ -104,12 +110,13 @@ public class Template {
                 "<script src='/js/uil.js'></script>" +
                 "</head><body>";
 
+        updateScoreboard();
         // Create a timer to update the scoreboard every SCOREBOARD_UPDATE_INTERVAL seconds
-        Timer timer = new Timer();
+        /*Timer timer = new Timer();
         UpdateScoreboard updater = new UpdateScoreboard();
         updater.template = this;
         timer.schedule(updater, 0, SCOREBOARD_UPDATE_INTERVAL);
-        updateScoreboard();
+        updateScoreboard();*/
     }
 
     /** Renders the full page that they are on. Only called once per page visit, and sends all of the htmls hidden except
@@ -172,7 +179,10 @@ public class Template {
                 "<p>" + practice + "</p>" +
                 "</div>" +
                 "</div>";
-        return about + scoreboardHTML + getMCHTML(uData, competeStatus) + getFRQHTML(uData, competeStatus);
+        int status = getStatus();
+        String answers = "";
+        if(status == 2)  answers = answersHTML;
+        return getFRQHTML(uData, competeStatus) + about + scoreboardHTML + answersHTML + getMCHTML(uData, competeStatus);
     }
     public String getMCHTML(User u, int competeStatus){
         if(competeStatus == 1) {
@@ -271,14 +281,15 @@ public class Template {
     public int getStatus(){
         if(!opens.done()) return 0;
         else if(!closes.done()) return 1;
-        else return 1;
+        else return 2;
     }
     public String getNavBarHTML(int competeStatus){
         int status = getStatus();
+        System.out.println("Status is " + status);
         if(status == 0)
             return navBarHTML + "<li id='countdownCnt'>Competition opens in <p id='countdown'>" + opens +"</p></li></ul>";
         else if(status == 2)
-            return navBarHTML + "<li id='countdownCnt'>The competition has ended!</li></ul>";
+            return navBarHTML + "<li id='answers' onclick='showAnswers()'>Answers</li><li id='countdownCnt'>The competition has ended!</li></ul>";
         else if(status == 1 && competeStatus == 0){
             return navBarHTML+compOpenNavBar+"<li id='countdownCnt'>Competition ends in <p id='countdown'>" + closes +"</p></li></ul>";
         }
@@ -303,13 +314,9 @@ public class Template {
         for(Team t: teams) {
             UILEntry entry = t.comps.get(cid);
             entry.getMCScore();
-            double frqScore = 0;
-            if(frqTest.exists){
-                frqScore = ((CSEntry) entry).frqScore;
-            }
             teamList+="<tr><td>" + rank + "</td><td>" + t.tname + "</td><td>" + t.affiliation + "</td>" +
                     "<td class='right'>"+((frqTest.exists&&mcTest.exists)?entry.getMCScore():"")+"</td><td class='right'>"+(frqTest.exists?((CSEntry) entry).frqScore:entry.getMCScore())+"</td></tr>";
-            rank ++;
+            rank++;
         }
 
         // create HTML
@@ -318,6 +325,25 @@ public class Template {
                 "</tr>" + teamList + "</table></div></div>";
     }
 
+    /***
+     * Deletes a team's entry and updates the scoreboard.
+     * @param tid
+     */
+    public void deleteEntry(short tid) {
+        System.out.println("Deleting entry");
+        Connection conn = Conn.getConnection();
+        PreparedStatement stmt = null;
+        try {
+            stmt = conn.prepareStatement("DELETE FROM `c"+this.cid+"` WHERE tid=?");
+            stmt.setShort(1,tid);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            updateScoreboard();
+            Scoreboard.generateScoreboard();
+        }
+    }
 
     /**
      * Checks if there is a 'normals' column in this database. If there isn't, adds a 'normals' column and calculates each
@@ -369,7 +395,10 @@ public class Template {
         rs.first();
         HashMap<Short, Double> normalScoreMap = new HashMap<>();
         while(rs.next()) {
-            normalScoreMap.put(rs.getShort("tid"), rs.getDouble("normals"));
+            short sTid = rs.getShort("tid");
+            double sNormals = rs.getDouble("normals");
+            System.out.println("TID = "+sTid+", NORMAL="+sNormals);
+            normalScoreMap.put(sTid, sNormals);
         }
         return normalScoreMap;
     }

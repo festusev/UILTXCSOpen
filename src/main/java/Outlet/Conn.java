@@ -1,5 +1,6 @@
 package Outlet;
 
+import Outlet.uil.Template;
 import Outlet.uil.UILEntry;
 import com.google.gson.Gson;
 import org.apache.logging.log4j.LogManager;
@@ -324,27 +325,22 @@ public class Conn {
     }
     public static Connection getConnection(){
         Connection conn = null;
-
-        try{
-            Class.forName(JDBC_DRIVER);	// Load up the Driver's class
-            conn = DriverManager.getConnection("jdbc:mysql://"+DB_URL+":"+DB_PORT+"/"+DB_NAME+
-                    "?autoReconnect=true&useSSL=false",USER,PASS);
-        }catch(SQLException se){
-            //Handle errors for JDBC
-            //LOGGER.error("JDBC Error. Code="+se.getErrorCode()+". Cause="+se.getCause()
-                    //+". Message="+se.getMessage());
-            return null;
-        }catch(Exception e){
-            //Handle errors for Class.forName
-            //LOGGER.error("Class.forName error (likely). Cause="+e.getCause()+". Message="+e.getMessage());
+        while(true) {
+            try{
+                Class.forName(JDBC_DRIVER);	// Load up the Driver's class
+                conn = DriverManager.getConnection("jdbc:mysql://"+DB_URL+":"+DB_PORT+"/"+DB_NAME+
+                        "?autoReconnect=true&useSSL=false",USER,PASS);
+            }catch(SQLException se){
+                //Handle errors for JDBC
+                //LOGGER.error("JDBC Error. Code="+se.getErrorCode()+". Cause="+se.getCause()
+                //+". Message="+se.getMessage());
+                return null;
+            }catch(Exception e){
+                //Handle errors for Class.forName
+                //LOGGER.error("Class.forName error (likely). Cause="+e.getCause()+". Message="+e.getMessage());
+            }
+            if(conn != null) return conn;
         }
-
-        // If the connection to the server was unsuccessful
-        if(conn == null) {
-            //LOGGER.warn("CANNOT CONNECT TO MYSQL!!! AN ERROR WILL OCCUR IMMEDIATELY");
-            throw new RuntimeException("Could not connect to MYSQL Database");
-        }
-        return conn;
     }
     public static BigInteger finishRegistration(String email, String password, String uname) throws SQLException {
         BigInteger token = generateToken();
@@ -762,6 +758,12 @@ public class Conn {
 
         return status;
     }
+
+    /**
+     * Deletes a team and all of their data including from each competition
+     * @param team
+     * @return
+     */
     public static int delTeam(Team team) {
         if(team == null) return -3;
         Connection conn = getConnection();
@@ -779,7 +781,13 @@ public class Conn {
             int index = Collections.binarySearch(teams, team);
             if(index>=0) teams.remove(index);
             team.setUids(new short[0]); // Set the uids to an empty array
-            return stmt.executeUpdate();
+            int status = stmt.executeUpdate();
+            for(short cid: team.comps.keySet()) {
+                Template template = UILEntry.getTemplate(cid);
+                template.deleteEntry(team.tid);
+            }
+            Scoreboard.generateScoreboard();
+            return status;
         } catch (SQLException e) {
             e.printStackTrace();
             return -1;
@@ -844,10 +852,16 @@ public class Conn {
         Team team = getLoadedTeam(tname);
         if(team==null) {    // This team isn't loaded, so something went wrong
             return -8;
-        }
-        if(!team.verifyPassword(pass)){
+        } else if(!team.verifyPassword(pass)){
             return -5;  // Incorrect password
         }
+
+        for(short cid: team.comps.keySet()) {
+            if(UILEntry.compRunning(cid) && team.comps.get(cid).mc.size()>=3) {
+                return -4;
+            }
+        }
+
         int success = team.addUser(user);
         if(success == -2) return -2;    // If the team is full
         else if(success == 1) return 1; // If they belong to a team

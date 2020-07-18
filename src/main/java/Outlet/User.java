@@ -45,6 +45,7 @@ public class User implements Comparable<User>{
                 stmt.setString(3, token.toString(Character.MAX_RADIX));
                 stmt.setShort(4, tid);
             } else {
+                System.out.println("Updating User, setting tid="+tid);
                 stmt = con.prepareStatement("UPDATE users SET email=?, uname=?, token=?, tid=? WHERE uid=?");
                 stmt.setString(3, token.toString(Character.MAX_RADIX));
                 stmt.setShort(4, tid);

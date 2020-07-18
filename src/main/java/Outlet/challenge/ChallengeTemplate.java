@@ -7,7 +7,7 @@ import java.util.*;
 
 public class ChallengeTemplate extends Template {
     public ChallengeTemplate(String name, String whatItIs, String rules, String practice, Countdown opens, Countdown closes, short cid, SortUILTeams sorter){
-        super(name, whatItIs, rules, practice, new MCTest(),new FRQTest("", "", (short)0, (short)0, (short)0, new String[0], name, "", 0, new String[0]),opens, closes, cid, sorter);
+        super(name, whatItIs, rules, practice, new MCTest(),new FRQTest("", "", (short)0, (short)0, (short)0, new String[0], name, "", "","",0, new String[0]),opens, closes, cid, sorter);
     }
 
     @Override

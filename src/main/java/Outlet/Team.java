@@ -1,6 +1,7 @@
 package Outlet;
 
-import Outlet.uil.UILEntry;
+import Outlet.challenge.ChallengeEntry;
+import Outlet.uil.*;
 import com.google.gson.Gson;
 
 import java.security.NoSuchAlgorithmException;
@@ -37,6 +38,42 @@ public class Team implements Comparable<Team> {
     public void setUids(String s) {
         short[] temp = gson.fromJson(s, short[].class);
         setUids(temp);
+    }
+
+    /***
+     * Lets a user leave this team.
+     * Return values:
+     * 0 = they left the team with no issue
+     * -1 = Another issue occurred
+     * -2 = They don't belong to the team
+     * -3 = They can't leave the team because the team is in a competition currently.
+     * @param u
+     * @return
+     ***/
+    public int leaveTeam(User u) {
+        System.out.println("Leaving team");
+        if(u.tid != this.tid || !uids.contains(u.uid))
+            return -2;
+        for(short cid: comps.keySet()) {
+            if(UILEntry.compRunning(cid)) return -3;
+        }
+        uids.remove(u.uid);
+        int status =  updateTeam();
+        try {
+            u.team = null;
+            u.tid = -1;
+            u.updateUser(false);
+            if(uids.size()<=0) {   // If The team only has one user, delete the team.
+                Conn.delTeam(this);
+            }
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return -1;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return -1;
+        }
+        return status;
     }
     public int updateTeam(){
         Connection conn = Conn.getConnection();

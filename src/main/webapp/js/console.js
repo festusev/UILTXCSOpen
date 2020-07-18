@@ -19,6 +19,8 @@ const SERVER_ERROR = "Whoops! A server error occurred. Contact an admin if the p
 
 var delUserPass;
 var delUserBox;
+
+let leaveTeamBox;
 document.addEventListener("DOMContentLoaded", function(event) {
     joinTeamName = document.getElementById('joinTeamName');
     joinTeamPass = document.getElementById("joinTeamPass");
@@ -45,8 +47,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
     delUserPass = document.getElementById("delUserPass");
     delUserBox = document.getElementById("delUserBox");
     if(delUserBox!=null) delUserBox.onsubmit = delUser;
+
+    leaveTeamBox = document.getElementById("leaveTeamBox");
 })
 function asyncConnectHelper(url, params, teamBox) {
+    addSuccessBox(teamBox, "Running...");
     let xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function(){
         if (xhr.readyState === 4) {
@@ -55,7 +60,7 @@ function asyncConnectHelper(url, params, teamBox) {
                 if(Object.keys(response).includes("reload")) {
                     window.location.href=response["reload"];
                 } else if(Object.keys(response).includes("success")) {
-                    addSuccessBox(teamBox, response["success"]);
+                    addSuccessBox(teamBox, "SUCCESS: " + response["success"]);
                 } else {
                     addErrorBox(teamBox, response["error"]);
                 }
@@ -104,6 +109,12 @@ function delUser(){
     delUserPass.value = "";
     return false;
 }
+
+function leaveTeam() {
+    asyncConnectHelper("leave-team","leaveTeam=true",leaveTeamBox);
+    return false;
+}
+
 function addErrorBox(box, error){
     let errorBox = document.getElementById(box.id + "ERROR");
     if(!errorBox) {
@@ -117,10 +128,10 @@ function addErrorBox(box, error){
 function addSuccessBox(box, success) {
     let errorBox = document.getElementById(box.id + "ERROR");
     if(!errorBox) {
-        box.insertAdjacentHTML('afterbegin', "<div class='success' id='" + box.id + "ERROR'>SUCCESS: " + success + "</div>");
+        box.insertAdjacentHTML('afterbegin', "<div class='success' id='" + box.id + "ERROR'>" + success + "</div>");
     }
     else {
-        errorBox.innerHTML = "SUCCESS: " + success;
+        errorBox.innerHTML = success;
         errorBox.className = "success";
     }
 }

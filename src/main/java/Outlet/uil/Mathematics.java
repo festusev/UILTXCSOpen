@@ -63,10 +63,11 @@ public class Mathematics extends HttpServlet{
             "<li>You cannot use any resources except a calculator for the MC. Online calculators like Wolfram Alpha are permitted.</li>";
     public static final String PRACTICE = "Download practice MC tests from the <a href='/samples/mathematics_sample_packet.zip' class='link'>UIL Website.</a> Note that our test will cover a little bit more content to keep things interesting.";
     public static final String MC_INSTRUCTIONS = "Take these 60 questions in 40 minutes. If you can't reasonably eliminate any answers, leave the question blank. You are only allowed your brain and a calculator, feel shame if you have to cheat on this.";
-
+    public static final String MC_TEST_LINK = "mclink.com";  // The url to the test
+    public static final String MC_ANSWERS = "mcanswers.com";    // Either a url to an answer packet or a text list of the answers for each question.
 
     public static void initialize() {
-        MCTest mc = new MCTest(KEY, MC_PROBLEM_MAP, MC_NUM_PROBLEMS, CORRECT_PTS, INCORRECT_PTS, SKIPPED_PTS, MC_NAME, MC_TIME_TEXT, MC_INSTRUCTIONS, MC_TIME);
+        MCTest mc = new MCTest(KEY, MC_PROBLEM_MAP, MC_NUM_PROBLEMS, CORRECT_PTS, INCORRECT_PTS, SKIPPED_PTS, MC_NAME, MC_TIME_TEXT, MC_INSTRUCTIONS,MC_TEST_LINK, MC_ANSWERS, MC_TIME);
         FRQTest frq = new FRQTest();
         opens = new Countdown(opensString, "countdown");
         closes = new Countdown(closesString, "countdown");

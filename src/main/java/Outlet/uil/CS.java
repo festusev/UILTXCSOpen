@@ -55,7 +55,7 @@ public class CS extends HttpServlet{
      * Timing constants
      */
     private static String opensString = "07/31/2020 18:00:00";
-    private static String closesString = "08/02/2020 18:00:00";
+    private static String closesString = "08/2/2020 18:00:00";
     private static Countdown opens;
     private static Countdown closes;
     public static final String MC_TIME_TEXT = "45 minutes";
@@ -73,15 +73,20 @@ public class CS extends HttpServlet{
             "<li>The MC allows for use of the internet and personal notes. The questions ask more about programming concepts and code interpretation than a standard UIL test because of this.</li>" +
             "<li>Take the Programming section with your team anytime during the 2-day period.</li>" +
             "<li>Each Programming question has a max score of 60 pts where each incorrect submission reduces that value by 5pts.</li>" +
-            "<li>The Programming section allows for you to use online resources as well as use code you find online. This functions similarly to the rules of USACO. Cite any code copied from online. You may copy snippets of code, but not entire algorithms.\n</li>" +
+            "<li>The Programming section allows for you to use online resources as well as use code you find online. This functions similarly to the rules of USACO. Cite any code copied from online. You may copy snippets of code, but not entire algorithms.</li>" +
             "<li>You can program in Java 11, Python 3, or C++ 17.</li>";
     public static final String PRACTICE = "Download the MC and Programming solutions from our last UIL CS <a href='/samples/cs_sample_packet.zip' class='link'>here.</a> Visit <a href='https://www.uiltexas.org/academics/stem/computer-science' class='link'>official UIL</a> to view their sample tests. <br><br>The Multiple choice test has a different question structure. Gone are the questions where you are asked what the output of code is (As you could just run those). Instead, the test will focus on code interpretation and more abstract, non-googleable, programming questions. All questions in this test are something you can find in a standard UIL test. <br><br>The Programming section (Hands-On) will consist of 12 questions. You may use online resources as described in the rules. The questions themselves are harder and generally range in difficulty from USACO silver to gold problems, and will require abstract programming thinking that can’t just be googled.";
-    public static final String MC_INSTRUCTIONS = "Take these 40 questions in 45 minutes. If you can't reasonably eliminate any answers, leave the question blank. You are only allowed your brain, Google will not help you.";
 
+    public static final String MC_INSTRUCTIONS = "Take these 40 questions in 45 minutes. If you can't reasonably eliminate any answers, leave the question blank. You are only allowed your brain, Google will not help you.";
+    public static final String MC_TEST_LINK = "mclink.com";  // The url to the test
+    public static final String MC_ANSWERS = "";    // Either a url to an answer packet or a text list of the answers for each question.
+
+    public static final String FRQ_STUDENT_PACKET="studentpacket.com"; // Link to the student packet
+    public static final String FRQ_JUDGE_PACKET="judgepacket.com";   // Link to the judge packet
 
     public static void initialize() {
-        MCTest mc = new MCTest(KEY, MC_PROBLEM_MAP, MC_NUM_PROBLEMS, CORRECT_PTS, INCORRECT_PTS, SKIPPED_PTS, MC_NAME, MC_TIME_TEXT, MC_INSTRUCTIONS, MC_TIME);
-        FRQTest frq = new FRQTest(DIR, DIR, FRQ_NUM_PROBLEMS, MAX_POINTS, INCORRECT_PENALTY, FRQ_PROBLEM_MAP, FRQ_NAME, FRQ_TIME_TEXT, FRQ_TIME, DAT_MAP);
+        MCTest mc = new MCTest(KEY, MC_PROBLEM_MAP, MC_NUM_PROBLEMS, CORRECT_PTS, INCORRECT_PTS, SKIPPED_PTS, MC_NAME, MC_TIME_TEXT, MC_INSTRUCTIONS, MC_TEST_LINK, MC_ANSWERS, MC_TIME);
+        FRQTest frq = new FRQTest(DIR, DIR, FRQ_NUM_PROBLEMS, MAX_POINTS, INCORRECT_PENALTY, FRQ_PROBLEM_MAP, FRQ_NAME, FRQ_TIME_TEXT, FRQ_STUDENT_PACKET, FRQ_JUDGE_PACKET, FRQ_TIME, DAT_MAP);
         opens = new Countdown(opensString, "countdown");
         closes = new Countdown(closesString, "countdown");
         template = new Template(NAME, WHAT_IT_IS, RULES, PRACTICE, mc, frq, opens, closes, cid, new SortCSTeams());
@@ -182,7 +187,8 @@ public class CS extends HttpServlet{
                         return;
                     }
                 } else {
-                    writer.write("{\"status\":\"error\",\"error\":\"\"}");
+                    writer.write("{\"status\":\"error\",\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
+                    return;
                 }
         } else if(action.equals("signup")) {    // Their team is not signed up for this competition
             try {
@@ -193,6 +199,7 @@ public class CS extends HttpServlet{
                 return;
             } catch (Exception e) {
                 e.printStackTrace();
+                writer.write("{\"status\":\"error\",\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
                 return;
             }
         }
@@ -359,8 +366,9 @@ class CSEntry extends UILEntry{
         probNum--;  // We only use probNum for indexes
         if(status>0) frqResponses[probNum]--;
         else if(status==0) {
-            frqScore += java.lang.Math.max(CS.template.frqTest.calcScore(frqResponses[probNum]), FRQ_MIN);
+            System.out.println("--ADDING SUCCESSFUL FRQ RUN, # tries = " +frqResponses[probNum] + " score = "+java.lang.Math.max(CS.template.frqTest.calcScore(frqResponses[probNum]), FRQ_MIN));
             frqResponses[probNum] = (short)(java.lang.Math.abs(frqResponses[probNum]) + 1);
+            frqScore += java.lang.Math.max(CS.template.frqTest.calcScore(frqResponses[probNum]), FRQ_MIN);
         }
         if(status >= 0) update();
     }
