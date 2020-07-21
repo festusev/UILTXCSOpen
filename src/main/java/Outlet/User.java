@@ -18,6 +18,7 @@ public class User implements Comparable<User>{
 
     protected static Gson gson = new Gson();
     //private static final //Logger //LOGGER = LogManager.get//Logger(User.class);
+
     @Override
     public int compareTo(User user) {
         if(token == null || user.token == null) return user.uid - uid;  // If we are comparing by uid
@@ -40,15 +41,26 @@ public class User implements Comparable<User>{
             String query;
             PreparedStatement stmt;
             if(insert)  {
-                stmt = con.prepareStatement("INSERT INTO users(email, uname, token) VALUES (?, ?, ?)");
-                stmt.setString(3, token.toString(Character.MAX_RADIX));
+                stmt = con.prepareStatement("INSERT INTO users(email, uname, token, cids, class) VALUES (?, ?, ?, ?, ?)");
             } else {
-                stmt = con.prepareStatement("UPDATE users SET email=?, uname=?, token=? WHERE uid=?");
-                stmt.setString(3, token.toString(Character.MAX_RADIX));
-                stmt.setShort(4, uid);
+                stmt = con.prepareStatement("UPDATE users SET email=?, uname=?, token=?, cids=?, class=? WHERE uid=?");
+                stmt.setShort(6, uid);
             }
+            String cidsString = "";
+            String classString = "";
+            if(teacher) {
+                cidsString = gson.toJson(((Teacher) this).cids);
+                classString = ((Teacher)this).classCode;
+            } else {
+                cidsString = gson.toJson(((Student) this).cids);
+                classString = ""+((Student)this).teacherId;
+            }
+
             stmt.setString(1, email);
             stmt.setString(2, uname);
+            stmt.setString(3, token.toString(Character.MAX_RADIX));
+            stmt.setString(4, cidsString);
+            stmt.setString(5, classString);
             //LOGGER.info(stmt.toString());
 
             System.out.println(stmt.toString());
