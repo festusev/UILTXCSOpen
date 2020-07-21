@@ -30,12 +30,11 @@ public class Conn {
     private static final String USER = "admin";
     private static final String PASS = "1pcdEy31lxTSp6x$";	// TODO Possibly in the future have an admin type this in.
     // private static final String DB_NAME = "uil";
-    private static final String DB_NAME = "uil";
+    private static final String DB_NAME = "comptest";
 
     private static Gson gson = new Gson();
 
     private static ArrayList<User> users = new ArrayList<>();
-    private static ArrayList<Team> teams = new ArrayList<>();
 
     //private static final //Logger //LOGGER = LogManager.get//Logger(Conn.class);
 
@@ -77,6 +76,51 @@ public class Conn {
         }
     }
 
+    public static User getUserByUID(short uid) {
+        if(uid < 0) return null;
+        for(User u: users) {
+            if(u.uid==uid) return u;
+        }
+        // First, we query the database for the password entry matching the email
+        Connection con;
+        PreparedStatement stmt;
+        ResultSet rs;
+        String email;
+        String uname;
+        BigInteger token;
+        boolean teacher;
+        String cids;
+        String classString;
+        try {
+            con = getConnection();
+            if (con == null) return null; // If an error occurred making the connection
+            stmt = con.prepareStatement("SELECT email, uname, token, teacher, cids, class FROM users WHERE uid=?");
+            stmt.setShort(1, uid);
+            rs = stmt.executeQuery();
+            if(rs.next()) { // A row matches this email
+                email = rs.getString("email");
+                uname = rs.getString("uname");
+                token = new BigInteger(rs.getString("token"), Character.MAX_RADIX);
+                teacher = rs.getBoolean("teacher");
+                cids = rs.getString("cids");
+                classString = rs.getString("class");
+            }
+            else return null;     // If no row is found for this email
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        User u = null;
+        try {
+            u = loadUser(email, uname, token, uid, teacher, cids, classString);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return u;
+    }
+
     /**
      * This is a dangerous method, be sure to never let it get in the hands of someone.
      * @return
@@ -92,24 +136,23 @@ public class Conn {
         Connection con;
         PreparedStatement stmt;
         ResultSet rs;
-        String storedFullHash;
         String uname;
-        long start;
-        String questions;
-        short points;
         short uid = -1;
-        short tid = -1;
+        boolean teacher;
+        String cids;
+        String classString;
         try {
             con = getConnection();
             if (con == null) return null; // If an error occurred making the connection
-            stmt = con.prepareStatement("SELECT password, uname, uid, tid FROM users WHERE email=?");
+            stmt = con.prepareStatement("SELECT password, uname, uid, teacher, cids, class FROM users WHERE email=?");
             stmt.setString(1, email);
             rs = stmt.executeQuery();
             if(rs.next()) { // A row matches this email
-                storedFullHash = rs.getString("password");
                 uname = rs.getString("uname");
                 uid = rs.getShort("uid");
-                tid = rs.getShort("tid");
+                teacher = rs.getBoolean("teacher");
+                cids = rs.getString("cids");
+                classString = rs.getString("class");
             }
             else return null;     // If no row is found for this email
         }
@@ -131,7 +174,7 @@ public class Conn {
         }
         User u = null;
         try {
-            u = loadUser(email, uname, token, uid, tid);
+            u = loadUser(email, uname, token, uid, teacher, cids, classString);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -150,12 +193,12 @@ public class Conn {
             try {
                 Connection con = getConnection();
                 if (con == null) return null; // If an error occurred making the connection
-                PreparedStatement stmt = con.prepareStatement("SELECT email,uname, uid, tid FROM users WHERE token=?");
+                PreparedStatement stmt = con.prepareStatement("SELECT email,uname, uid, tid,teacher,cids,class FROM users WHERE token=?");
                 stmt.setString(1, temp.token.toString(Character.MAX_RADIX));
                 //LOGGER.info(stmt.toString());
                 ResultSet rs = stmt.executeQuery();
                 if(rs.next()) { // A row matches this email
-                    return loadUser(rs.getString("email"), rs.getString("uname"), temp.token, rs.getShort("uid"), rs.getShort("tid"));
+                    return loadUser(rs.getString("email"), rs.getString("uname"), temp.token, rs.getShort("uid"), rs.getBoolean("teacher"), rs.getString("cids"), rs.getString("class"));
                 }
             }
             catch (SQLException e) {
@@ -165,7 +208,7 @@ public class Conn {
         }
         return null;
     }
-    public static Team getTeam(ResultSet rs) throws SQLException {
+    /*public static Team getTeam(ResultSet rs) throws SQLException {
         Team team = new Team();
         if(rs.next()) { // A row matches this email
             team.tid = rs.getShort("tid");
@@ -198,14 +241,14 @@ public class Conn {
         /*
         Note: It is faster to linear search this than to sort by tname, binary search it, then resort by tid.
          */
-        Team team = null;
+        /*Team team = null;
         for(Team t: teams){
             if(t.tname.equals(tname)){   // The team we are looking for
                 team = t;
             }
         }
         return team;
-    }
+    }*/
     public static boolean isLoggedIn(HttpServletRequest request){
         return getUser(request)!=null;
     }
@@ -240,17 +283,25 @@ public class Conn {
         byte[] salt = generateSalt();
         return Base64.getEncoder().encodeToString(salt) + "." + hashPassword(password, salt);
     }
-    public static User loadUser(String email, String uname, BigInteger token, short uid, short tid) throws SQLException {
-        User user = new User();
+    public static User loadUser(String email, String uname, BigInteger token, short uid, boolean isTeacher, String cids, String classString) throws SQLException {
+        User user;
+        if(isTeacher) {
+            user = new Teacher();
+            ((Teacher) user).cids=gson.fromJson(cids, short[].class);
+            ((Teacher) user).classCode = classString;
+        } else {
+            user = new Student();
+            ((Student) user).setCids(cids);
+            ((Student) user).teacherId=Short.parseShort(classString);
+        }
         user.email = email;
         user.uname = uname;
         user.token = token;
         user.uid = uid;
-        user.tid = tid;
 
         // If so, the user belongs to a team. We will search the current teams in the `teams` ArrayList, and if
         // no team is found, we will add the team to the `teams` lists.
-        Team team = new Team();  // A team with the user's tid, used for searching if the team already exists
+        /*Team team = new Team();  // A team with the user's tid, used for searching if the team already exists
         team.tid = tid;
 
         if(tid != -1) { // If the user belongs to a team.
@@ -259,7 +310,7 @@ public class Conn {
             if(teamIndex<0) {    // If the team is not loaded into the team list
                 /* Now we search the database for the team information based off of the tid. We will load it into
                    the team variable and then add that to the teams list. */
-                Connection conn = getConnection();
+                /*Connection conn = getConnection();
                 if (conn == null) return null; // If an error occurred making the connection
                 PreparedStatement stmt = conn.prepareStatement("SELECT * FROM teams WHERE tid=?");
                 stmt.setShort(1, tid);
@@ -270,7 +321,7 @@ public class Conn {
                 team = teams.get(teamIndex);
             }
         }
-        user.team = team;
+        user.team = team;*/
         users.add(user);
         Collections.sort(users);    // TODO: Make this more efficient
         return user;
@@ -278,10 +329,9 @@ public class Conn {
 
     /**
      * If idIsId, then search by tid. Otherwise, search by tname.
-     * @param identifier
      * @return
      */
-    private static int loadTeamHelper(Object identifier, boolean idIsId) {
+    /*private static int loadTeamHelper(Object identifier, boolean idIsId) {
         Connection conn = getConnection();
         PreparedStatement stmt;
         if(idIsId) {    // identifier is an integer
@@ -322,7 +372,7 @@ public class Conn {
     }
     public static int loadTeam(String tname) {
         return loadTeamHelper(tname, false);
-    }
+    }*/
     public static Connection getConnection(){
         Connection conn = null;
         while(true) {
@@ -342,7 +392,7 @@ public class Conn {
             if(conn != null) return conn;
         }
     }
-    public static BigInteger finishRegistration(String email, String password, String uname) throws SQLException {
+    public static BigInteger finishRegistration(String email, String password, String uname, boolean isTeacher) throws SQLException {
         BigInteger token = generateToken();
         short uid = -1;
         // Make the actual update query
@@ -351,12 +401,18 @@ public class Conn {
             // Establishing Connection
             Connection conn = getConnection();
             if(conn==null) return BigInteger.valueOf(-1); // If an error occurred making the connection
-            PreparedStatement stmt = conn.prepareStatement("INSERT INTO users(email, password, uname, token) " +
-                    "VALUES (?, ?, ?, ?)");
+            PreparedStatement stmt = conn.prepareStatement("INSERT INTO users(email, password, uname, token, teacher, cids) " +
+                    "VALUES (?, ?, ?, ?, ?, ?)");
             stmt.setString(1, email);
             stmt.setString(2, password);
             stmt.setString(3, uname);
             stmt.setString(4, token.toString(Character.MAX_RADIX));
+            stmt.setBoolean(5, isTeacher);
+            if(isTeacher) { // Teachers' 'cids' string is a json list of the cids of the competitions they created
+                stmt.setString(6,"[]");
+            } else {    // Students' 'cids' string is a json dictionary mapping the cid of each competition they've signed up for to their tid in that competition
+                stmt.setString(6, "{}");
+            }
 
             int success = stmt.executeUpdate();
             if(success<=0) return BigInteger.valueOf(-1);   // If an error occurs
@@ -374,7 +430,9 @@ public class Conn {
             else if(e.getMessage().contains("for key 'uname'")) return BigInteger.valueOf(-3);  // If the error message is about the user having the same uname as another
             else return BigInteger.valueOf(-1);  // If an error occurred making the connection that is not one of the above
         }
-        loadUser(email, uname,  token, uid, (short) -1);
+        String cidsString = "{}";   // Students's cidsString is a dictionary, whereas teachers's cidsString is an array
+        if(isTeacher) cidsString = "[]";
+        loadUser(email, uname,  token, uid, isTeacher, cidsString,"-1");
         return token;
     }
 
@@ -417,7 +475,7 @@ public class Conn {
                 String email = rs.getString("email");
                 String password = rs.getString("password");
                 String uname = rs.getString("uname");
-
+                boolean isTeacher = rs.getBoolean("teacher");
 
                 // Finally, purge the entry from the table
                 stmt = conn.prepareStatement("DELETE FROM verification WHERE email = ? OR uname = ?");
@@ -425,7 +483,7 @@ public class Conn {
                 stmt.setString(2, uname);
                 stmt.executeUpdate();
 
-                return finishRegistration(email, password, uname);    // Finally, return the browser token
+                return finishRegistration(email, password, uname, isTeacher);    // Finally, return the browser token
             } else {    // no vToken matches this one in the database
                 return BigInteger.valueOf(-2);  // The token has expired. Should be already deleted, but stuff happens
             }
@@ -549,7 +607,7 @@ public class Conn {
      * @return vtoken, -1, -2, or -3
      * @throws NoSuchAlgorithmException
      */
-    public static int Register(String uname, String email, String password) throws NoSuchAlgorithmException, SQLException {
+    public static int Register(String uname, String email, String password, boolean isTeacher) throws NoSuchAlgorithmException, SQLException {
         BigInteger vtoken = new BigInteger(VTOKEN_SIZE, new Random());    // Generate the verification token (vToken)
 
         /**
@@ -596,13 +654,14 @@ public class Conn {
 
             if(conn==null) return -1; // If an error occurred making the connection
             stmt = conn.prepareStatement("INSERT INTO verification(email, password, uname, expires, vtoken, code) " +
-                    "VALUES (?, ?, ?, ?, ?, ?)");
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)");
             stmt.setString(1, email);
             stmt.setString(2, passHashFull);
             stmt.setString(3, uname);
-            stmt.setLong(4, System.currentTimeMillis() + 15*60*1000);   // Expires in 15 minutes
-            stmt.setString(5, "");
-            stmt.setString(6, code);
+            stmt.setBoolean(4,isTeacher);
+            stmt.setLong(5, System.currentTimeMillis() + 15*60*1000);   // Expires in 15 minutes
+            stmt.setString(6, "");
+            stmt.setString(7, code);
 
             int success = stmt.executeUpdate();
             if(success<0) return -1;   // If some error occurred
@@ -686,22 +745,23 @@ public class Conn {
         ResultSet rs;
         String storedFullHash;
         String uname;
-        long start;
-        String questions;
-        short points;
         short uid = -1;
-        short tid = -1;
+        boolean teacher;
+        String cids;
+        String classString;
         try {
             con = getConnection();
             if (con == null) return BigInteger.valueOf(-1); // If an error occurred making the connection
-            stmt = con.prepareStatement("SELECT password, uname, uid, tid FROM users WHERE email=?");
+            stmt = con.prepareStatement("SELECT password, uname, uid,teacher,cids,class  FROM users WHERE email=?");
             stmt.setString(1, email);
             rs = stmt.executeQuery();
             if(rs.next()) { // A row matches this email
                 storedFullHash = rs.getString("password");
                 uname = rs.getString("uname");
                 uid = rs.getShort("uid");
-                tid = rs.getShort("tid");
+                teacher = rs.getBoolean("teacher");
+                cids = rs.getString("cids");
+                classString = rs.getString("class");
             }
             else return BigInteger.valueOf(-2);     // If no row is found for this email
         }
@@ -731,7 +791,7 @@ public class Conn {
             return BigInteger.valueOf(-1);
         }
 
-        loadUser(email, uname, token, uid, tid);
+        loadUser(email, uname, token, uid,teacher,cids, classString);
         return token;
     }
     // NOTE: DOES NOT remove the token from the cookie
@@ -743,13 +803,14 @@ public class Conn {
         logout(u.token);
 
         // Finally, remove the user from their team
-        if(u.tid>=0){  // If they belong to a team
+        /*if(u.tid>=0){  // If they belong to a team
             u.team.removeUser(u);
             //LOGGER.debug("TEAM LENGTH: " + u.team.uids.length);
             if(u.team.uids.size()<=0) { // If so, remove the team from the scoreboard
                 Scoreboard.generateScoreboard();
             }
-        }
+        }*/
+        //TODO: Remove the person from any team they are going to compete in
 
         // Next, remove the user's row from the database
         PreparedStatement stmt = conn.prepareStatement("DELETE FROM users WHERE uid=?");
@@ -764,7 +825,7 @@ public class Conn {
      * @param team
      * @return
      */
-    public static int delTeam(Team team) {
+    /*public static int delTeam(Team team) {
         if(team == null) return -3;
         Connection conn = getConnection();
 
@@ -792,8 +853,8 @@ public class Conn {
             e.printStackTrace();
             return -1;
         }
-    }
-    public static int createTeam(String tname, String affiliation, String password, User captain){
+    }*/
+    /*public static int createTeam(String tname, String affiliation, String password, User captain){
         Connection conn = getConnection();
 
         if(captain.tid>=0) {    // Captain already belongs to a team
@@ -836,7 +897,7 @@ public class Conn {
             e.printStackTrace();
             return -1;
         }
-    }
+    }*/
 
     /**
      * Add a user to a team.
@@ -845,7 +906,7 @@ public class Conn {
      * @param user
      * @return success code
      */
-    public static int joinTeam(String tname, String pass, User user) throws SQLException, NoSuchAlgorithmException {
+    /*public static int joinTeam(String tname, String pass, User user) throws SQLException, NoSuchAlgorithmException {
         int status = loadTeam(tname);    // Make sure the team is loaded in
         if(status == -3) return -3;  // The team doesn't exist
         else if(status !=0) return status;  // Some other error occurred
@@ -871,12 +932,12 @@ public class Conn {
         user.team = team;
         user.updateUser(false);
         return 0;
-    }
+    }*/
     /**
      * Returns a list of unames that belong to the team.
      * @return
      */
-    public static HashSet<String> getTeamUsers(Team team) {
+    /*public static HashSet<String> getTeamUsers(Team team) {
         String selection = "SELECT uname FROM users WHERE ";
         if(team == null || team.uids == null) return null;
         for(int i = 0; i<team.uids.size(); i++) {
@@ -904,7 +965,7 @@ public class Conn {
             return null;
         }
 
-    }
+    }*/
     public static int logout(BigInteger token) throws SQLException {
         try {
             Connection conn = getConnection();
@@ -919,7 +980,7 @@ public class Conn {
         }
         return 0;
     }
-    public static ArrayList<Team> getAllTeams() {
+    /*public static ArrayList<Team> getAllTeams() {
         Connection conn = getConnection();
         ArrayList<Team> allTeams = new ArrayList<>();
         try {
@@ -936,5 +997,5 @@ public class Conn {
         }
 
         return allTeams;
-    }
+    }*/
 }

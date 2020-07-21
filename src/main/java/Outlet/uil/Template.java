@@ -42,10 +42,11 @@ public class Template {
 
     protected SortUILTeams sorter;    // Used to sort teams for the scoreboard
 
+    private Competition competition;
     private final static int SCOREBOARD_UPDATE_INTERVAL = 10*60*1000;
 
-    public Template(String n, String w, String r, String p, MCTest mc, FRQTest fr, Countdown op, Countdown cl, short cid, SortUILTeams sorter){
-        name = n;whatItIs = w;rules = r;practice = p;mcTest = mc;frqTest = fr;opens = op;closes = cl;this.cid = cid; this.sorter = sorter;
+    public Template(String n, String w, String r, String p, MCTest mc, FRQTest fr, Countdown op, Countdown cl, short cid, Competition competition){
+        name = n;whatItIs = w;rules = r;practice = p;mcTest = mc;frqTest = fr;opens = op;closes = cl;this.cid = cid; this.sorter = new SortUILTeams();this.competition=competition;
 
         navBarHTML = "<ul id='upperHalf'><li id='nav_compname'>"+name+"</li><li onclick='showAbout();'>About</li><li onclick='showScoreboard();'>Scoreboard</li>";
         answersHTML = "<div id='answersColumn' class='column' style='display:none'><div class='row head-row'><h1>Answers</h1></div>";
@@ -142,9 +143,9 @@ public class Template {
         int competeStatus = 0;  // They have signed up
         if(u==null || u.token == null || !Conn.isLoggedIn(u.token)) {
             competeStatus = 1;  // They are not logged in
-        } else if(u.tid <=0) {
-            competeStatus = 2;  // They are logged in but have no team
-        } else if(!u.team.comps.containsKey(cid)) {
+        } else if(u.teacher) {  // They are a teacher so they can't sign up
+            competeStatus = 2;
+        } else if(((Student)u).cids.containsKey(cid)) {
             competeStatus = 3;  // They have not signed up
         }
         return competeStatus;
@@ -153,8 +154,8 @@ public class Template {
         // First, we determine whether to put a "Sign Up" button, a message saying "Your team is signed up for this
         // competition", a message saying "You must belong to a team to sign up", or a message saying
         // "you must be logged in to sign up for this competition"
-        String actMessage = "<button id='signUp' onclick='signUp()'>Sign Up</button>";
-        if(competeStatus == 1){
+        String actMessage = "<button id='signUp' onclick='signUp()'>Sign Up</button>";  // They haven't signed up yet
+        if(competeStatus == 1){ // They are not logged in
             actMessage = "<h3 class='subtitle'>Log in to compete</h3>";
         } else if(competeStatus == 2) {
             actMessage = "<h3 class='subtitle'>Join a team to compete</h3>";
@@ -189,17 +190,18 @@ public class Template {
             return "<div id='mcColumn' class='column' style='display:none;'>" +
                     "<h1 class='forbiddenPage'>You must be logged in to compete</h1>" +
                     "</div>";
-        } else if(competeStatus == 2) {
+        } else if(competeStatus == 2) { // They are a teacher
             return "<div id='mcColumn' class='column' style='display:none;'>" +
-                    "<h1 class='forbiddenPage'>You must belong to a team to compete</h1>" +
+                    "<h1 class='forbiddenPage'>Teachers cannot compete.</h1>" +
                     "</div>";
-        } else if(competeStatus == 3) {
+        } else if(competeStatus == 3) { // They are signed up
             return "<div id='mcColumn' class='column' style='display:none;'><div class='row'>" +
                     "<h1 class='forbiddenPage'>Sign up for this competition to compete</h1>" +
                     "<p class='subtitle' onclick='showAbout()' style='cursor:pointer'>Sign up in the <b>About</b> page</p>" +
                     "</div></div>";
         }
-        UILEntry entry = u.team.comps.get(cid);
+        Student s = (Student) u;
+        UILEntry entry = s.cids.get(cid);
         if(!entry.mc.containsKey(u.uid))
             return mcHTML[0];
 
@@ -236,29 +238,30 @@ public class Template {
                     "</div></div>";
         }
 
-        CSEntry entry = (CSEntry) u.team.comps.get(cid);
-        if(entry.finishedFRQ()) {
+        UILEntry entry = ((Student)u).cids.get(cid);
+        /*if(entry.finishedFRQ()) {
             return getFinishedFRQ(entry);
         } else if(entry.frqStarted>0) {
             return getRunningFRQ(entry);
         } else{
             return frqHTML[0];
-        }
+        }*/
+        return "";
     }
-    public String getRunningFRQ(CSEntry entry){
+    public String getRunningFRQ(UILEntry entry){
         return "<script>grabFRQProblemsTimer = setInterval(function() {grabFRQProblems()}, 1000*10);</script>" +
                 "<div id='frqColumn' class='column' style='display:none'><div class='row head-row running-frq'>" +
                 "<div id='frqSelection'>" +
                 "<h1>"+frqTest.NAME+"</h1>" +
-                "<div id='frqTimer'>"+frqTest.getTimer(entry.frqStarted)+"</div>"+
+                //"<div id='frqTimer'>"+frqTest.getTimer(entry.frqStarted)+"</div>"+
                 frqHTML[1]+"</div>"+
                 getFRQProblems(entry)+"</div></div>";
     }
-    public String getFinishedFRQ(CSEntry entry){
+    public String getFinishedFRQ(UILEntry entry){
         return "<div id='frqColumn' class='column' class='column' style='display:none'><div class='row head-row'>"+
                 getFRQProblems(entry)+"</div></div>";
     }
-    public String getFRQProblems(CSEntry entry){
+    public String getFRQProblems(UILEntry entry){
         String problems = "<div id='frqProblems'><h1>Problems - " + entry.frqScore +"pts</h1>";
         for(int i=0; i<entry.frqResponses.length; i++) {
             problems+="<p>" + frqTest.PROBLEM_MAP[i] + " - ";
@@ -297,25 +300,24 @@ public class Template {
     }
 
     public void updateScoreboard(){
-        ArrayList<Team> allTeams = Conn.getAllTeams();
-        ArrayList<Team> teams = new ArrayList<>();
-        for(Team t: allTeams) {
-            if(t.comps.keySet().contains(cid)){
-                teams.add(t);
-            }
+        ArrayList<UILEntry> allTeams;
+        try {
+            allTeams = competition.getAllEntries();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return;
         }
 
-        Collections.sort(teams, sorter);
+        Collections.sort(allTeams, sorter);
 
 
         // The table row list of teams in order of points
         String teamList = "";
         int rank = 1;
-        for(Team t: teams) {
-            UILEntry entry = t.comps.get(cid);
+        for(UILEntry entry: allTeams) {
             entry.getMCScore();
-            teamList+="<tr><td>" + rank + "</td><td>" + t.tname + "</td><td>" + t.affiliation + "</td>" +
-                    "<td class='right'>"+((frqTest.exists&&mcTest.exists)?entry.getMCScore():"")+"</td><td class='right'>"+(frqTest.exists?((CSEntry) entry).frqScore:entry.getMCScore())+"</td></tr>";
+            teamList+="<tr><td>" + rank + "</td><td>" + entry.tname + "</td><td>" + entry.affiliation + "</td>" +
+                    "<td class='right'>"+((frqTest.exists&&mcTest.exists)?entry.getMCScore():"")+"</td><td class='right'>"+(frqTest.exists?entry.frqScore:entry.getMCScore())+"</td></tr>";
             rank++;
         }
 
@@ -324,6 +326,7 @@ public class Template {
                 "<table id='teamList'><tr><th>#</th><th>Team</th><th>School</th><th class='right'>"+((frqTest.exists&&mcTest.exists)?"MC":"")+"</th><th class='right'>"+(frqTest.exists?"FRQ":"MC")+"</th>" +
                 "</tr>" + teamList + "</table></div></div>";
     }
+
 
     /***
      * Deletes a team's entry and updates the scoreboard.
@@ -341,7 +344,7 @@ public class Template {
             e.printStackTrace();
         } finally {
             updateScoreboard();
-            Scoreboard.generateScoreboard();
+            //Scoreboard.generateScoreboard();
         }
     }
 
@@ -351,7 +354,7 @@ public class Template {
      * return a hashmap mapping the team's tid to its normalized score.
      * @return
      */
-    public HashMap<Short, Double> end() throws SQLException {
+    /*public HashMap<Short, Double> end() throws SQLException {
         Connection conn = Conn.getConnection();
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM `c"+this.cid+"`");
 
@@ -364,16 +367,13 @@ public class Template {
             stmt.executeUpdate();
 
             int max = 0;    // The max score of this competition
-            ArrayList<Team> allTeams = Conn.getAllTeams();
+            ArrayList<UILEntry> allTeams = competition.getAllEntries();
             ArrayList<UILEntry> teams = new ArrayList<>();
-            for(Team t: allTeams) {
-                if(t.comps.containsKey(this.cid)){
-                    UILEntry comp = t.comps.get(this.cid);
-                    teams.add(comp);
+            for(UILEntry entry: allTeams) {
+                teams.add(entry);
 
-                    int score = comp.getScore();
-                    if(max < score) max = score;
-                }
+                int score = entry.getScore();
+                if(max < score) max = score;
             }
 
             HashMap<Short, Double> normalScores = new HashMap<>();
@@ -401,7 +401,7 @@ public class Template {
             normalScoreMap.put(sTid, sNormals);
         }
         return normalScoreMap;
-    }
+    }*/
 }
 
 class UpdateScoreboard extends TimerTask {

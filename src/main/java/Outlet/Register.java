@@ -91,6 +91,7 @@ public class Register extends HttpServlet{
         String uname = request.getParameter("uname");
         String pass = request.getParameter("pass");
         String confPass = request.getParameter("passAgain");
+        String teacherString = request.getParameter("teacher");
         if(uname == null || uname.isEmpty()) {
             writer.write("{\"error\":\"Username is empty.\"}");
             return;
@@ -109,8 +110,10 @@ public class Register extends HttpServlet{
             return;
         }
 
+        // TODO: Alan make it so that they can check whether they are a teacher or not and then it sends that data in the POST
+        boolean isTeacher = teacherString!=null&&!teacherString.isEmpty()&&teacherString.equals("true");    // True if they are a teacher
         try {
-            int status = Conn.Register(uname , email, pass); // Put the data into the verification database
+            int status = Conn.Register(uname , email, pass, isTeacher); // Put the data into the verification database
 
             // Perform the register update. If the user doesn't already exist and no errors occurred, then we tell the page to show the "input code" box for verification
             if(status >= 0){    // The page will wait for a code to be entered. The user can also follow the link

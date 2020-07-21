@@ -16,7 +16,7 @@ public class LeaveTeam extends HttpServlet {
         }
 
         // Get the user's team, if they belong to one
-        Team uTeam = Conn.getLoadedTeam(uData.tid);
+/*        Team uTeam = Conn.getLoadedTeam(uData.tid);
         int status = uTeam.leaveTeam(uData);
         System.out.println("Status = " + status);
 
@@ -27,6 +27,6 @@ public class LeaveTeam extends HttpServlet {
             writer.write("{\"error\":\"You can't leave while your team is competing\"}");
         } else {
             writer.write("{\"reload\":\"" + request.getContextPath() + "/console\"}");
-        }
+        }*/
     }
 }

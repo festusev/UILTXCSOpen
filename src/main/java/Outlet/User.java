@@ -12,12 +12,11 @@ import java.util.Base64;
 public class User implements Comparable<User>{
     public String email;
     public String uname;
-    public Team team;
     public BigInteger token;
     public short uid;
-    public short tid;
+    public boolean teacher;
 
-    private static Gson gson = new Gson();
+    protected static Gson gson = new Gson();
     //private static final //Logger //LOGGER = LogManager.get//Logger(User.class);
     @Override
     public int compareTo(User user) {
@@ -41,15 +40,12 @@ public class User implements Comparable<User>{
             String query;
             PreparedStatement stmt;
             if(insert)  {
-                stmt = con.prepareStatement("INSERT INTO users(email, uname, token, tid) VALUES (?, ?, ?, ?)");
+                stmt = con.prepareStatement("INSERT INTO users(email, uname, token) VALUES (?, ?, ?)");
                 stmt.setString(3, token.toString(Character.MAX_RADIX));
-                stmt.setShort(4, tid);
             } else {
-                System.out.println("Updating User, setting tid="+tid);
-                stmt = con.prepareStatement("UPDATE users SET email=?, uname=?, token=?, tid=? WHERE uid=?");
+                stmt = con.prepareStatement("UPDATE users SET email=?, uname=?, token=? WHERE uid=?");
                 stmt.setString(3, token.toString(Character.MAX_RADIX));
-                stmt.setShort(4, tid);
-                stmt.setShort(5, uid);
+                stmt.setShort(4, uid);
             }
             stmt.setString(1, email);
             stmt.setString(2, uname);

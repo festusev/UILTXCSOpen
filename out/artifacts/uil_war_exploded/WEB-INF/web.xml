@@ -60,7 +60,7 @@
     <url-pattern>/console</url-pattern>
   </servlet-mapping>
 
-  <servlet>
+  <!--<servlet>
     <servlet-name>Scoreboard</servlet-name>
     <servlet-class>Outlet.Scoreboard</servlet-class>
     <load-on-startup>1</load-on-startup>
@@ -68,7 +68,7 @@
   <servlet-mapping>
     <servlet-name>Scoreboard</servlet-name>
     <url-pattern>/scoreboard</url-pattern>
-  </servlet-mapping>
+  </servlet-mapping>-->
 
   <servlet>
     <servlet-name>Logout</servlet-name>
@@ -161,7 +161,7 @@
   </servlet-mapping>
 
   <!-- Begin UIL Servlets -->
-  <servlet>
+  <!--<servlet>
     <servlet-name>UIL_CS</servlet-name>
     <servlet-class>Outlet.uil.CS</servlet-class>
     <load-on-startup>1</load-on-startup>
@@ -205,7 +205,7 @@
   <servlet-mapping>
     <servlet-name>UIL_CalcApp</servlet-name>
     <url-pattern>/uil/calculator_applications</url-pattern>
-  </servlet-mapping>
+  </servlet-mapping>-->
 
   <!-- Challenge Servlet -->
   <servlet>

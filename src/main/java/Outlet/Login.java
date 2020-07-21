@@ -18,9 +18,6 @@ import javax.servlet.http.HttpServletResponse;
  * Created by Evan Ellis.
  */
 public class Login extends HttpServlet{
-    private static final String PAGE_NAME = "login";
-    private static Gson gson = new Gson();
-
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {

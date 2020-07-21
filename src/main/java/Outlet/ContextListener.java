@@ -1,6 +1,6 @@
 package Outlet;
 
-import Outlet.uil.CS;
+//import Outlet.uil.CS;
 
 import java.io.*;
 import java.text.ParseException;
@@ -19,10 +19,10 @@ public class ContextListener implements ServletContextListener {
         try {
             Outlet.challenge.ScoreEngine.initialize();
             Outlet.challenge.Challenge.initialize();
-            Outlet.uil.CS.initialize();
+            /*Outlet.uil.CS.initialize();
             Outlet.uil.Mathematics.initialize();
             Outlet.uil.NumberSense.initialize();
-            Outlet.uil.CalculatorApplications.initialize();
+            Outlet.uil.CalculatorApplications.initialize();*/
         } catch (Exception e) {
             e.printStackTrace();
         }

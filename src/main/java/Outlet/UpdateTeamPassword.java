@@ -12,7 +12,7 @@ import java.security.NoSuchAlgorithmException;
 public class UpdateTeamPassword extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        response.setContentType("application/json");
+/*        response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         PrintWriter writer = response.getWriter();
         User uData = Conn.getUser(request);
@@ -44,6 +44,6 @@ public class UpdateTeamPassword extends HttpServlet {
         }
 
         // Finally Redirect back to the Console
-        writer.write("{\"success\":\"Password changed successfully.\"}");
+        writer.write("{\"success\":\"Password changed successfully.\"}");*/
     }
 }

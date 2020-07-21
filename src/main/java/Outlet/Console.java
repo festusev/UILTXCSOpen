@@ -25,17 +25,19 @@ public class Console extends HttpServlet{
             return;
         }
         // Get the user's team, if they belong to one
-        Team uTeam = Conn.getLoadedTeam(uData.tid);
+        //Team uTeam = Conn.getLoadedTeam(uData.tid);
 
         // set response headers
         response.setContentType("text/html");
         response.setCharacterEncoding("UTF-8");
 
+        // TODO: Alan make this like the profile wireframes
+
         // Create the team section html
         String tName = "";
         String tSection = "";
         String tPoints = "";
-        if(uTeam != null) {
+        /*if(uTeam != null) {
             tName = uTeam.tname + " - " + uTeam.affiliation;
             tSection = "    <div class=\"row\">\n" +
                     "        <div id=\"teamDiv\" class=\"rowCenter\">\n" +
@@ -64,7 +66,7 @@ public class Console extends HttpServlet{
                     "            </div>\n" +
                     "        </div>\n" +
                     "    </div>\n";
-        } else {    // They do not belong to a team
+        } else {    // They do not belong to a team*/
             tName = "No Team";
             tPoints = "<p id=\"distWon\"></p>";
             tSection = "    <div class=\"row\">\n" +
@@ -95,7 +97,7 @@ public class Console extends HttpServlet{
                     "            </div>\n" +
                     "        </div>\n" +
                     "    </div>\n";
-        }
+        //}
 
         // create HTML form
         PrintWriter writer = response.getWriter();

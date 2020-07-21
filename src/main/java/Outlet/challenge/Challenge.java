@@ -17,7 +17,7 @@ import java.util.Comparator;
 
 public class Challenge extends HttpServlet {
     public static ChallengeTemplate template;
-    public static final short CID = 2;
+    public static final short CID = 0;
     private static Gson gson = new Gson();
     public static boolean  initialized = false;
 
@@ -47,7 +47,7 @@ public class Challenge extends HttpServlet {
     public static void initialize() {
         opens = new Countdown(opensString, "countdown");
         closes = new Countdown(closesString, "countdown");
-        template = new ChallengeTemplate(NAME, WHAT_IT_IS, RULES, PRACTICE, opens, closes, CID, new SortChallengeTeams());
+        //template = new ChallengeTemplate(NAME, WHAT_IT_IS, RULES, PRACTICE, opens, closes, CID, new SortChallengeTeams());
 
         initialized = true;
     }
@@ -56,7 +56,7 @@ public class Challenge extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         if(!initialized) initialize();
-        template.render(request,response);
+        //template.render(request,response);
     }
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -74,7 +74,7 @@ public class Challenge extends HttpServlet {
         PrintWriter writer = response.getWriter();
 
 
-        if (action.equals("updatePage")) {  // Reloads the columns portion of the page
+        /*if (action.equals("updatePage")) {  // Reloads the columns portion of the page
             writer.write("{\"updatedHTML\":\""+template.getColumnsHTML(user, template.getCompeteStatus(user))+"\"}");
             return;
         } if(user.team.comps.containsKey(CID)) { // If their team is already signed up for this competition
@@ -120,14 +120,14 @@ public class Challenge extends HttpServlet {
                 e.printStackTrace();
                 return;
             }
-        }
+        }*/
     }
 }
 
-class SortChallengeTeams extends SortUILTeams implements Comparator<Team>
+/*class SortChallengeTeams extends SortUILTeams implements Comparator<Team>
 {
     public int compare(Team a, Team b) {
-        ChallengeEntry aEntry = (ChallengeEntry) a.comps.get(Challenge.CID);
+        /*ChallengeEntry aEntry = (ChallengeEntry) a.comps.get(Challenge.CID);
         ChallengeEntry bEntry = (ChallengeEntry) b.comps.get(Challenge.CID);
 
         int diffWon = bEntry.won - aEntry.won;
@@ -137,7 +137,8 @@ class SortChallengeTeams extends SortUILTeams implements Comparator<Team>
             if(diffLoc>0) return 1;
             else if(diffLoc<0) return -1;
             return 0;
-        }
+        }*/
+/*        return 0;
     }
 }
 class P7zipCompression {
@@ -152,4 +153,4 @@ class P7zipCompression {
         sevenZFile.close();
         return null;
     }
-}
+}*/

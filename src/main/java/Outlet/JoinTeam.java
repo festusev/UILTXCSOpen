@@ -17,7 +17,7 @@ public class JoinTeam extends HttpServlet {
     //private static final Logger LOGGER = LogManager.getLogger(JoinTeam.class);
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        response.setContentType("application/json");
+/*        response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         PrintWriter writer = response.getWriter();
         User uData = Conn.getUser(request);
@@ -64,6 +64,6 @@ public class JoinTeam extends HttpServlet {
         }
 
         // Finally Redirect back to the Console
-        writer.write("{\"reload\":\"" + request.getContextPath() + "/console\"}");   // Reload the page
+        writer.write("{\"reload\":\"" + request.getContextPath() + "/console\"}");   // Reload the page*/
     }
 }

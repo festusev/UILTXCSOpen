@@ -46,7 +46,7 @@ public class ScoreEngine {
      * @param sub
      * @return ImmutablePair<Integer, Double> scored
      */
-    public static int score(String sub, ChallengeEntry entry){
+    /*public static int score(String sub, ChallengeEntry entry){
         System.out.println("--SCORING--");
         if(sub==null || sub.isEmpty()) return 1;
 
@@ -132,5 +132,5 @@ public class ScoreEngine {
 
         entry.addFRQRun(won, loc);
         return 0;
-    }
+    }*/
 }

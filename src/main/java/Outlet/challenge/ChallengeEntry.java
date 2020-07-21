@@ -1,16 +1,6 @@
 package Outlet.challenge;
-import Outlet.Conn;
-import Outlet.Team;
-import Outlet.uil.UILEntry;
-import com.google.gson.Gson;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-
-public class ChallengeEntry extends UILEntry {
+/*public class ChallengeEntry extends UILEntry {
     public final short tid;
 
     public boolean eligible;
@@ -35,7 +25,7 @@ public class ChallengeEntry extends UILEntry {
      * Loads an EXISTING CSEntry from the database. Does not create a new one.
      * @param tid
      */
-    public static ChallengeEntry loadEntry(short tid) throws SQLException {
+/*    public static ChallengeEntry loadEntry(short tid) throws SQLException {
         Connection conn = Conn.getConnection();
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM `c"+ Challenge.CID +"` WHERE tid=?");
         stmt.setShort(1,tid);
@@ -53,7 +43,7 @@ public class ChallengeEntry extends UILEntry {
      * @return
      * @throws SQLException
      */
-    public static ChallengeEntry signup(short tid, boolean eligible) throws SQLException {
+  /*  public static ChallengeEntry signup(short tid, boolean eligible) throws SQLException {
         ChallengeEntry newEntry = new ChallengeEntry(tid, eligible, 0, 0);
 
         Connection conn = Conn.getConnection();
@@ -106,7 +96,7 @@ public class ChallengeEntry extends UILEntry {
      * Returns a sorted array of Teams which are signed up for the Challenge.
      * @return
      */
-    public static ArrayList<Team> getAllEntries(){
+/*    public static ArrayList<Team> getAllEntries(){
         ArrayList<Team> allTeams = Conn.getAllTeams();
         ArrayList<Team> teams = new ArrayList<>();
         for(Team t: allTeams) {
@@ -125,4 +115,4 @@ public class ChallengeEntry extends UILEntry {
         this.locality = locality;
         update();
     }
-}
+}*/

@@ -35,15 +35,13 @@ public class Countdown {
             e.printStackTrace();
         }
         ID = id;
+    }
+    // Creates a date from epoch milli
+    public Countdown (long toDate, String id) {
+        date = new Date(toDate);
+        ID = id;
 
-        Timer timer = new Timer();
-        TimerTask task = new TimerTask(){
-            public void run() {
-                Scoreboard.generateScoreboard();
-            }
-        };
-
-        timer.schedule(task, date); // Update scoreboard when this countdown finishes
+        DATE_STRING = "";
     }
     public static long getNow(){
         Instant instant = Instant.now();
@@ -82,5 +80,20 @@ public class Countdown {
                 "       clearInterval(x"+ID+");" + onDone +
                 "    }" +
                 "}, 1000);</script>";
+    }
+
+    // Returns a new countdown object 'add' milliseconds after the start of 'countdown'
+    public static Countdown add(Countdown countdown, long add, String id) {
+        return new Countdown(countdown.getNow() + add, id);
+    }
+
+    public static Countdown getEarliest(Countdown c1, Countdown c2) {
+        if(c1.date.getTime() < c2.date.getTime()) return c1;
+        return c2;
+    }
+
+    public static Countdown getLatest(Countdown c1, Countdown c2) {
+        if(c1.date.getTime() >= c2.date.getTime()) return c1;
+        return c2;
     }
 }

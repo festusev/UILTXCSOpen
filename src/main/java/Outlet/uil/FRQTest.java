@@ -29,17 +29,20 @@ public class FRQTest {
     public final short NUM_PROBLEMS;
     public final short MAX_POINTS;  // Number of points you get if you get the problem first try
     public final short INCORRECT_PENALTY;   // Number of points taken off MAX_POINTS for each incorrect submission
+    public final short MIN_POINTS = 0;  // Minimum number of points you can get for solving a problem;
 
     public final String[] PROBLEM_MAP;  // A list of the problems, formatted like "1. Abril", "2. Brittany"...
     private final String[] DAT_MAP;
     private static ArrayList<ArrayList<Pair>> files = null;
 
+    public Countdown opens; // The time that this opens
+
     public FRQTest() {
         exists = false; NAME = "";TIME_TEXT="";TIME=0;DAT_MAP= new String[0];STUDENT_PACKET="";JUDGE_PACKET="";
         SCORE_DIR = ""; TESTCASE_DIR = ""; NUM_PROBLEMS = 0; MAX_POINTS = 0; INCORRECT_PENALTY = 0; PROBLEM_MAP = new String[0];
     }
-    public FRQTest (String sd, String td, short np, short mp, short ip, String[] pm, String na, String timeText, String studentPacket, String judgePacket, long time, String[] datMap) {
-        SCORE_DIR = SCORE_DIR_ROOT+sd; TESTCASE_DIR = TESTCASE_DIR_ROOT+td; NUM_PROBLEMS = np; MAX_POINTS = mp; INCORRECT_PENALTY = ip; PROBLEM_MAP = pm;
+    public FRQTest (String opensString, String sd, String td, short np, short mp, short ip, String[] pm, String na, String timeText, String studentPacket, String judgePacket, long time, String[] datMap) {
+        opens = new Countdown(opensString, "");SCORE_DIR = SCORE_DIR_ROOT+sd; TESTCASE_DIR = TESTCASE_DIR_ROOT+td; NUM_PROBLEMS = np; MAX_POINTS = mp; INCORRECT_PENALTY = ip; PROBLEM_MAP = pm;
         NAME = na;exists = true;TIME_TEXT=timeText;TIME=time;DAT_MAP=datMap;STUDENT_PACKET=studentPacket;JUDGE_PACKET=judgePacket;
 
         try {

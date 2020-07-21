@@ -20,7 +20,6 @@ public class DeleteUser extends HttpServlet {
         response.setCharacterEncoding("UTF-8");
         PrintWriter writer = response.getWriter();
         User uData = Conn.getUser(request);
-        Team team = uData.team;
         if(uData != null && !Conn.isLoggedIn(uData.token)){
             writer.write("{\"reload\":\"" +request.getContextPath() + "\"}");
             return;
