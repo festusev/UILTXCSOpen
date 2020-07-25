@@ -35,7 +35,7 @@ public class UILEntry {
 
         setUids(rs.getString("uids"));
 
-        if(comp.mcTest.exists) {
+        if(comp.template.mcTest.exists) {
             mc = new HashMap<>();
             String column = rs.getString("mc").replace("\\u0027", "\"");
             column = column.substring(1, column.length() - 1);
@@ -47,7 +47,7 @@ public class UILEntry {
                 mc.put(Short.parseShort(key), submission);
             }
         }
-        if(comp.frqTest.exists) {
+        if(comp.template.frqTest.exists) {
             frqResponses = gson.fromJson(rs.getString("frqResponses"), short[].class);
             frqScore = Short.parseShort(rs.getString("frqScore"));
         }
@@ -121,18 +121,18 @@ public class UILEntry {
         Connection conn = Conn.getConnection();
         try {
             String statement = "UPDATE `c"+competition.template.cid+"` SET ";
-            if(competition.mcTest.exists) {
+            if(competition.template.mcTest.exists) {
                 statement += "mc=?";
             }
-            if(competition.frqTest.exists) {
-                if(competition.mcTest.exists) statement+=",";
+            if(competition.template.frqTest.exists) {
+                if(competition.template.mcTest.exists) statement+=",";
                 statement += "frqResponses=?,frqScore=?";
             }
             statement += " WHERE tid=?";
             PreparedStatement stmt = conn.prepareStatement(statement);
 
             short startIndex = 1;   // Keeps track of where the frqTest should start inserting parameters
-            if(competition.mcTest.exists) {
+            if(competition.template.mcTest.exists) {
                 String mcStringified = "{";
                 Set<Short> keys = mc.keySet();
                 int i = 0;
@@ -145,7 +145,7 @@ public class UILEntry {
                 stmt.setString(1, gson.toJson(mcStringified));
                 startIndex = 2;
             }
-            if(competition.frqTest.exists) {
+            if(competition.template.frqTest.exists) {
                 stmt.setString(startIndex, gson.toJson(frqResponses));
                 stmt.setShort(++startIndex, frqScore);
             }
@@ -164,18 +164,18 @@ public class UILEntry {
      * @return
      */
     public long beginMC(short uid) {    // Returns the time started, even if they have already begun
-        if(!competition.mcTest.exists) return -1;
+        if(!competition.template.mcTest.exists) return -1;
 
         if(mc.keySet().contains(uid))
             return mc.get(uid).started;
 
         long now = Countdown.getNow();
-        mc.put(uid, new MCSubmission(competition.mcTest.NUM_PROBLEMS,now));
+        mc.put(uid, new MCSubmission(competition.template.mcTest.NUM_PROBLEMS,now));
         return now;
     }
 
     public long beginFRQ(){
-        if(!competition.frqTest.exists) return -1;
+        if(!competition.template.frqTest.exists) return -1;
 
         /*if(frqStarted > 0) return frqStarted;
         else {
@@ -195,7 +195,7 @@ public class UILEntry {
      * @return short[3]
      */
     public short[] scoreMC(short uid, String[] answers) {
-        if(!competition.mcTest.exists) return new short[]{0,0,0,0};
+        if(!competition.template.mcTest.exists) return new short[]{0,0,0,0};
 
         MCSubmission entry = mc.get(uid);
         entry.answers = answers;
@@ -207,20 +207,20 @@ public class UILEntry {
     // if Greater than zero, add an incorrect run, if less than zero, add nothing,
     // if equal to zero, add a correct run
     public void addFRQRun(int status, int probNum) {
-        if(!competition.frqTest.exists) return;
+        if(!competition.template.frqTest.exists) return;
 
         probNum--;  // We only use probNum for indexes
         if(status>0) frqResponses[probNum]--;
         else if(status==0) {
             //System.out.println("--ADDING SUCCESSFUL FRQ RUN, # tries = " +frqResponses[probNum] + " score = "+java.lang.Math.max(CS.template.frqTest.calcScore(frqResponses[probNum]), competition.frqTest.MIN_POINTS));
             frqResponses[probNum] = (short)(java.lang.Math.abs(frqResponses[probNum]) + 1);
-            frqScore += java.lang.Math.max(competition.template.frqTest.calcScore(frqResponses[probNum]), competition.frqTest.MIN_POINTS);
+            frqScore += java.lang.Math.max(competition.template.frqTest.calcScore(frqResponses[probNum]), competition.template.frqTest.MIN_POINTS);
         }
         if(status >= 0) update();
     }
 
     public boolean finishedMC(short uid) {
-        if(!competition.mcTest.exists) return true;
+        if(!competition.template.mcTest.exists) return true;
 
         if(mc.keySet().contains(uid)) {
             MCSubmission submission = mc.get(uid);
@@ -230,14 +230,14 @@ public class UILEntry {
     }
 
     public boolean finishedFRQ(){
-        if(!competition.frqTest.exists) return true;
+        if(!competition.template.frqTest.exists) return true;
 
         //if(frqStarted > 0 && (frqStarted+competition.frqTest.TIME)<Countdown.getNow()) return true;
         return false;
     }
 
     public int getMCScore() {
-        if(!competition.mcTest.exists) return 0;
+        if(!competition.template.mcTest.exists) return 0;
 
         int score = 0;
         for(short i: mc.keySet()){
@@ -251,8 +251,8 @@ public class UILEntry {
     public int getScore() {
         int frq = 0;
         int mc = 0;
-        if(competition.mcTest.exists) mc = getMCScore();
-        if(competition.frqTest.exists) frq = frqScore;
+        if(competition.template.mcTest.exists) mc = getMCScore();
+        if(competition.template.frqTest.exists) frq = frqScore;
         return frq + mc;
     }
 }

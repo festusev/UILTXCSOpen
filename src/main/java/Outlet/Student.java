@@ -12,12 +12,15 @@ public class Student extends User{
         this.teacher = false;
     }
     public void setCids(String s) {
-        HashMap<String, String> temp = User.gson.fromJson(s, HashMap.class);
+        System.out.println("CIDS= "+ s);
+        s = s.substring(s.indexOf("[")+1, s.indexOf("]"));
+        String[] dict = s.split(",");   // formatted like ['1:2', '3:49']
+
         cids = new HashMap<>();
-        Set<String> compCids = temp.keySet();
-        for(String comp: compCids) {
-            short cid = Short.parseShort(comp);
-            cids.put(cid, UILEntry.loadUILEntry(Short.parseShort(temp.get(comp)), cid));
+        for(String entry: dict) {
+            short cid = Short.parseShort(entry.substring(0, entry.indexOf(":")));
+            short tid = Short.parseShort(entry.substring(entry.indexOf(":")+1), entry.length());
+            cids.put(cid, UILEntry.loadUILEntry(tid, cid));
         }
     }
 }

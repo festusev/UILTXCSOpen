@@ -9,7 +9,7 @@ import java.io.PrintWriter;
 public class LeaveTeam extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        User uData = Conn.getUser(request); // We need to display the user's data
+        User uData = UserMap.getUserByRequest(request); // We need to display the user's data
         if(uData == null || uData.token == null || !Conn.isLoggedIn(uData.token)){
             response.sendRedirect(request.getContextPath());
             return;

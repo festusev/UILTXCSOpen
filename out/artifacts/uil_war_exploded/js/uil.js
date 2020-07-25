@@ -1,9 +1,13 @@
-var columns;
-var about;
-var scoreboard;
-var mc;
-var frq;
-var answers;
+let columns;
+let about;
+let scoreboard;
+let mc;
+let frq;
+let answers;
+
+let publicComps;
+let classComps;
+let myComps;
 $(document).ready(function(){
     columns = $(".column");
     about = $("#aboutColumn");
@@ -12,43 +16,61 @@ $(document).ready(function(){
     frq = $("#frqColumn");
     answers = $("#answersColumn");
 
+    publicComps = $("#public_competitions");
+    classComps = $("#class_competitions");
+    myComps = $("#my_competitions");
+
     showColumn();
 })
 
 function showColumn(){
     // Check if there is an anchor, and if there is show that section of the page
-    if(window.location.hash=="#scoreboard") {
+    if(window.location.hash==="#scoreboard") {
         showScoreboard();
-    } else if(window.location.hash=="#mc") {
+    } else if(window.location.hash==="#mc") {
         showMC();
-    } else if(window.location.hash=="#frq") {
+    } else if(window.location.hash==="#frq") {
         showFRQ();
-    } else if(window.location.hash=="#answers") {
+    } else if(window.location.hash==="#answers") {
         showAnswers();
-    } else {
+    } else if(about.length!==0) {
         showAbout();
+    } else {
+        showPublic();
     }
 }
 
 function showHelper(show, hash){
     columns.hide();
     show.show();
-    window.location.hash = "#" + hash;
+    window.location.hash = hash;
 }
 function showAbout(){
-    showHelper(about, "about");
+    showHelper(about, "#about");
 }
 function showScoreboard(){
-    showHelper(scoreboard, "scoreboard");
+    showHelper(scoreboard, "#scoreboard");
 }
 function showMC(){
-    showHelper(mc, "mc");
+    showHelper(mc, "#mc");
 }
 function showFRQ(){
-    showHelper(frq, "frq");
+    showHelper(frq, "#frq");
 }
 function showAnswers(){
-    showHelper(answers, "answers");
+    showHelper(answers, "#answers");
+}
+
+function showPublic() { // Shows the public competitions
+    showHelper(publicComps, "");
+}
+
+function showClassComps() { // Shows the class competitions
+    showHelper(classComps, "");
+}
+
+function showMyComps() { // Shows the class competitions
+    showHelper(myComps, "");
 }
 
 // Uses ajax to update the navigation bar. Called whenever a countdown finished

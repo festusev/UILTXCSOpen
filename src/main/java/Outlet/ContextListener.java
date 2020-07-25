@@ -19,10 +19,7 @@ public class ContextListener implements ServletContextListener {
         try {
             Outlet.challenge.ScoreEngine.initialize();
             Outlet.challenge.Challenge.initialize();
-            /*Outlet.uil.CS.initialize();
-            Outlet.uil.Mathematics.initialize();
-            Outlet.uil.NumberSense.initialize();
-            Outlet.uil.CalculatorApplications.initialize();*/
+            UserMap.initialize();
         } catch (Exception e) {
             e.printStackTrace();
         }

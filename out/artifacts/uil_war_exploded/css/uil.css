@@ -1,0 +1,60 @@
+#center{
+    width:60rem;
+    margin:auto;
+    margin-top:70px;
+}
+#left, #right{
+    display:inline-block;
+    box-sizing:border-box;
+}
+#center h1{
+    font-size:20px;
+    font-weight:bold;
+    height:4rem;
+    padding-right:10px;
+    color:black;
+}
+
+#left{
+    text-align:right;
+    position:fixed;
+    height:40rem;
+    width:20rem;
+}
+#left .menu{
+    border-right:1px solid lightgray;
+    padding-right:10px;
+    font-size:16px;
+    color:black;
+    cursor:pointer;
+    font-weight:bold;
+}
+#right{
+    float:right;
+    width:40rem;
+    padding-left:2rem;
+}
+#right .column {
+    padding: 0;
+}
+.competitionCnt{
+    height:6rem;
+}
+.competition{
+    padding:10px;
+    border:1px solid #b7b7b7;
+    border-radius:10px;
+    margin-bottom:1rem;
+    cursor: pointer;
+    display: block;
+}
+.competition:hover{
+    background-color:#e8f0fe;
+    border-color:#e8f0fe;
+}
+.competition .row1 *, .competition .row2 *{
+    display:inline-block;
+}
+.competition .right {
+    float:right;
+}

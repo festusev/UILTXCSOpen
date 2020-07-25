@@ -38,7 +38,7 @@ public class Dynamic {
                 "  <link rel=\"stylesheet\" href=\"/css/style2.css\">" +
                 " <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js\"></script>" +
                 " <script>" +
-                " $(document).ready(function(){$(\"#uil_nav\").hover(function(){$(\"#uil_dropdown\").show()}, function(){$(\"#uil_dropdown\").hide()});});" +
+                //" $(document).ready(function(){$(\"#uil_nav\").hover(function(){$(\"#uil_dropdown\").show()}, function(){$(\"#uil_dropdown\").hide()});});" +
                 " </script>";
     }
     public static String loadLoggedOutNav(){
@@ -50,13 +50,13 @@ public class Dynamic {
                 "                <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
                 "            </li>\n" +
                 "            <li class=\"nav-item\" id=\"uil_nav\">\n" +
-                "                <a class=\"nav-link\">UIL</a>\n" +
-                "                <ul id=\"uil_dropdown\">" +
+                "                <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
+                /*"                <ul id=\"uil_dropdown\">" +
                 "                    <li class=\"drop-nav-item\" onclick=\"window.location.href='/uil/cs'\"><a class=\"nav-link\" href=\"/uil/cs\">CS</a></li><br>" +
                 "                    <li class=\"drop-nav-item\" onclick=\"window.location.href='/uil/calculator_applications'\"><a class=\"nav-link\" href=\"/uil/calculator_applications\">Calculator Applications</a></li><br>" +
                 "                    <li class=\"drop-nav-item\" onclick=\"window.location.href='/uil/math'\"><a class=\"nav-link\" href=\"/uil/math\">Math</a></li><br>" +
                 "                    <li class=\"drop-nav-item\" onclick=\"window.location.href='/uil/number_sense'\"><a class=\"nav-link\" href=\"/uil/number_sense\">Number Sense</a></li>" +
-                 "                </ul>" +
+                 "                </ul>" +*/
                 "            </li>\n" +
                 "            <li class=\"nav-item\">\n" +
                 "                <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
@@ -99,13 +99,13 @@ public class Dynamic {
                 "                <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
                 "            </li>\n" +
                 "            <li class=\"nav-item\" id=\"uil_nav\">\n" +
-                "                <a class=\"nav-link\">UIL</a>\n" +
-                "                <ul id=\"uil_dropdown\">" +
+                "                <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
+                /*"                <ul id=\"uil_dropdown\">" +
                 "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/cs\">CS</a></li><br>" +
                 "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/calculator_applications\">Calculator Applications</a></li><br>" +
                 "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/math\">Math</a></li><br>" +
                 "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/number_sense\">Number Sense</a></li>" +
-                "                </ul>" +
+                "                </ul>" +*/
                 "            </li>\n" +
                 "            <li class=\"nav-item\">\n" +
                 "                <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +

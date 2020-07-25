@@ -123,7 +123,7 @@ public class Verify extends HttpServlet{
                 writer.write("{\"error\":\"Passwords do not match.\"}");
                 return;
             } else {    // In this case, we complete the password change by first verifying that the code is correct and then by changing the password
-                User u = Conn.getUserByEmail(email);
+                User u = UserMap.getUserByEmail(email);
                 try {
                     u.changePassword(Conn.getHashedFull(pass));
                     Cookie tokenCookie = new Cookie("token", u.token.toString(Character.MAX_RADIX));

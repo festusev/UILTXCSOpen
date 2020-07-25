@@ -25,13 +25,10 @@ public class Competition {
     public Template template;
     private static Gson gson = new Gson();
 
-    public MCTest mcTest;
-    public FRQTest frqTest;
-
     public Teacher teacher;
     public boolean isPublic;
 
-    public HashMap<Short, UILEntry> entries;    // Maps a teams tid to its UILEntry
+    public HashMap<Short, UILEntry> entries = new HashMap<>();    // Maps a teams tid to its UILEntry
 
     /***
      * Used if there is an frq and no mc.
@@ -60,6 +57,7 @@ public class Competition {
         this.teacher = teacher;
         this.isPublic = isPublic;
         template = new Template(name, whatItIs, rules, practice, mc, frq, frq.opens, Countdown.add(frq.opens, frqTime, ""), cid, this);
+        template.updateScoreboard();
     }
 
     /***
@@ -89,6 +87,7 @@ public class Competition {
         this.teacher = teacher;
         this.isPublic = isPublic;
         template = new Template(name, whatItIs, rules, practice, mc, frq, mc.opens, Countdown.add(mc.opens, mcTime, ""), cid, this);
+        template.updateScoreboard();
     }
 
     /***
@@ -123,7 +122,11 @@ public class Competition {
                        String[] frqProblemMap, String frqStudentPack, String frqJudgePacket,
                        String frqOpens, long frqTime, String[] datMap) {
         MCTest mc = new MCTest(mcOpens, mcKey, mcProblemMap, mcProblemMap.length, mcCorrectPoints, mcIncorrectPoints, 0, "Written Test", (mcTime/(1000*60)) + " minutes", mcInstructions, mcTestLink, mcAnswers, mcTime);
-        FRQTest frq = new FRQTest(frqOpens, cid+"_"+teacher.uid, cid+"_"+teacher.uid, (short)frqProblemMap.length, frqMaxPoints, frqIncorrectPenalty, frqProblemMap, "Hands-On Programming", (frqTime/(1000*60)) + " minutes", frqStudentPack, frqJudgePacket, frqTime, datMap);
+        System.out.println("cid = " + cid);
+        System.out.println("uid = " + teacher.uid);
+        System.out.println("frqProblemMap = " + frqProblemMap.length);
+
+        FRQTest frq = new FRQTest(frqOpens, cid+"_"+teacher.uid+"/", cid+"_"+teacher.uid+"/", (short)frqProblemMap.length, frqMaxPoints, frqIncorrectPenalty, frqProblemMap, "Hands-On Programming", (frqTime/(1000*60)) + " minutes", frqStudentPack, frqJudgePacket, frqTime, datMap);
 
         Countdown opens = Countdown.getEarliest(mc.opens, frq.opens);   // When the competition will read as open and closed
         Countdown ends = Countdown.getLatest(mc.opens, frq.opens);
@@ -133,6 +136,7 @@ public class Competition {
         this.teacher = teacher;
         this.isPublic = isPublic;
         template = new Template(name, whatItIs, rules, practice, mc, frq, opens, ends, cid, this);
+        template.updateScoreboard();
     }
 
     public void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -141,7 +145,7 @@ public class Competition {
     }
     public void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        User userBefore = Conn.getUser(request);
+        User userBefore = UserMap.getUserByRequest(request);
         if(userBefore == null || userBefore.token == null || !Conn.isLoggedIn(userBefore.token)){ // They are not logged in, return nothing
             return;
         }
@@ -254,7 +258,7 @@ public class Competition {
      * @return
      */
     public UILEntry getEntry(short tid) throws SQLException {
-        if(this.entries.containsKey(tid)) return this.entries.get(tid);
+        if(entries.containsKey(tid)) return entries.get(tid);
 
         Connection conn = Conn.getConnection();
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM `c"+template.cid+"` WHERE tid=?");
@@ -262,7 +266,7 @@ public class Competition {
         ResultSet rs = stmt.executeQuery();
         if(rs.next()) {
             UILEntry entry = new UILEntry(rs,this);
-            this.entries.put(tid, entry);
+            entries.put(tid, entry);
             return entry;
         }
         return null;
@@ -281,5 +285,11 @@ public class Competition {
             entries.add(new UILEntry(rs, this));
         }
         return entries;
+    }
+}
+
+class SortCompByDate implements Comparator<Competition> {
+    public int compare(Competition c1, Competition c2) {
+        return c1.template.opens.date.compareTo(c2.template.opens.date);
     }
 }

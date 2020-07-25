@@ -1,6 +1,8 @@
 package Outlet;
 
+import Outlet.uil.Competition;
 import Outlet.uil.Template;
+import Outlet.uil.UIL;
 import Outlet.uil.UILEntry;
 import com.google.gson.Gson;
 import org.apache.logging.log4j.LogManager;
@@ -34,10 +36,6 @@ public class Conn {
 
     private static Gson gson = new Gson();
 
-    private static ArrayList<User> users = new ArrayList<>();
-
-    //private static final //Logger //LOGGER = LogManager.get//Logger(Conn.class);
-
     private static final int VTOKEN_SIZE = 50;
     private static final int VCODE_SIZE = 6;
     public static void setHTMLHeaders(HttpServletResponse response) {
@@ -68,192 +66,14 @@ public class Conn {
             }
         }
 
-        User temp = new User();
-        temp.token = token;
-        int index = Collections.binarySearch(users, temp);
-        if(index>=0) {
-            users.remove(index);
-        }
+        UserMap.delUser(UserMap.getUserByToken(token));
     }
 
-    public static User getUserByUID(short uid) {
-        if(uid < 0) return null;
-        for(User u: users) {
-            if(u.uid==uid) return u;
-        }
-        // First, we query the database for the password entry matching the email
-        Connection con;
-        PreparedStatement stmt;
-        ResultSet rs;
-        String email;
-        String uname;
-        BigInteger token;
-        boolean teacher;
-        String cids;
-        String classString;
-        try {
-            con = getConnection();
-            if (con == null) return null; // If an error occurred making the connection
-            stmt = con.prepareStatement("SELECT email, uname, token, teacher, cids, class FROM users WHERE uid=?");
-            stmt.setShort(1, uid);
-            rs = stmt.executeQuery();
-            if(rs.next()) { // A row matches this email
-                email = rs.getString("email");
-                uname = rs.getString("uname");
-                token = new BigInteger(rs.getString("token"), Character.MAX_RADIX);
-                teacher = rs.getBoolean("teacher");
-                cids = rs.getString("cids");
-                classString = rs.getString("class");
-            }
-            else return null;     // If no row is found for this email
-        }
-        catch (SQLException e) {
-            e.printStackTrace();
-            return null;
-        }
-
-        User u = null;
-        try {
-            u = loadUser(email, uname, token, uid, teacher, cids, classString);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return u;
-    }
-
-    /**
-     * This is a dangerous method, be sure to never let it get in the hands of someone.
-     * @return
-     */
-    public static User getUserByEmail(String email) {
-        if(email == null || email.isEmpty()) return null;
-        for(User u: users) {
-            if(u.email.equals(email)) return u;
-        }
-        BigInteger token = generateToken();
-
-        // First, we query the database for the password entry matching the email
-        Connection con;
-        PreparedStatement stmt;
-        ResultSet rs;
-        String uname;
-        short uid = -1;
-        boolean teacher;
-        String cids;
-        String classString;
-        try {
-            con = getConnection();
-            if (con == null) return null; // If an error occurred making the connection
-            stmt = con.prepareStatement("SELECT password, uname, uid, teacher, cids, class FROM users WHERE email=?");
-            stmt.setString(1, email);
-            rs = stmt.executeQuery();
-            if(rs.next()) { // A row matches this email
-                uname = rs.getString("uname");
-                uid = rs.getShort("uid");
-                teacher = rs.getBoolean("teacher");
-                cids = rs.getString("cids");
-                classString = rs.getString("class");
-            }
-            else return null;     // If no row is found for this email
-        }
-        catch (SQLException e) {
-            e.printStackTrace();
-            return null;
-        }
-
-        // Update the token in the db entry for this user
-        try {
-            stmt = con.prepareStatement("UPDATE users SET token=? WHERE email=?");
-            stmt.setString(1, token.toString(Character.MAX_RADIX));
-            stmt.setString(2, email);
-            stmt.executeUpdate();
-        }
-        catch (SQLException e) {
-            e.printStackTrace();
-            return null;
-        }
-        User u = null;
-        try {
-            u = loadUser(email, uname, token, uid, teacher, cids, classString);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return u;
-    }
-    public static User getUser(HttpServletRequest request) {
-        return getUser(getToken(request));
-    }
-    public static User getUser(BigInteger token) {
-        if(token == null) return null;
-        User temp = new User();
-        temp.token = token;
-        int index = Collections.binarySearch(users, temp);
-        if(temp.token != null && index >=0) return users.get(index);
-        else {  // Load them from the database
-            try {
-                Connection con = getConnection();
-                if (con == null) return null; // If an error occurred making the connection
-                PreparedStatement stmt = con.prepareStatement("SELECT email,uname, uid, tid,teacher,cids,class FROM users WHERE token=?");
-                stmt.setString(1, temp.token.toString(Character.MAX_RADIX));
-                //LOGGER.info(stmt.toString());
-                ResultSet rs = stmt.executeQuery();
-                if(rs.next()) { // A row matches this email
-                    return loadUser(rs.getString("email"), rs.getString("uname"), temp.token, rs.getShort("uid"), rs.getBoolean("teacher"), rs.getString("cids"), rs.getString("class"));
-                }
-            }
-            catch (SQLException e) {
-                e.printStackTrace();
-                return null;
-            }
-        }
-        return null;
-    }
-    /*public static Team getTeam(ResultSet rs) throws SQLException {
-        Team team = new Team();
-        if(rs.next()) { // A row matches this email
-            team.tid = rs.getShort("tid");
-            team.tname = rs.getString("name");
-            team.affiliation = rs.getString("affiliation");
-            team.setComps(rs.getString("comps"));
-            team.setUids(rs.getString("uids"));
-
-            Team temp = getLoadedTeam(team.tid);
-            if(temp == null){
-                teams.add(team);
-                Collections.sort(teams);    // TODO: Make this more efficient
-                return team;
-            } else {
-                return temp;
-            }
-        } else {
-            return null;
-        }
-    }
-    public static Team getLoadedTeam(short tid) {
-        if(tid <=0) return null;
-        Team temp = new Team();
-        temp.tid = tid;
-        int index = Collections.binarySearch(teams, temp);
-        if(index >= 0) return teams.get(index);
-        return null;
-    }
-    public static Team getLoadedTeam(String tname) {
-        /*
-        Note: It is faster to linear search this than to sort by tname, binary search it, then resort by tid.
-         */
-        /*Team team = null;
-        for(Team t: teams){
-            if(t.tname.equals(tname)){   // The team we are looking for
-                team = t;
-            }
-        }
-        return team;
-    }*/
     public static boolean isLoggedIn(HttpServletRequest request){
-        return getUser(request)!=null;
+        return UserMap.getUserByRequest(request)!=null;
     }
     public static boolean isLoggedIn(BigInteger token){
-        return getUser(token)!=null;
+        return UserMap.getUserByToken(token)!=null;
     }
     public static BigInteger  generateToken() {
         return new BigInteger(255, new Random());  // How the user will remain logged in;
@@ -283,96 +103,7 @@ public class Conn {
         byte[] salt = generateSalt();
         return Base64.getEncoder().encodeToString(salt) + "." + hashPassword(password, salt);
     }
-    public static User loadUser(String email, String uname, BigInteger token, short uid, boolean isTeacher, String cids, String classString) throws SQLException {
-        User user;
-        if(isTeacher) {
-            user = new Teacher();
-            ((Teacher) user).cids=gson.fromJson(cids, short[].class);
-            ((Teacher) user).classCode = classString;
-        } else {
-            user = new Student();
-            ((Student) user).setCids(cids);
-            ((Student) user).teacherId=Short.parseShort(classString);
-        }
-        user.email = email;
-        user.uname = uname;
-        user.token = token;
-        user.uid = uid;
 
-        // If so, the user belongs to a team. We will search the current teams in the `teams` ArrayList, and if
-        // no team is found, we will add the team to the `teams` lists.
-        /*Team team = new Team();  // A team with the user's tid, used for searching if the team already exists
-        team.tid = tid;
-
-        if(tid != -1) { // If the user belongs to a team.
-            System.out.println("-- Teams:" + teams + ", team:" + team);
-            int teamIndex = Collections.binarySearch(teams, team);
-            if(teamIndex<0) {    // If the team is not loaded into the team list
-                /* Now we search the database for the team information based off of the tid. We will load it into
-                   the team variable and then add that to the teams list. */
-                /*Connection conn = getConnection();
-                if (conn == null) return null; // If an error occurred making the connection
-                PreparedStatement stmt = conn.prepareStatement("SELECT * FROM teams WHERE tid=?");
-                stmt.setShort(1, tid);
-                ResultSet rs = stmt.executeQuery();
-                team = getTeam(rs);
-            }
-            else {    // The team is loaded into the team list, just search for it
-                team = teams.get(teamIndex);
-            }
-        }
-        user.team = team;*/
-        users.add(user);
-        Collections.sort(users);    // TODO: Make this more efficient
-        return user;
-    }
-
-    /**
-     * If idIsId, then search by tid. Otherwise, search by tname.
-     * @return
-     */
-    /*private static int loadTeamHelper(Object identifier, boolean idIsId) {
-        Connection conn = getConnection();
-        PreparedStatement stmt;
-        if(idIsId) {    // identifier is an integer
-            if(getLoadedTeam((Short)identifier) != null ) return 0;    // The team is already loaded
-            try {
-                stmt = conn.prepareStatement("SELECT * FROM teams WHERE tid = ?");
-                stmt.setShort(1,(Short)identifier);
-                //LOGGER.info(stmt.toString());
-            } catch (Exception e) {
-                e.printStackTrace();
-                return -2;  // A java-side error
-            }
-        } else{
-            if(getLoadedTeam((String)identifier) != null) return 0;     // The team is already loaded
-            try {
-                stmt = conn.prepareStatement("SELECT * FROM teams WHERE name = ?");
-                stmt.setString(1, (String)identifier);
-                //LOGGER.info(stmt.toString());
-            } catch (Exception e) {
-                e.printStackTrace();
-                return -2;  // A java-side error
-            }
-
-        }
-        ResultSet rs;
-        try {
-            rs = stmt.executeQuery();
-            if(!rs.next()) return -3;   // The team doesn't exist
-            getTeam(rs);
-            return 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return -1;  // A mysql error
-        }
-    }
-    public static int loadTeam(short tid) {
-        return loadTeamHelper(tid, false);
-    }
-    public static int loadTeam(String tname) {
-        return loadTeamHelper(tname, false);
-    }*/
     public static Connection getConnection(){
         Connection conn = null;
         while(true) {
@@ -384,12 +115,13 @@ public class Conn {
                 //Handle errors for JDBC
                 //LOGGER.error("JDBC Error. Code="+se.getErrorCode()+". Cause="+se.getCause()
                 //+". Message="+se.getMessage());
-                return null;
             }catch(Exception e){
                 //Handle errors for Class.forName
                 //LOGGER.error("Class.forName error (likely). Cause="+e.getCause()+". Message="+e.getMessage());
             }
-            if(conn != null) return conn;
+            if(conn != null){
+                return conn;
+            }
         }
     }
     public static BigInteger finishRegistration(String email, String password, String uname, boolean isTeacher) throws SQLException {
@@ -401,8 +133,8 @@ public class Conn {
             // Establishing Connection
             Connection conn = getConnection();
             if(conn==null) return BigInteger.valueOf(-1); // If an error occurred making the connection
-            PreparedStatement stmt = conn.prepareStatement("INSERT INTO users(email, password, uname, token, teacher, cids) " +
-                    "VALUES (?, ?, ?, ?, ?, ?)");
+            PreparedStatement stmt = conn.prepareStatement("INSERT INTO users(email, password, uname, token, teacher, cids, class) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)");
             stmt.setString(1, email);
             stmt.setString(2, password);
             stmt.setString(3, uname);
@@ -410,8 +142,22 @@ public class Conn {
             stmt.setBoolean(5, isTeacher);
             if(isTeacher) { // Teachers' 'cids' string is a json list of the cids of the competitions they created
                 stmt.setString(6,"[]");
+                /**
+                 * Generate the random 6 character code
+                 */
+                int leftLimit = 48; // numeral '0'
+                int rightLimit = 90; // letter 'Z'
+                Random random = new Random();
+
+                String code = random.ints(leftLimit, rightLimit + 1)
+                        .filter(i -> (i <= 57 || i >= 65) && (i <= 90))
+                        .limit(6)
+                        .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                        .toString();
+                stmt.setString(7, code);    // This will be used to join their classes
             } else {    // Students' 'cids' string is a json dictionary mapping the cid of each competition they've signed up for to their tid in that competition
                 stmt.setString(6, "{}");
+                stmt.setString(7, "-1");    // They belong to no class
             }
 
             int success = stmt.executeUpdate();
@@ -432,7 +178,7 @@ public class Conn {
         }
         String cidsString = "{}";   // Students's cidsString is a dictionary, whereas teachers's cidsString is an array
         if(isTeacher) cidsString = "[]";
-        loadUser(email, uname,  token, uid, isTeacher, cidsString,"-1");
+        UserMap.loadUser(email, uname,  token, uid, isTeacher, cidsString,"-1");
         return token;
     }
 
@@ -608,8 +354,6 @@ public class Conn {
      * @throws NoSuchAlgorithmException
      */
     public static int Register(String uname, String email, String password, boolean isTeacher) throws NoSuchAlgorithmException, SQLException {
-        BigInteger vtoken = new BigInteger(VTOKEN_SIZE, new Random());    // Generate the verification token (vToken)
-
         /**
          * Generate the random 8 character code
          */
@@ -643,8 +387,8 @@ public class Conn {
                 if(rs.getString("email").equals(email)) emailTaken = true;
                 else if(rs.getString("uname").equals(uname)) unameTaken = true;
             }
-            if(emailTaken) return -2;
-            else if(unameTaken) return -3;
+            if(UserMap.getUserByEmail(email)!=null) return -2;
+            else if(UserMap.getUserByUname(uname)!=null) return -3;
 
             // Purge any entries in the verification database which match the email
             stmt = conn.prepareStatement("DELETE FROM verification WHERE email = ? OR uname = ?");
@@ -739,39 +483,11 @@ public class Conn {
     public static BigInteger Login(String email, String password) throws NoSuchAlgorithmException, SQLException {
         BigInteger token = generateToken();
 
-        // First, we query the database for the password entry matching the email
-        Connection con;
-        PreparedStatement stmt;
-        ResultSet rs;
-        String storedFullHash;
-        String uname;
-        short uid = -1;
-        boolean teacher;
-        String cids;
-        String classString;
-        try {
-            con = getConnection();
-            if (con == null) return BigInteger.valueOf(-1); // If an error occurred making the connection
-            stmt = con.prepareStatement("SELECT password, uname, uid,teacher,cids,class  FROM users WHERE email=?");
-            stmt.setString(1, email);
-            rs = stmt.executeQuery();
-            if(rs.next()) { // A row matches this email
-                storedFullHash = rs.getString("password");
-                uname = rs.getString("uname");
-                uid = rs.getShort("uid");
-                teacher = rs.getBoolean("teacher");
-                cids = rs.getString("cids");
-                classString = rs.getString("class");
-            }
-            else return BigInteger.valueOf(-2);     // If no row is found for this email
-        }
-        catch (SQLException e) {
-            e.printStackTrace();
-            return BigInteger.valueOf(-1);
-        }
+        User user = UserMap.getUserByEmail(email);
+
         // Extract the salt from the storedFull Hash
-        String storedSalt = storedFullHash.substring(0, storedFullHash.indexOf("."));
-        String storedHashed = storedFullHash.substring(storedFullHash.indexOf(".")+1);
+        String storedSalt = user.password.substring(0, user.password.indexOf("."));
+        String storedHashed = user.password.substring(user.password.indexOf(".")+1);
         String givenHashed = hashPassword(password, Base64.getDecoder().decode(storedSalt));  // The hash of the password supplied by the user
 
         // Compare the givenHashed and the storedHashed
@@ -780,8 +496,9 @@ public class Conn {
         }
 
         // Update the token in the db entry for this user
+        Connection conn = getConnection();
         try {
-            stmt = con.prepareStatement("UPDATE users SET token=? WHERE email=?");
+            PreparedStatement stmt = conn.prepareStatement("UPDATE users SET token=? WHERE email=?");
             stmt.setString(1, token.toString(Character.MAX_RADIX));
             stmt.setString(2, email);
             stmt.executeUpdate();
@@ -790,8 +507,8 @@ public class Conn {
             e.printStackTrace();
             return BigInteger.valueOf(-1);
         }
+        user.token = token;
 
-        loadUser(email, uname, token, uid,teacher,cids, classString);
         return token;
     }
     // NOTE: DOES NOT remove the token from the cookie

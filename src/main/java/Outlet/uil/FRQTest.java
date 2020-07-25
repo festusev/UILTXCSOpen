@@ -49,7 +49,7 @@ public class FRQTest {
             files = new ArrayList();
 
             for(int i = 1; i <= NUM_PROBLEMS; ++i) {
-                System.out.println("--Getting files for probNum " + i);
+                System.out.println("--Getting files for probNum " + i + " in path "+TESTCASE_DIR+i+"/");
                 files.add(get_files(new File(TESTCASE_DIR + i + "/")));
             }
         } catch (Exception var1) {

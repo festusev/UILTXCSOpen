@@ -19,7 +19,7 @@ public class Console extends HttpServlet{
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        User uData = Conn.getUser(request); // We need to display the user's data
+        User uData = UserMap.getUserByRequest(request); // We need to display the user's data
         if(uData == null || uData.token == null || !Conn.isLoggedIn(uData.token)){
             response.sendRedirect(request.getContextPath());
             return;

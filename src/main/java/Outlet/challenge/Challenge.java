@@ -63,7 +63,7 @@ public class Challenge extends HttpServlet {
             throws ServletException, IOException {
         if(!initialized) initialize();
 
-        User user = Conn.getUser(request);
+        User user = UserMap.getUserByRequest(request);
         if(user == null || user.token == null || !Conn.isLoggedIn(user.token)){ // They are not logged in, return nothing
             return;
         }

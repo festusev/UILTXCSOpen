@@ -15,7 +15,7 @@ public class UpdateUserPassword extends HttpServlet {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         PrintWriter writer = response.getWriter();
-        User uData = Conn.getUser(request);
+        User uData = UserMap.getUserByRequest(request);
         if(uData != null && !Conn.isLoggedIn(uData.token)){
             writer.write("{\"reload\":\"" +request.getContextPath() + "\"}");
             return;

@@ -13,6 +13,7 @@ public class User implements Comparable<User>{
     public String email;
     public String uname;
     public BigInteger token;
+    public String password;
     public short uid;
     public boolean teacher;
 
@@ -76,6 +77,8 @@ public class User implements Comparable<User>{
         }
     }
     public int changePassword(String hashedPassword) {
+        password = hashedPassword;
+
         Connection conn = Conn.getConnection();
         if(conn==null) return -1;   // Error making connection;
         try {
@@ -90,26 +93,17 @@ public class User implements Comparable<User>{
         }
     }
     public boolean verifyPassword(String password) {
-        Connection conn = Conn.getConnection();
-        if(conn==null) return false;
-
+        // Extract the salt from the storedFull Hash
+        String storedSalt = password.substring(0, password.indexOf("."));
+        String storedHashed = password.substring(password.indexOf(".")+1);
+        String givenHashed = null;  // The hash of the password supplied by the user
         try {
-            PreparedStatement stmt = conn.prepareStatement("SELECT password FROM users WHERE uid=?");
-            stmt.setShort(1, uid);
-            //LOGGER.info(stmt.toString());
-            ResultSet rs = stmt.executeQuery();
-            if(rs.next()) {
-                String stored = rs.getString("password");
-                // Extract the salt from the storedFull Hash
-                String storedSalt = stored.substring(0, stored.indexOf("."));
-                String storedHashed = stored.substring(stored.indexOf(".")+1);
-                String givenHashed = Conn.hashPassword(password, Base64.getDecoder().decode(storedSalt));  // The hash of the password supplied by the user
-                if(givenHashed.equals(storedHashed)) return true;
-                return false;
-            }
-        } catch (SQLException | NoSuchAlgorithmException e) {
+            givenHashed = Conn.hashPassword(password, Base64.getDecoder().decode(storedSalt));
+        } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
+            return false;
         }
+        if(givenHashed.equals(storedHashed)) return true;
         return false;
     }
 }

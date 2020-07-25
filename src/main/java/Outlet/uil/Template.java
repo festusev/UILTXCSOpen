@@ -111,7 +111,6 @@ public class Template {
                 "<script src='/js/uil.js'></script>" +
                 "</head><body>";
 
-        updateScoreboard();
         // Create a timer to update the scoreboard every SCOREBOARD_UPDATE_INTERVAL seconds
         /*Timer timer = new Timer();
         UpdateScoreboard updater = new UpdateScoreboard();
@@ -126,7 +125,8 @@ public class Template {
      * updated version of the navigation bar.
     **/
     public void render(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        User uData = Conn.getUser(request);
+        System.out.println(">>>> RENDERING");
+        User uData = UserMap.getUserByRequest(request);
 
         response.setContentType("text/html");
         response.setCharacterEncoding("UTF-8");
@@ -138,6 +138,26 @@ public class Template {
                 getNavBarHTML(competeStatus) + "<span id='columns'>" + getColumnsHTML(uData, competeStatus) + "</span>" +
                 "</body></html>"
         );
+    }
+
+    /***
+     * Gets a minified summary of the competition including name, date, who created it, and if you have signed up.
+     * @param u
+     * @return
+     */
+    public String getMiniHTML(User u)
+    {
+        String signupColor = "green";
+        String signupText = "Sign Up";
+        if(u == null || u.teacher) {
+            signupText = "";
+        } else if(((Student)u).cids.containsKey(cid)){
+            signupColor = "grey";
+            signupText = "Signed up";
+        }
+        return "<div class='competition' onclick='location.href=\"/uil?cid="+cid+"\"'>" +
+                "<div class='row1'>"+name+"<p class='right' style='color:"+signupColor+"'>"+signupText+"</p></div>" +
+                "<div class='row2'>Created by "+competition.teacher.uname+"<p class='right'>"+opens.DATE_STRING+" - "+closes.DATE_STRING+"</p></div>";
     }
     public int getCompeteStatus(User u){
         int competeStatus = 0;  // They have signed up

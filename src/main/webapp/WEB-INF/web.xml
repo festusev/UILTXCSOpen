@@ -160,6 +160,17 @@
     <url-pattern>/announce-qm30b0cwerev8cf3k22d</url-pattern>
   </servlet-mapping>
 
+  <servlet>
+    <servlet-name>UIL</servlet-name>
+    <servlet-class>Outlet.uil.UIL</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>UIL</servlet-name>
+    <url-pattern>/uil</url-pattern>
+  </servlet-mapping>
+
+
   <!-- Begin UIL Servlets -->
   <!--<servlet>
     <servlet-name>UIL_CS</servlet-name>

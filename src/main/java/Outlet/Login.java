@@ -25,8 +25,7 @@ public class Login extends HttpServlet{
             response.sendRedirect(request.getContextPath() + "/console");
         }
         // set response headers
-        response.setContentType("text/html");
-        response.setCharacterEncoding("UTF-8");
+        Conn.setHTMLHeaders(response);
         String body =
                     "    <div class=\"column\"><div id=\"center\" class=\"head-row row\">\n" +
                             "<h1>Login</h1>" +
