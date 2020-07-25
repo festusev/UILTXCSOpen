@@ -5,7 +5,7 @@ import java.util.HashMap;
 
 public class StudentMap {
     private static HashMap<Short, Student> uidMap;
-    private static HashMap<Short, Student> teacherMap;
+    private static HashMap<Short, HashMap<Short, Student>> teacherMap;
     private static HashMap<BigInteger, Student> tokenMap;
     private static HashMap<String, Student> emailMap;
     private static HashMap<String, Student> unameMap;
@@ -20,7 +20,7 @@ public class StudentMap {
     public static Student getByUID(short uid) {
         return uidMap.get(uid);
     }
-    public static Student getByTeacher(short uid) {
+    public static HashMap<Short,Student> getByTeacher(short uid) {
         return teacherMap.get(uid);
     }
     public static Student getByToken(BigInteger token) {
@@ -34,7 +34,13 @@ public class StudentMap {
     }
     public static void addStudent(Student student) {
         uidMap.put(student.uid, student);
-        teacherMap.put(student.teacherId, student);
+        if(teacherMap.containsKey(student.teacherId)) { // If other students are registered to this teacher
+            teacherMap.get(student.teacherId).put(student.uid, student);
+        } else {
+            HashMap<Short, Student> temp = new HashMap<>();
+            temp.put(student.uid, student);
+            teacherMap.put(student.teacherId, temp);
+        }
         tokenMap.put(student.token, student);
         emailMap.put(student.email, student);
         unameMap.put(student.uname, student);

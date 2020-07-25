@@ -150,16 +150,21 @@ public class UIL extends HttpServlet{
                     left += "<p class='menu' onclick='showClassComps()'>Class</p>";
                     ArrayList<Competition> ordered;
                     String teacherName;
-                    String school; // TODO: Add in a "school" column to the database
+                    // TODO: Add in a "school" column to the database
+                    String classmates = "";
 
                     if(!user.teacher) {
                         Teacher teacher = TeacherMap.getByUID(((Student)user).teacherId);
                         ordered = teacher.getCompetitions();
                         teacherName = teacher.uname;
+                        HashMap<Short, Student> temp = StudentMap.getByTeacher(teacher.uid);
                     }
-                    else ordered = ((Teacher) user).getCompetitions();
+                    else {
+                        ordered = ((Teacher) user).getCompetitions();
+                        teacherName = ((Teacher)user).uname;
+                    }
 
-                    right+="<div id='class_competitions' style='display:none' class='column'><p class='teacher_name'>";
+                    right+="<div id='class_competitions' style='display:none' class='column'><p class='teacher_name'><br>Teacher</br>" + teacherName + "</p><p id='classmates'><br>Classmates</br><div>"+classmates+"</div></p>";
                     for(Competition comp: ordered) {
                         right+="<li class='competitionCnt'>"+comp.template.getMiniHTML(user)+"</li>";
                     }
