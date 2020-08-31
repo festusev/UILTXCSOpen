@@ -14,54 +14,140 @@ import java.util.regex.Pattern;
 public class FRQTest {
     public final boolean exists;    // If this FRQ test exists and is being run
 
-    public final String NAME;
+    public final String NAME = "Programming";
     public final String TIME_TEXT;
     public final long TIME;
     public final String STUDENT_PACKET; // Link to the student packet
     public final String JUDGE_PACKET;   // Link to the judge packet
 
     public static final String SCORE_DIR_ROOT = "/tmp/"; // Where the score_dirs are stores
-    public final String SCORE_DIR; // Must end in a "/"
+    public String SCORE_DIR_PATH; // Must end in a "/"
+    public File scoreDir;
 
     public static final String TESTCASE_DIR_ROOT = "/opt/UILTestcases/"; // Where the testcase_dirs are stores
-    public final String TESTCASE_DIR; // Must end in a "/"
+    public String TESTCASE_DIR_PATH; // Must end in a "/"
+    public File testcaseDir;
 
-    public final short NUM_PROBLEMS;
     public final short MAX_POINTS;  // Number of points you get if you get the problem first try
     public final short INCORRECT_PENALTY;   // Number of points taken off MAX_POINTS for each incorrect submission
     public final short MIN_POINTS = 0;  // Minimum number of points you can get for solving a problem;
 
-    public final String[] PROBLEM_MAP;  // A list of the problems, formatted like "1. Abril", "2. Brittany"...
-    private final String[] DAT_MAP;
+    public final String[] PROBLEM_MAP;  // A list of the problem names
     private static ArrayList<ArrayList<Pair>> files = null;
 
     public Countdown opens; // The time that this opens
+    public Countdown closes;
 
     public FRQTest() {
-        exists = false; NAME = "";TIME_TEXT="";TIME=0;DAT_MAP= new String[0];STUDENT_PACKET="";JUDGE_PACKET="";
-        SCORE_DIR = ""; TESTCASE_DIR = ""; NUM_PROBLEMS = 0; MAX_POINTS = 0; INCORRECT_PENALTY = 0; PROBLEM_MAP = new String[0];
+        exists = false;TIME_TEXT="";TIME=0;STUDENT_PACKET="";JUDGE_PACKET="";
+        SCORE_DIR_PATH = ""; TESTCASE_DIR_PATH = "";MAX_POINTS = 0; INCORRECT_PENALTY = 0; PROBLEM_MAP = new String[0];
     }
-    public FRQTest (String opensString, String sd, String td, short np, short mp, short ip, String[] pm, String na, String timeText, String studentPacket, String judgePacket, long time, String[] datMap) {
-        opens = new Countdown(opensString, "");SCORE_DIR = SCORE_DIR_ROOT+sd; TESTCASE_DIR = TESTCASE_DIR_ROOT+td; NUM_PROBLEMS = np; MAX_POINTS = mp; INCORRECT_PENALTY = ip; PROBLEM_MAP = pm;
-        NAME = na;exists = true;TIME_TEXT=timeText;TIME=time;DAT_MAP=datMap;STUDENT_PACKET=studentPacket;JUDGE_PACKET=judgePacket;
-
+    public FRQTest(String opensString, short mp, short ip, String[] pm, String studentPacket, String judgePacket, long time) {
+        opens = new Countdown(opensString, "countdown");MAX_POINTS = mp; INCORRECT_PENALTY = ip; PROBLEM_MAP = pm;
+        exists = true;TIME_TEXT=(time/(1000*60)) + " minutes";TIME=time;STUDENT_PACKET=studentPacket;JUDGE_PACKET=judgePacket;
+        closes = Countdown.add(opens, TIME, "countdown");
+    }
+    public void initializeFiles() {
         try {
             files = new ArrayList();
 
-            for(int i = 1; i <= NUM_PROBLEMS; ++i) {
-                System.out.println("--Getting files for probNum " + i + " in path "+TESTCASE_DIR+i+"/");
-                files.add(get_files(new File(TESTCASE_DIR + i + "/")));
+            for(int i = 1; i <= PROBLEM_MAP.length; ++i) {
+                System.out.println("--Getting files for probNum " + i + " in path "+ TESTCASE_DIR_PATH +i+"/");
+                files.add(get_files(new File(TESTCASE_DIR_PATH + i + "/")));
             }
         } catch (Exception var1) {
             var1.printStackTrace();
         }
+    }
 
-        try {
-            Runtime.getRuntime().exec("mkdir "+ SCORE_DIR);
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void setDirectories(short cid, short uid) {
+        SCORE_DIR_PATH = SCORE_DIR_ROOT + cid+"_"+uid+"/";
+        TESTCASE_DIR_PATH = TESTCASE_DIR_ROOT + cid+"_"+uid+"/";
+        File newScoreDir = new File(SCORE_DIR_PATH);
+        File newTestcaseDir = new File(TESTCASE_DIR_PATH);
+
+        if(scoreDir != null && scoreDir.exists()) {
+            scoreDir.renameTo(newScoreDir);
+        } else {
+            newScoreDir.mkdir();
+            scoreDir = newScoreDir;
+        }
+
+        if(testcaseDir != null && testcaseDir.exists()) {
+            testcaseDir.renameTo(newTestcaseDir);
+        } else {
+            newTestcaseDir.mkdir();
+            testcaseDir = newTestcaseDir;
         }
     }
+
+    public void createProblemDirectories() {
+        for(int i=1;i<=PROBLEM_MAP.length;i++) {
+            File dir = new File(TESTCASE_DIR_PATH + i);
+            dir.mkdir();
+        }
+    }
+
+    /***
+     * Takes in a problemIndices from an old FRQTest. problemIndices is an array of indices, where each member represents
+     * the problem's old index. Deletes directories, renames them, and creates new ones.
+     * First, we rename all of the directories that are being renamed to  have a 'tmp_' prefix. This prevents issues that
+     * would arise if the user swapped the location of two problems.
+     *
+     * oldNumProblems is the number of problems that used to exist. The difference between this and the length of problemIndices
+     * is used to delete problems.
+     * @param problemIndices
+     */
+    public void updateProblemDirectories(short[] problemIndices, int oldNumProblems) {
+        boolean[] notDeleted = new boolean[oldNumProblems];  // Used to determine which problem directories should be deleted
+        for(int i=0,j=problemIndices.length;i<j;i++) {
+            if(problemIndices[i] > 0) notDeleted[problemIndices[i]-1] = true; // If the index is less than zero, it is a new problem
+        }
+
+        // Delete all of the directories for problems that have been removed
+        for(int i=0;i<notDeleted.length;i++) {
+            if(!notDeleted[i]) deleteDirectory(new File(TESTCASE_DIR_PATH +(i+1)));
+        }
+
+        // Now, rename the problem directories to 'tmp_#' where # is the new problem #. This will also create new directories
+        // for new problems.
+        File[] dirs = new File[problemIndices.length];
+        for(int i=0,j=problemIndices.length;i<j;i++) {
+            if(problemIndices[i] < 0) {  // If the index is less than zero, it is a new problem
+                File newDir = new File(TESTCASE_DIR_PATH + "tmp_" + (i+1));
+                newDir.mkdir();
+                dirs[i] = newDir;
+            } else {    // In this case, we rename the directory
+                File oldDir = new File(TESTCASE_DIR_PATH + problemIndices[i]);
+                File destDir = new File(TESTCASE_DIR_PATH + "tmp_"+(i+1));
+
+                oldDir.renameTo(destDir);
+                dirs[i] = destDir;
+            }
+        }
+
+        // Now, rename all of the 'tmp_#' directories to remove the 'tmp_'
+        for(int i=0,j=dirs.length;i<j;i++) {
+            dirs[i].renameTo(new File(TESTCASE_DIR_PATH +dirs[i].getName().substring(4)));
+        }
+        initializeFiles();
+    }
+
+    public boolean deleteDirectory(File dir) {
+        File[] allContents = dir.listFiles();
+        if (allContents != null) {
+            for (File file : allContents) {
+                deleteDirectory(file);
+            }
+        }
+        return dir.delete();
+    }
+
+    /* Deletes the testcase directory */
+    public void deleteTestcaseDir() {
+        deleteDirectory(new File(TESTCASE_DIR_PATH));
+    }
+
     public static ArrayList<Pair> get_files(File dir) {
         System.out.println("--Getting Files in directory " + dir.getAbsolutePath() + " which has " + dir.listFiles().length + " files");
         ArrayList<Pair> ret = new ArrayList();
@@ -90,7 +176,7 @@ public class FRQTest {
         stdout.close();
         stderr.close();
     }
-    public int run(String source_file, String exe_file, String sourceDir, int language, short problemNum) throws IOException {
+    public FRQSubmission run(String source_file, String exe_file, String sourceDir, int language, short problemNum) throws IOException {
         String compile_cmd = "";
         String run_cmd = "";
         if (language == 0) {
@@ -112,7 +198,7 @@ public class FRQTest {
     // 2 is runtime error
     // 3 is time limit exceeded
     // 4 is wrong answer
-    public int grade(String source_file, String compile_cmd, String dir, String run_cmd, short problemNum) throws IOException {
+    public FRQSubmission grade(String source_file, String compile_cmd, String dir, String run_cmd, short problemNum) throws IOException {
         System.out.printf("Compiling %s\n", source_file);
         System.out.printf("Compiling %s\n", compile_cmd);
         Process p = Runtime.getRuntime().exec(new String[]{"bash", "-c", compile_cmd});
@@ -122,129 +208,153 @@ public class FRQTest {
             if (ret != 0) {
                 System.out.println("Program exited with code: " + ret);
                 System.out.println("Compilation failure");
-                return 1;
+                return new FRQSubmission(problemNum, FRQSubmission.Result.COMPILETIME_ERROR, "", "");
             }
 
             System.out.println("Compilation success");
         } catch (InterruptedException var32) {
             System.out.printf("Compilation failure");
             var32.printStackTrace();
-            return 1;
+            return new FRQSubmission(problemNum, FRQSubmission.Result.COMPILETIME_ERROR, "", "");
         }
 
         ArrayList<Pair> problem_dir = files.get(problemNum - 1);
         Iterator var7 = problem_dir.iterator();
 
-        int judge_code;
-        do {
-            if (!var7.hasNext()) {
-                return 0;
-            }
+        //do {
+        if (!var7.hasNext()) {
+            System.out.println("Issue loading");
+            return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "");
+        }
 
-            Pair x = (Pair)var7.next();
-            File in_file = x.key;
-            File ans_file = x.value;
-            Runtime.getRuntime().exec(new String[]{"bash", "-c", "ln -s " + in_file.getAbsolutePath() + " " + dir + DAT_MAP[problemNum-1]});
-            System.out.println("Test Case " + in_file.getName());
-            System.out.println("--Executing command '" + run_cmd + "'");
-            Process r = Runtime.getRuntime().exec(new String[]{"bash", "-c", run_cmd});
-            InputStream stdout = r.getInputStream();
-            InputStream stderr = r.getErrorStream();
-            long a = System.currentTimeMillis();
-            boolean var16 = false;
+        Pair x = (Pair)var7.next();
+        File in_file = x.key;
+        File ans_file = x.value;
+        Runtime.getRuntime().exec(new String[]{"bash", "-c", "ln -s " + in_file.getAbsolutePath() + " " + dir + PROBLEM_MAP[problemNum-1].toLowerCase() + ".dat"});
+        System.out.println("Test Case " + in_file.getName());
+        System.out.println("--Executing command '" + run_cmd + "'");
+        Process r = Runtime.getRuntime().exec(new String[]{"bash", "-c", run_cmd});
+        InputStream stdout = r.getInputStream();
+        InputStream stderr = r.getErrorStream();
+        long a = System.currentTimeMillis();
+        boolean var16 = false;
 
-            int xcode;
-            try {
-                if (!r.waitFor(15L, TimeUnit.SECONDS)) {
-                    System.out.println("Time limit exceeded");
-                    r.destroyForcibly();
-                    close(stdout, stderr);
-                    return 3;
-                }
-
-                xcode = r.waitFor();
-            } catch (InterruptedException var31) {
-                var31.printStackTrace();
+        int xcode;
+        try {
+            if (!r.waitFor(15L, TimeUnit.SECONDS)) {
+                System.out.println("Time limit exceeded");
+                r.destroyForcibly();
                 close(stdout, stderr);
-                return 2;
+                return new FRQSubmission(problemNum, FRQSubmission.Result.EXCEEDED_TIME_LIMIT, "", "");
             }
 
-            long b = System.currentTimeMillis();
-            ByteArrayOutputStream error_bytes = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-
-            int length;
-            while((length = stderr.read(buffer)) != -1) {
-                error_bytes.write(buffer, 0, length);
-            }
-
-            String errors = error_bytes.toString("UTF-8");
-            if (!errors.equals("")) {
-                System.out.println("Runtime error");
-                System.out.println(errors);
-                close(stdout, stderr);
-                return 2;
-            }
-
-            if (xcode != 0) {
-                System.out.println("Runtime error");
-                System.out.println("Program exited with code: " + xcode);
-                close(stdout, stderr);
-                return 2;
-            }
-
-            String newline = System.getProperty("line.separator");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(stdout));
-            StringBuilder res = new StringBuilder();
-
-            String output;
-            for(boolean flag = false; (output = reader.readLine()) != null; flag = true) {
-                res.append(flag ? newline : "").append(output);
-            }
-
-            output = res.toString();
-            System.out.println("output: " + output);
-            judge_code = judge(ans_file, output);
-            if (judge_code == 0) {
-                System.out.println("Correct answer");
-            } else if (judge_code == 1) {
-                System.out.println("Token mismatch");
-            } else {
-                System.out.println("EOF mismatch");
-            }
-
-            long c = b - a;
-            System.out.println("Execution time: " + c + " ms");
+            xcode = r.waitFor();
+        } catch (InterruptedException var31) {
+            var31.printStackTrace();
             close(stdout, stderr);
-        } while(judge_code == 0);
+            return new FRQSubmission(problemNum, FRQSubmission.Result.RUNTIME_ERROR, "", "");
+        }
 
-        return 4;
+        long b = System.currentTimeMillis();
+        ByteArrayOutputStream error_bytes = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+
+        int length;
+        while((length = stderr.read(buffer)) != -1) {
+            error_bytes.write(buffer, 0, length);
+        }
+
+        String errors = error_bytes.toString("UTF-8");
+        if (!errors.equals("")) {
+            System.out.println("Runtime error");
+            System.out.println(errors);
+            close(stdout, stderr);
+            return new FRQSubmission(problemNum, FRQSubmission.Result.RUNTIME_ERROR, "", "");
+        }
+
+        if (xcode != 0) {
+            System.out.println("Runtime error");
+            System.out.println("Program exited with code: " + xcode);
+            close(stdout, stderr);
+            return new FRQSubmission(problemNum, FRQSubmission.Result.RUNTIME_ERROR, "", "");
+        }
+
+        String newline = System.getProperty("line.separator");
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stdout));
+        StringBuilder res = new StringBuilder();
+
+        String output;
+        for(boolean flag = false; (output = reader.readLine()) != null; flag = true) {
+            res.append(flag ? newline : "").append(output);
+        }
+
+        output = res.toString();
+        System.out.println("output: " + output);
+        FRQSubmission judge_code = judge(ans_file, output);
+        judge_code.problemNumber = problemNum;
+
+        long c = b - a;
+        System.out.println("Execution time: " + c + " ms");
+        close(stdout, stderr);
+
+        if (judge_code.result == FRQSubmission.Result.RIGHT_ANSWER) {
+            System.out.println("Correct answer");
+        } else if (judge_code.result == FRQSubmission.Result.WRONG_ANSWER) {
+            System.out.println("Token mismatch");
+        }
+
+        return judge_code;
+        //} while(judge_code == 0);
     }
 
-    public int judge(File ans_keyFile, String output) throws IOException {
+    public FRQSubmission judge(File ans_keyFile, String output) throws IOException {
         Scanner s1 = new Scanner(ans_keyFile);
 
         String ans_key;
-        for(ans_key = ""; s1.hasNextLine(); ans_key = ans_key + s1.nextLine()) {
-        }
+        for(ans_key = ""; s1.hasNextLine(); ans_key = ans_key + s1.nextLine()) {}
 
+        // System.out.println("ANSWER KEY:\n" + ans_key);
         ans_key = ans_key.replaceAll("\\s+", "");
         output = output.replaceAll("\\s+", "");
-        return ans_key.equals(output) ? 0 : 1;
+
+        return new FRQSubmission((short)0, ans_key.equals(output)?FRQSubmission.Result.RIGHT_ANSWER:FRQSubmission.Result.WRONG_ANSWER, "", output);
     }
 
-    public int score(short probNum, byte[] bytes, String fPath, short uid, short tid){
+    /***
+     * Writes a testcase file to their testcase folder.
+     * @param probNum
+     * @param bytes
+     * @param isInput
+     */
+    public void setTestcaseFile(int probNum, byte[] bytes, boolean isInput) {
+        String path = TESTCASE_DIR_PATH +(probNum+1)+"/1";
+        if(!isInput) path+=".a";
+        System.out.println("Setting testcase file, probNum="+probNum+", path="+path);
+        try {
+            File file = new File(path);
+            //if(isInput) files.get(probNum-1).get(0).key = file;
+            //else files.get(probNum-1).get(0).value = file;
+
+            OutputStream os = new FileOutputStream(file);
+            os.write(bytes);
+            os.close();
+        } catch (Exception var18) {
+            var18.printStackTrace();
+        }
+    }
+
+    public FRQSubmission score(short probNum, byte[] bytes, String fPath, short uid, short tid){
         String extension = "";
         String givenFName = Paths.get(fPath).getFileName().toString();
         Pattern pattern = Pattern.compile("\\s");
         Matcher matcher = pattern.matcher(givenFName);
         boolean cntWhitespace = matcher.find();
         if (cntWhitespace) {
-            return -10;
+            return new FRQSubmission(probNum,FRQSubmission.Result.EMPTY_FILE, "", "");
         } else {
             int i = givenFName.lastIndexOf(46);
             if (i < 0) {
-                return -11;
+                return new FRQSubmission(probNum,FRQSubmission.Result.UNCLEAR_FILE_TYPE, "", "");
             } else {
                 String givenName = givenFName.substring(0, i);
                 if (i > 0) {
@@ -252,15 +362,18 @@ public class FRQTest {
                 }
 
                 String directory = "" + uid + "-" + tid + "-" + System.currentTimeMillis() + "/";
-                String fileName = SCORE_DIR + directory + givenFName;
+                String fileName = SCORE_DIR_PATH + directory + givenFName;
 
                 boolean dirMade;
                 try {
-                    File dir = new File(SCORE_DIR + directory);
+                    File root = new File(SCORE_DIR_PATH);
+                    if(!root.exists()) root.mkdir();
+
+                    File dir = new File(SCORE_DIR_PATH + directory);
                     dirMade = dir.mkdir();
                     if (!dirMade) {
                         System.out.println("ERROR: Cannot create directory, trying another method");
-                        Runtime.getRuntime().exec("mkdir "+ SCORE_DIR + directory);
+                        Runtime.getRuntime().exec("mkdir "+ SCORE_DIR_PATH + directory);
                     }
 
                     try {
@@ -277,38 +390,39 @@ public class FRQTest {
                 }
 
                 System.out.println("------------------------------------");
-                if (probNum > 0 && probNum <= NUM_PROBLEMS) {
+                if (probNum > 0 && probNum <= PROBLEM_MAP.length) {
                     dirMade = false;
 
                     try {
-                        int status;
+                        FRQSubmission submission;
                         if (extension.equals("java")) {
                             System.out.println("Compiling " + fileName + " into " + givenName + " for prob " + probNum);
-                            status = run(fileName, givenName, SCORE_DIR + directory, 0, probNum);
+                            submission = run(fileName, givenName, SCORE_DIR_PATH + directory, 0, probNum);
                         } else {
                             String exe_file;
                             if (extension.equals("py")) {
                                 exe_file = givenName + ".py";
                                 System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
-                                status = run(fileName, exe_file, SCORE_DIR + directory, 1, probNum);
+                                submission = run(fileName, exe_file, SCORE_DIR_PATH + directory, 1, probNum);
                             } else {
                                 if (!extension.equals("cpp")) {
-                                    return -12;
+                                    return new FRQSubmission(probNum, FRQSubmission.Result.UNCLEAR_FILE_TYPE, new String(bytes), "");
                                 }
 
                                 exe_file = givenName + ".out";
                                 System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
-                                status = run(fileName, exe_file, SCORE_DIR + directory, 2, probNum);
+                                submission = run(fileName, exe_file, SCORE_DIR_PATH + directory, 2, probNum);
                             }
                         }
 
-                        return status;
+                        submission.input = new String(bytes);
+                        return submission;
                     } catch (Exception var17) {
                         var17.printStackTrace();
-                        return -1;
+                        return new FRQSubmission(probNum, FRQSubmission.Result.SERVER_ERROR, new String(bytes), "");
                     }
                 } else {
-                    return -1;
+                    return new FRQSubmission(probNum, FRQSubmission.Result.SERVER_ERROR, new String(bytes), "");
                 }
             }
         }
@@ -320,11 +434,11 @@ public class FRQTest {
      * @return
      */
     public short calcScore(short numTries) {
-        return (short)(MAX_POINTS - Math.abs(numTries-1)*INCORRECT_PENALTY);
+        return (short)(Math.abs(MAX_POINTS) - Math.abs(numTries-1)*Math.abs(INCORRECT_PENALTY));
     }
-    public Countdown getTimer(long started) {
-        Countdown timer = new Countdown(TIME, started, "frqTimer");
-        timer.onDone = "finishFRQ();";
+    public Countdown getTimer() {
+        Countdown timer = new Countdown(TIME, opens.date.getTime(), "frqTimer");
+        timer.onDone = "finishFRQ()";
         return timer;
     }
 }

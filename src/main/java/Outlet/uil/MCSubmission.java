@@ -19,20 +19,18 @@ import java.util.Arrays;
 public class MCSubmission{
     public String[] answers;
     public short[] scoringReport;
-    public long started;
-    public long finished=0;
+    public boolean finished;
 
     private static Gson gson = new Gson();
-    public MCSubmission(int numProblems, long now){
+    public MCSubmission(int numProblems, boolean finished){
         answers = new String[numProblems];
         Arrays.fill(answers, MCTest.SKIP_CODE);
         scoringReport=new short[4];
-        started = now;
+        this.finished = finished;
     }
-    public MCSubmission(String[] responses, short[] scoringReport, long started, long finished) {
+    public MCSubmission(String[] responses, short[] scoringReport, boolean finished) {
         this.answers = responses;
         this.scoringReport = scoringReport;
-        this.started =started;
         this.finished = finished;
     }
 
@@ -40,7 +38,7 @@ public class MCSubmission{
         String responsesString = gson.toJson(answers);
         System.out.println("RESPONSE STRING: " + responsesString);
         String scoringReportString = gson.toJson(scoringReport);
-        String ret = "["+responsesString+","+scoringReportString+","+started+","+finished+"]";
+        String ret = "["+responsesString+","+scoringReportString+",'"+finished+"']";
         return ret.replace("\"","'");
     }
 
@@ -55,9 +53,7 @@ public class MCSubmission{
         for(int i=0; i<scoringReportTemp.length; i++){
             scoringReport[i] = (short)(double)(Double) scoringReportTemp[i];
         }
-        long started = (long)(double)data.get(2);
-        long finished = (long)(double)data.get(3);
 
-        return new MCSubmission(responses, scoringReport, started, finished);
+        return new MCSubmission(responses, scoringReport, Boolean.parseBoolean((String)data.get(2)));
     }
 }

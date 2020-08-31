@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -23,87 +22,105 @@ public class Template {
     public final String practice;
     public final MCTest mcTest;
     public final FRQTest frqTest;
-    public final Countdown opens;
-    public final Countdown closes;
+    public final boolean mcFirst;   // Whether the mcTest is first.
     public final short cid; // The competition id and the name of the competition's table
     public final String HEADERS;
+    public final String MC_HEADER = "<li onclick='showMC();'>Written</li>";
+    public final String FRQ_HEADER = "<li onclick='showFRQ();'>Hands-On</li>";
 
     public String navBarHTML;   // For the competition-specific nav bar that goes underneath the header nav bar
-    public String compOpenNavBar = "";   // HTML to append to navBarHTML if the competition is open
     public String scoreboardHTML;  // The scoreboard page html after the nav bars
+
+    public Countdown opens;
+    public Countdown closes;
 
     /**
      * The multiple choice page's html. First element is what to show if you haven't started yet,
      * second element is the multiple choice head, third element is the multiple choice body
      */
     public String[] mcHTML;
-    public String[] frqHTML; // First element is what to show if you haven't started yet, second is the frq body
-    public String answersHTML;  // Displays the answer sheets and testing materials.
+    public String frqHTML; // First element is what to show if you haven't started yet, second is the frq body
+    // public String answersHTML;  // Displays the answer sheets and testing materials.
 
+    ArrayList<Short> sortedTeams = new ArrayList<>();   // array of tids
     protected SortUILTeams sorter;    // Used to sort teams for the scoreboard
 
     private Competition competition;
-    private final static int SCOREBOARD_UPDATE_INTERVAL = 10*60*1000;
 
-    public Template(String n, String w, String r, String p, MCTest mc, FRQTest fr, Countdown op, Countdown cl, short cid, Competition competition){
-        name = n;whatItIs = w;rules = r;practice = p;mcTest = mc;frqTest = fr;opens = op;closes = cl;this.cid = cid; this.sorter = new SortUILTeams();this.competition=competition;
+    public Template(String n, String w, String r, String p, MCTest mc, FRQTest fr, short cid, Competition competition){
+        name = n;whatItIs = w;rules = r;practice = p;mcTest = mc;frqTest = fr;this.cid = cid; this.sorter = new SortUILTeams();this.competition=competition;
 
-        navBarHTML = "<ul id='upperHalf'><li id='nav_compname'>"+name+"</li><li onclick='showAbout();'>About</li><li onclick='showScoreboard();'>Scoreboard</li>";
-        answersHTML = "<div id='answersColumn' class='column' style='display:none'><div class='row head-row'><h1>Answers</h1></div>";
+        if(mcTest.exists && !frqTest.exists) {
+            mcFirst = true;
+            opens = mcTest.opens;
+            closes = mcTest.closes;
+        } else if(!mcTest.exists && frqTest.exists) {
+            mcFirst = false;
+            opens = frqTest.opens;
+            closes = frqTest.closes;
+        } else {
+            long difference = fr.opens.date.getTime() - mc.opens.date.getTime();
+            if (difference > 0) {
+                mcFirst = true;
+                opens = mcTest.opens;
+                closes = frqTest.closes;
+            } else {
+                mcFirst = false;
+                opens = mcTest.opens;
+                closes = frqTest.closes;
+            }
+        }
+
+        navBarHTML = "<ul id='upperHalf'><li id='nav_compname' onclick='location.href=\"/uil\"' style='cursor:pointer'>"+name+"</li><li onclick='showAbout();'>About</li><li onclick='showScoreboard();'>Scoreboard</li>";
+        // answersHTML = "<div id='answersColumn' class='column' style='display:none'><div class='row head-row'><h1>Answers</h1></div>";
         if(mc.exists) {
-            mcHTML = new String[4];
-            compOpenNavBar = "<li onclick='showMC();'>MC</li>";
-            mcHTML[0] = "<div id='mcColumn' class='column' style='display:none;'>" +
+            mcHTML = new String[2];
+            /*mcHTML[0] = "<div id='mcColumn' class='column' style='display:none;'>" +
                     "<h1>Begin "+mcTest.NAME+"?</h1>" +
                     "<p class='subtitle'>Once you do, you will have " + mc.TIME_TEXT + " to finish.</p>" +
                     "<button id='mcBegin' onclick='beginMC()' class='chngButton'>Begin</button>" +
-                    "</div>";
-            mcHTML[1] = "<div id='mcColumn' class='column' style='display:none;'>" +
+                    "</div>";*/
+            mcHTML[0] = "<div id='mcColumn' class='column' style='display:none;'>" +
                     "<h1>"+mcTest.NAME+"</h1>" +
-                    "<p class='subtitle'><span>Instructions: </span>" + mcTest.INSTRUCTIONS + "<br><b>Test Packet: </b><a href='"+mcTest.TEST_LINK+"' class='link'>"+mcTest.TEST_LINK+"</a></p><div id='mcTestTimer'>";
+                    "<p class='subtitle'><span>Instructions: </span>" + mcTest.INSTRUCTIONS + "<br><b>Test Packet: </b>" +
+                    "<a href='"+mcTest.TEST_LINK+"' class='link'>link</a></p><div id='mcTestTimer'>";
 
-            mcHTML[2] = "</div><table id='mcQuestions'><tr><th>#</th>";
+            mcHTML[1] = "</div><button class='chngButton' onclick='submitMC();'>Submit</button><table id='mcQuestions'><tr><th>#</th>";
             for(char c: mcTest.options) {
-                mcHTML[2] += "<th>"+c+"</th>";
+                mcHTML[1] += "<th>"+c+"</th>";
             }
             // mcHTML[2] += "<th>Skip</th><tr>";
             // short firstHalf = (short)Math.ceil(mcTest.NUM_PROBLEMS/2.0);
             for(int i=1; i<= mcTest.NUM_PROBLEMS; i++) {
-                mcHTML[2] += "<tr class='mcQuestion'><td>"+i+"</td>";
-                for(char c: mcTest.options){
-                    mcHTML[2] +="<td><div class='mcBubble' onclick='setChoice("+i+",this)' data-val='"+c+"'></div></td>";
+                mcHTML[1] += "<tr class='mcQuestion'><td>" + i + "</td>";
+                if (mcTest.KEY[i - 1][1].equals("0")) {   // This is a MC problem
+                    for (char c : mcTest.options) {
+                        mcHTML[1] += "<td><div class='mcBubble' onclick='setChoice(" + i + ",this)' data-val='" + c + "'></div></td>";
+                    }
+                } else {    // This is an SAQ problem
+                    mcHTML[1] += "<td colspan='5'><input type='text' class='mcText' onchange='setSAQChoice(" + i + ",this)'></td>";
                 }
             }
-            mcHTML[2]+="<button class='chngButton' onclick='submitMC();'>Submit</button></div>";
+            mcHTML[1]+="</table></div>";
 
-            String answers = mcTest.ANSWERS;    // Default if the MC ANSWERS variable is not a link
-            if(mcTest.ANSWERS_LINK) {   // If the variable is a link
-                answers ="<a href='"+mcTest.ANSWERS+"' class='link'>"+mcTest.ANSWERS+"</a>";
-            }
-            answersHTML+="<div class='row'><h2>MC</h2><p><b>Test Packet: </b><a href='"+mcTest.TEST_LINK+"' class='link'>"+mcTest.TEST_LINK+"</a><br><b>Answers: </b>"+answers+"<p></div>";
+            // answersHTML+="<div class='row'><h2>MC</h2><p><b>Test Packet: </b><a href='"+mcTest.TEST_LINK+"' class='link'>link</a><br><b>Answers: </b>"+answers+"<p></div>";
         }
-        frqHTML = new String[2];
+        frqHTML = "";
         if(fr.exists) {
-            compOpenNavBar += "<li onclick='showFRQ();'>FRQ</li>";
-            frqHTML[0] = "<div id='frqColumn' class='column' style='display:none;'>" +
-                    "<h1>Begin the "+frqTest.NAME+"?</h1>" +
-                    "<p class='subtitle'>Once you do, you and your team will have " + frqTest.TIME_TEXT + " to finish.</p>" +
-                    "<button id='mcBegin' onclick='beginFRQ()' class='chngButton'>Begin</button>" +
-                    "</div>";
-            frqHTML[1] =  "<p id='frqInst'><b>Problem Packet: </b><a href='"+frqTest.STUDENT_PACKET+"' class='link'>"+frqTest.STUDENT_PACKET+"</a><br>Choose a problem to submit:</p>" +
+            frqHTML =  "<p id='frqInst'><b>Problem Packet: </b><a href='"+frqTest.STUDENT_PACKET+"' class='link'>link</a><br>Choose a problem to submit:</p>" +
                         "<form id='submit' onsubmit='submitFRQ(); return false;' enctype='multipart/form-data'>" +
                         "<select id='frqProblem'>";
-            for(int i=1; i<=frqTest.NUM_PROBLEMS;i++){
-                frqHTML[1] += "<option value='"+i+"' id='frqProblem"+i+"'>"+frqTest.PROBLEM_MAP[i-1]+"</option>";
+            for(int i=1; i<=frqTest.PROBLEM_MAP.length;i++){
+                frqHTML += "<option value='"+i+"' id='frqProblem"+i+"'>"+frqTest.PROBLEM_MAP[i-1]+"</option>";
             }
-            frqHTML[1] += "</select>" +
+            frqHTML += "</select>" +
                     "<input type='file' accept='.java,.cpp,.py' id='frqTextfile'/>" +
                     "<button id='submitBtn' class='chngButton'>Submit</button>" +
                     "</form><p id='advice'>Confused? Review the <a href='#' class='link' onclick='showAbout();'>rules</a>.</p>";
-            answersHTML+="<div class='row'><h2>FRQ</h2><p><b>Student Packet: </b><a href='"+frqTest.STUDENT_PACKET+
-                    "' class='link'>"+frqTest.STUDENT_PACKET+"</a><br><b>Judge Packet: </b><a href='"+frqTest.JUDGE_PACKET+"' class='link'>"+frqTest.JUDGE_PACKET+"</a></p></div>";
+            // answersHTML+="<div class='row'><h2>FRQ</h2><p><b>Student Packet: </b><a href='"+frqTest.STUDENT_PACKET+
+            //         "' class='link'>link</a><br><b>Judge Packet: </b><a href='"+frqTest.JUDGE_PACKET+"' class='link'>link</a></p></div>";
         }
-        answersHTML+="</div>";
+        // answersHTML+="</div>";
 
         HEADERS = "<html><head><title>" + name + " - TXCSOpen</title>" +
                 Dynamic.loadHeaders() +
@@ -132,10 +149,11 @@ public class Template {
         response.setCharacterEncoding("UTF-8");
 
         PrintWriter writer = response.getWriter();
-        int competeStatus = getCompeteStatus(uData);
+        CompetitionStatus competitionStatus = new CompetitionStatus(mcTest, frqTest);
+        UserStatus userStatus = UserStatus.getCompeteStatus(uData, cid);
         writer.write(HEADERS+
                         Dynamic.loadNav(request) +
-                getNavBarHTML(competeStatus) + "<span id='columns'>" + getColumnsHTML(uData, competeStatus) + "</span>" +
+                getNavBarHTML(userStatus, competitionStatus) + "<span id='columns'>" + getColumnsHTML(uData, userStatus, competitionStatus) + "</span>" +
                 "</body></html>"
         );
     }
@@ -155,126 +173,296 @@ public class Template {
             signupColor = "grey";
             signupText = "Signed up";
         }
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(opens.date);
+        int month = cal.get(Calendar.MONTH);
+        int day = cal.get(Calendar.DAY_OF_MONTH);
+
         return "<div class='competition' onclick='location.href=\"/uil?cid="+cid+"\"'>" +
-                "<div class='row1'>"+name+"<p class='right' style='color:"+signupColor+"'>"+signupText+"</p></div>" +
-                "<div class='row2'>Created by "+competition.teacher.uname+"<p class='right'>"+opens.DATE_STRING+" - "+closes.DATE_STRING+"</p></div>";
+                "<div class='row1'>"+StringEscapeUtils.escapeHtml4(name)+"<p class='right' style='color:"+signupColor+"'>"+signupText+"</p></div>" +
+                "<div class='row2'>Created by "+StringEscapeUtils.escapeHtml4(competition.teacher.fname) + " " + StringEscapeUtils.escapeHtml4(competition.teacher.lname) +
+                "<p class='right'>"+month+"/"+day+"</p></div>";
     }
-    public int getCompeteStatus(User u){
-        int competeStatus = 0;  // They have signed up
-        if(u==null || u.token == null || !Conn.isLoggedIn(u.token)) {
-            competeStatus = 1;  // They are not logged in
-        } else if(u.teacher) {  // They are a teacher so they can't sign up
-            competeStatus = 2;
-        } else if(((Student)u).cids.containsKey(cid)) {
-            competeStatus = 3;  // They have not signed up
-        }
-        return competeStatus;
-    }
-    public String getColumnsHTML(User uData, int competeStatus){
+
+    public String getColumnsHTML(User uData, UserStatus userStatus, CompetitionStatus competitionStatus){
         // First, we determine whether to put a "Sign Up" button, a message saying "Your team is signed up for this
         // competition", a message saying "You must belong to a team to sign up", or a message saying
         // "you must be logged in to sign up for this competition"
-        String actMessage = "<button id='signUp' onclick='signUp()'>Sign Up</button>";  // They haven't signed up yet
-        if(competeStatus == 1){ // They are not logged in
+        String actMessage = "<button id='signUp' onclick='showSignup()'>Sign Up</button><div id='signUpBox' style='display:none'><div class='center'><h1>Join Team</h1>" +
+                "<p id='errorBoxERROR'></p><p class='instruction'>Enter team join code:</p><input name='teamCode' id='teamCode' oninput='codeEntered(this)' maxlength='6'>" +
+                "<p id='toggleCreateTeam' onclick='toggleCreateTeam()'>or create a new team.</p></div></div>";  // They haven't signed up yet
+        if(!userStatus.loggedIn){ // They are not logged in
             actMessage = "<h3 class='subtitle'>Log in to compete</h3>";
-        } else if(competeStatus == 2) {
-            actMessage = "<h3 class='subtitle'>Join a team to compete</h3>";
-        } else if(competeStatus == 0) { // If they are already signed up for this competition
-            actMessage = "<h3 class='subtitle'>Your team has signed up for this competition</h3>";
+        } else if(userStatus.teacher) {
+            actMessage = "<h3 class='subtitle'>Teacher's cannot compete</h3>";
+        } else if(userStatus.signedUp) { // If they are already signed up for this competition
+            actMessage = "<h3 class='subtitle'>You have signed up for this competition</h3>";
         }
         String about = "<div class='column' id='aboutColumn'>" +
                 "<div class='row head-row'>" +
-                "<h1>" + name + "</h1>" +
+                "<h1>" + StringEscapeUtils.escapeHtml4(name) + "</h1>" +
                 actMessage + "" +
                 "</div>" +
                 "<div class='row'>" +
                 "<h2>What it is</h2>" +
-                "<p>" + whatItIs + "</p>" +
+                "<p>" + StringEscapeUtils.escapeHtml4(whatItIs) + "</p>" +
                 "</div>" +
                 "<div class='row'>" +
                 "<h2>Rules</h2>" +
-                "<p>" + rules + "</p>" +
+                "<p>" + StringEscapeUtils.escapeHtml4(rules) + "</p>" +
                 "</div>" +
-                "<div class='row'>" +
+                /*"<div class='row'>" +
                 "<h2>Practice</h2>" +
                 "<p>" + practice + "</p>" +
-                "</div>" +
+                "</div>" +*/
                 "</div>";
-        int status = getStatus();
-        String answers = "";
-        if(status == 2)  answers = answersHTML;
-        return getFRQHTML(uData, competeStatus) + about + scoreboardHTML + answersHTML + getMCHTML(uData, competeStatus);
+        // String answers = "";
+        // if(competitionStatus.mcFinished && competitionStatus.frqFinished)  answers = answersHTML;
+        return getFRQHTML(uData, userStatus, competitionStatus) + about + scoreboardHTML + /*answers +*/
+                getMCHTML(uData, userStatus, competitionStatus) + getTeamHTML(uData, userStatus);
     }
-    public String getMCHTML(User u, int competeStatus){
-        if(competeStatus == 1) {
-            return "<div id='mcColumn' class='column' style='display:none;'>" +
-                    "<h1 class='forbiddenPage'>You must be logged in to compete</h1>" +
-                    "</div>";
-        } else if(competeStatus == 2) { // They are a teacher
-            return "<div id='mcColumn' class='column' style='display:none;'>" +
-                    "<h1 class='forbiddenPage'>Teachers cannot compete.</h1>" +
-                    "</div>";
-        } else if(competeStatus == 3) { // They are signed up
-            return "<div id='mcColumn' class='column' style='display:none;'><div class='row'>" +
-                    "<h1 class='forbiddenPage'>Sign up for this competition to compete</h1>" +
-                    "<p class='subtitle' onclick='showAbout()' style='cursor:pointer'>Sign up in the <b>About</b> page</p>" +
-                    "</div></div>";
+
+    /***
+     * Converts a number to its ordinal version. 1 goest to 1st, 2 goes to 2nd, etc...
+     * @param i
+     * @return
+     */
+    public static String ordinal(int i) {
+        String[] sufixes = new String[] { "th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th" };
+        switch (i % 100) {
+            case 11:
+            case 12:
+            case 13:
+                return i + "th";
+            default:
+                return i + sufixes[i % 10];
+
         }
-        Student s = (Student) u;
-        UILEntry entry = s.cids.get(cid);
-        if(!entry.mc.containsKey(u.uid))
-            return mcHTML[0];
-
-        if(entry.finishedMC(u.uid)) {
-            return getFinishedMC(entry.mc.get(u.uid).scoringReport);
-        } else
-            return getRunningMC(entry.mc.get(u.uid).started);
-    }
-    public String getRunningMC(long started) {
-        System.out.println("USER STARTED MC:"+started);
-        return mcHTML[1]+mcTest.getTimer(started).toString()+mcHTML[2];
-    }
-    public String getFinishedMC(short[] scoringReport) {
-        return "<div id='mcColumn' class='column' style='display:none;'><div class='row head-row'>" +
-                "<h1>"+mcTest.NAME+": "+scoringReport[0]+"/"+mcTest.MAX_POINTS+"</h1>" +
-                "<h3 class='subtitle'>"+scoringReport[1]+" correct, "+scoringReport[3]+" incorrect, "+scoringReport[2]+" skipped</h3>" +
-                "</div></div>";
     }
 
-    public String getFRQHTML(User u, int competeStatus) {
-        if(!frqTest.exists) return "";
-        if(competeStatus == 1) {
+    public String getTeamHTML(User u, UserStatus userStatus) {
+        if(!userStatus.signedUp) return "";    // They don't belong to a team
+
+        UILEntry team = ((Student)u).cids.get(cid);
+        String html = "<div id='teamColumn' class='column' style='display:none;'><p id='teamName'>"+StringEscapeUtils.escapeHtml4(team.tname)+"<span>"+
+                ordinal(sortedTeams.indexOf(team.tid)+1)+"</span></p>" +
+                "<p id='teamJoinCode'>Join Code: "+team.password+"</p><div id='teamMembers'><b>Members:</b><ul>";
+        for(short uid: team.uids) {
+            Student student = StudentMap.getByUID(uid);
+            html+="<li>"+StringEscapeUtils.escapeHtml4(student.fname)+" "+StringEscapeUtils.escapeHtml4(student.lname);
+            if(uid == u.uid && team.notStarted()) html += "<span onclick='leaveTeam()' id='leaveTeam'>Leave</span>";
+            /*if(mcTest.exists) { // List the student's mc score
+                if(team.mc.containsKey(student.uid))
+                    html+= " - " + team.mc.get(student.uid).scoringReport[0];
+                else
+                    html+=" - Hasn't taken mc";
+            }*/
+            html+="</li>";
+
+        }
+        html+="</ul></div>";
+        /*if(frqTest.exists) {
+            html+="<div id='frqProblems'>";
+        }*/
+
+        return html+"</div>";
+    }
+    public String getMCHTML(User u, UserStatus userStatus, CompetitionStatus competitionStatus){
+        if(!mcTest.exists || competitionStatus.mcBefore) return "";
+
+        if(userStatus.signedUp && userStatus.loggedIn && !userStatus.teacher) {
+            Student s = (Student) u;
+            UILEntry entry = s.cids.get(cid);
+            /*if (!entry.mc.containsKey(u.uid)) {
+                return mcHTML[0];
+            } else*/
+            if (entry.finishedMC(u.uid)) {
+                return getFinishedMC(entry.mc.get(u.uid));
+            } else {
+                return getRunningMC();
+            }
+        } else if(userStatus.teacher && userStatus.creator) {  // This is the teacher who made this competition
+            String html =  "<div id='mcColumn' class='column' style='display:none;'>" +
+                    "<div class='row head-row'>" +
+                    "<h1>Written</h1>" +
+                    "</div>" +
+                    "<div class='row'>" +
+                    "<p>Test Packet: <a class='link' href='" + mcTest.TEST_LINK + "'>link</a></p>" +
+                    "<p><b>Submissions:</b></p>";
+
+            html += "<table id='mcSubmissions'><tr><th>Name</th><th>Team</th><th>Score</th></tr>";
+
+            for(UILEntry entry: competition.entries.tidMap.values()) {
+                Set<Short> uids = entry.mc.keySet();
+                for (short uid : uids) {
+                    MCSubmission submission = entry.mc.get(uid);
+                    if (submission != null) {
+                        Student student = StudentMap.getByUID(uid);
+                        html += "<tr><td>" + StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname) +
+                                "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td><td>" + submission.scoringReport[0] +
+                                "</td></tr>";
+                    }
+                }
+            }
+            html += "</table></div></div>";
+
+            return html;
+        } else if(competitionStatus.mcFinished) {
+            String html =  "<div id='mcColumn' class='column' style='display:none;'>" +
+                    "<div class='row head-row'>" +
+                    "<h1>Written</h1>" +
+                    "</div>" +
+                    "<div class='row'>" +
+                    "<p>Test Packet: <a class='link' href='" + mcTest.TEST_LINK + "'>link</a></p>" +
+                    "<p>Answer Key</p>";
+
+            html += "<table id='mcQuestions'><tr><th>#</th>";
+            for(char c: mcTest.options) {
+                html += "<th>"+c+"</th>";
+            }
+            html += "</tr>";
+            for(int i=1; i<= mcTest.NUM_PROBLEMS; i++) {
+                html += "<tr class='mcQuestion'><td>" + i + "</td>";
+                if (mcTest.KEY[i - 1][1].equals("0")) {   // This is a MC problem
+                    for (char c : mcTest.options) {
+                        String className = "";
+                        if(mcTest.KEY[i-1][0].charAt(0) == c) className = "mcSelected";
+
+                        html += "<td><div class='mcBubble "+className+"' data-val='" + c + "' style='cursor:unset'></div></td>";
+                    }
+                } else {    // This is an SAQ problem
+                    html += "<td colspan='5'><input type='text' class='mcText'><p class='mcTextCorrectAnswer'>"+
+                            mcTest.KEY[i-1][0]+"</p></td>";
+                }
+            }
+            html += "</table></div></div>";
+
+            return html;
+        } else {
+            if(!userStatus.loggedIn) {
+                return "<div id='mcColumn' class='column' style='display:none;'>" +
+                        "<h1 class='forbiddenPage'>You must be logged in to compete</h1>" +
+                        "</div>";
+            } else if(userStatus.teacher) { // They are a teacher
+                return "<div id='mcColumn' class='column' style='display:none;'>" +
+                        "<h1 class='forbiddenPage'>Teachers cannot compete.</h1>" +
+                        "</div>";
+            } else { // They are not signed up
+                if(!opens.done()) {
+                    return "<div id='mcColumn' class='column' style='display:none;'><div class='row'>" +
+                            "<h1 class='forbiddenPage'>Sign up for this competition to compete</h1>" +
+                            "<p class='subtitle' onclick='showAbout()' style='cursor:pointer'>Sign up in the <b>About</b> page</p>" +
+                            "</div></div>";
+                } else {    // You can't sign up if the competition has begun
+                    return "<div id='mcColumn' class='column' style='display:none;'>" +
+                            "<h1 class='forbiddenPage'>Sign up has closed.</h1>" +
+                            "</div>";
+                }
+            }
+        }
+    }
+    public String getRunningMC() {
+        return mcHTML[0]+mcTest.getTimer().toString()+mcHTML[1];
+    }
+    public String getFinishedMC(MCSubmission submission) {
+        String html =  "<div id='mcColumn' class='column' style='display:none;'>" +
+                        "<div class='row head-row'>" +
+                        "<h1>Written</h1>" +
+                        "<h3>"+submission.scoringReport[0]+"/"+mcTest.MAX_POINTS+"</h3>" +
+                        "</div>" +
+                        "<div class='row'>" +
+                        "<p>Test Packet: " + mcTest.TEST_LINK + "</p>" +
+                        "<p>Correct: "+submission.scoringReport[1]+"</p>" +
+                        "<p>Incorrect: "+submission.scoringReport[3]+"</p>" +
+                        "<p>Skipped: "+submission.scoringReport[2]+"</p><br>" +
+                        "<p>Scoring Report</p>";
+
+        html += "<table id='mcQuestions'><tr><th>#</th>";
+        for(char c: mcTest.options) {
+            html += "<th>"+c+"</th>";
+        }
+        html += "</tr>";
+        for(int i=1; i<= mcTest.NUM_PROBLEMS; i++) {
+            html += "<tr class='mcQuestion'><td>" + i + "</td>";
+            String answer = submission.answers[i-1];
+            if (mcTest.KEY[i - 1][1].equals("0")) {   // This is a MC problem
+                for (char c : mcTest.options) {
+                    String className = "";
+                    if ((""+c).equals(answer)) className = "mcSelected";
+                    else if(mcTest.KEY[i-1][0].charAt(0) == c) className = "mcCorrectAnswer";
+
+                    html += "<td><div class='mcBubble "+className+"' data-val='" + c + "' style='cursor:unset'></div></td>";
+                }
+            } else {    // This is an SAQ problem
+                String correctAnswer = "";
+                if(!answer.equals(mcTest.KEY[i-1][0])) {
+                    correctAnswer = "<p class='mcTextCorrectAnswer'>"+ mcTest.KEY[i-1][0]+"</p>";
+                }
+                html += "<td colspan='5'><input type='text' class='mcText' value='"+answer+"'>"+correctAnswer+"</td>";
+            }
+        }
+        html += "</table></div></div>";
+
+        return html;
+    }
+
+    public String getFRQHTML(User u, UserStatus userStatus, CompetitionStatus competitionStatus) {
+        if(!frqTest.exists || competitionStatus.frqBefore) return "";
+
+        if(userStatus.teacher) {
+            if(userStatus.creator) {   // This is the teacher who created this competition
+                String html =  "<div id='frqColumn' class='column frqSubmissionList' style='display:none;'>" +
+                        "<div style='flex-grow:1' id='frqSubmissions'><div class='row head-row'>" +
+                        "<h1>Hands-On</h1>" +
+                        "</div>" +
+                        "<div class='row'>" +
+                        "<p>Test Packet: <a class='link' href='" + frqTest.STUDENT_PACKET + "'>link</a></p>" +
+                        "<p><b>Submissions:</b></p>";
+
+                html += "<table><tr><th>Problem</th><th>Team</th><th>Result</th></tr>";
+
+                String rows = "";
+                for(int i=0, j=competition.frqSubmissions.size(); i<j; i++) {
+                    FRQSubmission submission = competition.frqSubmissions.get(i);
+                    rows = "<tr onclick='showFRQSubmission("+i+")'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber-1]) +
+                            "</td><td>" + StringEscapeUtils.escapeHtml4(submission.entry.tname) + "</td><td id='showFRQSubmission"+i+"'>" + submission.getResultString() +
+                            "</td></tr>" + rows;
+                }
+                html += rows + "</table></div></div></div>";
+
+                return html;
+            } else return "<div id='frqColumn' class='column' style='display:none;'><h1 class='forbiddenPage'>Teachers cannot compete.</h1></div>";
+        } else if(!userStatus.loggedIn) {
             return  "<div id='frqColumn' class='column' style='display:none;'>" +
                     "<h1 class='forbiddenPage'>You must be logged in to compete</h1>" +
                     "</div>";
-        } else if(competeStatus == 2) {
-            return "<div id='frqColumn' class='column' style='display:none;'>" +
-                    "<h1 class='forbiddenPage'>You must belong to a team to compete</h1>" +
-                    "</div>";
-        } else if(competeStatus == 3) {
-            return "<div id='frqColumn' class='column' style='display:none;'><div class='row'>" +
-                    "<h1 class='forbiddenPage'>Sign up for this competition to compete</h1>" +
-                    "<p class='subtitle' onclick='showAbout()' style='cursor:pointer'>Sign up in the <b>About</b> page</p>" +
-                    "</div></div>";
+        } else if(!userStatus.signedUp) {
+            if(!opens.done()) {
+                return "<div id='frqColumn' class='column' style='display:none;'><div class='row'>" +
+                        "<h1 class='forbiddenPage'>Sign up for this competition to compete</h1>" +
+                        "<p class='subtitle' onclick='showAbout()' style='cursor:pointer'>Sign up in the <b>About</b> page</p>" +
+                        "</div></div>";
+            } else {
+                return "<div id='frqColumn' class='column' style='display:none;'>" +
+                        "<h1 class='forbiddenPage'>Sign up has closed.</h1>" +
+                        "</div>";
+            }
+        } else {
+            UILEntry entry = ((Student) u).cids.get(cid);
+            if (competitionStatus.frqFinished) {
+                return getFinishedFRQ(entry);
+            } else if (competitionStatus.frqDuring) {
+                return getRunningFRQ(entry);
+            } else return "";   // This shouldn't happen
         }
-
-        UILEntry entry = ((Student)u).cids.get(cid);
-        /*if(entry.finishedFRQ()) {
-            return getFinishedFRQ(entry);
-        } else if(entry.frqStarted>0) {
-            return getRunningFRQ(entry);
-        } else{
-            return frqHTML[0];
-        }*/
-        return "";
     }
     public String getRunningFRQ(UILEntry entry){
-        return "<script>grabFRQProblemsTimer = setInterval(function() {grabFRQProblems()}, 1000*10);</script>" +
+        return "<script>grabFRQProblemsTimer = setInterval(function() { QProblems()}, 1000*10);</script>" +
                 "<div id='frqColumn' class='column' style='display:none'><div class='row head-row running-frq'>" +
                 "<div id='frqSelection'>" +
-                "<h1>"+frqTest.NAME+"</h1>" +
-                //"<div id='frqTimer'>"+frqTest.getTimer(entry.frqStarted)+"</div>"+
-                frqHTML[1]+"</div>"+
+                "<h1>"+StringEscapeUtils.escapeHtml4(frqTest.NAME)+"</h1>" +
+                "<div id='frqTimer'>"+frqTest.getTimer()+"</div>"+
+                frqHTML+"</div>"+
                 getFRQProblems(entry)+"</div></div>";
     }
     public String getFinishedFRQ(UILEntry entry){
@@ -284,7 +472,7 @@ public class Template {
     public String getFRQProblems(UILEntry entry){
         String problems = "<div id='frqProblems'><h1>Problems - " + entry.frqScore +"pts</h1>";
         for(int i=0; i<entry.frqResponses.length; i++) {
-            problems+="<p>" + frqTest.PROBLEM_MAP[i] + " - ";
+            problems+="<p>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[i]) + " - ";
             short tries = entry.frqResponses[i];
             if(tries > 0) {
                 problems += frqTest.calcScore(tries) + "pts";
@@ -293,30 +481,39 @@ public class Template {
             }
             problems+="</p>";
         }
-        return problems += "</div>";
+        return problems + "</div>";
     }
 
-    /**
-     * Returns 0 if the competition has not yet begun, 1 if the competition is currently running,
-     * and 2 if the competition is over.
-     * @return
-     */
-    public int getStatus(){
-        if(!opens.done()) return 0;
-        else if(!closes.done()) return 1;
-        else return 2;
-    }
-    public String getNavBarHTML(int competeStatus){
-        int status = getStatus();
-        System.out.println("Status is " + status);
-        if(status == 0)
-            return navBarHTML + "<li id='countdownCnt'>Competition opens in <p id='countdown'>" + opens +"</p></li></ul>";
-        else if(status == 2)
-            return navBarHTML + "<li id='answers' onclick='showAnswers()'>Answers</li><li id='countdownCnt'>The competition has ended!</li></ul>";
-        else if(status == 1 && competeStatus == 0){
-            return navBarHTML+compOpenNavBar+"<li id='countdownCnt'>Competition ends in <p id='countdown'>" + closes +"</p></li></ul>";
+    public String getNavBarHTML(UserStatus userStatus, CompetitionStatus competitionStatus){
+        String nav = navBarHTML;
+        if(userStatus.signedUp) {
+            nav += "<li id='team' onclick='showTeam()'>Team</li>";
         }
-        return navBarHTML + "<li id='countdownCnt'>Competition ends in <p id='countdown'>" + closes +"</p></li></ul>";
+        if((!frqTest.exists || competitionStatus.frqBefore) && (!mcTest.exists || competitionStatus.mcBefore)) {
+            if(mcFirst) return nav + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
+            else return nav + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
+        } else {
+            if(competitionStatus.mcFinished && mcTest.exists) nav += MC_HEADER;
+            if(competitionStatus.frqFinished && frqTest.exists) nav += FRQ_HEADER;
+
+            if (competitionStatus.mcDuring && !competitionStatus.frqDuring) {
+                if(!userStatus.teacher || userStatus.creator)
+                    return nav + MC_HEADER + "<li id='countdownCnt'>Written ends in <p id='countdown'>" + mcTest.closes + "</p></li></ul>";
+                else
+                    return nav + "<li id='countdownCnt'>Written ends in <p id='countdown'>" + mcTest.closes + "</p></li></ul>";
+            } else if (!competitionStatus.mcDuring && competitionStatus.frqDuring) {
+                if(!userStatus.teacher || userStatus.creator)
+                    return nav + FRQ_HEADER + "<li id='countdownCnt'>Hands-On ends in <p id='countdown'>" + frqTest.closes + "</p></li></ul>";
+                else
+                    return nav + "<li id='countdownCnt'>Hands-On ends in <p id='countdown'>" + frqTest.closes + "</p></li></ul>";
+            } else if (competitionStatus.mcFinished && competitionStatus.frqBefore) {
+                return nav + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
+            } else if (competitionStatus.mcBefore && competitionStatus.frqFinished) {
+                return nav + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
+            } else if (competitionStatus.mcFinished && competitionStatus.frqFinished) {
+                return nav + "<li id='countdownCnt'>The competition has ended!</li></ul>";
+            } else return "";  // This shouldn't happen
+        }
     }
 
     public void updateScoreboard(){
@@ -330,23 +527,28 @@ public class Template {
 
         Collections.sort(allTeams, sorter);
 
-
         // The table row list of teams in order of points
         String teamList = "";
         int rank = 1;
+        sortedTeams.clear();
         for(UILEntry entry: allTeams) {
+            sortedTeams.add(entry.tid);
             entry.getMCScore();
-            teamList+="<tr><td>" + rank + "</td><td>" + entry.tname + "</td><td>" + entry.affiliation + "</td>" +
-                    "<td class='right'>"+((frqTest.exists&&mcTest.exists)?entry.getMCScore():"")+"</td><td class='right'>"+(frqTest.exists?entry.frqScore:entry.getMCScore())+"</td></tr>";
+            teamList += "<tr><td>" + rank + "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td>";
+            if(competition.isPublic) teamList += "<td>" + StringEscapeUtils.escapeHtml4(entry.school) + "</td>";
+            teamList += "<td class='right'>"+((frqTest.exists&&mcTest.exists)?entry.getMCScore():"")+"</td><td class='right'>"+
+                        (frqTest.exists?entry.frqScore:entry.getMCScore())+"</td></tr>";
             rank++;
         }
 
         // create HTML
         scoreboardHTML = "<div class='column' id='scoreboardColumn' style='display:none;'><div class='row head-row'><h1>Scoreboard</h1>" +
-                "<table id='teamList'><tr><th>#</th><th>Team</th><th>School</th><th class='right'>"+((frqTest.exists&&mcTest.exists)?"MC":"")+"</th><th class='right'>"+(frqTest.exists?"FRQ":"MC")+"</th>" +
+                "<table id='teamList'><tr><th>#</th><th>Team</th>";
+        if(competition.isPublic) scoreboardHTML += "<th>School</th>";
+        scoreboardHTML += "<th class='right'>"+((frqTest.exists&&mcTest.exists)?"Written":"")+"</th><th class='right'>"+
+                (frqTest.exists?"Hands-On":"Written")+"</th>" +
                 "</tr>" + teamList + "</table></div></div>";
     }
-
 
     /***
      * Deletes a team's entry and updates the scoreboard.
@@ -355,7 +557,7 @@ public class Template {
     public void deleteEntry(short tid) {
         System.out.println("Deleting entry");
         Connection conn = Conn.getConnection();
-        PreparedStatement stmt = null;
+        PreparedStatement stmt;
         try {
             stmt = conn.prepareStatement("DELETE FROM `c"+this.cid+"` WHERE tid=?");
             stmt.setShort(1,tid);
@@ -367,66 +569,99 @@ public class Template {
             //Scoreboard.generateScoreboard();
         }
     }
-
-    /**
-     * Checks if there is a 'normals' column in this database. If there isn't, adds a 'normals' column and calculates each
-     * team's normalized score.
-     * return a hashmap mapping the team's tid to its normalized score.
-     * @return
-     */
-    /*public HashMap<Short, Double> end() throws SQLException {
-        Connection conn = Conn.getConnection();
-        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM `c"+this.cid+"`");
-
-        ResultSet rs = stmt.executeQuery();
-        try {
-            if(rs.next())
-                rs.getDouble("normals");
-        } catch (Exception e) { // In this case there is no z-score column so we add it
-            stmt = conn.prepareStatement("ALTER TABLE `c"+this.cid+"` ADD COLUMN normals DOUBLE");
-            stmt.executeUpdate();
-
-            int max = 0;    // The max score of this competition
-            ArrayList<UILEntry> allTeams = competition.getAllEntries();
-            ArrayList<UILEntry> teams = new ArrayList<>();
-            for(UILEntry entry: allTeams) {
-                teams.add(entry);
-
-                int score = entry.getScore();
-                if(max < score) max = score;
-            }
-
-            HashMap<Short, Double> normalScores = new HashMap<>();
-            for(UILEntry t: teams) {
-                normalScores.put(t.tid, ((double)t.getScore())/max*100);
-            }
-
-            String updateMysql = "UPDATE `c"+this.cid+"` SET normals = (case ";
-            for(short i:normalScores.keySet()) {
-                updateMysql += "when tid = '" + i + "' then " + normalScores.get(i) + " ";
-            }
-            updateMysql += "end) WHERE 1=1;";
-
-            stmt = conn.prepareStatement(updateMysql);
-            stmt.executeUpdate();
-
-            return normalScores;
-        }
-        rs.first();
-        HashMap<Short, Double> normalScoreMap = new HashMap<>();
-        while(rs.next()) {
-            short sTid = rs.getShort("tid");
-            double sNormals = rs.getDouble("normals");
-            System.out.println("TID = "+sTid+", NORMAL="+sNormals);
-            normalScoreMap.put(sTid, sNormals);
-        }
-        return normalScoreMap;
-    }*/
 }
 
 class UpdateScoreboard extends TimerTask {
     public Template template;
     public void run() {
         template.updateScoreboard();
+    }
+}
+
+class UserStatus {
+    boolean loggedIn;
+    boolean signedUp;
+    boolean teacher;
+    boolean creator;
+
+    UserStatus(boolean loggedIn, boolean signedUp, boolean teacher, boolean creator) {
+        this.loggedIn = loggedIn;
+        this.signedUp = signedUp;
+        this.teacher = teacher;
+        this.creator = creator;
+    }
+
+    public static UserStatus getCompeteStatus(User u, short cid) {
+        boolean loggedIn = true;
+        boolean signedUp = true;
+        boolean teacher = false;
+        boolean creator = false;
+
+        if(u == null || !Conn.isLoggedIn(u.token)) {
+            loggedIn = false;
+            signedUp = false;
+        } else if(u.teacher) {
+            signedUp = false;
+            teacher = true;
+            if(((Teacher)u).cids.contains(cid)){
+                creator = true;
+            }
+        } else if(!((Student)u).cids.containsKey(cid)) {
+            signedUp = false;
+        }
+        return new UserStatus(loggedIn, signedUp, teacher, creator);
+    }
+}
+
+class CompetitionStatus {
+    public final boolean mcBefore;
+    public final boolean mcDuring;
+    public final boolean mcFinished;
+
+    public final boolean frqBefore;
+    public final boolean frqDuring;
+    public final boolean frqFinished;
+
+    CompetitionStatus(MCTest mcTest, FRQTest frqTest) {
+        if(mcTest.exists) {
+            if (!mcTest.opens.done()) {
+                mcBefore = true;
+                mcDuring = false;
+                mcFinished = false;
+            } else if (!mcTest.closes.done()) {
+                mcBefore = false;
+                mcDuring = true;
+                mcFinished = false;
+            } else {
+                mcBefore = false;
+                mcDuring = false;
+                mcFinished = true;
+            }
+        } else {
+            mcBefore = false;
+            mcDuring = false;
+            mcFinished = true;
+        }
+
+        if(frqTest.exists) {
+            if (!frqTest.opens.done()) {
+                frqBefore = true;
+                frqDuring = false;
+                frqFinished = false;
+            } else if (!frqTest.closes.done()) {
+                frqBefore = false;
+                frqDuring = true;
+                frqFinished = false;
+            } else {
+                frqBefore = false;
+                frqDuring = false;
+                frqFinished = true;
+            }
+        } else {
+            frqBefore = false;
+            frqDuring = false;
+            frqFinished = true;
+        }
+        System.out.println("mcBefore="+mcBefore+",mcDuring="+mcDuring+",mcFinished="+mcFinished+",frqBefore="+frqBefore+",frqDuring="+frqDuring+",frqFinished="+frqFinished);
     }
 }

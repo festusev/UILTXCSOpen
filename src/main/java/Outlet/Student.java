@@ -1,5 +1,6 @@
 package Outlet;
 
+import Outlet.uil.UIL;
 import Outlet.uil.UILEntry;
 
 import java.util.HashMap;
@@ -13,14 +14,35 @@ public class Student extends User{
     }
     public void setCids(String s) {
         System.out.println("CIDS= "+ s);
-        s = s.substring(s.indexOf("[")+1, s.indexOf("]"));
+        s = s.substring(s.indexOf("{")+1, s.indexOf("}"));
         String[] dict = s.split(",");   // formatted like ['1:2', '3:49']
 
         cids = new HashMap<>();
         for(String entry: dict) {
-            short cid = Short.parseShort(entry.substring(0, entry.indexOf(":")));
-            short tid = Short.parseShort(entry.substring(entry.indexOf(":")+1), entry.length());
+            System.out.println("Entry="+entry);
+            if(entry.isEmpty()) continue;
+            String[] temp = entry.split(":");
+            short cid = Short.parseShort(temp[0]);
+            short tid = Short.parseShort(temp[1]);
             cids.put(cid, UILEntry.loadUILEntry(tid, cid));
+        }
+    }
+    public void joinClass(Teacher teacher) {
+        StudentMap.deleteStudent(this);
+        teacherId = teacher.uid;
+        StudentMap.addStudent(this);
+        updateUser(false);
+    }
+    public void leaveClass(Teacher teacher) {
+        StudentMap.deleteStudent(this);
+        teacherId = -1;
+        StudentMap.addStudent(this);
+        updateUser(false);
+
+        for(short cid:cids.keySet()) {
+            if(teacher.cids.contains(cid) && !UIL.getCompetition(cid).isPublic) {    // This competition is the teachers and is private
+                cids.get(cid).leaveTeam(this);
+            }
         }
     }
 }

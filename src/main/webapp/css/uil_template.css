@@ -90,6 +90,11 @@ body{
 #mcColumn{
     width:32%;
 }
+#mcColumn h3{
+    font-size:1.2rem;
+    text-align:center;
+    color:var(--prim-light);
+}
 #mcColumn ol{
     font-family: var(--mono);
 }
@@ -188,4 +193,141 @@ body{
     cursor:auto !important;
     padding-left:10px;
     margin-top:-37px;
+}
+#signUpBox {
+    position:fixed;
+    left:0;
+    top:0;
+    width:100vw;
+    height:100vh;
+    background-color:rgba(255,255,255,1);
+}
+#signUpBox .center{
+    position: absolute;
+    top:50%;
+    left:50%;
+    transform: translateX(-50%) translateY(-100%);
+    width:30rem;
+    display:block;
+}
+#signUpBox h1{
+    display:block;
+    width:100%;
+    text-align:left;
+    font-size:1.8rem;
+}
+#signUpBox p {
+    font-size:1.2rem;
+}
+#signUpBox input{
+    width:100%;
+    height:3rem;
+    font-size:2rem;
+    padding-left:20px;
+    color:var(--sec-col);
+    text-transform: uppercase;
+    font-family:var(--mono);
+}
+.creatingTeam {
+    text-transform: none !important;;
+}
+#signUpBox #toggleCreateTeam {
+    cursor:pointer;
+}
+#signUpBox #toggleCreateTeam button {
+    display:block;
+}
+#teamName {
+    font-size:1.5rem;
+    font-weight:bold;
+}
+#teamName span{
+    font-weight:normal;
+    float:right;
+}
+#teamJoinCode {
+    font-size:1.1rem;
+}
+#teamMembers b{
+    font-size:1.1rem;
+}
+.mcText {
+    width: 100%;
+}
+.mcCorrectAnswer {
+    background-color: var(--warn-col);
+    border: none;
+}
+#mcSubmissions{
+    width:100%;
+    text-align:center;
+}
+#mcSubmissions tr *:last-child{
+    text-align:right;
+}
+
+#mcSubmissions th{
+    font-weight:bold;
+    border-bottom:1px solid lightgray;
+    text-align:left;
+}
+#mcSubmissions tr * {
+    vertical-align: middle;
+    padding:5px 5px 5px 0;
+}
+#mcSubmissions td{
+    text-align:left;
+}
+.frqSubmissionList {
+    position: relative;
+}
+#frqSubmissions table{
+    width:100%;
+    text-align:left;
+}
+#frqSubmissions table th{
+    font-weight:bold;
+}
+#frqSubmissions tr{
+    cursor: pointer;
+}
+#frqSubmissions table tr *:last-child {
+    text-align:right;
+}
+.frqSubmissionEditor {
+    position: absolute;
+    transform: translateX(-105%);
+    width: 30rem;
+    border: 1px solid lightgray;
+    padding: 1rem;
+    border-radius: 5px;
+    display: block;
+}
+.frqSubmissionEditor .half{
+    width:50%;
+    display: inline-block;
+}
+.frqSubmissionEditor .half h2 {
+    font-size: 1rem;
+    color: var(--font-col);
+    font-weight:normal;
+}
+.frqSubmissionEditor .resultCnt {
+    margin: 1rem 0;
+}
+.tab {
+    display: inline-block;
+    height: 1rem;
+}
+.frqSubmissionEditor .inputCnt b, .frqSubmissionEditor .outputCnt b{
+    display: block;
+    margin-bottom: 10px;
+}
+.frqSubmissionEditor .inputCnt span, .frqSubmissionEditor .outputCnt span {
+    word-wrap: break-word;
+}
+.mcTextCorrectAnswer {
+    margin-top: -2rem;
+    color: var(--warn-col);
+    text-align: right;
 }

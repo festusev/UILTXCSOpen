@@ -1,168 +1,264 @@
 body{
-  overflow-y:scroll;
-  padding-bottom:1.5em;
+  overflow-y:auto;
 }
-.row{
-  background-color:transparent;
-  border: none;
-  padding:1em 0.5em 0 0.5em;
-  color:var(--head-col);
+#center{
+  width:50rem;
+  margin:auto;
+  margin-top:4rem;
   display:flex;
+  flex-grow:row;
+  margin-bottom:4rem;
+}
+#profile_nav {
+  text-align: right;
+  border-right:2px solid lightgray;
+  height:20rem;
+}
+#profile_nav li{
+  padding-right:15px;
+  cursor: pointer;
+  font-size:18px;
+  font-weight:bold;
+  color: #666666;
+}
+#profile_cnt {
+  flex-grow:1;
+  padding-left:15px;
+}
+#profile_logout {
+  color:var(--warn-col) !important;;
+}
+.profile_div {
+  display:grid;
+  grid-column-gap: 40px;
+  grid-template-columns: auto auto;
+}
+.profile_div input {
+  width:100%;
+  font-size:1.2rem;
+  background-color:white;
+  border-radius:5px;
+  border: 1px solid lightgray;
+}
+.profile_cmpnt {
+  padding:8px 0;
+  position:relative;
+}
+.half {
+
+}
+.full {
+  grid-column-start: 1;
+  grid-column-end: 3;
+}
+.pageTextTextarea {
+  display: block;
   width:100%;
 }
-#userRow{
-  margin:0;
-  padding-top:0;
+#saveChanges, #delAccount {
+  font-size:18px;
+  font-weight:bold;
+  cursor: pointer;
 }
-.chngButton{
-  margin-top:0.5em;
+#saveChanges {
+  color:var(--success-dark);
 }
-.rowCenter {
+#delAccount {
+  color:var(--warn-col);
+}
+.selected {
+  color:black !important;;
+}
+#copyright_notice {
+  position: fixed;
+  bottom:0;
+}
+.success, .error{
+  grid-column-start: 1;
+  grid-column-end: 3;
+}
+
+#delUserPasswordCnt {
+  position:fixed;
   width:100%;
+  left:0;
+  top:0;
+  height:100%;
+  background-color:rgba(255,255,255,0.9);
+  z-index: 1000;
 }
-.sec{
-  width:100%;
-}
-.secTitle{
-  padding:0.5em 1em 0.5em 1em;
-  box-shadow:0px 1px 1px 0 rgba(0, 0, 0, 0.12);
-}
-.secBody{
-  padding:1em 1em 1em 1em;
-}
-#infoRow{
-  padding-bottom:0;
-  padding-top:3.5em;
-}
-#delWarning{
-  font-size:1em;
-}
-#delAccount button{
-  /*! margin-top:8px; */
-  background-color:var(--warn-col);
-}
-#delAccount button:hover{
-  background-color:var(--warn-dark);
-}
-input{
-  width:100%;
-  padding-left:10px;
-  display:inline;
-}
-label{
-  width:100%;
+#delUserPasswordCnt .center{
+  width:20rem;
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translateX(-50%) translateY(-100%);
   display:block;
 }
-#team{
-  color:var(--sec-dark);
-}
-#memConfTitle button{
-  float:right;
-  cursor:pointer;
-  border:none;
-  background-color:white;
+#delUserPasswordCnt .center h1{
+  font-size:1.3rem;
   font-weight:bold;
-  padding-top:3px;
 }
-#memConfTitle button:active, #memConfTitle button:focus {
-  outline: 0;
+#delUserPasswordCnt .center button{
+  display:block;
+  background-color:var(--warn-col);
+  border:none;
+  color:white;
+  padding:5px 10px;
+  border-radius:3px;
+  margin-top:10px;
+  font-weight:bold;
+  cursor:pointer;
+}
+#delUserPasswordCnt .center a{
+  cursor:pointer;
+}
+#newCompetition {
+  grid-column-start: 1;
+  grid-column-end: 3;
+}
+#Competitions .comp{
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  margin-bottom: 1rem;
+}
+#Competitions .comp_head {
+  padding:5px 10px;
+  border-radius:8px 8px 0 0;
+  cursor:pointer;
+}
+#Competitions .comp_head span{
+  float:right;
+}
+#Competitions .comp_edit {
+  display:grid;
+  grid-column-gap: 40px;
+  grid-template-columns: auto auto;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding:10px 20px;
+  position:relative;
+}
+#newCompetition {
+  cursor: pointer;
+  margin-bottom: 10px;
+  width:1rem;
+}
+.unit {
+  position: absolute;
+  transform:translateX(-200%);
+}
+.checkbox {
+  cursor: pointer;
+}
+.comp_head {
+  grid-column-start: 1;
+  grid-column-end: 3;
+}
+.writtenSection, .handsOnSection{
+  grid-column-start: 1;
+  grid-column-end: 3;
+  display:grid;
+  grid-template-columns: auto auto;
+  grid-column-gap: 40px;
+}
+.save {
+  position: absolute;
+  right:0;
+  top:8px;
   border: none;
-  -moz-outline-style: none;
+  color: green;
+  font-size:1rem;
+  cursor: pointer;
 }
-@media only screen and (min-width: 467px){
-  .sec{
-    box-shadow:0 0 3px 0px rgba(0, 0, 0, 0.12);
-
-  }
-  .sec:not(:first-child){
-    margin-top:2em;
-  }
-  .row{
-    padding-left:1em;
-    padding-right:1.2em;
-    margin-top:0;
-  }
-  .scorePart{
-    float:right;
-    font-size:1.8em;
-    font-weight:bold;
-    color:var(--prim-col);
-    margin-left:1em;
-    padding-top:5px;
-  }
-  .scorePart span{
-    font-weight:lighter;
-    color:var(--head-col);
-    font-size:0.6em;
-    margin-left:0.2em;
-    color:var(--sec-dark);
-  }
-  #userInfo *{
-    display:inline-block;
-  }
-
-  #username{
-    font-weight:bold;
-    font-size:2em;
-    color:var(--prim-middle);
-  }
-  #distWon{
-    color:var(--prim-middle);
-  }
+.saveWrittenAnswers {
+  position:absolute;
+  right:0;
+  top:8px;
+  color:green;
+  width:3rem;
+  cursor:pointer;
 }
-@media only screen and (min-width: 650px){
-  label{
-    width:50%;
-    display: inline-block;
-  }
-  input{
-    display:inline-block;
-    width:48%;
-  }
-
-  .chngButton{
-    /*! margin:0; */
-  }
+.writtenSectionAnswerList li{
+  margin:10px 0;
 }
-@media only screen and (min-width: 900px){
-  .sec{
-    display:inline-block;
-  }
-  .sec:not(:first-child){
-    margin-top:0;
-  }
-  .row{
-    padding-bottom:1em;
-  }
-  #userInfo{
-    width:56em;
-    margin: auto;
-  }
-  #teamPass{
-    width:29em;
-    float:right;
-  }
-  #memConf{
-    width:25em;
-  }
-  #myPass{
-    width:29em;
-  }
-  #delAccount{
-    width:25em;
-    float:right;
-  }
-  .rowCenter {
-    margin:auto;
-    width:56em;
-  }
-  #copyright_notice{
-    position:fixed;
-    bottom:0;
-  }
+.writtenSectionAnswerList input{
+  width:30rem;
+  border-radius:0;
+  border: none;
+  border-bottom: 1px solid lightgray;
+  padding:2px 5px;
 }
-@media only screen and (min-height: 710px){
-  body{
-    overflow-y:hidden;
-  }
+.writtenSectionAnswerList p {
+  display:inline-block;
+  margin-left:10px;
+}
+.addWrittenQuestion {
+  background-color:white;
+  border: 1px solid lightgray;
+  cursor:pointer;
+  border-radius:3px;
+  font-size:1rem;
+  width: 100%;
+  margin-top: 10px;
+}
+.writtenAnswerType {
+  cursor:pointer;
+}
+.competitionSubgroup {
+  border: 1px solid lightgray;
+  padding: 1rem 1rem;
+  border-radius: 3px;
+}
+button {
+  cursor:pointer;
+}
+.handsOnProblemList .handsOn_probName{
+  width:20rem;
+}
+.handsOnProblemList .handsOn_probIn, .handsOnProblemList .handsOn_probOut {
+  border:none;
+  padding:10px;
+  font-size: 1rem;
+}
+.handsOnProblemList button {
+  width:unset !important;
+}
+.handsOnSectionProblemCnt button {
+  width: 100%;
+}
+.handsOnSectionProblemCnt .save {
+  right: 1rem;
+}
+.deleteCompetition {
+  float:right;
+  color:var(--warn-col);
+}
+.deleteProblem {
+  height:1rem;
+  margin-left:1rem;
+  vertical-align: middle;
+  cursor:pointer;
+}
+.kick, .leaveClass {
+  color:var(--warn-col);
+  cursor:pointer;
+}
+.kick {
+  float:right;
+}
+.leaveClass{
+  position:absolute;
+  right:0;
+  top:8px;
+}
+.classCodeInput {
+  text-transform: uppercase;
+}
+.writtenSectionInstructions {
+  width:100%;
+}
+.viewCompetition {
+  padding:0;
+  cursor:pointer;
+  color:var(--sec-dark);
 }

@@ -46,9 +46,9 @@ public class Dynamic {
                 "            <li class=\"nav-item\" id=\"logoCnt\">\n" +
                 "                <img draggable=\"false\" src=\"/res/logo_dark_texasless.svg\" id=\"logo\" onclick=\"location.href='/'\"/>\n" +
                 "            </li>\n" +
-                "            <li class=\"nav-item\">\n" +
-                "                <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
-                "            </li>\n" +
+                //"            <li class=\"nav-item\">\n" +
+                //"                <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
+                //"            </li>\n" +
                 "            <li class=\"nav-item\" id=\"uil_nav\">\n" +
                 "                <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
                 /*"                <ul id=\"uil_dropdown\">" +
@@ -58,9 +58,9 @@ public class Dynamic {
                 "                    <li class=\"drop-nav-item\" onclick=\"window.location.href='/uil/number_sense'\"><a class=\"nav-link\" href=\"/uil/number_sense\">Number Sense</a></li>" +
                  "                </ul>" +*/
                 "            </li>\n" +
-                "            <li class=\"nav-item\">\n" +
-                "                <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
-                "            </li>\n" +
+                //"            <li class=\"nav-item\">\n" +
+                //"                <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
+                //"            </li>\n" +
                 "      <li class=\"nav-item rightNav\">\n" +
                 "        <a class=\"nav-link\" href=\"/login\">Login</a>\n" +
                 "      </li>\n" +
@@ -68,23 +68,23 @@ public class Dynamic {
                 "        <a class=\"nav-link\" href=\"/register\">Register</a>\n" +
                 "      </li>\n" +
                 "        </ul>\n" +
-                        DROPDOWN +
-                        "      <li class=\"drop-nav-item\">\n" +
-                        "        <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
-                        "      </li>\n" +
-                        "      <li class=\"drop-nav-item\">\n" +
-                        "        <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
-                        "      </li>\n" +
-                        "      <li class=\"drop-nav-item\">\n" +
-                        "        <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
-                        "      </li>\n" +
-                        "      <li class=\"drop-nav-item\">\n" +
-                        "        <a class=\"nav-link\" href=\"/register\">Register</a>\n" +
-                        "      </li>\n" +
-                        "      <li class=\"drop-nav-item\">\n" +
-                        "        <a class=\"nav-link\" href=\"/login\">Login</a>\n" +
-                        "      </li>" +
-                        "       </ul></div>" +announcement;
+                DROPDOWN +
+                //"      <li class=\"drop-nav-item\">\n" +
+                //"        <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
+                //"      </li>\n" +
+                "      <li class=\"drop-nav-item\">\n" +
+                "        <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
+                "      </li>\n" +
+                //"      <li class=\"drop-nav-item\">\n" +
+                //"        <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
+                //"      </li>\n" +
+                "      <li class=\"drop-nav-item\">\n" +
+                "        <a class=\"nav-link\" href=\"/register\">Register</a>\n" +
+                "      </li>\n" +
+                "      <li class=\"drop-nav-item\">\n" +
+                "        <a class=\"nav-link\" href=\"/login\">Login</a>\n" +
+                "      </li>" +
+                "       </ul></div>" +announcement;
     }
     public static String loadNav(HttpServletRequest request){
         if(Conn.isLoggedIn(request)) return loadLoggedInNav();
@@ -95,9 +95,9 @@ public class Dynamic {
                 "            <li class=\"nav-item\" id=\"logoCnt\">\n" +
                 "                <img draggable=\"false\" src=\"/res/logo_dark_texasless.svg\" id=\"logo\" onclick=\"location.href='/'\"/>\n" +
                 "            </li>\n" +
-                "            <li class=\"nav-item\">\n" +
-                "                <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
-                "            </li>\n" +
+                //"            <li class=\"nav-item\">\n" +
+                //"                <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
+                //"            </li>\n" +
                 "            <li class=\"nav-item\" id=\"uil_nav\">\n" +
                 "                <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
                 /*"                <ul id=\"uil_dropdown\">" +
@@ -107,28 +107,28 @@ public class Dynamic {
                 "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/number_sense\">Number Sense</a></li>" +
                 "                </ul>" +*/
                 "            </li>\n" +
-                "            <li class=\"nav-item\">\n" +
-                "                <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
-                "            </li>\n" +
+                //"            <li class=\"nav-item\">\n" +
+                //"                <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
+                //"            </li>\n" +
                 "            <li class=\"nav-item rightNav\">\n" +
                 "                <a class=\"nav-link\" href=\"/logout\">Logout</a>\n" +
                 "            </li>\n" +
                 "            <li class=\"nav-item rightNav\">\n" +
-                "                <a class=\"nav-link\" href=\"/console\">Profile</a>\n" +
+                "                <a class=\"nav-link\" href=\"/profile\">Profile</a>\n" +
                 "            </li>\n" +
                 "        </ul>\n" +
                 DROPDOWN +
-                "      <li class=\"drop-nav-item\">\n" +
-                "        <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
-                "      </li>\n" +
+                //"      <li class=\"drop-nav-item\">\n" +
+                //"        <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
+                //"      </li>\n" +
                 "      <li class=\"drop-nav-item\">\n" +
                 "        <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
                 "      </li>\n" +
+                //"      <li class=\"drop-nav-item\">\n" +
+                //"        <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
+                //"      </li>\n" +
                 "      <li class=\"drop-nav-item\">\n" +
-                "        <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
-                "      </li>\n" +
-                "      <li class=\"drop-nav-item\">\n" +
-                "        <a class=\"nav-link\" href=\"/console\">Profile</a>\n" +
+                "        <a class=\"nav-link\" href=\"/profile\">Profile</a>\n" +
                 "      </li>\n" +
                 "      <li class=\"drop-nav-item\">\n" +
                 "        <a class=\"nav-link\" href=\"/logout\">Logout</a>\n" +

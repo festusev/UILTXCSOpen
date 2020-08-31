@@ -18,15 +18,13 @@ public class Logout extends HttpServlet{
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         BigInteger token = Conn.getToken(request);
-        if(!Conn.isLoggedIn(token)){
+        User u = UserMap.getUserByRequest(request);
+        if(u == null || u.token == null){
             response.sendRedirect(request.getContextPath());
+            return;
         } else {
-            Conn.delToken(request, response, token);    // Remove the token from the cookie and the user from the user list
-            try {
-                Conn.logout(token);      // Set the token to null in the database
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+            Conn.delToken(request, response, u);    // Remove the token from the cookie
+            Conn.logout(token);      // Set the token to null in the database
         }
         response.sendRedirect(request.getContextPath());
     }

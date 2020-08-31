@@ -22,7 +22,7 @@ public class Login extends HttpServlet{
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         if(Conn.isLoggedIn(request)){
-            response.sendRedirect(request.getContextPath() + "/console");
+            response.sendRedirect(request.getContextPath() + "/profile");
         }
         // set response headers
         Conn.setHTMLHeaders(response);
@@ -62,7 +62,7 @@ public class Login extends HttpServlet{
         response.setCharacterEncoding("UTF-8");
         PrintWriter writer = response.getWriter();
         if(Conn.isLoggedIn(request)){
-            writer.write("{\"success\":\"" +request.getContextPath() + "/console\"}");
+            writer.write("{\"success\":\"" +request.getContextPath() + "/profile\"}");
             return;
         }
 
@@ -115,7 +115,7 @@ public class Login extends HttpServlet{
                 tokenCookie.setMaxAge(60*60*48);    // Set 2 Days before they must login again
                 tokenCookie.setPath("/");   // Necessary for logging out fluidly
                 response.addCookie(tokenCookie);
-                writer.write("{\"success\":\"" +request.getContextPath() + "/console\"}");
+                writer.write("{\"success\":\"" +request.getContextPath() + "/profile\"}");
                 return;
             }
             if(token.compareTo(BigInteger.valueOf(-1)) == 0) {   // If a server error occurred

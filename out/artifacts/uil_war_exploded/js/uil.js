@@ -1,147 +1,184 @@
-let columns;
-let about;
-let scoreboard;
-let mc;
-let frq;
-let answers;
-
-let publicComps;
-let classComps;
-let myComps;
-$(document).ready(function(){
-    columns = $(".column");
-    about = $("#aboutColumn");
-    scoreboard = $("#scoreboardColumn");
-    mc = $("#mcColumn");
-    frq = $("#frqColumn");
-    answers = $("#answersColumn");
-
-    publicComps = $("#public_competitions");
-    classComps = $("#class_competitions");
-    myComps = $("#my_competitions");
-
+var config = {
+    TEXT: {
+        server_error: "Whoops! A server error occurred. Contact an admin if the problem continues."
+    },
+    IDs: {
+        about: "aboutColumn",
+        scoreboard: "scoreboardColumn",
+        team: "teamColumn",
+        mc: "mcColumn",
+        frq: "frqColumn",
+        // answers : "answersColumn",
+        publicComps: "public_competitions",
+        classComps: "class_competitions",
+        myComps: "my_competitions",
+        frqProblems: "frqProblems"
+    },
+    CLASSES: {
+        columns: "column"
+    },
+    RESULTS: ["Incorrect", "Correct", "No Penalty"]
+};
+var dom = {
+    cached: {},
+    getHelper: function (id) {
+        if (this.cached[id] == null)
+            this.cached[id] = document.getElementById(id);
+        return this.cached[id];
+    },
+    get about() { return this.getHelper(config.IDs.about); },
+    get scoreboard() { return this.getHelper(config.IDs.scoreboard); },
+    get team() { return this.getHelper(config.IDs.team); },
+    get mc() { return this.getHelper(config.IDs.mc); },
+    get frq() { return this.getHelper(config.IDs.frq); },
+    get publicComps() { return this.getHelper(config.IDs.publicComps); },
+    get classComps() { return this.getHelper(config.IDs.classComps); },
+    get myComps() { return this.getHelper(config.IDs.myComps); },
+    get frqProblems() { return this.getHelper(config.IDs.frqProblems); },
+    classes: {
+        cached: {},
+        getHelper: function (className) {
+            if (this.cached[className] == null)
+                this.cached[className] = document.getElementsByClassName(className);
+            return this.cached[className];
+        },
+        get columns() { return this.getHelper(config.CLASSES.columns); }
+    }
+};
+var cid = null; // Undefined if we are looking at the UIL list
+$(document).ready(function () {
+    var sPageURL = window.location.search.substring(1), sURLVariables = sPageURL.split('&'), sParameterName, i;
+    for (i = 0; i < sURLVariables.length; i++) {
+        sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] === "cid") {
+            cid = sParameterName[1] === undefined ? null : decodeURIComponent(sParameterName[1]);
+        }
+    }
     showColumn();
-})
-
-function showColumn(){
+});
+function showColumn() {
     // Check if there is an anchor, and if there is show that section of the page
-    if(window.location.hash==="#scoreboard") {
+    if (window.location.hash === "#scoreboard") {
         showScoreboard();
-    } else if(window.location.hash==="#mc") {
+    }
+    else if (window.location.hash === "#mc") {
         showMC();
-    } else if(window.location.hash==="#frq") {
+    }
+    else if (window.location.hash === "#frq") {
         showFRQ();
-    } else if(window.location.hash==="#answers") {
+    } /*else if(window.location.hash==="#answers") {
         showAnswers();
-    } else if(about.length!==0) {
+    } */
+    else if (window.location.hash === "#team") {
+        showTeam();
+    }
+    else if (cid != null) {
         showAbout();
-    } else {
+    }
+    else {
         showPublic();
     }
 }
-
-function showHelper(show, hash){
-    columns.hide();
-    show.show();
+function showHelper(show, hash) {
+    var columns = dom.classes.columns;
+    for (var i = 0, j = columns.length; i < j; i++) {
+        columns.item(i).style.display = "none";
+    }
+    show.style.display = "block";
     window.location.hash = hash;
 }
-function showAbout(){
-    showHelper(about, "#about");
+function showAbout() {
+    showHelper(dom.about, "#about");
 }
-function showScoreboard(){
-    showHelper(scoreboard, "#scoreboard");
+function showScoreboard() {
+    showHelper(dom.scoreboard, "#scoreboard");
 }
-function showMC(){
-    showHelper(mc, "#mc");
+function showTeam() {
+    showHelper(dom.team, "#team");
 }
-function showFRQ(){
-    showHelper(frq, "#frq");
+function showMC() {
+    showHelper(dom.mc, "#mc");
 }
-function showAnswers(){
+function showFRQ() {
+    showHelper(dom.frq, "#frq");
+}
+/*function showAnswers(){
     showHelper(answers, "#answers");
+}*/
+function showPublic() {
+    showHelper(dom.publicComps, "");
 }
-
-function showPublic() { // Shows the public competitions
-    showHelper(publicComps, "");
+function showClassComps() {
+    showHelper(dom.classComps, "");
 }
-
-function showClassComps() { // Shows the class competitions
-    showHelper(classComps, "");
+function showMyComps() {
+    showHelper(dom.myComps, "");
 }
-
-function showMyComps() { // Shows the class competitions
-    showHelper(myComps, "");
-}
-
 // Uses ajax to update the navigation bar. Called whenever a countdown finished
-function updateNav(){
+function updateNav() {
     location.reload();
 }
-
-// Signup for this competition
-function signUp(){
-    $("#signUp").replaceWith("<p id=\"signUpMsg\" class=\"error_text\">Signing Up...</p>");
+// Show the signup box
+function showSignup() {
+    $("#signUpBox").show();
+}
+// Switches between joining a team and creating a team
+var jointeamShowing = true;
+function toggleCreateTeam() {
+    if (jointeamShowing) { // Switch to creating a team
+        $("#signUpBox h1").text("Create Team");
+        $("#signUpBox .instruction").text("Team Name");
+        $("#signUpBox input").val("");
+        $("#teamCode").attr({ "maxlength": "25", "oninput": "''" }).addClass("creatingTeam");
+        $("#toggleCreateTeam").html("<button onclick='createTeam()' class='chngButton'>Create</button><span onclick='toggleCreateTeam()'>or join a team.</span>").click(function () { });
+    }
+    else { // Switch to joining a team
+        $("#signUpBox h1").text("Join Team");
+        $("#signUpBox .instruction").text("Enter team join code:");
+        $("#signUpBox input").val("");
+        $("#teamCode").attr({ "maxlength": "6", "oninput": "codeEntered(this)" }).removeClass("creatingTeam");
+        $("#toggleCreateTeam").html("or create a team.").click(toggleCreateTeam);
+    }
+    jointeamShowing = !jointeamShowing;
+}
+function createTeam() {
+    addSignupSuccessBox("Creating team...");
     $.ajax({
         url: window.location.href,
         method: "POST",
-        data: {"action": "signup", "eligible": false},
-        success: function(result) {
-            if(result == null || result["status"]==="error")
-                $("#signUp").replaceWith("<p id=\"signUpMsg\" class=\"error_text\">An error occurred, try again later.</p>");
-            if(result["status"] === "success") {
+        data: { "action": "createteam", "cid": cid, "tname": $("#teamCode").val() },
+        success: function (result) {
+            if (result == null || result["status"] === "error")
+                $("#signUp").replaceWith("<p id='signUpMsg' class='error_text'>An error occurred, try again later.</p>");
+            if (result["status"] === "success") {
                 location.reload();
             }
         }
     });
 }
-
-// Signup for a competition with an elible data point competition
-function signUpEligible(){
-    $.ajax({
-        url: window.location.href,
-        method: "POST",
-        data: {"action": "signup", "eligible": $("#eligible").val()},
-        success: function(result) {
-            if(result == null)
-                $("#signUp").replaceWith("<p id=\"signUpMsg\" class=\"error_text\">An error occurred, try again later.</p>");
-            if(result["status"] === "success") {
-                $("#columns").replaceWith(result["updatedHTML"]);
-                columns = $(".column");
-                about = $("#aboutColumn");
-                scoreboard = $("#scoreboardColumn");
-                mc = $("#mcColumn");
-                frq = $("#frqColumn");
-            }
-        }
-    })
-}
-
-
 // Begin the multiple choice
-function beginMC(){
+function beginMC() {
     $.ajax({
         url: window.location.href,
         method: "POST",
-        data: {"action": "beginMC"},
-        success: function(result) {
-            if(result!=null){
-                if(result["status"]==="success"){
-                    mc.replaceWith(result["mcHTML"]);
-                    mc = $("#mcColumn");
-                    mc.show();
-                    columns = $(".column");
+        data: { "action": "beginMC" },
+        success: function (result) {
+            if (result != null) {
+                if (result["status"] === "success") {
+                    dom.mc.replaceWith(result["mcHTML"]);
+                    delete dom.cached[config.IDs.mc];
+                    dom.mc.style.display = "block";
+                    delete dom.classes.cached[config.CLASSES.columns];
                 }
             }
         }
-    })
+    });
 }
-
-
-let choices = {};   // MC choices. Not necessarily full
+var choices = {}; // MC choices. Not necessarily full
 function setChoice(question, dom) {
-    let $dom = $(dom);
-    let choice = dom.dataset.val;
-    if(choices[question] === choice) {  // They are clicking a selected bubble
+    var $dom = $(dom);
+    var choice = dom.dataset.val;
+    if (choices[question] === choice) { // They are clicking a selected bubble
         choices[question] = null;
         $dom.removeClass("mcSelected");
         return;
@@ -150,90 +187,92 @@ function setChoice(question, dom) {
     $dom.parent().parent().children().children().removeClass("mcSelected");
     $dom.addClass("mcSelected");
 }
-
+function setSAQChoice(question, dom) {
+    choices[question] = dom.value;
+}
 function submitMC() {
     var numQuestions = document.getElementsByClassName("mcQuestion").length;
     var answers = "[";
-    for(var i=1; i<=numQuestions; i++) {
-        if(choices[i] != null) answers+=choices[i];
-        else answers+='SK';  // The character if they skipped it
-        if(i<numQuestions) answers +=",";
+    for (var i = 1; i <= numQuestions; i++) {
+        if (choices[i] != null && choices[i].trim().length > 0)
+            answers += '"' + choices[i] + '"';
+        else
+            answers += '"SK"'; // The character if they skipped it
+        if (i < numQuestions)
+            answers += ",";
     }
-    answers+="]";
-
+    answers += "]";
     $.ajax({
         url: window.location.href,
         method: "POST",
-        data: {"action": "submitMC", "answers": answers},
-        success: function(result) {
-            if(result!=null){
-                mc.replaceWith(result["mcHTML"]);
+        data: { "action": "submitMC", "answers": answers },
+        success: function (result) {
+            if (result != null) {
+                var template = document.createElement('template');
+                template.innerHTML = result["mcHTML"];
+                dom.mc.replaceWith(template.content.firstChild);
                 clearInterval(xmcTestTimer);
-                mc = $("#mcColumn");
-                mc.show();
-                columns = $(".column");
+                delete dom.cached[config.IDs.mc];
+                dom.mc.style.display = "block";
+                delete dom.cached[config.CLASSES.columns];
             }
         }
-    })
+    });
 }
-
 // Updates everything except for the nav bars
-function updatePage(){
+function updatePage() {
     $.ajax({
         url: window.location.href,
         method: "POST",
-        data: {"action": "updatePage"},
-        success: function(result) {
-            if(result!=null){
+        data: { "action": "updatePage" },
+        success: function (result) {
+            if (result != null) {
                 $("#columns").innerHTML(result["updatedHTML"]);
             }
         }
-    })
+    });
 }
-
 /**
  * FRQ-Specific functions
  * @param box
  * @param success
  */
-
 var grabFRQProblemsTimer;
-var frqProblems;
-function grabFRQProblems(){
+function grabFRQProblems() {
     $.ajax({
         url: window.location.href,
         method: "POST",
-        data: {"action": "grabFRQProblems"},
-        success: function(result) {
-            if(result!=null){
-                $("#frqProblems").replaceWith(result["frqProblemsHTML"]);
+        data: { "action": "grabFRQProblems" },
+        success: function (result) {
+            if (result != null) {
+                var template = document.createElement('template');
+                template.innerHTML = result["frqProblemsHTML"];
+                dom.frqProblems.replaceWith(template.content.firstChild);
             }
         }
-    })
+    });
 }
-
 function beginFRQ() {
     // Tell the server that they've started
     $.ajax({
-        url:window.location.href,
+        url: window.location.href,
         method: "POST",
-        data: {"action": "beginFRQ"},
-        success: function(result) {
-            if(result!=null && result["status"] == "success") {
-                frq.replaceWith(result["frqHTML"]);
-                frq = $("#frqColumn")
-                columns = $(".column");
+        data: { "action": "beginFRQ" },
+        success: function (result) {
+            if (result != null && result["status"] == "success") {
+                dom.frq.replaceWith(result["frqHTML"]);
+                delete dom.cached[config.IDs.frq];
+                delete dom.classes.cached[config.CLASSES.columns];
                 showColumn();
             }
         }
-    })
-
-    frqProblems = $("#frqProblems");
+    });
+    delete dom.cached[config.IDs.frqProblems];
     return false;
 }
 function addScoredBox(box, success) {
-    let errorBox = document.getElementById(box.id + "ERROR");
-    if(!errorBox) {
+    var errorBox = document.getElementById(box.id + "ERROR");
+    if (!errorBox) {
         box.insertAdjacentHTML('afterbegin', "<div class='success' id='" + box.id + "ERROR'>" + success + "</div>");
     }
     else {
@@ -241,9 +280,9 @@ function addScoredBox(box, success) {
         errorBox.className = "success";
     }
 }
-function addErrorBox(box, error){
-    let errorBox = document.getElementById(box.id + "ERROR");
-    if(!errorBox) {
+function addErrorBox(box, error) {
+    var errorBox = document.getElementById(box.id + "ERROR");
+    if (!errorBox) {
         box.insertAdjacentHTML('afterbegin', "<div class='error' id='" + box.id + "ERROR'>ERROR: " + error + "</div>");
     }
     else {
@@ -251,32 +290,32 @@ function addErrorBox(box, error){
         errorBox.className = "error";
     }
 }
-var box=false;
-function submitFRQ(){
-    if(!box) box = document.getElementById("submit");
+var box = null;
+function submitFRQ() {
+    if (!box)
+        box = document.getElementById("submit");
     addScoredBox(box, "Scoring...");
-
     var probSelector = document.getElementById("frqProblem");
     var probId = probSelector.options[probSelector.selectedIndex].value;
-
-    let xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function(){
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function () {
         if (xhr.readyState === 4) {
             if (xhr.status == 200) { // If an error occurred
-                const response = JSON.parse(xhr.responseText);
-                if(response["status"]=="success") {
+                var response = JSON.parse(xhr.responseText);
+                if (response["status"] == "success") {
                     addScoredBox(box, "SCORED: " + response["scored"]);
-                    $("frqProblem"+probId).hide();
-                } else {
+                    $("frqProblem" + probId).hide();
+                }
+                else {
                     addErrorBox(box, response["error"]);
                 }
-
                 grabFRQProblems();
-            } else {    // A server error occurred. Show an error message
+            }
+            else { // A server error occurred. Show an error message
                 addErrorBox(box, "Whoops! A server error occurred. Contact an admin if the problem continues.");
             }
         }
-    }
+    };
     xhr.open('POST', window.location.href, true);
     // xhr.setRequestHeader('Content-type', 'multipart/form-data');
     var formData = new FormData();
@@ -286,22 +325,33 @@ function submitFRQ(){
     xhr.send(formData);
     return false;
 }
-function finishFRQ(){
+function finishFRQ() {
     $.ajax({
-        url:window.location.href,
+        url: window.location.href,
         method: "POST",
-        data: {"action": "finishFRQ"},
-        success: function(result) {
+        data: { "action": "finishFRQ" },
+        success: function (result) {
             clearInterval(grabFRQProblemsTimer);
-            if(result!=null) {
-                frq.replaceWith(result["frqHTML"]);
-                columns = $(".column");
+            if (result != null) {
+                dom.frq.replaceWith(result["frqHTML"]);
+                delete dom.cached[config.CLASSES.columns];
             }
         }
-    })
+    });
 }
-
-function submitChallenge(){
+function leaveTeam() {
+    $.ajax({
+        url: window.location.href,
+        method: "POST",
+        data: { "action": "leaveTeam" },
+        success: function (result) {
+            if (result != null && result["status"] === "success") {
+                window.location.reload();
+            }
+        }
+    });
+}
+/*function submitChallenge(){
     if(!box) box = document.getElementById("submit");
     addScoredBox(box, "Scoring...");
 
@@ -329,4 +379,138 @@ function submitChallenge(){
     formData.append("action", "submitFRQ");
     xhr.send(formData);
     return false;
+}*/
+var errorBox;
+function addSignupErrorBox(error) {
+    if (!errorBox) {
+        document.getElementById("errorBoxERROR").insertAdjacentHTML('afterbegin', "<div class='error' id='errorBox'>ERROR: " + error + "</div>");
+        errorBox = document.getElementsByClassName("error")[0];
+    }
+    else {
+        errorBox.innerHTML = "ERROR: " + error;
+        errorBox.className = "error";
+    }
+}
+function addSignupSuccessBox(success) {
+    if (!errorBox) {
+        document.getElementById("errorBoxERROR").insertAdjacentHTML('afterbegin', "<div class='success' id='errorBox'>" + success + "</div>");
+        errorBox = document.getElementsByClassName("success")[0];
+    }
+    else {
+        errorBox.innerHTML = success;
+        errorBox.className = "success";
+    }
+}
+function codeEntered(code) {
+    if (code.value.length == 6) { // If the code is fully entered
+        // First, put a "verifying" box
+        addSignupSuccessBox("Joining...");
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                if (xhr.status == 200) { // If an error occurred
+                    var response = JSON.parse(xhr.responseText);
+                    // @ts-ignore
+                    if (Object.keys(response).includes("reload")) {
+                        window.location.reload();
+                    }
+                    else {
+                        addSignupErrorBox(response["error"]);
+                    }
+                }
+                else { // A server error occurred. Show an error message
+                    addSignupErrorBox("Whoops! A server error occurred. Contact an admin if the problem continues.");
+                }
+            }
+        };
+        xhr.open('POST', 'uil', true);
+        xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+        xhr.send('cid=' + cid + '&action=jointeam&code=' + code.value);
+    }
+}
+/**
+ * Takes in the submission index (submissionId) of the submission on the server. Contacts the server, retrieves the
+ * submission information, and displays it.
+ * @param submissionId
+ */
+var submissionMap = {};
+var showingFRQSubmission = null;
+function showFRQSubmission(submissionId) {
+    function add(element) {
+        if (!showingFRQSubmission) {
+            dom.frq.insertAdjacentElement('afterbegin', element);
+        }
+        else {
+            showingFRQSubmission.replaceWith(element);
+        }
+        showingFRQSubmission = element;
+    }
+    if (submissionMap[submissionId] != null) {
+        add(submissionMap[submissionId]);
+        return;
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                var name_1 = response["name"];
+                var team = response["team"];
+                var result = response["result"];
+                var div = document.createElement("div");
+                div.classList.add("frqSubmissionEditor");
+                var probName_cnt = document.createElement("div");
+                probName_cnt.innerHTML = "<b>Problem</b><h2>" + name_1 + "</h2>";
+                probName_cnt.classList.add("half");
+                div.appendChild(probName_cnt);
+                var teamName_cnt = document.createElement("div");
+                teamName_cnt.innerHTML = "<b>Team</b><h2>" + team + "</h2>";
+                teamName_cnt.classList.add("half");
+                div.appendChild(teamName_cnt);
+                var result_cnt = document.createElement("p");
+                result_cnt.classList.add("resultCnt");
+                result_cnt.innerHTML = "<b>Judgement:</b>";
+                div.appendChild(result_cnt);
+                var result_cnt_changeJudgement_1 = document.createElement("select");
+                result_cnt_changeJudgement_1.onchange = function () {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', "/uil", true);
+                    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+                    xhr.send("cid=" + cid + "&action=changeFRQJudgement&id=" + submissionId + "&judgeId=" + result_cnt_changeJudgement_1.value);
+                    document.getElementById("showFRQSubmission" + submissionId).innerText = result_cnt_changeJudgement_1.options[result_cnt_changeJudgement_1.selectedIndex].text;
+                };
+                for (var i = 0, j = config.RESULTS.length; i < j; i++) {
+                    var text = config.RESULTS[i];
+                    var option = document.createElement("option");
+                    option.value = "" + i;
+                    option.innerText = text;
+                    if (text == result)
+                        option.selected = true;
+                    result_cnt_changeJudgement_1.appendChild(option);
+                }
+                result_cnt.appendChild(result_cnt_changeJudgement_1);
+                var input = response["input"];
+                if (input) {
+                    var input_cnt = document.createElement("div");
+                    input_cnt.classList.add("inputCnt");
+                    input_cnt.innerHTML = "<b>Input</b><span>" + input.replace(/\r\n/g, "<br>")
+                        .replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>") + "</span>";
+                    div.appendChild(input_cnt);
+                    var output = response["output"];
+                    if (output) {
+                        var output_cnt = document.createElement("div");
+                        output_cnt.classList.add("outputCnt");
+                        output_cnt.innerHTML = "<b>Output</b><span>" + output.replace(/\r\n/g, "<br>")
+                            .replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>") + "</span>";
+                        div.appendChild(output_cnt);
+                    }
+                }
+                add(div);
+                submissionMap[submissionId] = div;
+            }
+        }
+    };
+    xhr.open('POST', "/uil", true);
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.send("cid=" + cid + "&action=showFRQSubmission&id=" + submissionId);
 }

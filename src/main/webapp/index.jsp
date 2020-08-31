@@ -28,7 +28,7 @@ Dynamic.loadNav(request)
         <p>Join the community <a href="https://discord.gg/ukT4QnZ" class="link">discord</a> to receive announcements and ask for help. You can always email us at <a href="mailto: contact@txcsopen.com" class="link">contact@txcsopen.com</a>, and we'll be releasing post-competition surveys to help us make improvements.</p>
     </div>
 </div>
-<div id="schedule">
+<!--<div id="schedule">
     <table>
         <tr>
             <th>Schedule</th>
@@ -59,7 +59,7 @@ Dynamic.loadNav(request)
             <td>5-day one-problem heuristic programming challenge</td>
         </tr>
     </table>
-</div>
+</div>-->
 <%=
 Dynamic.loadBigCopyright()
 %>

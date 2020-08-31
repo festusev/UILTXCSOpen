@@ -1,14 +1,18 @@
-var regBox;
-var email;
-var uname;
-var pass;
-var passAgain;
+let regBox;
+let email;
+let fname;
+let lname;
+let pass;
+let passAgain;
+let teacher;
 document.addEventListener("DOMContentLoaded", function(event) {
     regBox = document.getElementById('reg-box');
-    uname = document.getElementById("uname");
+    fname = document.getElementById("fname");
+    lname = document.getElementById("lname");
     email = document.getElementById('email');
     pass = document.getElementById('pass');
     passAgain = document.getElementById("passAgain");
+    teacher = document.getElementById("isTeacher");
     regBox.onsubmit = register;
 });
 var emailStored;
@@ -34,7 +38,7 @@ function register() {
     xhr.open('POST', 'register', true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     emailStored = email.value;
-    xhr.send('uname=' + uname.value + '&email=' + email.value + '&pass=' + pass.value + '&passAgain=' + passAgain.value);
+    xhr.send('fname=' + fname.value + '&lname=' + lname.value + '&email=' + email.value + '&pass=' + pass.value + '&passAgain=' + passAgain.value + '&teacher=' + teacher.checked);
     return false;
 }
 function resend(){

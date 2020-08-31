@@ -1,4 +1,5 @@
 package Outlet;
+import Outlet.uil.UILEntry;
 import com.google.gson.Gson;
 
 import java.math.BigInteger;
@@ -8,10 +9,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Set;
 
 public class User implements Comparable<User>{
     public String email;
-    public String uname;
+    public String fname;
+    public String lname;
+    public String school;
     public BigInteger token;
     public String password;
     public short uid;
@@ -32,19 +37,18 @@ public class User implements Comparable<User>{
      * @param insert, if true insert, if false update
      * @return The status code.
      */
-    public int updateUser(boolean insert) throws NoSuchAlgorithmException, SQLException {
+    public int updateUser(boolean insert) {
         // Make the actual update query
         try
         {
             // Establishing Connection
             Connection con = Conn.getConnection();
             if(con==null) return -1; // If an error occurred making the connection
-            String query;
             PreparedStatement stmt;
             if(insert)  {
-                stmt = con.prepareStatement("INSERT INTO users(email, uname, token, cids, class) VALUES (?, ?, ?, ?, ?)");
+                stmt = con.prepareStatement("INSERT INTO users(email, fname, lname, affiliation, token, cids, class) VALUES (?, ?, ?, ?, ?)");
             } else {
-                stmt = con.prepareStatement("UPDATE users SET email=?, uname=?, token=?, cids=?, class=? WHERE uid=?");
+                stmt = con.prepareStatement("UPDATE users SET email=?, fname=?, lname=?, school=?, token=?, cids=?, class=? WHERE uid=?");
                 stmt.setShort(6, uid);
             }
             String cidsString = "";
@@ -53,15 +57,27 @@ public class User implements Comparable<User>{
                 cidsString = gson.toJson(((Teacher) this).cids);
                 classString = ((Teacher)this).classCode;
             } else {
-                cidsString = gson.toJson(((Student) this).cids);
+                HashMap<Short, UILEntry> cids = ((Student) this).cids;
+                cidsString = "{";
+                Set<Short> temp = cids.keySet();
+                for(short cid: temp) {
+                    cidsString += cid+":"+cids.get(cid).tid+",";
+                }
+                if(temp.size() > 0) {   // If we added in an entry, remove the final comma
+                    cidsString = cidsString.substring(0, cidsString.length()-1);
+                }
+                cidsString += "}";
                 classString = ""+((Student)this).teacherId;
             }
 
             stmt.setString(1, email);
-            stmt.setString(2, uname);
-            stmt.setString(3, token.toString(Character.MAX_RADIX));
-            stmt.setString(4, cidsString);
-            stmt.setString(5, classString);
+            stmt.setString(2, fname);
+            stmt.setString(3, lname);
+            stmt.setString(4, school);
+            stmt.setString(5, token.toString(Character.MAX_RADIX));
+            stmt.setString(6, cidsString);
+            stmt.setString(7, classString);
+            stmt.setShort(8, uid);
             //LOGGER.info(stmt.toString());
 
             System.out.println(stmt.toString());
@@ -94,8 +110,8 @@ public class User implements Comparable<User>{
     }
     public boolean verifyPassword(String password) {
         // Extract the salt from the storedFull Hash
-        String storedSalt = password.substring(0, password.indexOf("."));
-        String storedHashed = password.substring(password.indexOf(".")+1);
+        String storedSalt = this.password.substring(0, this.password.indexOf("."));
+        String storedHashed = this.password.substring(this.password.indexOf(".")+1);
         String givenHashed = null;  // The hash of the password supplied by the user
         try {
             givenHashed = Conn.hashPassword(password, Base64.getDecoder().decode(storedSalt));

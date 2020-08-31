@@ -24,7 +24,7 @@ public class Register extends HttpServlet{
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         if(Conn.isLoggedIn(request)){
-            response.sendRedirect(request.getContextPath() + "/console");
+            response.sendRedirect(request.getContextPath() + "/profile");
         }
         Conn.setHTMLHeaders(response);
 
@@ -34,12 +34,16 @@ public class Register extends HttpServlet{
                     "        <form onsubmit=\"register(); return false;\" id=\"reg-box\">\n" +
                     "            <label for=\"email\">Email</label>\n" +
                     "            <input type=\"text\" id=\"email\" name=\"email\" class=\"form-input\" maxlength=\"255\">\n" +
-                    "            <label for=\"uname\">Username</label>\n" +
-                    "            <input type=\"text\" id=\"uname\" name=\"uname\" class=\"form-input\" maxlength=\"15\">\n" +
+                    "            <label for=\"fname\">First Name</label>\n" +
+                    "            <input type=\"text\" id=\"fname\" name=\"fname\" class=\"form-input\" maxlength=\"50\">\n" +
+                    "            <label for=\"lname\">Last Name</label>\n" +
+                    "            <input type=\"text\" id=\"lname\" name=\"lname\" class=\"form-input\" maxlength=\"50\">\n" +
                     "            <label for=\"pass\">Password</label>\n" +
                     "            <input type=\"password\" id=\"pass\" name=\"pass\" class=\"form-input\">\n" +
                     "            <label for=\"passAgain\">Re-Type Your Password</label>\n" +
                     "            <input type=\"password\" id=\"passAgain\" name=\"passAgain\" class=\"form-input\">\n" +
+                    "            <label for=\"teacher\">I am a teacher</label>" +
+                    "            <input type=\"checkbox\" id=\"isTeacher\" name=\"teacher\" class=\"form-input\">"+
                     "            <button id=\"reg\">Register</button>\n" +
                     "            <p id=\"logWrapper\">Already have an account? <a href=\"login\" class='link'>Login.</a></p>\n" +
                     "        </form>\n" +
@@ -69,7 +73,7 @@ public class Register extends HttpServlet{
         response.setCharacterEncoding("UTF-8");
         PrintWriter writer = response.getWriter();
         if(Conn.isLoggedIn(request)){
-            writer.write("{\"success\":\"" +request.getContextPath() + "/console\"}");
+            writer.write("{\"success\":\"" +request.getContextPath() + "/profile\"}");
             return;
         }
 
@@ -88,11 +92,12 @@ public class Register extends HttpServlet{
             return;
         }
 
-        String uname = request.getParameter("uname");
+        String fname = request.getParameter("fname");
+        String lname = request.getParameter("lname");
         String pass = request.getParameter("pass");
         String confPass = request.getParameter("passAgain");
         String teacherString = request.getParameter("teacher");
-        if(uname == null || uname.isEmpty()) {
+        if(fname == null || fname.isEmpty()) {
             writer.write("{\"error\":\"Username is empty.\"}");
             return;
         } else if(pass==null || confPass == null || pass.isEmpty() || confPass.isEmpty()) {
@@ -103,32 +108,26 @@ public class Register extends HttpServlet{
             return;
         }
 
-        if(uname.length() > 15) {
-            writer.write("{\"error\":\"Username must not exceed 15 characters\"}");
+        if(fname.length() > 50 || lname.length() > 50) {
+            writer.write("{\"error\":\"Names cannot exceed 50 characters\"}");
         } else if(!isValid(email)) {
             writer.write("{\"error\":\"Invalid email.\"}");
             return;
         }
 
-        // TODO: Alan make it so that they can check whether they are a teacher or not and then it sends that data in the POST
         boolean isTeacher = teacherString!=null&&!teacherString.isEmpty()&&teacherString.equals("true");    // True if they are a teacher
         try {
-            int status = Conn.Register(uname , email, pass, isTeacher); // Put the data into the verification database
+            int status = Conn.Register(fname, lname, "", email, pass, isTeacher); // Put the data into the verification database
 
             // Perform the register update. If the user doesn't already exist and no errors occurred, then we tell the page to show the "input code" box for verification
             if(status >= 0){    // The page will wait for a code to be entered. The user can also follow the link
                 writer.write("{\"success\":\"<style>#codeTitle span span{ font-size:1em; display:inline-block; font-weight:bold; }#code{text-transform:uppercase;font-family:var(--mono);}.link2{ color:var(--sec-col); font-weight:bold; } .link2:hover{ color:var(--sec-dark); }#lowerHalf{display:none;}#codeCnt{ display:block; width:100%; background-color:white; box-shadow:0 0px 6px 1px rgba(0,0,0,.12); margin:auto; padding:2em; margin-top:6em; } #codeTitle{ font-size:2em; font-weight:bold; color:var(--prim-middle); } #codeTitle span{ font-size:0.45em; display:block; font-weight:normal; color:var(--head-col); } #code{ width:100%; font-size:5em; height:1em; padding:0; text-align:center; color:var(--prim-light); } #bottomText{ margin-top:1em; } #upperHalf{ box-shadow:none; } #copyright_notice{ display:none; }</style><div id='codeCnt'><p id='codeTitle'>Verify your email<span>A verification code was sent to <span>EMAIL_REPLACE</span>. It will expire in 15 minutes.</p><div id='codeErrorBox'></div><input id='code' type='text' maxlength='6' oninput='codeEntered()'><p id='bottomText'>Didn't get the email? <a class='link2' style='color:var(--sec-col);cursor:pointer;font-weight:bold;' onclick='resend();'>Resend</a> the verification code.</div>\"}");
-            }
-            else if(status == -2){ // The email is already taken
+            } else if(status == -2){ // The email is already taken
                 writer.write("{\"error\":\"Email is already taken by another user.\"}");
-            }
-            else if(status == -3) { // The username is already taken
-                writer.write("{\"error\":\"Username is already taken by another user\"}");
-            }
-            else{   // A server error occurred. token should be = -1, but who knows
+            } else{   // A server error occurred. token should be = -1, but who knows
                 writer.write("{\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
             }
-        } catch (NoSuchAlgorithmException | SQLException e) {
+        } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
     }

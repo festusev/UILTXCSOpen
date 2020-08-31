@@ -10,7 +10,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 public class Countdown {
-    public final String DATETIME_FORMAT = "MM/dd/yyyy HH:mm:ss";
+    public static final String DATETIME_FORMAT = "MM/dd/yyyy HH:mm:ss";
     public SimpleDateFormat sdf;
 
     public final String DATE_STRING;
@@ -36,6 +36,7 @@ public class Countdown {
         }
         ID = id;
     }
+
     // Creates a date from epoch milli
     public Countdown (long toDate, String id) {
         date = new Date(toDate);
@@ -84,7 +85,7 @@ public class Countdown {
 
     // Returns a new countdown object 'add' milliseconds after the start of 'countdown'
     public static Countdown add(Countdown countdown, long add, String id) {
-        return new Countdown(countdown.getNow() + add, id);
+        return new Countdown(countdown.date.getTime() + add, id);
     }
 
     public static Countdown getEarliest(Countdown c1, Countdown c2) {

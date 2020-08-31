@@ -1,16 +1,21 @@
 package Outlet;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import Outlet.uil.UIL;
+import Outlet.uil.UILEntry;
 
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+
+import static Outlet.Conn.getConnection;
 
 public class DeleteUser extends HttpServlet {
     //private static final Logger LOGGER = LogManager.getLogger(DeleteUser.class);
@@ -37,9 +42,32 @@ public class DeleteUser extends HttpServlet {
             writer.write("{\"error\":\"Password is incorrect.\"}");
             return;
         }
-        int status = 0;
+
+
+        int status;
         try {
-            status = Conn.delUser(uData);
+            Connection conn = getConnection();
+
+            // First, logout the user from the database
+            Conn.logout(uData.token);
+            Conn.delToken(request, response, uData);
+
+            if(uData.teacher) { // They are a teacher, so delete their class and all of their competitions
+                ArrayList<Short> cids = ((Teacher)uData).cids;
+                for(short cid: cids) {
+                    UIL.deleteCompetition(UIL.getCompetition(cid));
+                }
+            } else {
+                Collection<UILEntry> entries = ((Student)uData).cids.values();
+                for(UILEntry entry: entries) {
+                    entry.leaveTeam((Student) uData);
+                }
+            }
+
+            // Next, remove the user's row from the database
+            PreparedStatement stmt = conn.prepareStatement("DELETE FROM users WHERE uid=?");
+            stmt.setShort(1, uData.uid);
+            status = stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
             writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
@@ -49,7 +77,6 @@ public class DeleteUser extends HttpServlet {
             writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
             return;
         }
-        Conn.delToken(request, response, uData.token);
 
         // Finally Redirect back to the Console
         writer.write("{\"reload\":\""+request.getContextPath()+"\"}");

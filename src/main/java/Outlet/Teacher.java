@@ -5,6 +5,8 @@ package Outlet;
 import Outlet.uil.Competition;
 import Outlet.uil.UIL;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 
 public class Teacher extends User{

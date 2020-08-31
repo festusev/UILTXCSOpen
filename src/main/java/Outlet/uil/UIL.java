@@ -1,7 +1,6 @@
 package Outlet.uil;
 import Outlet.*;
 import com.google.gson.Gson;
-import sun.nio.cs.ext.COMPOUND_TEXT;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -29,7 +28,8 @@ public class UIL extends HttpServlet{
     private static HashMap<Short, Competition> running;     // Running competitions
     private static HashMap<Short, Competition> archived;    // Past competitions
     public static boolean initialized = false;
-    private static void initialize() throws SQLException {
+    public static void initialize() throws SQLException {
+        if(initialized) return;
         upcoming = new HashMap<>();
         running = new HashMap<>();
         archived = new HashMap<>();
@@ -41,13 +41,34 @@ public class UIL extends HttpServlet{
         System.out.println("Got connection");
 
         while(rs.next()) {
-            Competition comp = new Competition((Teacher) UserMap.getUserByUID(rs.getShort("uid")),rs.getShort("cid"),
+            short type = rs.getShort("type");   // If 0, there is only a mc test, if 1, only a frq test, if 2, both
+
+            MCTest mcTest;
+            FRQTest frqTest;
+            if(type==1) {   // No MC Test
+                mcTest = new MCTest();
+            } else {
+                mcTest = new MCTest(rs.getString("mcOpens"), gson.fromJson(rs.getString("mcKey"), String[][].class),
+                        rs.getShort("mcCorrectPoints"),
+                        rs.getShort("mcIncorrectPoints"),rs.getString("mcInstructions"),
+                        rs.getString("mcTestLink"), rs.getString("mcAnswers"), rs.getLong("mcTime"));
+            }
+            short cid = rs.getShort("cid");
+            short uid = rs.getShort("uid");
+            if(type==0) {   // No FRQ Test
+                frqTest = new FRQTest();
+            } else {
+                frqTest = new FRQTest(rs.getString("frqOpens"),
+                        rs.getShort("frqMaxPoints"), rs.getShort("frqIncorrectPenalty"),
+                        gson.fromJson(rs.getString("frqProblemMap"),String[].class),
+                        rs.getString("frqStudentPack"),rs.getString("frqJudgePacket"),
+                        rs.getLong("frqTime"));
+            }
+
+            Competition comp = new Competition((Teacher) UserMap.getUserByUID(uid),cid,
                     rs.getBoolean("isPublic"),rs.getString("name"),rs.getString("whatItIs"),
-                    rs.getString("rules"),rs.getString("practice"),gson.fromJson(rs.getString("mcKey"),String[].class),gson.fromJson(rs.getString("mcProblemMap"),short[].class),
-                    rs.getShort("mcCorrectPoints"),rs.getShort("mcIncorrectPoints"),rs.getString("mcInstructions"),
-                    rs.getString("mcTestLink"),rs.getString("mcAnswers"),rs.getString("mcOpens"),rs.getLong("mcTime"),rs.getShort("frqMaxPoints"),
-                    rs.getShort("frqIncorrectPenalty"), gson.fromJson(rs.getString("frqProblemMap"),String[].class),rs.getString("frqStudentPack"),rs.getString("frqJudgePacket"),
-                    rs.getString("frqOpens"),rs.getLong("frqTime"),gson.fromJson(rs.getString("datMap"),String[].class));
+                    rs.getString("rules"),rs.getString("practice"), mcTest, frqTest);
+
             if(!comp.template.opens.done()) {   // The competition is yet to open
                 upcoming.put(comp.template.cid, comp);
             } else if(!comp.template.closes.done()) {   // The competition is yet to close
@@ -72,7 +93,7 @@ public class UIL extends HttpServlet{
         if(up != null) return up;
         Competition run = running.get(cid);
         if(run != null) return run;
-        Competition done = running.get(cid);
+        Competition done = archived.get(cid);
         if(done != null) return done;
 
         return null;
@@ -120,6 +141,37 @@ public class UIL extends HttpServlet{
 
         return competitions;
     }
+    public static void addCompetition(Competition comp) {
+        if(!initialized) {
+            try {
+                initialize();
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return;
+            }
+        }
+        if(!comp.template.opens.done()) {   // The competition is yet to open
+            upcoming.put(comp.template.cid, comp);
+        } else if(!comp.template.closes.done()) {   // The competition is yet to close
+            running.put(comp.template.cid, comp);
+        } else {    // The competition is over
+            archived.put(comp.template.cid, comp);
+        }
+    }
+    public static void deleteCompetition(Competition comp){
+        comp.delete();
+        if(!initialized) {
+            try {
+                initialize();
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return;
+            }
+        }
+        running.remove(comp.template.cid);
+        archived.remove(comp.template.cid);
+        upcoming.remove(comp.template.cid);
+    }
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -150,25 +202,34 @@ public class UIL extends HttpServlet{
                     left += "<p class='menu' onclick='showClassComps()'>Class</p>";
                     ArrayList<Competition> ordered;
                     String teacherName;
-                    // TODO: Add in a "school" column to the database
                     String classmates = "";
 
                     if(!user.teacher) {
                         Teacher teacher = TeacherMap.getByUID(((Student)user).teacherId);
                         ordered = teacher.getCompetitions();
-                        teacherName = teacher.uname;
-                        HashMap<Short, Student> temp = StudentMap.getByTeacher(teacher.uid);
-                    }
-                    else {
+                        teacherName = teacher.fname + " " + teacher.lname;
+                        Collection<Student> students = StudentMap.getByTeacher(teacher.uid).values();
+                        for(Student student: students) {
+                            classmates += "<p class='classmate'>" + StringEscapeUtils.escapeHtml4(student.fname) + " " + StringEscapeUtils.escapeHtml4(student.lname) + "</p>";
+                        }
+                    } else {
                         ordered = ((Teacher) user).getCompetitions();
-                        teacherName = ((Teacher)user).uname;
+                        teacherName = ((Teacher)user).fname + " " + ((Teacher)user).lname;
+
+                        Collection<Student> students = StudentMap.getByTeacher(user.uid).values();
+                        for(Student student: students) {
+                            classmates += "<p class='classmate'>" + StringEscapeUtils.escapeHtml4(student.fname) + " " + StringEscapeUtils.escapeHtml4(student.lname) + "</p>";
+                        }
                     }
 
-                    right+="<div id='class_competitions' style='display:none' class='column'><p class='teacher_name'><br>Teacher</br>" + teacherName + "</p><p id='classmates'><br>Classmates</br><div>"+classmates+"</div></p>";
+                    right+="<div id='class_competitions' style='display:none' class='column'>" +
+                            "<p class='teacher_name'><b>Teacher</b>" + StringEscapeUtils.escapeHtml4(teacherName) + "</p>" +
+                            "<p id='classmates'><b>Classmates</b><div>"+classmates+"</div></p>" +
+                            "<p id='class_competitions_list'><b>Competitions</b><ul>";
                     for(Competition comp: ordered) {
                         right+="<li class='competitionCnt'>"+comp.template.getMiniHTML(user)+"</li>";
                     }
-                    right+="</div>";
+                    right+="</ul></p></div>";
                 }
 
                 if (!user.teacher) {
@@ -176,6 +237,7 @@ public class UIL extends HttpServlet{
 
                     Collection<UILEntry> myCompetitions = ((Student) user).cids.values();
                     right+="<ul id='my_competitions' style='display:none' class='column'>";
+                    if(myCompetitions.size() <= 0) right+="<p class='emptyWarning'>You haven't signed up for any competitions.</p>";
                     for(UILEntry comp: myCompetitions) {
                         right+="<li class='competitionCnt'>"+comp.competition.template.getMiniHTML(user)+"</li>";
                     }
@@ -203,10 +265,11 @@ public class UIL extends HttpServlet{
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String cidS = request.getParameter("cid");
-        if(cidS == null || cidS.isEmpty() || getCompetition(Short.parseShort(cidS))!=null) {    // In this case we are showing all of the available competitions
+        System.out.println("Doing post, cid = " + cidS);
+        Competition competition = getCompetition(Short.parseShort(cidS));
+        if(cidS == null || cidS.isEmpty() || competition==null) {    // In this case we are showing all of the available competitions
             return;
         } else {
-            Competition competition = getCompetition(Short.parseShort(cidS));
             competition.doPost(request, response);
         }
     }

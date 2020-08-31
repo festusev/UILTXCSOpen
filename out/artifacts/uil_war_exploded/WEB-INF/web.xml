@@ -51,13 +51,19 @@
   </servlet-mapping>
 
   <servlet>
-    <servlet-name>Console</servlet-name>
-    <servlet-class>Outlet.Console</servlet-class>
+    <servlet-name>Profile</servlet-name>
+    <servlet-class>Outlet.Profile</servlet-class>
     <load-on-startup>1</load-on-startup>
+    <multipart-config>
+      <location>/usr/share/jetty9/TXCSSubmissions/</location>
+      <max-file-size>10485760</max-file-size>
+      <max-request-size>10485760</max-request-size>
+      <file-size-threshold>0</file-size-threshold>
+    </multipart-config>
   </servlet>
   <servlet-mapping>
-    <servlet-name>Console</servlet-name>
-    <url-pattern>/console</url-pattern>
+    <servlet-name>Profile</servlet-name>
+    <url-pattern>/profile</url-pattern>
   </servlet-mapping>
 
   <!--<servlet>
@@ -88,26 +94,6 @@
   <servlet-mapping>
     <servlet-name>CreateTeam</servlet-name>
     <url-pattern>/create-team</url-pattern>
-  </servlet-mapping>
-
-  <servlet>
-    <servlet-name>JoinTeam</servlet-name>
-    <servlet-class>Outlet.JoinTeam</servlet-class>
-    <load-on-startup>1</load-on-startup>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>JoinTeam</servlet-name>
-    <url-pattern>/join-team</url-pattern>
-  </servlet-mapping>
-
-  <servlet>
-    <servlet-name>LeaveTeam</servlet-name>
-    <servlet-class>Outlet.LeaveTeam</servlet-class>
-    <load-on-startup>1</load-on-startup>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>LeaveTeam</servlet-name>
-    <url-pattern>/leave-team</url-pattern>
   </servlet-mapping>
 
   <servlet>
@@ -164,6 +150,12 @@
     <servlet-name>UIL</servlet-name>
     <servlet-class>Outlet.uil.UIL</servlet-class>
     <load-on-startup>1</load-on-startup>
+    <multipart-config>
+      <location>/usr/share/jetty9/TXCSSubmissions/</location>
+      <max-file-size>10485760</max-file-size>
+      <max-request-size>10485760</max-request-size>
+      <file-size-threshold>0</file-size-threshold>
+    </multipart-config>
   </servlet>
   <servlet-mapping>
     <servlet-name>UIL</servlet-name>
@@ -219,7 +211,7 @@
   </servlet-mapping>-->
 
   <!-- Challenge Servlet -->
-  <servlet>
+  <!--<servlet>
     <servlet-name>Challenge</servlet-name>
     <servlet-class>Outlet.challenge.Challenge</servlet-class>
     <load-on-startup>1</load-on-startup>
@@ -233,5 +225,5 @@
   <servlet-mapping>
     <servlet-name>Challenge</servlet-name>
     <url-pattern>/challenge</url-pattern>
-  </servlet-mapping>
+  </servlet-mapping>-->
 </web-app>

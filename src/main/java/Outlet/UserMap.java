@@ -33,13 +33,16 @@ public class UserMap {
             ResultSet rs = stmt.executeQuery();
             while(rs.next()) {
                 String email = rs.getString("email");
-                String uname = rs.getString("uname");
+                String fname = rs.getString("fname");
+                String lname = rs.getString("lname");
+                String school = rs.getString("school");
                 String tokenS = rs.getString("token");
 
                 boolean isTeacher = rs.getBoolean("teacher");
                 String cids = rs.getString("cids");
                 String classString = rs.getString("class");
                 short uid = rs.getShort("uid");
+                String password = rs.getString("password");
 
                 BigInteger token;
                 if(tokenS != null)
@@ -47,23 +50,22 @@ public class UserMap {
                 else
                     token = null;
 
-                System.out.println("Loading user with uid = " + uid);
-                User u = loadUser(email, uname, token, uid, isTeacher, cids, classString);
+                User u = loadUser(email, fname, lname, school, token, uid, isTeacher, cids, classString, password);
                 if(!isTeacher) studentCIDMap.put((Student)u, cids);
             }
         } catch (SQLException e) {
             e.printStackTrace();
             return -1;
         }
-        System.out.println("Teacher uid = " + getUserByUID((short) 1).uid);
         for(Student s: studentCIDMap.keySet()) {
             s.setCids(studentCIDMap.get(s));
         }
         return 1;
     }
 
-    public static User loadUser(String email,String uname,BigInteger token,short uid,boolean isTeacher,String cids, String classString) {
+    public static User loadUser(String email,String fname, String lname, String school, BigInteger token,short uid,boolean isTeacher,String cids, String classString, String password) {
         User user;
+        System.out.println("CIDS = " + cids);
         if(isTeacher) {
             user = new Teacher();
             short[] list = gson.fromJson(cids, short[].class);
@@ -72,9 +74,12 @@ public class UserMap {
 
             ((Teacher) user).classCode = classString;
             user.email = email;
-            user.uname = uname;
+            user.fname = fname;
+            user.lname = lname;
+            user.school = school;
             user.token = token;
             user.uid = uid;
+            user.password = password;
 
             TeacherMap.addTeacher((Teacher)user);
             System.out.println("Adding teacher with uid = " +user.uid);
@@ -83,9 +88,12 @@ public class UserMap {
             ((Student) user).teacherId=Short.parseShort(classString);
 
             user.email = email;
-            user.uname = uname;
+            user.fname = fname;
+            user.lname = lname;
+            user.school = school;
             user.token = token;
             user.uid = uid;
+            user.password = password;
 
             StudentMap.addStudent((Student)user);
         }
@@ -122,11 +130,5 @@ public class UserMap {
         if(student != null) return student;
 
         return TeacherMap.getByEmail(email);
-    }
-    public static User getUserByUname(String uname) {
-        Student student = StudentMap.getByUname(uname);
-        if(student != null) return student;
-
-        return TeacherMap.getByUname(uname);
     }
 }

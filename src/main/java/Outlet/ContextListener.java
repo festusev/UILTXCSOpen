@@ -16,13 +16,13 @@ import javax.servlet.annotation.WebListener;
 public class ContextListener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent event) {
-        try {
-            Outlet.challenge.ScoreEngine.initialize();
-            Outlet.challenge.Challenge.initialize();
-            UserMap.initialize();
-        } catch (Exception e) {
+        /*try {
+            //Outlet.challenge.ScoreEngine.initialize();
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
-        }
+        }*/
+        //Outlet.challenge.Challenge.initialize();
+        UserMap.initialize();
 
         /*
         // Finally, schedule the VerificationFlusher class to be called every 15 minutes
