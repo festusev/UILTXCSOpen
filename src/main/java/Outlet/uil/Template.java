@@ -17,9 +17,7 @@ import java.util.*;
  */
 public class Template {
     public final String name;   // DOES NOT include the "UIL" part
-    public final String whatItIs;
-    public final String rules;
-    public final String practice;
+    public final String description;
     public final MCTest mcTest;
     public final FRQTest frqTest;
     public final boolean mcFirst;   // Whether the mcTest is first.
@@ -47,8 +45,8 @@ public class Template {
 
     private Competition competition;
 
-    public Template(String n, String w, String r, String p, MCTest mc, FRQTest fr, short cid, Competition competition){
-        name = n;whatItIs = w;rules = r;practice = p;mcTest = mc;frqTest = fr;this.cid = cid; this.sorter = new SortUILTeams();this.competition=competition;
+    public Template(String n, String description, MCTest mc, FRQTest fr, short cid, Competition competition){
+        name = n;this.description = description;mcTest = mc;frqTest = fr;this.cid = cid; this.sorter = new SortUILTeams();this.competition=competition;
 
         if(mcTest.exists && !frqTest.exists) {
             mcFirst = true;
@@ -204,10 +202,10 @@ public class Template {
                 actMessage + "" +
                 "</div>" +
                 "<div class='row'>" +
-                "<h2>What it is</h2>" +
-                "<p>" + StringEscapeUtils.escapeHtml4(whatItIs) + "</p>" +
+                //"<h2>What it is</h2>" +
+                "<p>" + StringEscapeUtils.escapeHtml4(description) + "</p>" +
                 "</div>" +
-                "<div class='row'>" +
+                /*"<div class='row'>" +
                 "<h2>Rules</h2>" +
                 "<p>" + StringEscapeUtils.escapeHtml4(rules) + "</p>" +
                 "</div>" +

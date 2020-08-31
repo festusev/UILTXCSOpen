@@ -27,7 +27,7 @@ public class Verify extends HttpServlet{
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         if(Conn.isLoggedIn(request)){
-            response.sendRedirect(request.getContextPath() + "/console");
+            response.sendRedirect(request.getContextPath() + "/profile");
         }
         /*Conn.setHTMLHeaders(response);
         String vtoken = request.getParameter("vtoken");   // The verification token sent through email
@@ -80,7 +80,7 @@ public class Verify extends HttpServlet{
         response.setCharacterEncoding("UTF-8");
         PrintWriter writer = response.getWriter();
         if(Conn.isLoggedIn(request)){
-            writer.write("{\"reload\":\"" +request.getContextPath() + "/console\"}");
+            writer.write("{\"reload\":\"" +request.getContextPath() + "/profile\"}");
             return;
         }
 
@@ -94,7 +94,7 @@ public class Verify extends HttpServlet{
                 tokenCookie.setMaxAge(60*60*48);    // Set 2 Days before they must login again
                 tokenCookie.setPath("/");   // This path must stay the same so that logging out is fluid.
                 response.addCookie(tokenCookie);
-                writer.write("{\"reload\":\""+request.getContextPath() + "/console\"}");
+                writer.write("{\"reload\":\""+request.getContextPath() + "/profile\"}");
             } else if(bToken.compareTo(BigInteger.valueOf(-2)) == 0){ // The token has expired
                 writer.write("{\"error\":\"This code has expired.\"}");
             }
@@ -130,7 +130,7 @@ public class Verify extends HttpServlet{
                     tokenCookie.setMaxAge(60*60*48);    // Set 2 Days before they must login again
                     tokenCookie.setPath("/");   // This path must stay the same so that logging out is fluid.
                     response.addCookie(tokenCookie);
-                    writer.write("{\"reload\":\""+request.getContextPath() + "/console\"}");
+                    writer.write("{\"reload\":\""+request.getContextPath() + "/profile\"}");
 
                     // Finally, delete the entry from the 'reset_password' database
                     Connection conn = Conn.getConnection();

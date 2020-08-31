@@ -132,7 +132,7 @@ class Competition {
         compName : HTMLInputElement,
         compPublic : HTMLInputElement,
 
-        whatItIs : HTMLTextAreaElement,
+        description : HTMLTextAreaElement,
         rules : HTMLTextAreaElement,
 
         writtenSection: HTMLSpanElement,
@@ -160,7 +160,7 @@ class Competition {
         compName : null,
         compPublic : null,
 
-        whatItIs : null,
+        description : null,
         rules : null,
 
         writtenSection: null,
@@ -306,8 +306,7 @@ class Competition {
         formData.append("cid", this.cid);
         formData.append("name", this.dom.compName.value);
         formData.append("isPublic", ""+this.dom.compPublic.checked);
-        formData.append("whatItIs", this.dom.whatItIs.value);
-        formData.append("rules", this.dom.rules.value);
+        formData.append("description", this.dom.description.value);
         formData.append("writtenExists", ""+this.writtenExists);
         if(this.writtenExists) {
             formData.append("mcOpens", this.dom.writtenOpen.value);
@@ -509,35 +508,14 @@ class Competition {
 
             /* OPEN */
             let written_answers = document.createElement("div");
-            makeHalf(written_answers);
+            makeFull(written_answers);
+            written_answers.onclick = function() {thisComp.toggleWrittenKey();};
             written_section.appendChild(written_answers);
+            written_answers.style.cursor = "pointer";
 
             let h2_written_answers = document.createElement("h2");
-            h2_written_answers.innerText = "Answers";
+            h2_written_answers.innerHTML = "Answers<span style='float:right;font-weight:bold;'>+</span>";
             written_answers.appendChild(h2_written_answers);
-
-            let button_written_answers = document.createElement("button");
-            button_written_answers.type = "button";
-            button_written_answers.onclick = function() {thisComp.toggleWrittenKey();};
-            button_written_answers.innerText = "Change Key";
-            written_answers.appendChild(button_written_answers);
-            /* CLOSE */
-
-            /* OPEN */
-            let written_instructions = document.createElement("div");
-            makeHalf(written_instructions);
-            written_section.appendChild(written_instructions);
-
-            let h2_written_instructions = document.createElement("h2");
-            h2_written_instructions.innerText = "Instructions";
-            written_instructions.appendChild(h2_written_instructions);
-
-            let button_written_instructions = document.createElement("button");
-            button_written_instructions.name = "mcInstructions";
-            button_written_instructions.type = "button";
-            button_written_instructions.onclick = function(){thisComp.toggleWrittenInstructions();};
-            button_written_instructions.innerText = "Change Instructions";
-            written_instructions.append(button_written_instructions);
             /* CLOSE */
 
             /* OPEN */
@@ -550,12 +528,12 @@ class Competition {
             written_section.appendChild(written_key);
             thisComp.dom.writtenKey = written_key;
 
-            let save_written_key = document.createElement("p");
+            /*let save_written_key = document.createElement("p");
             save_written_key.classList.add("saveWrittenAnswers");
             save_written_key.classList.add("save");
             save_written_key.onclick = function(){thisComp.toggleWrittenKey();};
             save_written_key.innerText = "Save";
-            written_key.appendChild(save_written_key);
+            written_key.appendChild(save_written_key);*/
 
             let list_written_key = document.createElement("ol");
             list_written_key.classList.add("writtenSectionAnswerList");
@@ -573,7 +551,18 @@ class Competition {
             add_written_key.onclick = function(){thisComp.addWrittenQuestion(null);};
             add_written_key.innerText = "Add";
             written_key.appendChild(add_written_key);
+            /* CLOSE */
 
+            /* OPEN */
+            let written_instructions = document.createElement("div");
+            makeFull(written_instructions);
+            written_instructions.onclick = function(){thisComp.toggleWrittenInstructions();};
+            written_section.appendChild(written_instructions);
+            written_instructions.style.cursor = "pointer";
+
+            let h2_written_instructions = document.createElement("h2");
+            h2_written_instructions.innerHTML = "Instructions<span style='float:right;font-weight:bold'>+</span>";
+            written_instructions.appendChild(h2_written_instructions);
             /* CLOSE */
 
             /* OPEN */
@@ -586,12 +575,12 @@ class Competition {
             written_section.appendChild(written_instructions_change);
             thisComp.dom.writtenInstructionCnt = written_instructions_change;
 
-            let save_written_instructions_change = document.createElement("p");
+            /*let save_written_instructions_change = document.createElement("p");
             save_written_instructions_change.classList.add("saveWrittenInstructions");
             save_written_instructions_change.classList.add("save");
             save_written_instructions_change.onclick = function(){thisComp.toggleWrittenInstructions();};
             save_written_instructions_change.innerText = "Save";
-            written_instructions_change.appendChild(save_written_instructions_change);
+            written_instructions_change.appendChild(save_written_instructions_change); */
 
             let textarea_written_instructions_change = document.createElement("textarea");
             textarea_written_instructions_change.classList.add("writtenSectionInstructions");
@@ -967,7 +956,7 @@ class Competition {
 
         /* OPEN */
         let whatItIs = document.createElement("div");
-        whatItIs.innerHTML = "What It Is";
+        whatItIs.innerHTML = "Description";
         makeFull(whatItIs);
         body.appendChild(whatItIs);
 
@@ -976,10 +965,10 @@ class Competition {
         whatItIs_textarea.classList.add("pageTextTextarea");
         whatItIs_textarea.maxLength = 3000;
         whatItIs.appendChild(whatItIs_textarea);
-        this.dom.whatItIs = whatItIs_textarea;
+        this.dom.description = whatItIs_textarea;
         /* CLOSE */
 
-        /* OPEN */
+        /* OPEN
         let rules = document.createElement("div");
         rules.innerHTML = "Rules";
         makeFull(rules);

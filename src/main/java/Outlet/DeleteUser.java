@@ -68,6 +68,7 @@ public class DeleteUser extends HttpServlet {
             PreparedStatement stmt = conn.prepareStatement("DELETE FROM users WHERE uid=?");
             stmt.setShort(1, uData.uid);
             status = stmt.executeUpdate();
+            UserMap.delUser(uData);
         } catch (SQLException e) {
             e.printStackTrace();
             writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");

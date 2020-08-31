@@ -29,18 +29,18 @@ public class Competition {
     public EntryMap entries;
     ArrayList<FRQSubmission> frqSubmissions = new ArrayList<>();
 
-    private void setTemplate(MCTest mc, FRQTest frq, String name, String whatItIs,String rules, String practice, short cid) {
-        template = new Template(name, whatItIs, rules, practice, mc, frq, cid, this);
+    private void setTemplate(MCTest mc, FRQTest frq, String name, String description, short cid) {
+        template = new Template(name, description, mc, frq, cid, this);
         template.updateScoreboard();entries = new EntryMap();
     }
 
-    public Competition(Teacher teacher, short cid, boolean isPublic, String name, String whatItIs,String rules, String practice,
+    public Competition(Teacher teacher, short cid, boolean isPublic, String name, String description,
                        MCTest mc, FRQTest frq) {
         frq.setDirectories(cid, teacher.uid);
 
         this.teacher = teacher;
         this.isPublic = isPublic;
-        setTemplate(mc, frq, name, whatItIs, rules, practice, cid);
+        setTemplate(mc, frq, name, description, cid);
 
         /* Now, create the folder */
         if(frq.exists) {
@@ -51,58 +51,56 @@ public class Competition {
     }
 
     /* Returns a new competition object that has been inserted into the database */
-    public static Competition createCompetition(Teacher teacher, boolean isPublic, String name, String whatItIs, String rules,
-                                         String practice, MCTest mcTest, FRQTest frqTest) throws SQLException {
+    public static Competition createCompetition(Teacher teacher, boolean isPublic, String name, String description,
+                                                MCTest mcTest, FRQTest frqTest) throws SQLException {
         Connection conn = Conn.getConnection();
-        PreparedStatement stmt = conn.prepareStatement("INSERT INTO competitions (uid, name, isPublic, whatItIs, " +
-                "rules, practice, mcKey, mcCorrectPoints, mcIncorrectPoints, mcInstructions, mcTestLink," +
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO competitions (uid, name, isPublic, description, " +
+                "mcKey, mcCorrectPoints, mcIncorrectPoints, mcInstructions, mcTestLink," +
                 "mcAnswers, mcOpens, mcTime, frqMaxPoints, frqIncorrectPenalty, frqProblemMap, frqStudentPack," +
                 "frqJudgePacket, frqOpens, frqTime, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
         stmt.setBoolean(3, isPublic);
-        stmt.setString(4, whatItIs);
-        stmt.setString(5, rules);
-        stmt.setString(6, practice);
+        stmt.setString(4, description);
 
 
         if(mcTest.exists) {
-            stmt.setString(7, gson.toJson(mcTest.KEY));
-            stmt.setShort(8,mcTest.CORRECT_PTS);
-            stmt.setShort(9, mcTest.INCORRECT_PTS);
-            stmt.setString(10,mcTest.INSTRUCTIONS);
-            stmt.setString(11,mcTest.TEST_LINK);
-            stmt.setString(12,mcTest.ANSWERS);
-            stmt.setString(13,mcTest.opens.DATE_STRING);
-            stmt.setLong(14, mcTest.TIME);
+            stmt.setString(5, gson.toJson(mcTest.KEY));
+            stmt.setShort(6,mcTest.CORRECT_PTS);
+            stmt.setShort(7, mcTest.INCORRECT_PTS);
+            stmt.setString(8,mcTest.INSTRUCTIONS);
+            stmt.setString(9,mcTest.TEST_LINK);
+            stmt.setString(10,mcTest.ANSWERS);
+            stmt.setString(11,mcTest.opens.DATE_STRING);
+            stmt.setLong(12, mcTest.TIME);
         } else {
-            stmt.setString(7, null);
-            stmt.setShort(8, (short)0);
-            stmt.setShort(9, (short)0);
+            stmt.setString(5, null);
+            stmt.setShort(6, (short)0);
+            stmt.setShort(7, (short)0);
+            stmt.setString(8, null);
+            stmt.setString(9, null);
             stmt.setString(10, null);
             stmt.setString(11, null);
-            stmt.setString(12, null);
-            stmt.setString(13, null);
-            stmt.setLong(14, 0);
+            stmt.setLong(12, 0);
         }
 
         if(frqTest.exists) {
-            stmt.setShort(15, frqTest.MAX_POINTS);
-            stmt.setShort(16, frqTest.INCORRECT_PENALTY);
-            stmt.setString(17, gson.toJson(frqTest.PROBLEM_MAP));
-            stmt.setString(18, frqTest.STUDENT_PACKET);
-            stmt.setString(19, frqTest.JUDGE_PACKET);
-            stmt.setString(20, frqTest.opens.DATE_STRING);
-            stmt.setLong(21, frqTest.TIME);
+            stmt.setShort(13, frqTest.MAX_POINTS);
+            stmt.setShort(14, frqTest.INCORRECT_PENALTY);
+            stmt.setString(15, gson.toJson(frqTest.PROBLEM_MAP));
+            stmt.setString(16, frqTest.STUDENT_PACKET);
+            stmt.setString(17, frqTest.JUDGE_PACKET);
+            stmt.setString(18, frqTest.opens.DATE_STRING);
+            stmt.setLong(19, frqTest.TIME);
         } else {
-            stmt.setShort(15, (short)0);
-            stmt.setShort(16, (short)0);
+            stmt.setShort(13, (short)0);
+            stmt.setShort(14, (short)0);
+            stmt.setString(15, null);
+            stmt.setString(16, null);
             stmt.setString(17, null);
             stmt.setString(18, null);
-            stmt.setString(19, null);
-            stmt.setString(20, null);
-            stmt.setLong(21, 0);
+            stmt.setLong(19, 0);
         }
 
         int type = 0;   // 0 if just MC, 1 if just FRQ, 2 if both
@@ -129,7 +127,7 @@ public class Competition {
                     "PRIMARY KEY (`tid`))");
             stmt.executeUpdate();
 
-            Competition competition = new Competition(teacher, cid, isPublic, name, whatItIs, rules, practice, mcTest, frqTest);
+            Competition competition = new Competition(teacher, cid, isPublic, name, description, mcTest, frqTest);
             System.out.println("CID = " + cid + ", " + competition.template.cid);
             UIL.addCompetition(competition);
 
@@ -142,61 +140,58 @@ public class Competition {
     }
 
     /* Updates the competition in the database and the template */
-    public void update(Teacher teacher, boolean isPublic, String name, String whatItIs, String rules,
-                                                String practice, MCTest mcTest, FRQTest frqTest) throws SQLException {
+    public void update(Teacher teacher, boolean isPublic, String name, String description, MCTest mcTest, FRQTest frqTest) throws SQLException {
         frqTest.setDirectories(template.cid, teacher.uid);
         frqTest.initializeFiles();
 
         Connection conn = Conn.getConnection();
-        PreparedStatement stmt = conn.prepareStatement("UPDATE competitions SET uid=?, name=?, isPublic=?, whatItIs=?, " +
-                        "rules=?, practice=?, mcKey=?, mcCorrectPoints=?, mcIncorrectPoints=?, mcInstructions=?, mcTestLink=?," +
+        PreparedStatement stmt = conn.prepareStatement("UPDATE competitions SET uid=?, name=?, isPublic=?, description=?, " +
+                        "mcKey=?, mcCorrectPoints=?, mcIncorrectPoints=?, mcInstructions=?, mcTestLink=?," +
                         "mcAnswers=?, mcOpens=?, mcTime=?, frqMaxPoints=?, frqIncorrectPenalty=?, frqProblemMap=?, frqStudentPack=?," +
                         "frqJudgePacket=?, frqOpens=?, frqTime=?, type=? WHERE cid=?",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
         stmt.setBoolean(3, isPublic);
-        stmt.setString(4, whatItIs);
-        stmt.setString(5, rules);
-        stmt.setString(6,practice);
+        stmt.setString(4,description);
 
 
         if(mcTest.exists) {
-            stmt.setString(7, gson.toJson(mcTest.KEY));
-            stmt.setShort(8,mcTest.CORRECT_PTS);
-            stmt.setShort(9, mcTest.INCORRECT_PTS);
-            stmt.setString(10,mcTest.INSTRUCTIONS);
-            stmt.setString(11,mcTest.TEST_LINK);
-            stmt.setString(12,mcTest.ANSWERS);
-            stmt.setString(13,mcTest.opens.DATE_STRING);
-            stmt.setLong(14, mcTest.TIME);
+            stmt.setString(5, gson.toJson(mcTest.KEY));
+            stmt.setShort(6,mcTest.CORRECT_PTS);
+            stmt.setShort(7, mcTest.INCORRECT_PTS);
+            stmt.setString(8,mcTest.INSTRUCTIONS);
+            stmt.setString(9,mcTest.TEST_LINK);
+            stmt.setString(10,mcTest.ANSWERS);
+            stmt.setString(11,mcTest.opens.DATE_STRING);
+            stmt.setLong(12, mcTest.TIME);
         } else {
-            stmt.setString(7, null);
-            stmt.setShort(8, (short)0);
-            stmt.setShort(9, (short)0);
+            stmt.setString(5, null);
+            stmt.setShort(6, (short)0);
+            stmt.setShort(7, (short)0);
+            stmt.setString(8, null);
+            stmt.setString(9, null);
             stmt.setString(10, null);
             stmt.setString(11, null);
-            stmt.setString(12, null);
-            stmt.setString(13, null);
-            stmt.setLong(14, 0);
+            stmt.setLong(12, 0);
         }
 
         if(frqTest.exists) {
-            stmt.setShort(15, frqTest.MAX_POINTS);
-            stmt.setShort(16, frqTest.INCORRECT_PENALTY);
-            stmt.setString(17, gson.toJson(frqTest.PROBLEM_MAP));
-            stmt.setString(18, frqTest.STUDENT_PACKET);
-            stmt.setString(19, frqTest.JUDGE_PACKET);
-            stmt.setString(20, frqTest.opens.DATE_STRING);
-            stmt.setLong(21, frqTest.TIME);
+            stmt.setShort(13, frqTest.MAX_POINTS);
+            stmt.setShort(14, frqTest.INCORRECT_PENALTY);
+            stmt.setString(15, gson.toJson(frqTest.PROBLEM_MAP));
+            stmt.setString(16, frqTest.STUDENT_PACKET);
+            stmt.setString(17, frqTest.JUDGE_PACKET);
+            stmt.setString(18, frqTest.opens.DATE_STRING);
+            stmt.setLong(19, frqTest.TIME);
         } else {
-            stmt.setShort(15, (short)0);
-            stmt.setShort(16, (short)0);
+            stmt.setShort(13, (short)0);
+            stmt.setShort(14, (short)0);
+            stmt.setString(15, null);
+            stmt.setString(16, null);
             stmt.setString(17, null);
             stmt.setString(18, null);
-            stmt.setString(19, null);
-            stmt.setString(20, null);
-            stmt.setLong(21, 0);
+            stmt.setLong(19, 0);
         }
 
         int type = 0;   // 0 if just MC, 1 if just FRQ, 2 if both
@@ -205,12 +200,12 @@ public class Competition {
         } else if(mcTest.exists && frqTest.exists){
             type = 2;
         }
-        stmt.setShort(22, (short) type);
-        stmt.setShort(23, template.cid);
+        stmt.setShort(20, (short) type);
+        stmt.setShort(21, template.cid);
         stmt.executeUpdate();
 
         this.isPublic = isPublic;
-        setTemplate(mcTest, frqTest, name, whatItIs, rules, practice, template.cid);
+        setTemplate(mcTest, frqTest, name, description, template.cid);
     }
 
     public void doGet(HttpServletRequest request, HttpServletResponse response)

@@ -66,8 +66,8 @@ public class UIL extends HttpServlet{
             }
 
             Competition comp = new Competition((Teacher) UserMap.getUserByUID(uid),cid,
-                    rs.getBoolean("isPublic"),rs.getString("name"),rs.getString("whatItIs"),
-                    rs.getString("rules"),rs.getString("practice"), mcTest, frqTest);
+                    rs.getBoolean("isPublic"),rs.getString("name"),rs.getString("description"),
+                    mcTest, frqTest);
 
             if(!comp.template.opens.done()) {   // The competition is yet to open
                 upcoming.put(comp.template.cid, comp);
@@ -181,9 +181,8 @@ public class UIL extends HttpServlet{
         if(cidS == null || cidS.isEmpty() || getCompetition(Short.parseShort(cidS))==null) {    // In this case we are showing all of the available competitions
             Conn.setHTMLHeaders(response);
             PrintWriter writer = response.getWriter();
-            String body = "<div id='center'>";
-            String left = "<div id='left'><h1>Public UIL</h1><p class='menu' onclick='showPublic()'>Public</p>";
-            String right = "<div id='right'><h1></h1><ul id='public_competitions' class='column'>";
+            String left = "<div id='nav_cnt'><div id='nav'><p class='menu' onclick='showPublic()'>Public</p>";
+            String right = "<div id='comp_cnt'><div id='comp'><ul id='public_competitions' class='column'><h1>Public UILs</h1>";
             if(getUpcoming().size() <=0) {  // There are no upcoming competitions
                 right+="<p class='emptyWarning'>There are no upcoming competitions.</p>";
             } else {    // There are upcoming competitions
@@ -223,7 +222,7 @@ public class UIL extends HttpServlet{
                     }
 
                     right+="<div id='class_competitions' style='display:none' class='column'>" +
-                            "<p class='teacher_name'><b>Teacher</b>" + StringEscapeUtils.escapeHtml4(teacherName) + "</p>" +
+                            "<p class='teacher_name'><b>Teacher:</b>" + StringEscapeUtils.escapeHtml4(teacherName) + "</p>" +
                             "<p id='classmates'><b>Classmates</b><div>"+classmates+"</div></p>" +
                             "<p id='class_competitions_list'><b>Competitions</b><ul>";
                     for(Competition comp: ordered) {
@@ -253,8 +252,8 @@ public class UIL extends HttpServlet{
                     "    <script src=\"js/uil.js\"></script>" +
                     "</head>\n" +
                     "<body>\n" + Dynamic.loadNav(request) +
-                    body + left + "</div>"+right+"</div></div>" +
-                    "</body></html>");
+                    "<div id='content'>" + left + "</div></div>"+right+"</div></div>" +
+                    "</div></body></html>");
         } else {    // Render a specific competition. Users will be able to switch which competition they are viewing by clicking on the competition's name
             System.out.println("CID="+cidS);
             Competition competition = getCompetition(Short.parseShort(cidS));

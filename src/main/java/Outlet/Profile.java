@@ -81,9 +81,7 @@ public class Profile extends HttpServlet{
                 JsonObject compJ = new JsonObject();
                 compJ.addProperty("cid", cid);
                 compJ.addProperty("isPublic", competition.isPublic);
-                compJ.addProperty("whatItIs", StringEscapeUtils.escapeHtml4(competition.template.whatItIs));
-                compJ.addProperty("rules", StringEscapeUtils.escapeHtml4(competition.template.rules));
-                compJ.addProperty("name", StringEscapeUtils.escapeHtml4(competition.template.name));
+                compJ.addProperty("description", StringEscapeUtils.escapeHtml4(competition.template.description));
 
                 if(competition.template.mcTest.exists) {
                     JsonObject writtenJ = new JsonObject();
@@ -135,7 +133,7 @@ public class Profile extends HttpServlet{
 
             Conn.setHTMLHeaders(response);
 
-            String nav = "<ul id='profile_nav'><li onclick='navTo(this)' class='selected' id='profile_link'>Profile</li><li onclick='navTo(this)'>Class</li>";
+            String nav = "<div id='profile_nav_cnt'><ul id='profile_nav'><li onclick='navTo(this)' class='selected' id='profile_link'>Profile</li><li onclick='navTo(this)'>Class</li>";
             String right = "<div id='profile_cnt'>" +
                     "<div class='profile_div' id='Profile'>" +
                     "<div class='profile_cmpnt half'><h2>First Name</h2><input type='text' name='fname' id='fname' value='" + StringEscapeUtils.escapeHtml4(u.fname) + "'/></div>" +
@@ -146,13 +144,11 @@ public class Profile extends HttpServlet{
                 right += "<div class='profile_cmpnt full'><h2>School</h2><input type='text' name='school' id='school' value='" + StringEscapeUtils.escapeHtml4(u.school) + "'></div>";
                 delUserPassText = "Your class and competitions will be permanently deleted.";
             }
-
-            nav += "<li onclick='navTo(this)'>Help</li><li id='profile_logout' onclick='location.href=\"/logout\";'>Sign Out</li></ul>";
+            nav += "<li onclick='navTo(this)'>Help</li><li id='delAccount' onclick='document.getElementById(\"delUserPasswordCnt\").style.display=\"block\";'>Delete Account</li></ul></div>";
             right += "<div id='delUserPasswordCnt' style='display:none'><div class='center'><h1>Are you sure?</h1><p>" + delUserPassText +
                     "</p><label for='delPass'>Retype your password:</label><input name='delPass' type='password' id='delUserPassword'/><button onclick='delUser()'>Yes, delete my account.</button><a onclick='hideDelUser()'>Cancel</a></div></div>" +
                     "<div class='profile_cmpnt full'><h2><b>Change Password</b></h2><h2>Old Password</h2><input type='password' name='oldPassword' id='oldPassword'/><h2>New Password</h2><input type='password' name='newPassword' id='newPassword'/></div>" +
                     "<div class='profile_cmpnt full'><span onclick='saveChanges()' id='saveChanges'>Save Changes</span></div>" +
-                    "<div class='profile_cmpnt full'><span onclick='document.getElementById(\"delUserPasswordCnt\").style.display=\"block\";' id='delAccount'>Delete Account</span></div>" +
                     "</div><div class='profile_div' id='Class' style='display:none'>" + getClassHTML(u, teacher);
             right += "</div>";
 
@@ -175,9 +171,9 @@ public class Profile extends HttpServlet{
                     "</head>\n" +
                     "<body>\n" +
                     Dynamic.loadNav(request) +
-                    "<div id='changeInstructions' style='display:none;'></div>" +
-                    "<div id='center'>" + nav + right + "</div>" +
-                    Dynamic.loadCopyright() +
+                    //"<div id='changeInstructions' style='display:none;'></div>" +
+                    "<div id='content'>" + nav + right + "</div>" +
+                    // Dynamic.loadCopyright() +
                     "</body>\n" +
                     "</html>");
         }
@@ -284,8 +280,7 @@ public class Profile extends HttpServlet{
             }
         } else if(action.equals("saveCompetition") && u.teacher) {
             String cidS = request.getParameter("cid");
-            String whatItIs = request.getParameter("whatItIs");
-            String rules = request.getParameter("rules");
+            String description = request.getParameter("description");
             String name = request.getParameter("name");
             boolean isPublic = request.getParameter("isPublic").equals("true");
             boolean writtenExists = request.getParameter("writtenExists").equals("true");
@@ -294,11 +289,8 @@ public class Profile extends HttpServlet{
             if(name.isEmpty()) {
                 writer.write("{\"error\":\"Competition name is empty.\"}");
                 return;
-            } else if (whatItIs.length() > 3000) {
-                writer.write("{\"error\":\"What It Is cannot exceed 3,000 characters.\"}");
-                return;
-            } else if(rules.length() > 3000) {
-                writer.write("{\"error\":\"Rules cannot exceed 3,000 characters.\"}");
+            } else if (description.length() > 32000) {
+                writer.write("{\"error\":\"Description cannot exceed 32000 characters.\"}");
                 return;
             }
 
@@ -505,7 +497,7 @@ public class Profile extends HttpServlet{
                 // We are creating a competition and returning the cid
                 try {
                     competition = Competition.createCompetition((Teacher)u, isPublic,
-                            name, whatItIs, rules, "", mcTest, frqTest);
+                            name, description, mcTest, frqTest);
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -525,7 +517,7 @@ public class Profile extends HttpServlet{
                     frqTest.deleteTestcaseDir();
                 }
                 try {
-                    competition.update((Teacher)u, isPublic, name, "", "", "", mcTest, frqTest);
+                    competition.update((Teacher)u, isPublic, name, description, mcTest, frqTest);
                 } catch (SQLException e) {
                     e.printStackTrace();
                     writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
