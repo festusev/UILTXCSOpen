@@ -389,7 +389,7 @@ class Competition {
         let thisComp:Competition = this;
         let newLi:HTMLElement = document.createElement("li");
 
-        let newP:HTMLParagraphElement;
+        let newP:HTMLSelectElement;
 
         let newInput:HTMLInputElement = document.createElement("input");
         newInput.type = "text";
@@ -405,16 +405,21 @@ class Competition {
         newLi.appendChild(newInput);
 
 
-        newP = document.createElement("p");
-        if(writtenProblem.type === WrittenType.MC) newP.innerText = "MC";
-        else newP.innerText = "SAQ";
-        newP.onclick = function(){
+        newP = document.createElement("select");
+        let mcSelected = "";
+        let saqSelected = "selected";
+        if(writtenProblem.type === WrittenType.MC) {
+            mcSelected = "selected";
+            saqSelected = "";
+        }
+        newP.innerHTML = "<option "+mcSelected+">MC</option><option "+saqSelected+">SAQ</option>"
+        newP.onchange = function(){
             if(writtenProblem.type === WrittenType.MC) {  /* Switch to SAQ */
                 writtenProblem.type = WrittenType.SAQ;
-                newP.innerText = "SAQ";
             } else if(config.COMPETITION.mcOptions.includes(newInput.value)) { /* It must be a valid multiple choice option */
                 writtenProblem.type = WrittenType.MC;
-                newP.innerText = "MC";
+            } else {
+                newP.selectedIndex = 1;
             }
         };
         newP.classList.add('writtenAnswerType');
@@ -944,7 +949,7 @@ class Competition {
         this.dom.compPublic = isPublic_toggle_input;
         /* CLOSE */
 
-        /* OPEN 
+        /* OPEN
         let page_text_header = document.createElement("div");
         makeFull(page_text_header);
         body.appendChild(page_text_header);
@@ -1038,12 +1043,35 @@ class Competition {
     }
 }
 
+let loadClassInterval: number;
+function createLoadClassInterval() {
+    loadClassInterval = setInterval(loadClass, 30*1000);
+}
 document.onreadystatechange = () => {
-    console.log(document.readyState);
     if(document.readyState === "complete") {
         pageState.selectedNav = dom.profileLink;
         loadCompetitions();
     }
+};
+
+/**
+ * Loads the class from the server every 30 seconds in case a student has joined their class.
+ */
+function loadClass() {
+    let xhr:XMLHttpRequest = new XMLHttpRequest();
+    xhr.onreadystatechange = function(){
+        if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+                const response:object = JSON.parse(xhr.responseText);
+                if(response["success"] != null) {
+                    dom.class.innerHTML = response["classHTML"];
+                }
+            }
+        }
+    };
+    xhr.open('POST', "/profile", true);
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.send("action=getClass");
 }
 
 function asyncConnectHelper(url:string, params:string, teamBox:HTMLElement):boolean {
@@ -1060,7 +1088,7 @@ function asyncConnectHelper(url:string, params:string, teamBox:HTMLElement):bool
                 addErrorBox(teamBox, config.TEXT.server_error);
             }
         }
-    }
+    };
     xhr.open('POST', url, true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send(params);
@@ -1228,6 +1256,7 @@ function joinClass(classCode_input: HTMLInputElement) {
                     window.location.reload();
                 } else {
                     dom.class.innerHTML = response["html"];
+                    createLoadClassInterval();
                 }
             }
         }
@@ -1257,6 +1286,7 @@ function leaveClass() {
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send("action=leaveClass");
     showJoinClass();
+    clearInterval(loadClassInterval);
 }
 
 function showJoinClass() {

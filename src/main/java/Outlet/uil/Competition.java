@@ -57,7 +57,7 @@ public class Competition {
         PreparedStatement stmt = conn.prepareStatement("INSERT INTO competitions (uid, name, isPublic, description, " +
                 "mcKey, mcCorrectPoints, mcIncorrectPoints, mcInstructions, mcTestLink," +
                 "mcAnswers, mcOpens, mcTime, frqMaxPoints, frqIncorrectPenalty, frqProblemMap, frqStudentPack," +
-                "frqJudgePacket, frqOpens, frqTime, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "frqJudgePacket, frqOpens, frqTime, type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -109,7 +109,7 @@ public class Competition {
         } else if(mcTest.exists && frqTest.exists){
             type = 2;
         }
-        stmt.setShort(22, (short) type);
+        stmt.setShort(20, (short) type);
 
         System.out.println(stmt);
         stmt.execute();
@@ -296,6 +296,28 @@ public class Competition {
                             submission.entry.update();
                             template.updateScoreboard();
                         }
+                    }
+                } else if(action.equals("showMCSubmission")) {
+                    short tid = Short.parseShort(request.getParameter("tid"));
+                    short uid = Short.parseShort(request.getParameter("uid"));
+                    UILEntry entry = null;
+                    Student student = StudentMap.getByUID(uid);
+                    try {
+                        entry = getEntry(tid);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                    if (entry != null && student != null) {
+                        JsonObject compJ = new JsonObject();
+                        MCSubmission submission = entry.mc.get(uid);
+                        if(!submission.finished) return;
+
+                        compJ.addProperty("user", StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname));
+                        compJ.addProperty("team", StringEscapeUtils.escapeHtml4(entry.tname));
+                        compJ.addProperty("answers", template.getFinishedMCHelper(submission));
+                        compJ.addProperty("scoringReport", gson.toJson(submission.scoringReport));
+
+                        writer.write(new Gson().toJson(compJ));
                     }
                 }
             }

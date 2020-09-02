@@ -328,19 +328,23 @@ var Competition = /** @class */ (function () {
             }
         };
         newLi.appendChild(newInput);
-        newP = document.createElement("p");
-        if (writtenProblem.type === WrittenType.MC)
-            newP.innerText = "MC";
-        else
-            newP.innerText = "SAQ";
-        newP.onclick = function () {
+        newP = document.createElement("select");
+        var mcSelected = "";
+        var saqSelected = "selected";
+        if (writtenProblem.type === WrittenType.MC) {
+            mcSelected = "selected";
+            saqSelected = "";
+        }
+        newP.innerHTML = "<option " + mcSelected + ">MC</option><option " + saqSelected + ">SAQ</option>";
+        newP.onchange = function () {
             if (writtenProblem.type === WrittenType.MC) { /* Switch to SAQ */
                 writtenProblem.type = WrittenType.SAQ;
-                newP.innerText = "SAQ";
             }
             else if (config.COMPETITION.mcOptions.includes(newInput.value)) { /* It must be a valid multiple choice option */
                 writtenProblem.type = WrittenType.MC;
-                newP.innerText = "MC";
+            }
+            else {
+                newP.selectedIndex = 1;
             }
         };
         newP.classList.add('writtenAnswerType');
@@ -804,11 +808,12 @@ var Competition = /** @class */ (function () {
         isPublic_toggle.appendChild(isPublic_toggle_input);
         this.dom.compPublic = isPublic_toggle_input;
         /* CLOSE */
-        /* OPEN */
-        var page_text_header = document.createElement("div");
+        /* OPEN
+        let page_text_header = document.createElement("div");
         makeFull(page_text_header);
         body.appendChild(page_text_header);
-        var h2_page_text = document.createElement("h2");
+
+        let h2_page_text = document.createElement("h2");
         h2_page_text.innerHTML = "<b>Page Text</b>";
         page_text_header.appendChild(h2_page_text);
         /* CLOSE */
@@ -886,13 +891,35 @@ var Competition = /** @class */ (function () {
     };
     return Competition;
 }());
+var loadClassInterval;
+function createLoadClassInterval() {
+    loadClassInterval = setInterval(loadClass, 30 * 1000);
+}
 document.onreadystatechange = function () {
-    console.log(document.readyState);
     if (document.readyState === "complete") {
         pageState.selectedNav = dom.profileLink;
         loadCompetitions();
     }
 };
+/**
+ * Loads the class from the server every 30 seconds in case a student has joined their class.
+ */
+function loadClass() {
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                if (response["success"] != null) {
+                    dom.class.innerHTML = response["classHTML"];
+                }
+            }
+        }
+    };
+    xhr.open('POST', "/profile", true);
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.send("action=getClass");
+}
 function asyncConnectHelper(url, params, teamBox) {
     addSuccessBox(teamBox, "Running...");
     var xhr = new XMLHttpRequest();
@@ -1072,6 +1099,7 @@ function joinClass(classCode_input) {
                 }
                 else {
                     dom.class.innerHTML = response["html"];
+                    createLoadClassInterval();
                 }
             }
         }
@@ -1098,6 +1126,7 @@ function leaveClass() {
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send("action=leaveClass");
     showJoinClass();
+    clearInterval(loadClassInterval);
 }
 function showJoinClass() {
     dom.class.innerHTML = "<div class='profile_cmpnt full'><h2>Join a Class</h2></div><div class='profile_cmpnt half'>Class Code:</div>";

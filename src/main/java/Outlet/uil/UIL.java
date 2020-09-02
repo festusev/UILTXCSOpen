@@ -246,7 +246,7 @@ public class UIL extends HttpServlet{
 
             writer.write("<html>\n" +
                     "<head>\n" +
-                    "    <title>Login - TXCSOpen</title>\n" + Dynamic.loadHeaders() +
+                    "    <title>UIL - TXCSOpen</title>\n" + Dynamic.loadHeaders() +
                     "    <link rel=\"stylesheet\" href=\"./css/uil.css\">\n" +
                     "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
                     "    <script src=\"js/uil.js\"></script>" +

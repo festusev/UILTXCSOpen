@@ -72,15 +72,14 @@
     display: inline-block;
     width:30%;
     height: 100%;
-    background-color: var(--prim-light);
-    box-shadow: 5px 0 10px 0px rgba(0,0,0,0.15);
     position: relative;
 }
 #nav {
-    color: #eee;
-    margin-top:50%;
+    color: #222;
+    margin-top:12rem;
     text-align: right;
     height:20rem;
+    border-right: 1px solid lightgray;
 }
 #nav p {
     padding-right:15px;
@@ -114,4 +113,7 @@
 }
 #class_competitions_list {
     margin-top: 1rem;
+}
+#class_competitions ul{
+    width: 45rem;
 }

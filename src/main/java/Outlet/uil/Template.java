@@ -296,7 +296,7 @@ public class Template {
                     MCSubmission submission = entry.mc.get(uid);
                     if (submission != null) {
                         Student student = StudentMap.getByUID(uid);
-                        html += "<tr><td>" + StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname) +
+                        html += "<tr onclick='showMCSubmission("+entry.tid+","+uid+");'><td>" + StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname) +
                                 "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td><td>" + submission.scoringReport[0] +
                                 "</td></tr>";
                     }
@@ -362,20 +362,8 @@ public class Template {
     public String getRunningMC() {
         return mcHTML[0]+mcTest.getTimer().toString()+mcHTML[1];
     }
-    public String getFinishedMC(MCSubmission submission) {
-        String html =  "<div id='mcColumn' class='column' style='display:none;'>" +
-                        "<div class='row head-row'>" +
-                        "<h1>Written</h1>" +
-                        "<h3>"+submission.scoringReport[0]+"/"+mcTest.MAX_POINTS+"</h3>" +
-                        "</div>" +
-                        "<div class='row'>" +
-                        "<p>Test Packet: " + mcTest.TEST_LINK + "</p>" +
-                        "<p>Correct: "+submission.scoringReport[1]+"</p>" +
-                        "<p>Incorrect: "+submission.scoringReport[3]+"</p>" +
-                        "<p>Skipped: "+submission.scoringReport[2]+"</p><br>" +
-                        "<p>Scoring Report</p>";
-
-        html += "<table id='mcQuestions'><tr><th>#</th>";
+    public String getFinishedMCHelper(MCSubmission submission) {
+        String html = "<table id='mcQuestions'><tr><th>#</th>";
         for(char c: mcTest.options) {
             html += "<th>"+c+"</th>";
         }
@@ -396,12 +384,26 @@ public class Template {
                 if(!answer.equals(mcTest.KEY[i-1][0])) {
                     correctAnswer = "<p class='mcTextCorrectAnswer'>"+ mcTest.KEY[i-1][0]+"</p>";
                 }
-                html += "<td colspan='5'><input type='text' class='mcText' value='"+answer+"'>"+correctAnswer+"</td>";
+                html += "<td colspan='5'><input type='text' class='mcText' value='"+answer+"' disabled>"+correctAnswer+"</td>";
             }
         }
-        html += "</table></div></div>";
-
+        html += "</table>";
         return html;
+    }
+    public String getFinishedMC(MCSubmission submission) {
+        String html =  "<div id='mcColumn' class='column' style='display:none;'>" +
+                        "<div class='row head-row'>" +
+                        "<h1>Written</h1>" +
+                        "<h3>"+submission.scoringReport[0]+"/"+mcTest.MAX_POINTS+"</h3>" +
+                        "</div>" +
+                        "<div class='row'>" +
+                        "<p>Test Packet: <a href='" + mcTest.TEST_LINK + "' class='link'>link</a></p>" +
+                        "<p>Correct: "+submission.scoringReport[1]+"</p>" +
+                        "<p>Incorrect: "+submission.scoringReport[3]+"</p>" +
+                        "<p>Skipped: "+submission.scoringReport[2]+"</p><br>" +
+                        "<p>Scoring Report</p>";
+
+        return html + getFinishedMCHelper(submission) + "</div></div>";
     }
 
     public String getFRQHTML(User u, UserStatus userStatus, CompetitionStatus competitionStatus) {

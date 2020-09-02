@@ -265,7 +265,6 @@ body{
 #mcSubmissions tr *:last-child{
     text-align:right;
 }
-
 #mcSubmissions th{
     font-weight:bold;
     border-bottom:1px solid lightgray;
@@ -277,6 +276,7 @@ body{
 }
 #mcSubmissions td{
     text-align:left;
+    cursor: pointer;
 }
 .frqSubmissionList {
     position: relative;

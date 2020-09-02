@@ -53,7 +53,7 @@ public class Profile extends HttpServlet{
                 html += "</ul>";
             }
         } else {    // They are not a teacher and do not belong to a class
-            html += "<script>showJoinClass();</script>";
+            html += "<script>showJoinClass();createLoadClassInterval();</script>";
         }
         return html + "</div>";
     }
@@ -226,6 +226,15 @@ public class Profile extends HttpServlet{
             if(teacher != null) {
                 student.leaveClass(teacher);
             }
+        } else if(action.equals("getClass")) {  // Gets the class html
+            JsonObject obj = new JsonObject();
+            obj.addProperty("success", true);
+            Teacher teacher;
+            if(u.teacher) teacher = (Teacher) u;
+            else teacher = TeacherMap.getByUID(((Student)u).teacherId);
+            obj.addProperty("classHTML", getClassHTML(u, teacher));
+            writer.write(new Gson().toJson(obj));
+            return;
         } else if(action.equals("saveChanges")) {   // They are updating their user's information
             String fname = request.getParameter("fname");
             String lname = request.getParameter("lname");

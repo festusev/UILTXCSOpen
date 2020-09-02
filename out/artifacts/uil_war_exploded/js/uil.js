@@ -514,3 +514,68 @@ function showFRQSubmission(submissionId) {
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send("cid=" + cid + "&action=showFRQSubmission&id=" + submissionId);
 }
+/**
+ * Takes in the submission index (submissionId) of the submission on the server. Contacts the server, retrieves the
+ * submission information, and displays it.
+ * @param submissionId
+ */
+var mcSubmissionMap = {};
+var showingMCSubmission = null;
+function showMCSubmission(tid, uid) {
+    function add(element) {
+        if (!showingMCSubmission) {
+            dom.mc.insertAdjacentElement('afterbegin', element);
+        }
+        else {
+            showingMCSubmission.replaceWith(element);
+        }
+        showingMCSubmission = element;
+    }
+    if (mcSubmissionMap[tid] != null && mcSubmissionMap[tid][uid] != null) {
+        add(mcSubmissionMap[tid][uid]);
+        return;
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+                var name_2 = response["user"];
+                var team = response["team"];
+                var scoringReport = JSON.parse(response["scoringReport"]);
+                var div = document.createElement("div");
+                div.classList.add("frqSubmissionEditor");
+                div.classList.add("mcSubmissionEditor");
+                var probName_cnt = document.createElement("div");
+                probName_cnt.innerHTML = "<b>User</b><h2>" + name_2 + "</h2>";
+                probName_cnt.classList.add("half");
+                div.appendChild(probName_cnt);
+                var teamName_cnt = document.createElement("div");
+                teamName_cnt.innerHTML = "<b>Team</b><h2>" + team + "</h2>";
+                teamName_cnt.classList.add("half");
+                div.appendChild(teamName_cnt);
+                var scoring_cnt = document.createElement("div");
+                scoring_cnt.classList.add("mcScoring_cnt");
+                scoring_cnt.innerHTML = "<b>Score:</b>" + scoringReport[0] + "<br><b>Correct:</b>" + scoringReport[1] + "" +
+                    "<br><b>Incorrect:</b>" + scoringReport[3] + "<br><b>Skipped:</b>" + scoringReport[2];
+                div.appendChild(scoring_cnt);
+                var result_cnt = document.createElement("p");
+                result_cnt.classList.add("resultCnt");
+                result_cnt.innerHTML = "<b>Judgement:</b>";
+                div.appendChild(result_cnt);
+                var test = response["answers"];
+                var submission_cnt = document.createElement("div");
+                submission_cnt.classList.add("mcSubmissionCnt_teacher");
+                submission_cnt.innerHTML = test;
+                div.appendChild(submission_cnt);
+                add(div);
+                if (submissionMap[tid] == null)
+                    submissionMap[tid] = {};
+                submissionMap[tid][uid] = div;
+            }
+        }
+    };
+    xhr.open('POST', "/uil", true);
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.send("cid=" + cid + "&action=showMCSubmission&tid=" + tid + "&uid=" + uid);
+}
