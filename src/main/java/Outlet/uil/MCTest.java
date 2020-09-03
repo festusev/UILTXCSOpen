@@ -35,34 +35,56 @@ public class MCTest {
         TIME_TEXT = ""; INSTRUCTIONS = ""; TIME = 0; MAX_POINTS=0;TEST_LINK="";ANSWERS="";ANSWERS_LINK=false;
     }
 
-    /***
-     * @param opensString
-     * @param key
-     * @param c
-     * @param incorrectPoints
-     * @param instructions
-     * @param testLink
-     * @param answers
-     * @param time
-     */
-    public MCTest (String opensString, String[][] key, short c, short incorrectPoints, String instructions, String testLink, String answers, long time) {
-        opens = new Countdown(opensString, "countdown");NUM_PROBLEMS = (short)key.length; CORRECT_PTS = c; INCORRECT_PTS = incorrectPoints; exists = true;
-        TIME_TEXT = (time/(1000*60)) + " minutes";INSTRUCTIONS = instructions;TEST_LINK=testLink;this.TIME = time;MAX_POINTS = (short)(NUM_PROBLEMS*CORRECT_PTS);
 
-        KEY = key;
+    public MCTest (boolean published, String opensString, String[][] key, short c, short incorrectPoints, String instructions,
+                   String testLink, String answers, long time) {
+        if(published) {
+            opens = new Countdown(opensString, "countdown");NUM_PROBLEMS = (short)key.length; CORRECT_PTS = c; INCORRECT_PTS = incorrectPoints; exists = true;
+            TIME_TEXT = (time/(1000*60)) + " minutes";INSTRUCTIONS = instructions;TEST_LINK=testLink;this.TIME = time;MAX_POINTS = (short)(NUM_PROBLEMS*CORRECT_PTS);
 
-        if(answers.isEmpty()) { // In this case, we generate a text list of the answers
-            answers="";
-            ANSWERS_LINK=false;
-            for(int counter=1; counter<=KEY.length;counter++) {
-                answers+=counter+". " + KEY[counter-1]+" ";
+            KEY = key;
+
+            if(answers.isEmpty()) { // In this case, we generate a text list of the answers
+                answers="";
+                ANSWERS_LINK=false;
+                for(int counter=1; counter<=KEY.length;counter++) {
+                    answers+=counter+". " + KEY[counter-1]+" ";
+                }
+            } else {
+                ANSWERS_LINK=true;
             }
-        } else {
-            ANSWERS_LINK=true;
-        }
-        ANSWERS=answers;
+            ANSWERS=answers;
 
-        closes = Countdown.add(opens, TIME, "countdown");
+            closes = Countdown.add(opens, TIME, "countdown");
+        } else {
+            if (opensString == null) opensString = "";
+            if (key == null) key = new String[][]{};
+            opens = new Countdown(opensString);
+            NUM_PROBLEMS = (short) key.length;
+            CORRECT_PTS = c;
+            INCORRECT_PTS = incorrectPoints;
+            exists = true;
+            TIME_TEXT = (time / (1000 * 60)) + " minutes";
+            INSTRUCTIONS = instructions;
+            TEST_LINK = testLink;
+            this.TIME = time;
+            MAX_POINTS = (short) (NUM_PROBLEMS * CORRECT_PTS);
+
+            KEY = key;
+
+            if (answers == null || answers.isEmpty()) { // In this case, we generate a text list of the answers
+                answers = "";
+                ANSWERS_LINK = false;
+                for (int counter = 1; counter <= KEY.length; counter++) {
+                    answers += counter + ". " + KEY[counter - 1][0] + " ";
+                }
+            } else {
+                ANSWERS_LINK = true;
+            }
+            ANSWERS = answers;
+
+            closes = new Countdown(opensString);
+        }
     }
 
     public short[] score(String[] answers){

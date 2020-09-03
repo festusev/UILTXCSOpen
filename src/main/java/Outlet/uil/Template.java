@@ -45,6 +45,12 @@ public class Template {
 
     private Competition competition;
 
+    // Used whenever the competition is not published. 'published' should always be false.
+    public Template(boolean published, String n, String description, MCTest mc, FRQTest fr, short cid, Competition competition) {
+        name = n;this.description = description;this.mcTest = mc;this.frqTest=fr;this.cid=cid;this.competition=competition;
+        mcFirst = true;HEADERS="";
+    }
+
     public Template(String n, String description, MCTest mc, FRQTest fr, short cid, Competition competition){
         name = n;this.description = description;mcTest = mc;frqTest = fr;this.cid = cid; this.sorter = new SortUILTeams();this.competition=competition;
 
@@ -57,7 +63,7 @@ public class Template {
             opens = frqTest.opens;
             closes = frqTest.closes;
         } else {
-            long difference = fr.opens.date.getTime() - mc.opens.date.getTime();
+            long difference = fr.opens.date.getTime() - mc.opens.date.getTime();    // SERVER ERROR
             if (difference > 0) {
                 mcFirst = true;
                 opens = mcTest.opens;
@@ -81,7 +87,7 @@ public class Template {
             mcHTML[0] = "<div id='mcColumn' class='column' style='display:none;'>" +
                     "<h1>"+mcTest.NAME+"</h1>" +
                     "<p class='subtitle'><span>Instructions: </span>" + mcTest.INSTRUCTIONS + "<br><b>Test Packet: </b>" +
-                    "<a href='"+mcTest.TEST_LINK+"' class='link'>link</a></p><div id='mcTestTimer'>";
+                    "<a href='"+mcTest.TEST_LINK+"' class='link' target='_blank'>link</a></p><div id='mcTestTimer'>";
 
             mcHTML[1] = "</div><button class='chngButton' onclick='submitMC();'>Submit</button><table id='mcQuestions'><tr><th>#</th>";
             for(char c: mcTest.options) {
@@ -105,7 +111,7 @@ public class Template {
         }
         frqHTML = "";
         if(fr.exists) {
-            frqHTML =  "<p id='frqInst'><b>Problem Packet: </b><a href='"+frqTest.STUDENT_PACKET+"' class='link'>link</a><br>Choose a problem to submit:</p>" +
+            frqHTML =  "<p id='frqInst'><b>Problem Packet: </b><a href='"+frqTest.STUDENT_PACKET+"' class='link' target='_blank'>link</a><br>Choose a problem to submit:</p>" +
                         "<form id='submit' onsubmit='submitFRQ(); return false;' enctype='multipart/form-data'>" +
                         "<select id='frqProblem'>";
             for(int i=1; i<=frqTest.PROBLEM_MAP.length;i++){
@@ -114,7 +120,7 @@ public class Template {
             frqHTML += "</select>" +
                     "<input type='file' accept='.java,.cpp,.py' id='frqTextfile'/>" +
                     "<button id='submitBtn' class='chngButton'>Submit</button>" +
-                    "</form><p id='advice'>Confused? Review the <a href='#' class='link' onclick='showAbout();'>rules</a>.</p>";
+                    "</form><p id='advice'>Confused? Review the <a href='#' class='link' target='_blank' onclick='showAbout();'>rules</a>.</p>";
             // answersHTML+="<div class='row'><h2>FRQ</h2><p><b>Student Packet: </b><a href='"+frqTest.STUDENT_PACKET+
             //         "' class='link'>link</a><br><b>Judge Packet: </b><a href='"+frqTest.JUDGE_PACKET+"' class='link'>link</a></p></div>";
         }
@@ -285,7 +291,7 @@ public class Template {
                     "<h1>Written</h1>" +
                     "</div>" +
                     "<div class='row'>" +
-                    "<p>Test Packet: <a class='link' href='" + mcTest.TEST_LINK + "'>link</a></p>" +
+                    "<p>Test Packet: <a class='link' target='_blank' href='" + mcTest.TEST_LINK + "'>link</a></p>" +
                     "<p><b>Submissions:</b></p>";
 
             html += "<table id='mcSubmissions'><tr><th>Name</th><th>Team</th><th>Score</th></tr>";
@@ -311,7 +317,7 @@ public class Template {
                     "<h1>Written</h1>" +
                     "</div>" +
                     "<div class='row'>" +
-                    "<p>Test Packet: <a class='link' href='" + mcTest.TEST_LINK + "'>link</a></p>" +
+                    "<p>Test Packet: <a class='link' target='_blank' href='" + mcTest.TEST_LINK + "'>link</a></p>" +
                     "<p>Answer Key</p>";
 
             html += "<table id='mcQuestions'><tr><th>#</th>";
@@ -397,7 +403,7 @@ public class Template {
                         "<h3>"+submission.scoringReport[0]+"/"+mcTest.MAX_POINTS+"</h3>" +
                         "</div>" +
                         "<div class='row'>" +
-                        "<p>Test Packet: <a href='" + mcTest.TEST_LINK + "' class='link'>link</a></p>" +
+                        "<p>Test Packet: <a href='" + mcTest.TEST_LINK + "' class='link' target='_blank'>link</a></p>" +
                         "<p>Correct: "+submission.scoringReport[1]+"</p>" +
                         "<p>Incorrect: "+submission.scoringReport[3]+"</p>" +
                         "<p>Skipped: "+submission.scoringReport[2]+"</p><br>" +
@@ -416,7 +422,7 @@ public class Template {
                         "<h1>Hands-On</h1>" +
                         "</div>" +
                         "<div class='row'>" +
-                        "<p>Test Packet: <a class='link' href='" + frqTest.STUDENT_PACKET + "'>link</a></p>" +
+                        "<p>Test Packet: <a class='link' target='_blank' href='" + frqTest.STUDENT_PACKET + "'>link</a></p>" +
                         "<p><b>Submissions:</b></p>";
 
                 html += "<table><tr><th>Problem</th><th>Team</th><th>Result</th></tr>";

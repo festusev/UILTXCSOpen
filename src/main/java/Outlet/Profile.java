@@ -12,7 +12,6 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import javax.servlet.ServletException;
@@ -58,6 +57,295 @@ public class Profile extends HttpServlet{
         return html + "</div>";
     }
 
+    private void savePublished(HttpServletRequest request, PrintWriter writer, User u) throws IOException, ServletException {
+        String cidS = request.getParameter("cid");
+        String description = request.getParameter("description");
+        String name = request.getParameter("name");
+        boolean isPublic = request.getParameter("isPublic").equals("true");
+        boolean writtenExists = request.getParameter("writtenExists").equals("true");
+        boolean handsOnExists = request.getParameter("handsOnExists").equals("true");
+
+        if(name.isEmpty()) {
+            writer.write("{\"error\":\"Competition name is empty.\"}");
+            return;
+        } else if (description.length() > 32000) {
+            writer.write("{\"error\":\"Description cannot exceed 32000 characters.\"}");
+            return;
+        }
+
+        long now = (new Date()).getTime();
+        short cid;
+        MCTest mcTest;
+        FRQTest frqTest;
+        if(!writtenExists) {   // No MC Test
+            mcTest = new MCTest();
+        } else {
+            String mcOpensString;
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat(Countdown.DATETIME_FORMAT, Locale.ENGLISH);  // Lets us make dates easily
+                sdf.setTimeZone(TimeZone.getTimeZone("CST"));
+                mcOpensString = request.getParameter("mcOpens");
+                Date opensDate = sdf.parse(mcOpensString);
+                long difference = opensDate.getTime() - now;
+                if(difference <= 0) {   // The given datetime is in the past
+                    writer.write("{\"error\":\"Written Start cannot be in the past.\"}");
+                    return;
+                } else if(difference > (long)1000*60*60*24*365*10) {   // The given datetime is more than 10 years in the future
+                    writer.write("{\"error\":\"Written Start cannot be more than 10 years in the future.\"}");
+                    return;
+                }
+            } catch(Exception e) {
+                writer.write("{\"error\":\"Written Start is formatted incorrectly.\"}");
+                return;
+            }
+            String[][] mcAnswers;
+            try {
+                mcAnswers = gson.fromJson(request.getParameter("mcAnswers"), String[][].class);
+                if(mcAnswers.length <= 0) {
+                    writer.write("{\"error\":\"Written Test is empty.\"}");
+                    return;
+                } else if(mcAnswers.length > 240) {
+                    writer.write("{\"error\":\"Written Test cannot have more than 240 problems.\"}");
+                    return;
+                }
+
+                for(String[] problem:mcAnswers) {
+                    if(problem[0].isEmpty()) {
+                        writer.write("{\"error\":\"Written answer cannot be empty.\"}");
+                        return;
+                    } else if(!problem[1].equals("0") && !problem[1].equals("1")) {
+                        writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
+                        return;
+                    }
+                }
+            } catch(Exception e) {
+                writer.write("{\"error\":\"Written Answers is formatted incorrectly.\"}");
+                return;
+            }
+
+            short mcCorrectPoints;
+            try {
+                mcCorrectPoints = Short.parseShort(request.getParameter("mcCorrectPoints"));
+                if(mcCorrectPoints > 1000) {
+                    writer.write("{\"error\":\"Written Test Correct Points cannot be greater than 1000.\"}");
+                    return;
+                } else if(mcCorrectPoints < -1000) {
+                    writer.write("{\"error\":\"Written Test Correct Points cannot be less than -1000.\"}");
+                    return;
+                }
+            } catch(Exception e) {
+                writer.write("{\"error\":\"Specify Points Per Correct for the Written Test.\"}");
+                return;
+            }
+
+            short mcIncorrectPoints;
+            try {
+                mcIncorrectPoints = Short.parseShort(request.getParameter("mcIncorrectPoints"));
+                if(mcIncorrectPoints > 1000) {
+                    writer.write("{\"error\":\"Written Test Incorrect Points cannot be greater than 1000.\"}");
+                    return;
+                } else if(mcIncorrectPoints < -1000) {
+                    writer.write("{\"error\":\"Written Test Incorrect Points cannot be less than -1000.\"}");
+                    return;
+                }
+            } catch(Exception e) {
+                writer.write("{\"error\":\"Specify Points Per Incorrect for the Written Test.\"}");
+                return;
+            }
+            long mcTime;
+            try {
+                mcTime = Long.parseLong(request.getParameter("mcTime"))*1000*60;
+                if(mcTime <= 0) {
+                    writer.write("{\"error\":\"Written Test Length must be greater than zero.\"}");
+                    return;
+                } else if(mcTime > 1000*60*60*24*7) {
+                    writer.write("{\"error\":\"Written Test cannot last longer than 7 days.\"}");
+                    return;
+                }
+            } catch(Exception e) {
+                writer.write("{\"error\":\"Specify Length for the Written Test.\"}");
+                return;
+            }
+            mcTest = new MCTest(true, mcOpensString, mcAnswers, mcCorrectPoints,
+                    mcIncorrectPoints,request.getParameter("mcInstructions"),
+                    request.getParameter("mcTestLink"), request.getParameter("mcAnswersLink"),
+                    mcTime);
+        }
+
+        if(!handsOnExists) {   // No FRQ Test
+            frqTest = new FRQTest();
+        } else {
+            String frqOpensString;
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat(Countdown.DATETIME_FORMAT, Locale.ENGLISH);  // Lets us make dates easily
+                sdf.setTimeZone(TimeZone.getTimeZone("CST"));
+                frqOpensString = request.getParameter("frqOpens");
+                Date opensDate = sdf.parse(frqOpensString);
+
+                long difference = opensDate.getTime() - now;
+                if(difference <= 0) {   // The given datetime is in the past
+                    writer.write("{\"error\":\"Hands-On Start cannot be in the past.\"}");
+                    return;
+                } else if(difference > (long)1000*60*60*24*365*10) {   // The given datetime is more than 10 years in the future
+                    writer.write("{\"error\":\"Hands-On Start cannot be more than 10 years in the future.\"}");
+                    return;
+                }
+            } catch(Exception e) {
+                writer.write("{\"error\":\"Hands-On Start is formatted incorrectly.\"}");
+                return;
+            }
+
+            String[] frqProblemMap;
+            try {
+                frqProblemMap = gson.fromJson(request.getParameter("frqProblemMap"), String[].class);
+
+                if(frqProblemMap.length <= 0) {
+                    writer.write("{\"error\":\"Hands-On Test is empty.\"}");
+                    return;
+                } else if(frqProblemMap.length > 48) {
+                    writer.write("{\"error\":\"Hands-On Test cannot have more than 48 problems.\"}");
+                    return;
+                }
+
+                Set<String> duplicateChecker = new HashSet<>();
+                for(String s: frqProblemMap) {
+                    if(duplicateChecker.contains(s)) {
+                        writer.write("{\"error\":\"Duplicate Hands-On problem name '"+s+"'.\"}");
+                        return;
+                    } else if(s.isEmpty()) {
+                        writer.write("{\"error\":\"Hands-On problem name is empty.\"}");
+                        return;
+                    }
+                    duplicateChecker.add(s);
+                }
+            } catch(Exception e) {
+                writer.write("{\"error\":\"Hands-On Problem Map is formatted incorrectly.\"}");
+                return;
+            }
+
+            short frqMaxPoints;
+            try {
+                frqMaxPoints = Short.parseShort(request.getParameter("frqMaxPoints"));
+                if(frqMaxPoints > 1000) {
+                    writer.write("{\"error\":\"Hands-On Test Max Points cannot be greater than 1000.\"}");
+                    return;
+                } else if(frqMaxPoints < -1000) {
+                    writer.write("{\"error\":\"Hands-On Test Max Points cannot be less than -1000.\"}");
+                    return;
+                }
+            } catch(Exception e) {
+                writer.write("{\"error\":\"Specify Max Points for the Hands-On Test.\"}");
+                return;
+            }
+
+            short frqIncorrectPenalty;
+            try {
+                frqIncorrectPenalty = Short.parseShort(request.getParameter("frqIncorrectPenalty"));
+                if(frqIncorrectPenalty > 1000) {
+                    writer.write("{\"error\":\"Hands-On Test Incorrect Points cannot be greater than 1000.\"}");
+                    return;
+                } else if(frqIncorrectPenalty < -1000) {
+                    writer.write("{\"error\":\"Hands-On Test Incorrect  Points cannot be less than -1000.\"}");
+                    return;
+                }
+            } catch(Exception e) {
+                writer.write("{\"error\":\"Specify Incorrect Penalty for the Hands-On Test.\"}");
+                return;
+            }
+
+            long frqTime;
+            try {
+                frqTime = Long.parseLong(request.getParameter("frqTime"))*1000*60;
+                if(frqTime <= 0) {
+                    writer.write("{\"error\":\"Hands-On Test Length must be greater than zero.\"}");
+                    return;
+                } else if(frqTime > 1000*60*60*24*7) {
+                    writer.write("{\"error\":\"Hands-On Test cannot last longer than 7 days.\"}");
+                    return;
+                }
+            } catch(Exception e) {
+                writer.write("{\"error\":\"Specify Length for the Hands-On Test.\"}");
+                return;
+            }
+
+            frqTest = new FRQTest(true, frqOpensString, frqMaxPoints, frqIncorrectPenalty, frqProblemMap,
+                    request.getParameter("frqStudentPacket"), request.getParameter("frqJudgePacket"), frqTime);
+        }
+
+        if(!mcTest.exists && !frqTest.exists) {
+            writer.write("{\"error\":\"This competition has no tests.\"}");
+            return;
+        }
+
+        Competition competition = null;
+        if(cidS == null || cidS.isEmpty() || !((Teacher)u).cids.contains(cid = Short.parseShort(cidS))) {
+            // We are creating a competition and returning the cid
+            try {
+                competition = Competition.createCompetition((Teacher)u, true, isPublic,
+                        name, description, mcTest, frqTest);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        } else {    // We are modifying an existing competition
+            competition = UIL.getCompetition(cid);
+            if(competition == null) {
+                writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
+                return;
+            }
+
+            competition.published = true;
+            UIL.publish(competition);
+            frqTest.setDirectories(cid, u.uid);
+
+            if(frqTest.exists) {
+                frqTest.updateProblemDirectories(gson.fromJson(request.getParameter("frqIndices"), short[].class),
+                        competition.template.frqTest.PROBLEM_MAP.length);
+            } else if(competition.template.frqTest.exists) {    // They have deleted the frq test, so remove the directory
+                frqTest.deleteTestcaseDir();
+            }
+            try {
+                competition.update((Teacher)u, true, isPublic, name, description, mcTest, frqTest);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
+                return;
+            }
+        }
+
+        /* Now, write all of the files they updated to the disk */
+        System.out.println("Writing files to disk, handsOnExists="+handsOnExists);
+        if(handsOnExists) {
+            Collection<Part> parts = request.getParts();
+            for (Part part : parts) {
+                String partName = part.getName();
+                System.out.println("Looping, partName=" + partName);
+                String prefix = partName.substring(0, 3);  // Either 'fi:' or 'fo:'
+                if (prefix.equals("fi:")) {  // File in
+                    int probNum = Integer.parseInt(partName.substring(3));
+                    InputStream fileContent = part.getInputStream();
+
+                    byte[] bytes = new byte[fileContent.available()];
+                    fileContent.read(bytes);
+
+                    System.out.println("probNum=" + probNum);
+                    frqTest.setTestcaseFile(probNum, bytes, true);
+                } else if (prefix.equals("fo:")) {   // File out
+                    int probNum = Integer.parseInt(partName.substring(3));
+
+                    InputStream fileContent = part.getInputStream();
+
+                    byte[] bytes = new byte[fileContent.available()];
+                    fileContent.read(bytes);
+
+                    System.out.println("probNum=" + probNum);
+                    frqTest.setTestcaseFile(probNum, bytes, false);
+                }
+            }
+            frqTest.initializeFiles();
+        }
+        writer.write("{\"success\":\"Competition saved.\",\"cid\":\""+competition.template.cid+"\"}");
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -80,6 +368,8 @@ public class Profile extends HttpServlet{
                 Competition competition = UIL.getCompetition(cid);
                 JsonObject compJ = new JsonObject();
                 compJ.addProperty("cid", cid);
+                compJ.addProperty("name", competition.template.name);
+                compJ.addProperty("published", competition.published);
                 compJ.addProperty("isPublic", competition.isPublic);
                 compJ.addProperty("description", StringEscapeUtils.escapeHtml4(competition.template.description));
 
@@ -145,12 +435,11 @@ public class Profile extends HttpServlet{
                 delUserPassText = "Your class and competitions will be permanently deleted.";
             }
             nav += "<li onclick='navTo(this)'>Help</li><li id='delAccount' onclick='document.getElementById(\"delUserPasswordCnt\").style.display=\"block\";'>Delete Account</li></ul></div>";
-            right += "<div id='delUserPasswordCnt' style='display:none'><div class='center'><h1>Are you sure?</h1><p>" + delUserPassText +
-                    "</p><label for='delPass'>Retype your password:</label><input name='delPass' type='password' id='delUserPassword'/><button onclick='delUser()'>Yes, delete my account.</button><a onclick='hideDelUser()'>Cancel</a></div></div>" +
-                    "<div class='profile_cmpnt full'><h2><b>Change Password</b></h2><h2>Old Password</h2><input type='password' name='oldPassword' id='oldPassword'/><h2>New Password</h2><input type='password' name='newPassword' id='newPassword'/></div>" +
+            right += "<div class='profile_cmpnt full'><h2><b>Change Password</b></h2><h2>Old Password</h2><input type='password' name='oldPassword' id='oldPassword'/><h2>New Password</h2><input type='password' name='newPassword' id='newPassword'/></div>" +
                     "<div class='profile_cmpnt full'><span onclick='saveChanges()' id='saveChanges'>Save Changes</span></div>" +
-                    "</div><div class='profile_div' id='Class' style='display:none'>" + getClassHTML(u, teacher);
-            right += "</div>";
+                    "</div><div class='profile_div' id='Class' style='display:none'>" + getClassHTML(u, teacher) + "</div>" +
+                    "<div id='delUserPasswordCnt' style='display:none'><div class='center'><h1>Are you sure?</h1><p>" + delUserPassText +
+                    "</p><label for='delPass'>Retype your password:</label><input name='delPass' type='password' id='delUserPassword'/><button onclick='delUser()'>Yes, delete my account.</button><a onclick='hideDelUser()'>Cancel</a></div></div>";
 
             if (u.teacher) {    // List the competitions that the teacher has created and include a "New" button
                 right += "<div class='profile_div' id='Competitions'  style='display:none'><p id='newCompetition data-hasCompetitions=\"false\"'>New</p></div>";
@@ -287,8 +576,19 @@ public class Profile extends HttpServlet{
                 writer.write("{\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
                 return;
             }
-        } else if(action.equals("saveCompetition") && u.teacher) {
+        } else if(action.equals("saveCompetition")) {
             String cidS = request.getParameter("cid");
+            short cid;
+            try {
+                cid = Short.parseShort(cidS);
+                Competition competition = UIL.getCompetition(cid);
+
+                Teacher teacher = (Teacher) u;
+                if (competition != null && competition.teacher.uid == teacher.uid) savePublished(request, writer, u);
+                return;
+            } catch (Exception e) {}
+
+            // In this case, we are not saving a public competition, so many things will be truncated
             String description = request.getParameter("description");
             String name = request.getParameter("name");
             boolean isPublic = request.getParameter("isPublic").equals("true");
@@ -304,7 +604,6 @@ public class Profile extends HttpServlet{
             }
 
             long now = (new Date()).getTime();
-            short cid;
             MCTest mcTest;
             FRQTest frqTest;
             if(!writtenExists) {   // No MC Test
@@ -312,18 +611,7 @@ public class Profile extends HttpServlet{
             } else {
                 String mcOpensString;
                 try {
-                    SimpleDateFormat sdf = new SimpleDateFormat(Countdown.DATETIME_FORMAT, Locale.ENGLISH);  // Lets us make dates easily
-                    sdf.setTimeZone(TimeZone.getTimeZone("CST"));
                     mcOpensString = request.getParameter("mcOpens");
-                    Date opensDate = sdf.parse(mcOpensString);
-                    long difference = opensDate.getTime() - now;
-                    if(difference <= 0) {   // The given datetime is in the past
-                        writer.write("{\"error\":\"Written Start cannot be in the past.\"}");
-                        return;
-                    } else if(difference > (long)1000*60*60*24*365*10) {   // The given datetime is more than 10 years in the future
-                        writer.write("{\"error\":\"Written Start cannot be more than 10 years in the future.\"}");
-                        return;
-                    }
                 } catch(Exception e) {
                     writer.write("{\"error\":\"Written Start is formatted incorrectly.\"}");
                     return;
@@ -331,22 +619,9 @@ public class Profile extends HttpServlet{
                 String[][] mcAnswers;
                 try {
                     mcAnswers = gson.fromJson(request.getParameter("mcAnswers"), String[][].class);
-                    if(mcAnswers.length <= 0) {
-                        writer.write("{\"error\":\"Written Test is empty.\"}");
-                        return;
-                    } else if(mcAnswers.length > 240) {
+                    if(mcAnswers.length > 240) {
                         writer.write("{\"error\":\"Written Test cannot have more than 240 problems.\"}");
                         return;
-                    }
-
-                    for(String[] problem:mcAnswers) {
-                        if(problem[0].isEmpty()) {
-                            writer.write("{\"error\":\"Written answer cannot be empty.\"}");
-                            return;
-                        } else if(!problem[1].equals("0") && !problem[1].equals("1")) {
-                            writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
-                            return;
-                        }
                     }
                 } catch(Exception e) {
                     writer.write("{\"error\":\"Written Answers is formatted incorrectly.\"}");
@@ -354,49 +629,15 @@ public class Profile extends HttpServlet{
                 }
 
                 short mcCorrectPoints;
-                try {
-                    mcCorrectPoints = Short.parseShort(request.getParameter("mcCorrectPoints"));
-                    if(mcCorrectPoints > 1000) {
-                        writer.write("{\"error\":\"Written Test Correct Points cannot be greater than 1000.\"}");
-                        return;
-                    } else if(mcCorrectPoints < -1000) {
-                        writer.write("{\"error\":\"Written Test Correct Points cannot be less than -1000.\"}");
-                        return;
-                    }
-                } catch(Exception e) {
-                    writer.write("{\"error\":\"Specify Points Per Correct for the Written Test.\"}");
-                    return;
-                }
+                mcCorrectPoints = Short.parseShort(request.getParameter("mcCorrectPoints"));
 
                 short mcIncorrectPoints;
-                try {
-                    mcIncorrectPoints = Short.parseShort(request.getParameter("mcIncorrectPoints"));
-                    if(mcIncorrectPoints > 1000) {
-                        writer.write("{\"error\":\"Written Test Incorrect Points cannot be greater than 1000.\"}");
-                        return;
-                    } else if(mcIncorrectPoints < -1000) {
-                        writer.write("{\"error\":\"Written Test Incorrect Points cannot be less than -1000.\"}");
-                        return;
-                    }
-                } catch(Exception e) {
-                    writer.write("{\"error\":\"Specify Points Per Incorrect for the Written Test.\"}");
-                    return;
-                }
+                mcIncorrectPoints = Short.parseShort(request.getParameter("mcIncorrectPoints"));
+
                 long mcTime;
-                try {
-                    mcTime = Long.parseLong(request.getParameter("mcTime"))*1000*60;
-                    if(mcTime <= 0) {
-                        writer.write("{\"error\":\"Written Test Length must be greater than zero.\"}");
-                        return;
-                    } else if(mcTime > 1000*60*60*24*7) {
-                        writer.write("{\"error\":\"Written Test cannot last longer than 7 days.\"}");
-                        return;
-                    }
-                } catch(Exception e) {
-                    writer.write("{\"error\":\"Specify Length for the Written Test.\"}");
-                    return;
-                }
-                mcTest = new MCTest(mcOpensString, mcAnswers, mcCorrectPoints,
+                mcTime = Long.parseLong(request.getParameter("mcTime"))*1000*60;
+
+                mcTest = new MCTest(false, mcOpensString, mcAnswers, mcCorrectPoints,
                         mcIncorrectPoints,request.getParameter("mcInstructions"),
                         request.getParameter("mcTestLink"), request.getParameter("mcAnswersLink"),
                         mcTime);
@@ -406,106 +647,33 @@ public class Profile extends HttpServlet{
                 frqTest = new FRQTest();
             } else {
                 String frqOpensString;
-                try {
-                    SimpleDateFormat sdf = new SimpleDateFormat(Countdown.DATETIME_FORMAT, Locale.ENGLISH);  // Lets us make dates easily
-                    sdf.setTimeZone(TimeZone.getTimeZone("CST"));
-                    frqOpensString = request.getParameter("frqOpens");
-                    Date opensDate = sdf.parse(frqOpensString);
-
-                    long difference = opensDate.getTime() - now;
-                    if(difference <= 0) {   // The given datetime is in the past
-                        writer.write("{\"error\":\"Hands-On Start cannot be in the past.\"}");
-                        return;
-                    } else if(difference > (long)1000*60*60*24*365*10) {   // The given datetime is more than 10 years in the future
-                        writer.write("{\"error\":\"Hands-On Start cannot be more than 10 years in the future.\"}");
-                        return;
-                    }
-                } catch(Exception e) {
-                    writer.write("{\"error\":\"Hands-On Start is formatted incorrectly.\"}");
-                    return;
-                }
+                frqOpensString = request.getParameter("frqOpens");
 
                 String[] frqProblemMap;
                 try {
                     frqProblemMap = gson.fromJson(request.getParameter("frqProblemMap"), String[].class);
-
-                    if(frqProblemMap.length <= 0) {
-                        writer.write("{\"error\":\"Hands-On Test is empty.\"}");
-                        return;
-                    } else if(frqProblemMap.length > 48) {
-                        writer.write("{\"error\":\"Hands-On Test cannot have more than 48 problems.\"}");
-                        return;
-                    }
-
-                    Set<String> duplicateChecker = new HashSet<>();
-                    for(String s: frqProblemMap) {
-                        if(duplicateChecker.contains(s)) {
-                            writer.write("{\"error\":\"Duplicate Hands-On problem name '"+s+"'.\"}");
-                            return;
-                        } else if(s.isEmpty()) {
-                            writer.write("{\"error\":\"Hands-On problem name is empty.\"}");
-                            return;
-                        }
-                        duplicateChecker.add(s);
-                    }
                 } catch(Exception e) {
                     writer.write("{\"error\":\"Hands-On Problem Map is formatted incorrectly.\"}");
                     return;
                 }
 
                 short frqMaxPoints;
-                try {
-                    frqMaxPoints = Short.parseShort(request.getParameter("frqMaxPoints"));
-                    if(frqMaxPoints > 1000) {
-                        writer.write("{\"error\":\"Hands-On Test Max Points cannot be greater than 1000.\"}");
-                        return;
-                    } else if(frqMaxPoints < -1000) {
-                        writer.write("{\"error\":\"Hands-On Test Max Points cannot be less than -1000.\"}");
-                        return;
-                    }
-                } catch(Exception e) {
-                    writer.write("{\"error\":\"Specify Max Points for the Hands-On Test.\"}");
-                    return;
-                }
+                frqMaxPoints = Short.parseShort(request.getParameter("frqMaxPoints"));
 
                 short frqIncorrectPenalty;
-                try {
-                    frqIncorrectPenalty = Short.parseShort(request.getParameter("frqIncorrectPenalty"));
-                    if(frqIncorrectPenalty > 1000) {
-                        writer.write("{\"error\":\"Hands-On Test Incorrect Points cannot be greater than 1000.\"}");
-                        return;
-                    } else if(frqIncorrectPenalty < -1000) {
-                        writer.write("{\"error\":\"Hands-On Test Incorrect  Points cannot be less than -1000.\"}");
-                        return;
-                    }
-                } catch(Exception e) {
-                    writer.write("{\"error\":\"Specify Incorrect Penalty for the Hands-On Test.\"}");
-                    return;
-                }
+                frqIncorrectPenalty = Short.parseShort(request.getParameter("frqIncorrectPenalty"));
 
                 long frqTime;
-                try {
-                    frqTime = Long.parseLong(request.getParameter("frqTime"))*1000*60;
-                    if(frqTime <= 0) {
-                        writer.write("{\"error\":\"Hands-On Test Length must be greater than zero.\"}");
-                        return;
-                    } else if(frqTime > 1000*60*60*24*7) {
-                        writer.write("{\"error\":\"Hands-On Test cannot last longer than 7 days.\"}");
-                        return;
-                    }
-                } catch(Exception e) {
-                    writer.write("{\"error\":\"Specify Length for the Hands-On Test.\"}");
-                    return;
-                }
+                frqTime = Long.parseLong(request.getParameter("frqTime"))*1000*60;
 
-                frqTest = new FRQTest(frqOpensString, frqMaxPoints, frqIncorrectPenalty, frqProblemMap,
+                frqTest = new FRQTest(false, frqOpensString, frqMaxPoints, frqIncorrectPenalty, frqProblemMap,
                         request.getParameter("frqStudentPacket"), request.getParameter("frqJudgePacket"), frqTime);
             }
             Competition competition = null;
             if(cidS == null || cidS.isEmpty() || !((Teacher)u).cids.contains(cid = Short.parseShort(cidS))) {
                 // We are creating a competition and returning the cid
                 try {
-                    competition = Competition.createCompetition((Teacher)u, isPublic,
+                    competition = Competition.createCompetition((Teacher)u, false, isPublic,
                             name, description, mcTest, frqTest);
                 } catch (SQLException e) {
                     e.printStackTrace();
@@ -517,6 +685,7 @@ public class Profile extends HttpServlet{
                     return;
                 }
 
+                competition.published = false;
                 frqTest.setDirectories(cid, u.uid);
 
                 if(frqTest.exists) {
@@ -526,7 +695,7 @@ public class Profile extends HttpServlet{
                     frqTest.deleteTestcaseDir();
                 }
                 try {
-                    competition.update((Teacher)u, isPublic, name, description, mcTest, frqTest);
+                    competition.update((Teacher)u, competition.published, isPublic, name, description, mcTest, frqTest);
                 } catch (SQLException e) {
                     e.printStackTrace();
                     writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
@@ -566,6 +735,20 @@ public class Profile extends HttpServlet{
                 frqTest.initializeFiles();
             }
             writer.write("{\"success\":\"Competition saved.\",\"cid\":\""+competition.template.cid+"\"}");
+        } else if(action.equals("publishCompetition") && u.teacher) {
+            savePublished(request, writer, u);
+        } else if(action.equals("unPublishCompetition")) {
+            short cid = Short.parseShort(request.getParameter("cid"));
+            Competition competition = UIL.getCompetition(cid);
+
+            Teacher teacher = (Teacher)u;
+            if(competition != null && competition.teacher.uid == teacher.uid) {
+                try {
+                    competition.unPublish();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
         } else if(action.equals("deleteCompetition") && u.teacher) {
             short cid = Short.parseShort(request.getParameter("cid"));
             Competition competition = UIL.getCompetition(cid);
@@ -573,7 +756,7 @@ public class Profile extends HttpServlet{
             Teacher teacher = (Teacher)u;
             if(competition != null && competition.teacher.uid == teacher.uid) {
                 UIL.deleteCompetition(competition);
-                teacher.cids.remove(teacher.cids.indexOf(competition.template.cid));
+                teacher.cids.remove(competition.template.cid);
                 teacher.updateUser(false);
             }
         }

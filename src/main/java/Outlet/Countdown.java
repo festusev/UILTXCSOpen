@@ -37,6 +37,11 @@ public class Countdown {
         ID = id;
     }
 
+    public Countdown (String toDate) {  // If we don't want to actually have a countdown
+        DATE_STRING = toDate;
+        ID = "";
+    }
+
     // Creates a date from epoch milli
     public Countdown (long toDate, String id) {
         date = new Date(toDate);
@@ -56,6 +61,8 @@ public class Countdown {
     }
 
     public String toString(){
+        if(date == null) return "";
+
         long diff = date.getTime() - getNow();
 
         int diffDays = (int) (diff / (24 * 60 * 60 * 1000));

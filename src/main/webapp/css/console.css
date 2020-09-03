@@ -106,9 +106,6 @@ body{
   border-radius:8px 8px 0 0;
   cursor:pointer;
 }
-#Competitions .comp_head span{
-  float:right;
-}
 #Competitions .comp_edit {
   display:grid;
   grid-column-gap: 40px;
@@ -222,9 +219,25 @@ button {
 .handsOnSectionProblemCnt .save {
   right: 1rem;
 }
+.competitionControl {
+  float: right;
+  padding: 0 0.5rem;
+  cursor:pointer;
+  border-radius: 5px;
+  color: white;
+  margin-left: 10px;
+}
 .deleteCompetition {
-  float:right;
-  color:var(--warn-col);
+  background-color: var(--warn-col);
+}
+.publishCompetition {
+  background-color: var(--prim-light);
+}
+.saveCompetition {
+  background-color: green;
+}
+.viewCompetition {
+  background-color:var(--sec-col);
 }
 .deleteProblem {
   height:1rem;
@@ -249,11 +262,6 @@ button {
 }
 .writtenSectionInstructions {
   width:100%;
-}
-.viewCompetition {
-  padding:0;
-  cursor:pointer;
-  color:var(--sec-dark);
 }
 #content {
   position: absolute;

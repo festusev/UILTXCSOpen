@@ -80,9 +80,11 @@ class HandsOnProblem {
 let competitions: Competition[] = [];
 
 class Competition {
+    published : boolean;
     cid : string;
     name: string;
 
+    published: boolean;
     isPublic: boolean;
     writtenExists: boolean;
     handsOnExists: boolean;
@@ -128,9 +130,11 @@ class Competition {
     dom: {
         form: HTMLElement,
         comp_head: HTMLDivElement,
+        comp_head_name: HTMLSpanElement,
         comp_edit: HTMLDivElement,
         compName : HTMLInputElement,
         compPublic : HTMLInputElement,
+        viewCompetition : HTMLElement,
 
         description : HTMLTextAreaElement,
         rules : HTMLTextAreaElement,
@@ -183,10 +187,11 @@ class Competition {
         handsOnIncorrectPenalty : null
     };
 
-    constructor(cid: string, isPublic: boolean, name:string, writtenObj:any, handsOnObj:any) {
+    constructor(cid: string, published: boolean, isPublic: boolean, name:string, writtenObj:any, handsOnObj:any) {
         competitions.push(this);
 
         this.cid = cid;
+        this.published = published;
         this.isPublic = isPublic;
         this.name = name;
         this.writtenExists = !!writtenObj;
@@ -285,23 +290,20 @@ class Competition {
         }
     }
 
-    saveCompetition():boolean {
-        // Remove the error box
-        try {this.dom.comp_edit.removeChild(document.getElementById("ERROR"));}
-        catch (e){}
-
+    getFormData(): FormData {
         /* First, set the name and open date in the title */
-        this.dom.comp_head.innerHTML =  this.dom.compName.value;
-        let deleteCompetition = document.createElement("p");
+        this.dom.comp_head_name.innerHTML =  this.dom.compName.value;
+        let thisComp:Competition = this;  // So that it can be referenced in other functions
+
+        /*let deleteCompetition = document.createElement("p");
         deleteCompetition.innerText = "Delete";
         deleteCompetition.classList.add("deleteCompetition");
         deleteCompetition.onclick = function() {
             thisComp.delete();
         };
-        this.dom.comp_head.appendChild(deleteCompetition);
+        this.dom.comp_head.appendChild(deleteCompetition);*/
 
         let formData:FormData = new FormData();
-        let thisComp:Competition = this;  // So that it can be referenced in other functions
 
         formData.append("cid", this.cid);
         formData.append("name", this.dom.compName.value);
@@ -352,6 +354,17 @@ class Competition {
             formData.append("frqProblemMap", JSON.stringify(problems));
             formData.append("frqIndices", JSON.stringify(problemIndices));
         }
+        return formData;
+    }
+
+    saveCompetition():boolean {
+        // Remove the error box
+        try {this.dom.comp_edit.removeChild(document.getElementById("ERROR"));}
+        catch (e){}
+
+        let formData:FormData = this.getFormData();
+        let thisComp = this;
+
         formData.append("action", "saveCompetition");
         let xhr:XMLHttpRequest = new XMLHttpRequest();
         xhr.onreadystatechange = function() {
@@ -365,6 +378,7 @@ class Competition {
                         }
                         addSuccessBox(thisComp.dom.comp_edit, response["success"]);
                         if(thisComp.cid.length === 0 && response["cid"] != null) thisComp.cid = response["cid"];
+                        thisComp.dom.viewCompetition.onclick = function(){window.location.href = "/uil?cid="+thisComp.cid;};
                     } else if(response["error"] != null) {    // An error occurred
                         addErrorBox(thisComp.dom.comp_edit, response["error"]);
                     } else {
@@ -378,6 +392,59 @@ class Competition {
         xhr.open('POST', "/profile", true);
         xhr.send(formData);
         return false;
+    }
+
+    unPublishCompetition(callback:Function) {
+        this.published = false;
+
+        let formData = new FormData();
+        formData.append("action", "unPublishCompetition");
+        formData.append("cid", this.cid);
+        let xhr:XMLHttpRequest = new XMLHttpRequest();
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {if (xhr.status === 200) {callback();}}
+        };
+        xhr.open('POST', "/profile", true);
+        xhr.send(formData);
+        return false;
+    }
+
+    publishCompetition(callback:Function) {
+        // Remove the error box
+        try {this.dom.comp_edit.removeChild(document.getElementById("ERROR"));}
+        catch (e){}
+
+        let formData:FormData = this.getFormData();
+        let thisComp = this;
+
+        formData.append("action", "publishCompetition");
+        let xhr:XMLHttpRequest = new XMLHttpRequest();
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    let response = JSON.parse(xhr.responseText);
+                    if(response["success"] != null) {
+                        for(let problem of thisComp.handsOn.problemMap) {
+                            problem.dom.input.value = "";
+                            problem.dom.output.value = "";
+                        }
+                        addSuccessBox(thisComp.dom.comp_edit, response["success"]);
+                        if(thisComp.cid.length === 0 && response["cid"] != null) thisComp.cid = response["cid"];
+                        thisComp.dom.viewCompetition.onclick = function(event){event.stopPropagation();window.location.href = "/uil?cid="+thisComp.cid;};
+
+                        callback();
+                    } else if(response["error"] != null) {    // An error occurred
+                        addErrorBox(thisComp.dom.comp_edit, response["error"]);
+                    } else {
+                        addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error);
+                    }
+                } else {
+                    addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error);
+                }
+            }
+        };
+        xhr.open('POST', "/profile", true);
+        xhr.send(formData);
     }
 
     addWrittenQuestion(writtenProblem:WrittenProblem) {
@@ -397,9 +464,10 @@ class Competition {
         newInput.onchange = function() {
             let newValue:string = newInput.value;
             writtenProblem.answer = newValue;
-            if(!config.COMPETITION.mcOptions.includes(newValue)) {   /* It is now an SAQ */
-                newP.innerText = "SAQ";
+
+            if(!config.COMPETITION.mcOptions.includes(newValue)) {  /* Switch to SAQ */
                 writtenProblem.type = WrittenType.SAQ;
+                newP.selectedIndex = 1;
             }
         };
         newLi.appendChild(newInput);
@@ -601,7 +669,7 @@ class Competition {
             written_section.appendChild(written_testlink);
 
             let h2_written_testlink = document.createElement("h2");
-            h2_written_testlink.innerText = "Text Link";
+            h2_written_testlink.innerText = "Test Link";
             written_testlink.appendChild(h2_written_testlink);
 
             let input_written_testLink = document.createElement("input");
@@ -766,15 +834,10 @@ class Competition {
             /* OPEN */
             let handsOn_problems = document.createElement("div");
             makeFull(handsOn_problems);
-            handsOn_problems.innerHTML = "<h2>Problems</h2>";
+            handsOn_problems.onclick = function(){thisComp.toggleHandsOnProblems();};
+            handsOn_problems.innerHTML = "Problems<span style='float:right;font-weight:bold;'>+</span>";
+            handsOn_problems.style.cursor = "pointer";
             handsOn_section.appendChild(handsOn_problems);
-
-            let button_handsOn_problems = document.createElement("button");
-            button_handsOn_problems.name = "frqProblems";
-            button_handsOn_problems.type = "button";
-            button_handsOn_problems.onclick = function(){thisComp.toggleHandsOnProblems();};
-            button_handsOn_problems.innerText = "Change Problems";
-            handsOn_problems.appendChild(button_handsOn_problems);
             /* CLOSE */
 
             /* OPEN */
@@ -786,12 +849,6 @@ class Competition {
             handsOn_changeproblems.innerHTML = "<p>Problems</p>";
             handsOn_section.appendChild(handsOn_changeproblems);
             thisComp.dom.handsOnProblems = handsOn_changeproblems;
-
-            let close_handsOn_changeproblems = document.createElement("p");
-            close_handsOn_changeproblems.onclick = function() {thisComp.toggleHandsOnProblems();};
-            close_handsOn_changeproblems.innerText = "Save";
-            close_handsOn_changeproblems.classList.add("save");
-            handsOn_changeproblems.appendChild(close_handsOn_changeproblems);
 
             let list_handsOn_changeproblems = document.createElement("ol");
             list_handsOn_changeproblems.classList.add("handsOnProblemList");
@@ -864,26 +921,86 @@ class Competition {
         this.dom.form = form;
 
         let header = document.createElement("div");
-        header.onclick = function(){toggleEditCompetition(thisComp);};
-        header.innerHTML = this.name;
+        header.onclick = function(){
+            toggleEditCompetition(thisComp);
+        };
         header.classList.add("comp_head");
         form.appendChild(header);
         this.dom.comp_head = header;
 
+        let header_name = document.createElement("span");
+        header_name.innerText = this.name;
+        this.dom.comp_head_name = header_name;
+        header.appendChild(header_name);
+
+
         let deleteCompetition = document.createElement("p");
         deleteCompetition.innerText = "Delete";
         deleteCompetition.classList.add("deleteCompetition");
-        deleteCompetition.onclick = function() {
+        deleteCompetition.classList.add("competitionControl");
+        deleteCompetition.onclick = function(event) {
+            event.stopPropagation();
             thisComp.delete();
         };
         header.appendChild(deleteCompetition);
+
+        let publishCompetition = document.createElement("p");
+        if(this.published) {
+            publishCompetition.innerText = "Unpublish";
+            publishCompetition.style.backgroundColor = "unset";
+            publishCompetition.style.color = "var(--body-col)";
+        }
+        else {
+            publishCompetition.innerText = "Publish";
+        }
+        publishCompetition.classList.add("publishCompetition");
+        publishCompetition.classList.add("competitionControl");
+        publishCompetition.onclick = function(event) {
+            event.stopPropagation();
+            if(thisComp.published) {
+                thisComp.unPublishCompetition(function () {
+                    publishCompetition.innerHTML = "Publish";
+                    publishCompetition.style.backgroundColor = "var(--prim-light)";
+                    publishCompetition.style.color = "white";
+                    viewCompetition.style.display = "none";
+                });
+            } else {
+                thisComp.publishCompetition(function() {
+                    publishCompetition.innerHTML = "Unpublish";
+                    publishCompetition.style.backgroundColor = "unset";
+                    publishCompetition.style.color = "var(--body-col)";
+                    viewCompetition.style.display = "block";
+                });
+            }
+        };
+        header.appendChild(publishCompetition);
+
+        let saveCompetition = document.createElement("p");
+        saveCompetition.innerText = "Save";
+        saveCompetition.classList.add("saveCompetition");
+        saveCompetition.classList.add("competitionControl");
+        saveCompetition.onclick = function(event) {
+            event.stopPropagation();
+            thisComp.saveCompetition();
+        };
+
+        header.appendChild(saveCompetition);
+
+        let viewCompetition = document.createElement("p");
+        viewCompetition.innerText = "View";
+        viewCompetition.classList.add("viewCompetition");
+        viewCompetition.classList.add("competitionControl");
+        if(!thisComp.published) viewCompetition.style.display = "none";
+        else viewCompetition.onclick = function(event){event.stopPropagation();window.location.href = "/uil?cid="+thisComp.cid;};
+        this.dom.viewCompetition = viewCompetition;
+        header.appendChild(viewCompetition);
 
         let body = document.createElement("div");
         body.classList.add("comp_edit");
         form.appendChild(body);
         this.dom.comp_edit = body;
 
-        /* OPEN */
+        /* OPEN *
         let view_competition = document.createElement("p");
         view_competition.innerText = "Jump to competition";
         view_competition.onclick = function() {
@@ -903,13 +1020,6 @@ class Competition {
         let h2_name = document.createElement("h2");
         h2_name.innerText = "Name";
         name_and_save.appendChild(h2_name);
-
-        let button_save = document.createElement("button");
-        button_save.innerText = "Save";
-        button_save.type = "submit";
-        button_save.classList.add("save");
-        button_save.onclick = function(){thisComp.saveCompetition();};
-        name_and_save.appendChild(button_save);
 
         let input_name = document.createElement("input");
         input_name.classList.add("name");
@@ -1144,11 +1254,11 @@ function loadCompetitions():boolean {
                     competitionList.dataset.hasCompetitions = "true";
                     let first: boolean = true;
                     for(let competition of responses) {
-                        let obj:Competition = new Competition(competition["cid"], competition["isPublic"] === "true",
+                        let obj:Competition = new Competition(competition["cid"], competition["published"],competition["isPublic"],
                             competition["name"], competition["written"], competition["handsOn"]);
                         let handsOnProblemsList = [];
                         if(competition["handsOn"] != null) handsOnProblemsList = competition["handsOn"]["problems"];
-                        let dom:HTMLElement = obj.getDOM(handsOnProblemsList, competition["whatItIs"], competition["rules"]);
+                        let dom:HTMLElement = obj.getDOM(handsOnProblemsList, competition["description"], competition["rules"]);
                         if(first) {
                             visible_competition_edit_dom = obj.dom.comp_edit;
                         }
@@ -1187,7 +1297,7 @@ function toggleEditCompetition(competition:Competition) {
  * Creates a new competition and opens it up for editing
  */
 function createNewCompetition():void {
-    let competition:Competition = new Competition("",false, "New Competition", false, false);
+    let competition:Competition = new Competition("", false,false, "New Competition", false, false);
 
     if(dom.competitionList.dataset.hasCompetitions === "false") {
         dom.competitionList.dataset.hasCompetitions = "true";

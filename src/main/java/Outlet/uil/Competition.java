@@ -24,23 +24,31 @@ public class Competition {
     private static Gson gson = new Gson();
 
     public Teacher teacher;
+    public boolean published;
     public boolean isPublic;
 
     public EntryMap entries;
     ArrayList<FRQSubmission> frqSubmissions = new ArrayList<>();
 
-    private void setTemplate(MCTest mc, FRQTest frq, String name, String description, short cid) {
-        template = new Template(name, description, mc, frq, cid, this);
-        template.updateScoreboard();entries = new EntryMap();
+    private void setTemplate(boolean published, MCTest mc, FRQTest frq, String name, String description, short cid) {
+        if(published) {
+            template = new Template(name, description, mc, frq, cid, this);
+            template.updateScoreboard();
+            entries = new EntryMap();
+        } else {
+            template = new Template(false, name, description, mc, frq, cid, this);
+            entries = new EntryMap();
+        }
     }
 
-    public Competition(Teacher teacher, short cid, boolean isPublic, String name, String description,
+    public Competition(Teacher teacher, short cid, boolean published, boolean isPublic, String name, String description,
                        MCTest mc, FRQTest frq) {
         frq.setDirectories(cid, teacher.uid);
 
         this.teacher = teacher;
+        this.published = published;
         this.isPublic = isPublic;
-        setTemplate(mc, frq, name, description, cid);
+        setTemplate(published, mc, frq, name, description, cid);
 
         /* Now, create the folder */
         if(frq.exists) {
@@ -51,13 +59,13 @@ public class Competition {
     }
 
     /* Returns a new competition object that has been inserted into the database */
-    public static Competition createCompetition(Teacher teacher, boolean isPublic, String name, String description,
-                                                MCTest mcTest, FRQTest frqTest) throws SQLException {
+    public static Competition createCompetition(Teacher teacher, boolean published, boolean isPublic, String name,
+                                                String description, MCTest mcTest, FRQTest frqTest) throws SQLException {
         Connection conn = Conn.getConnection();
         PreparedStatement stmt = conn.prepareStatement("INSERT INTO competitions (uid, name, isPublic, description, " +
                 "mcKey, mcCorrectPoints, mcIncorrectPoints, mcInstructions, mcTestLink," +
                 "mcAnswers, mcOpens, mcTime, frqMaxPoints, frqIncorrectPenalty, frqProblemMap, frqStudentPack," +
-                "frqJudgePacket, frqOpens, frqTime, type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                "frqJudgePacket, frqOpens, frqTime, type, published) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -110,6 +118,7 @@ public class Competition {
             type = 2;
         }
         stmt.setShort(20, (short) type);
+        stmt.setBoolean(21, published);
 
         System.out.println(stmt);
         stmt.execute();
@@ -127,7 +136,7 @@ public class Competition {
                     "PRIMARY KEY (`tid`))");
             stmt.executeUpdate();
 
-            Competition competition = new Competition(teacher, cid, isPublic, name, description, mcTest, frqTest);
+            Competition competition = new Competition(teacher, cid, published, isPublic, name, description, mcTest, frqTest);
             System.out.println("CID = " + cid + ", " + competition.template.cid);
             UIL.addCompetition(competition);
 
@@ -139,8 +148,19 @@ public class Competition {
         return null;
     }
 
+    public void unPublish() throws SQLException {
+        published = false;
+        UIL.unPublish(this);
+
+        Connection conn = Conn.getConnection();
+        PreparedStatement stmt = conn.prepareStatement("UPDATE competitions SET published=? WHERE cid=?");
+        stmt.setBoolean(1, false);
+        stmt.setShort(2, template.cid);
+        stmt.executeUpdate();
+    }
+
     /* Updates the competition in the database and the template */
-    public void update(Teacher teacher, boolean isPublic, String name, String description, MCTest mcTest, FRQTest frqTest) throws SQLException {
+    public void update(Teacher teacher, boolean published, boolean isPublic, String name, String description, MCTest mcTest, FRQTest frqTest) throws SQLException {
         frqTest.setDirectories(template.cid, teacher.uid);
         frqTest.initializeFiles();
 
@@ -148,7 +168,7 @@ public class Competition {
         PreparedStatement stmt = conn.prepareStatement("UPDATE competitions SET uid=?, name=?, isPublic=?, description=?, " +
                         "mcKey=?, mcCorrectPoints=?, mcIncorrectPoints=?, mcInstructions=?, mcTestLink=?," +
                         "mcAnswers=?, mcOpens=?, mcTime=?, frqMaxPoints=?, frqIncorrectPenalty=?, frqProblemMap=?, frqStudentPack=?," +
-                        "frqJudgePacket=?, frqOpens=?, frqTime=?, type=? WHERE cid=?",
+                        "frqJudgePacket=?, frqOpens=?, frqTime=?, type=?, published=? WHERE cid=?",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -201,11 +221,12 @@ public class Competition {
             type = 2;
         }
         stmt.setShort(20, (short) type);
-        stmt.setShort(21, template.cid);
+        stmt.setBoolean(21, published);
+        stmt.setShort(22, template.cid);
         stmt.executeUpdate();
 
         this.isPublic = isPublic;
-        setTemplate(mcTest, frqTest, name, description, template.cid);
+        setTemplate(published, mcTest, frqTest, name, description, template.cid);
     }
 
     public void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -276,11 +297,12 @@ public class Competition {
                             short currentValue = submission.entry.frqResponses[submission.problemNumber - 1];
                             if(submission.result == FRQSubmission.Result.SERVER_ERROR) {    // We switched it to not giving a penalty, so reduce the extreme
                                 submission.entry.frqResponses[submission.problemNumber - 1] = (short)((Math.abs(currentValue) - 1) * (currentValue % Math.abs(currentValue)));
-                                currentValue = submission.entry.frqResponses[submission.problemNumber - 1];
                             } else {
-                                if(oldTakeNoPenalty) {  // We are now taking a penalty or gaining the points, so add the extreme
+                                if(oldTakeNoPenalty && currentValue != 0) {  // We are now taking a penalty or gaining the points, so add the extreme
                                     submission.entry.frqResponses[submission.problemNumber - 1] = (short)((Math.abs(currentValue) + 1) * (currentValue % Math.abs(currentValue)));
                                     currentValue = submission.entry.frqResponses[submission.problemNumber - 1];
+                                } else if(oldTakeNoPenalty) {
+
                                 }
 
                                 if (submission.result == FRQSubmission.Result.RIGHT_ANSWER) {    // They switched it to right answer

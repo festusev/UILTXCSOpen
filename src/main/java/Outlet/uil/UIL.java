@@ -27,9 +27,11 @@ public class UIL extends HttpServlet{
     private static HashMap<Short, Competition> upcoming;    // Upcoming competitions
     private static HashMap<Short, Competition> running;     // Running competitions
     private static HashMap<Short, Competition> archived;    // Past competitions
+    private static HashMap<Short, Competition> unpublished; // Unpublished competitions
     public static boolean initialized = false;
     public static void initialize() throws SQLException {
         if(initialized) return;
+        unpublished = new HashMap<>();
         upcoming = new HashMap<>();
         running = new HashMap<>();
         archived = new HashMap<>();
@@ -41,6 +43,7 @@ public class UIL extends HttpServlet{
         System.out.println("Got connection");
 
         while(rs.next()) {
+            boolean published = rs.getBoolean("published");
             short type = rs.getShort("type");   // If 0, there is only a mc test, if 1, only a frq test, if 2, both
 
             MCTest mcTest;
@@ -48,7 +51,7 @@ public class UIL extends HttpServlet{
             if(type==1) {   // No MC Test
                 mcTest = new MCTest();
             } else {
-                mcTest = new MCTest(rs.getString("mcOpens"), gson.fromJson(rs.getString("mcKey"), String[][].class),
+                mcTest = new MCTest(published,rs.getString("mcOpens"), gson.fromJson(rs.getString("mcKey"), String[][].class),
                         rs.getShort("mcCorrectPoints"),
                         rs.getShort("mcIncorrectPoints"),rs.getString("mcInstructions"),
                         rs.getString("mcTestLink"), rs.getString("mcAnswers"), rs.getLong("mcTime"));
@@ -58,18 +61,20 @@ public class UIL extends HttpServlet{
             if(type==0) {   // No FRQ Test
                 frqTest = new FRQTest();
             } else {
-                frqTest = new FRQTest(rs.getString("frqOpens"),
+                frqTest = new FRQTest(published,rs.getString("frqOpens"),
                         rs.getShort("frqMaxPoints"), rs.getShort("frqIncorrectPenalty"),
                         gson.fromJson(rs.getString("frqProblemMap"),String[].class),
                         rs.getString("frqStudentPack"),rs.getString("frqJudgePacket"),
                         rs.getLong("frqTime"));
             }
 
-            Competition comp = new Competition((Teacher) UserMap.getUserByUID(uid),cid,
-                    rs.getBoolean("isPublic"),rs.getString("name"),rs.getString("description"),
+            Competition comp = new Competition((Teacher) UserMap.getUserByUID(uid), cid,
+                    published, rs.getBoolean("isPublic"),rs.getString("name"),rs.getString("description"),
                     mcTest, frqTest);
 
-            if(!comp.template.opens.done()) {   // The competition is yet to open
+            if(!comp.published) {
+                unpublished.put(comp.template.cid, comp);
+            } else if(!comp.template.opens.done()) {   // The competition is yet to open
                 upcoming.put(comp.template.cid, comp);
             } else if(!comp.template.closes.done()) {   // The competition is yet to close
                 running.put(comp.template.cid, comp);
@@ -78,6 +83,23 @@ public class UIL extends HttpServlet{
             }
         }
         initialized = true;
+    }
+
+    public static Competition getPublishedCompetition(short cid) {
+        if(!initialized) {
+            try {
+                initialize();
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+        Competition up = upcoming.get(cid);
+        if(up != null) return up;
+        Competition run = running.get(cid);
+        if(run != null) return run;
+        Competition done = archived.get(cid);
+        return done;
     }
 
     public static Competition getCompetition(short cid) {
@@ -95,8 +117,7 @@ public class UIL extends HttpServlet{
         if(run != null) return run;
         Competition done = archived.get(cid);
         if(done != null) return done;
-
-        return null;
+        return unpublished.get(cid);
     }
 
     public static HashMap<Short,Competition> getUpcoming() {
@@ -150,7 +171,13 @@ public class UIL extends HttpServlet{
                 return;
             }
         }
-        if(!comp.template.opens.done()) {   // The competition is yet to open
+        unpublished.remove(comp.template.cid);
+        upcoming.remove(comp.template.cid);
+        running.remove(comp.template.cid);
+        archived.remove(comp.template.cid);
+        if(!comp.published) {
+            unpublished.put(comp.template.cid, comp);
+        } else if(!comp.template.opens.done()) {   // The competition is yet to open
             upcoming.put(comp.template.cid, comp);
         } else if(!comp.template.closes.done()) {   // The competition is yet to close
             running.put(comp.template.cid, comp);
@@ -171,6 +198,17 @@ public class UIL extends HttpServlet{
         running.remove(comp.template.cid);
         archived.remove(comp.template.cid);
         upcoming.remove(comp.template.cid);
+        unpublished.remove(comp.template.cid);
+    }
+    public static void unPublish(Competition comp) {
+        running.remove(comp.template.cid);
+        archived.remove(comp.template.cid);
+        upcoming.remove(comp.template.cid);
+        unpublished.put(comp.template.cid, comp);
+    }
+    public static void publish(Competition comp) {
+        unpublished.remove(comp.template.cid);
+        addCompetition(comp);
     }
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -178,7 +216,7 @@ public class UIL extends HttpServlet{
         String cidS = request.getParameter("cid");
         System.out.println("Doing get for cid="+cidS);
         User user = UserMap.getUserByRequest(request);
-        if(cidS == null || cidS.isEmpty() || getCompetition(Short.parseShort(cidS))==null) {    // In this case we are showing all of the available competitions
+        if(cidS == null || cidS.isEmpty() || getPublishedCompetition(Short.parseShort(cidS))==null) {    // In this case we are showing all of the available competitions
             Conn.setHTMLHeaders(response);
             PrintWriter writer = response.getWriter();
             String left = "<div id='nav_cnt'><div id='nav'><p class='menu' onclick='showPublic()'>Public</p>";
@@ -226,7 +264,7 @@ public class UIL extends HttpServlet{
                             "<p id='classmates'><b>Classmates</b><div>"+classmates+"</div></p>" +
                             "<p id='class_competitions_list'><b>Competitions</b><ul>";
                     for(Competition comp: ordered) {
-                        right+="<li class='competitionCnt'>"+comp.template.getMiniHTML(user)+"</li>";
+                        if(comp.published) right+="<li class='competitionCnt'>"+comp.template.getMiniHTML(user)+"</li>";
                     }
                     right+="</ul></p></div>";
                 }
@@ -256,8 +294,9 @@ public class UIL extends HttpServlet{
                     "</div></body></html>");
         } else {    // Render a specific competition. Users will be able to switch which competition they are viewing by clicking on the competition's name
             System.out.println("CID="+cidS);
-            Competition competition = getCompetition(Short.parseShort(cidS));
-            competition.doGet(request, response);
+            Competition competition = getPublishedCompetition(Short.parseShort(cidS));
+            if(competition != null) competition.doGet(request, response);
+            else System.out.println("Competition hasn't been published");
         }
     }
     @Override
@@ -265,8 +304,8 @@ public class UIL extends HttpServlet{
             throws ServletException, IOException {
         String cidS = request.getParameter("cid");
         System.out.println("Doing post, cid = " + cidS);
-        Competition competition = getCompetition(Short.parseShort(cidS));
-        if(cidS == null || cidS.isEmpty() || competition==null) {    // In this case we are showing all of the available competitions
+        Competition competition = getPublishedCompetition(Short.parseShort(cidS));
+        if(cidS.isEmpty() || competition==null) {    // In this case we are showing all of the available competitions
             return;
         } else {
             competition.doPost(request, response);

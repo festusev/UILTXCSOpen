@@ -42,10 +42,23 @@ public class FRQTest {
         exists = false;TIME_TEXT="";TIME=0;STUDENT_PACKET="";JUDGE_PACKET="";
         SCORE_DIR_PATH = ""; TESTCASE_DIR_PATH = "";MAX_POINTS = 0; INCORRECT_PENALTY = 0; PROBLEM_MAP = new String[0];
     }
-    public FRQTest(String opensString, short mp, short ip, String[] pm, String studentPacket, String judgePacket, long time) {
-        opens = new Countdown(opensString, "countdown");MAX_POINTS = mp; INCORRECT_PENALTY = ip; PROBLEM_MAP = pm;
-        exists = true;TIME_TEXT=(time/(1000*60)) + " minutes";TIME=time;STUDENT_PACKET=studentPacket;JUDGE_PACKET=judgePacket;
-        closes = Countdown.add(opens, TIME, "countdown");
+    public FRQTest(boolean published,String opensString, short mp, short ip, String[] pm, String studentPacket, String judgePacket, long time) {
+        if(published) {
+            opens = new Countdown(opensString, "countdown");MAX_POINTS = mp; INCORRECT_PENALTY = ip; PROBLEM_MAP = pm;
+            exists = true;TIME_TEXT=(time/(1000*60)) + " minutes";TIME=time;STUDENT_PACKET=studentPacket;JUDGE_PACKET=judgePacket;
+            closes = Countdown.add(opens, TIME, "countdown");
+        } else {
+            MAX_POINTS = mp;
+            INCORRECT_PENALTY = ip;
+            PROBLEM_MAP = pm;
+            exists = true;
+            TIME_TEXT = (time / (1000 * 60)) + " minutes";
+            TIME = time;
+            STUDENT_PACKET = studentPacket;
+            JUDGE_PACKET = judgePacket;
+            opens = new Countdown(opensString);
+            closes = new Countdown(opensString);
+        }
     }
     public void initializeFiles() {
         try {
