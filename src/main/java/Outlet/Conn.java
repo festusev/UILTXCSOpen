@@ -40,12 +40,15 @@ public class Conn {
         response.setContentType("text/html");
         response.setCharacterEncoding("UTF-8");
     }
+    public static BigInteger getTokenByString(String s){
+        return new BigInteger(s, Character.MAX_RADIX);
+    }
     public static BigInteger getToken(HttpServletRequest request) {
         Cookie[] cookieList = request.getCookies();
         if(cookieList == null) return null;
         for(Cookie c: cookieList) {
             if(c.getName().equals("token")){    // If the token cookie exists
-                return new BigInteger(c.getValue(), Character.MAX_RADIX);
+                return getTokenByString(c.getValue());
             }
         }
         return null;

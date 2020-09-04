@@ -90,8 +90,8 @@
 #comp_cnt {
     display: inline-block;
     height: 100%;
+    width: 45rem;
     vertical-align: top;
-    flex-grow: 1;
     overflow: auto;
     padding: 8rem 0 4rem 4rem;
     box-sizing: border-box;
@@ -114,6 +114,6 @@
 #class_competitions_list {
     margin-top: 1rem;
 }
-#class_competitions ul{
-    width: 45rem;
+#public_instructions{
+    margin-bottom: 1rem;
 }

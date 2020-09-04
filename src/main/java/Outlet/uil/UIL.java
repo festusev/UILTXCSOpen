@@ -220,7 +220,10 @@ public class UIL extends HttpServlet{
             Conn.setHTMLHeaders(response);
             PrintWriter writer = response.getWriter();
             String left = "<div id='nav_cnt'><div id='nav'><p class='menu' onclick='showPublic()'>Public</p>";
-            String right = "<div id='comp_cnt'><div id='comp'><ul id='public_competitions' class='column'><h1>Public UILs</h1>";
+            String right = "<div id='comp_cnt'><div id='comp'><ul id='public_competitions' class='column'><h1>Public UILs</h1>" +
+                    "<p id='public_instructions'>Public UILs are accessible by all students from all classes. We hosted custom invitationals throughout " +
+                    "the summer and we plan to continue hosting them throughout the year. Teachers can submit their own " +
+                    "public UIL competitions as well.</p>";
             if(getUpcoming().size() <=0) {  // There are no upcoming competitions
                 right+="<p class='emptyWarning'>There are no upcoming competitions.</p>";
             } else {    // There are upcoming competitions
@@ -261,7 +264,7 @@ public class UIL extends HttpServlet{
 
                     right+="<div id='class_competitions' style='display:none' class='column'>" +
                             "<p class='teacher_name'><b>Teacher:</b>" + StringEscapeUtils.escapeHtml4(teacherName) + "</p>" +
-                            "<p id='classmates'><b>Classmates</b><div>"+classmates+"</div></p>" +
+                            "<p id='classmates'><b>Students</b><div>"+classmates+"</div></p>" +
                             "<p id='class_competitions_list'><b>Competitions</b><ul>";
                     for(Competition comp: ordered) {
                         if(comp.published) right+="<li class='competitionCnt'>"+comp.template.getMiniHTML(user)+"</li>";

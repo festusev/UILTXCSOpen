@@ -23,9 +23,9 @@ body{
 }
 #body-title img{
     height:0.6em;
+    margin: auto;
     margin-top:0.12em;
-    float:left;
-    margin-left:-9px;
+    display: block;
 }
 #body-description{
     padding:0 1em 0 1em;
@@ -35,6 +35,7 @@ body{
     font-size:1em;
     font-family:var(--body-font);
     padding:0;
+    text-align: center;
 }
 .row{
     position:relative;
@@ -86,6 +87,7 @@ body{
 }
 #web-instructions p{
     margin: 2em 0;
+    text-align: center;
 }
 #schedule{
     padding:2em 1em;
@@ -113,6 +115,22 @@ body{
 }
 #big_copyright{
     background-color:black;
+}
+#register_cta {
+    text-decoration:  none;
+    background-color: var(--sec-col);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    margin: auto;
+    display: block;
+    width: 10rem;
+    text-align: center;
+    font-weight: bold;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+#register_cta:hover{
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
 }
 @media only screen and (min-width: 900px){
     #body-title{

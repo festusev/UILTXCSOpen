@@ -22,10 +22,12 @@ Dynamic.loadNav(request)
 <div id="upperHalf">
     <div id="web-instructions">
         <div id="body-title"><img draggable="false" alt="TXCSOpen" src="res/logo_dark_texasless.svg"/></div>
-        <div id="body-description">Student-run competition site.</div>
-        <p>Create a team of 3 to compete in the competitions and rank up in the <a href="/scoreboard" class="link">aggregated scoreboard!</a></p>
-        <p>Compete in 2-day Academic UILs that test skills in Mathematics and Computer Science, and take on the 5-day custom challenge. We're working to possibly offer prizes in the future, so stay tuned!</p>
-        <p>Join the community <a href="https://discord.gg/ukT4QnZ" class="link">discord</a> to receive announcements and ask for help. You can always email us at <a href="mailto: contact@txcsopen.com" class="link">contact@txcsopen.com</a>, and we'll be releasing post-competition surveys to help us make improvements.</p>
+        <div id="body-description">Seamlessly Run UIL Competitions Online.</div>
+        <p>TXCSOpen helps you run UIL competitions with just a few clicks. Register below to create a competition or start competing:</p>
+        <a id="register_cta" href="https://www.txcsopen.com/register">Register</a>
+        <!--<p>Join the community <a href="https://discord.gg/ukT4QnZ" class="link">discord</a> to receive announcements and
+            ask for help. You can always email us at <a href="mailto: contact@txcsopen.com" class="link">contact@txcsopen.com</a>.
+            Feel free to send us suggestions for improvements.</p>-->
     </div>
 </div>
 <!--<div id="schedule">
