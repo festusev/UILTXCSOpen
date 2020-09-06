@@ -112,7 +112,7 @@ let ws: WebSocket;
     }
 
     if(cid != null) {
-        ws = new WebSocket("wss://" + window.location.host + "/compsocket/" + cid);
+        ws = new WebSocket("ws://" + window.location.host + "/compsocket/" + cid);
         ws.onmessage = function(evt) {
             try {
                 let msg: { action: string } = JSON.parse(evt.data);
