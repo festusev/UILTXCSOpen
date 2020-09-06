@@ -33,7 +33,7 @@ public class Profile extends HttpServlet{
 
         if(teacher != null) {
             if (u.teacher) {
-                html += "<h2 onload='loadCompetitions();'>Class Code: <b>" + ((Teacher) u).classCode + "</b></h2></div>";
+                html += "<script>loadCompetitions();</script><h2>Class Code: <b>" + ((Teacher) u).classCode + "</b></h2></div>";
             } else {
                 html += "<h2>Teacher: <b>" + teacher.fname + " " + teacher.lname + "</b></h2><span onclick='leaveClass()' class='leaveClass'>Leave Class</span></div>";
             }
@@ -438,14 +438,16 @@ public class Profile extends HttpServlet{
                 delUserPassText = "Your class and competitions will be permanently deleted.";
             }
             nav += "<li onclick='navTo(this)'>Help</li><li id='delAccount' onclick='document.getElementById(\"delUserPasswordCnt\").style.display=\"block\";'>Delete Account</li></ul></div>";
-            right += "<div class='profile_cmpnt full'><h2><b>Change Password</b></h2><h2>Old Password</h2><input type='password' name='oldPassword' id='oldPassword'/><h2>New Password</h2><input type='password' name='newPassword' id='newPassword'/></div>" +
+            right += "<div class='profile_cmpnt full'><h2><b>Change Password</b></h2><h2>Old Password</h2>" +
+                    "<input type='password' name='oldPassword' id='oldPassword'/><h2>New Password</h2>" +
+                    "<input type='password' name='newPassword' id='newPassword'/></div>" +
                     "<div class='profile_cmpnt full'><span onclick='saveChanges()' id='saveChanges'>Save Changes</span></div>" +
                     "</div><div class='profile_div' id='Class' style='display:none'>" + getClassHTML(u, teacher) + "</div>" +
                     "<div id='delUserPasswordCnt' style='display:none'><div class='center'><h1>Are you sure?</h1><p>" + delUserPassText +
                     "</p><label for='delPass'>Retype your password:</label><input name='delPass' type='password' id='delUserPassword'/><button onclick='delUser()'>Yes, delete my account.</button><a onclick='hideDelUser()'>Cancel</a></div></div>";
 
             if (u.teacher) {    // List the competitions that the teacher has created and include a "New" button
-                right += "<div class='profile_div' id='Competitions'  style='display:none'><p id='newCompetition data-hasCompetitions=\"false\"'>New</p></div>";
+                right += "<div class='profile_div' id='Competitions'  style='display:none'><p id='newCompetition' data-hasCompetitions='false''>New</p></div>";
             }
             right += "<div class='profile_div' id='Help' style='display:none'><div class='helpSection'>Join the community <a href='https://discord.gg/ukT4QnZ'" +
                     "class='link'>discord</a> to receive announcements and ask for help. You can always email us at " +
