@@ -13,12 +13,20 @@ const config = {
         Profile : "Profile",
         Class : "Class",
         competitions : "Competitions",
-        competitionList : "competitionList"
+        competitionList : "competitionList",
+        studentList : "studentList"
     },
     COMPETITION: {
         mcOptions : ["a","b","c","d","e"]
+    },
+    SOCKET_FUNCTIONS: {
+        "updateStudentList" : function(response: Object) {
+            dom.class.innerHTML = response["html"];
+        }, "showJoinClass" : function(response: Object) {
+            showJoinClass();
+        }
     }
-}
+};
 
 /***
  * Helps interfacing with static elements (are not deleted *
@@ -39,7 +47,8 @@ let dom = {
     get profile(){return this.getHelper(config.IDs.Profile)},
     get class(){return this.getHelper(config.IDs.Class)},
     get competitions(){return this.getHelper(config.IDs.competitions)},
-    get competitionList(){return this.getHelper(config.IDs.competitionList)}
+    get competitionList(){return this.getHelper(config.IDs.competitionList)},
+    get studentList() {return this.getHelper(config.IDs.studentList)}
 };
 
 let pageState = {
@@ -84,7 +93,6 @@ class Competition {
     cid : string;
     name: string;
 
-    published: boolean;
     isPublic: boolean;
     writtenExists: boolean;
     handsOnExists: boolean;
@@ -1153,36 +1161,23 @@ class Competition {
     }
 }
 
-let loadClassInterval: number;
-function createLoadClassInterval() {
-    loadClassInterval = setInterval(loadClass, 30*1000);
-}
 document.onreadystatechange = () => {
     if(document.readyState === "complete") {
         pageState.selectedNav = dom.profileLink;
-        loadCompetitions();
     }
 };
 
-/**
- * Loads the class from the server every 30 seconds in case a student has joined their class.
- */
-function loadClass() {
-    let xhr:XMLHttpRequest = new XMLHttpRequest();
-    xhr.onreadystatechange = function(){
-        if (xhr.readyState === 4) {
-            if (xhr.status === 200) {
-                const response:object = JSON.parse(xhr.responseText);
-                if(response["success"] != null) {
-                    dom.class.innerHTML = response["classHTML"];
-                }
-            }
-        }
+let ws: WebSocket;
+(function() {
+    ws = new WebSocket("ws://" + window.location.host + "/profilesocket");
+
+    ws.onmessage = function(evt) {
+        try {
+            let msg: { action: string } = JSON.parse(evt.data);
+            config.SOCKET_FUNCTIONS[msg.action](msg);
+        } catch (e) {}
     };
-    xhr.open('POST', "/profile", true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.send("action=getClass");
-}
+})();
 
 function asyncConnectHelper(url:string, params:string, teamBox:HTMLElement):boolean {
     addSuccessBox(teamBox, "Running...");
@@ -1366,7 +1361,6 @@ function joinClass(classCode_input: HTMLInputElement) {
                     window.location.reload();
                 } else {
                     dom.class.innerHTML = response["html"];
-                    createLoadClassInterval();
                 }
             }
         }
@@ -1395,8 +1389,7 @@ function leaveClass() {
     xhr.open('POST', "/profile", true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send("action=leaveClass");
-    showJoinClass();
-    clearInterval(loadClassInterval);
+    // showJoinClass();
 }
 
 function showJoinClass() {

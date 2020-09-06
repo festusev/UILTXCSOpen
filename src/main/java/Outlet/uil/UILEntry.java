@@ -2,7 +2,9 @@ package Outlet.uil;
 
 import Outlet.*;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -118,6 +120,21 @@ public class UILEntry {
         if(uids.size()<=0) {   // If The team only has one user, delete the team.
             delete();
         }
+
+        for(short uid: uids) {
+            CompetitionSocket socket = CompetitionSocket.connected.get(uid);
+            if (socket != null) {
+                JsonObject obj = new JsonObject();
+                obj.addProperty("action", "updateTeam");
+                obj.addProperty("html", competition.template.getTeamMembers(StudentMap.getByUID(uid), this));
+                try {
+                    socket.send(gson.toJson(obj));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
         return status;
     }
 

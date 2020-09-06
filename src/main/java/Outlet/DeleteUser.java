@@ -79,7 +79,15 @@ public class DeleteUser extends HttpServlet {
             return;
         }
 
-        // Finally Redirect back to the Console
+        // Next, redirect home
         writer.write("{\"reload\":\""+request.getContextPath()+"\"}");
+
+        // Finally, update all of the class html for any users connected to the profile socket.
+        if(uData.teacher) {
+            ((Teacher)uData).updateDeletedClassHTML();
+        } else if(((Student)uData).teacherId > 0) {
+            Teacher teacher = TeacherMap.getByUID(((Student)uData).teacherId);
+            teacher.updateClassHTML();
+        }
     }
 }

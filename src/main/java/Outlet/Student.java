@@ -2,7 +2,10 @@ package Outlet;
 
 import Outlet.uil.UIL;
 import Outlet.uil.UILEntry;
+import com.google.gson.JsonObject;
 
+import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -32,6 +35,8 @@ public class Student extends User{
         teacherId = teacher.uid;
         StudentMap.addStudent(this);
         updateUser(false);
+
+        teacher.updateClassHTML();
     }
     public void leaveClass(Teacher teacher) {
         StudentMap.deleteStudent(this);
@@ -42,6 +47,18 @@ public class Student extends User{
         for(short cid:cids.keySet()) {
             if(teacher.cids.contains(cid) && !UIL.getCompetition(cid).isPublic) {    // This competition is the teachers and is private
                 cids.get(cid).leaveTeam(this);
+            }
+        }
+
+        teacher.updateClassHTML();
+
+        // Now, tell the student that they have left the class
+        ProfileSocket socket = ProfileSocket.connected.get(uid);
+        if(socket != null) {
+            try {
+                socket.send("{\"action\":\"showJoinClass\"}");
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }

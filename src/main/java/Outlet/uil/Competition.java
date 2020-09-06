@@ -3,7 +3,6 @@ package Outlet.uil;
 import Outlet.*;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.sun.corba.se.spi.orbutil.fsm.Guard;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -361,9 +360,19 @@ public class Competition {
                 writer.write("{\"frqProblemsHTML\":\""+template.getFRQProblems(temp)+"\"}");
             } else if (competitionStatus.mcDuring && action.equals("submitMC")) {
                 String[] answers = gson.fromJson(request.getParameter("answers"), String[].class);
-                writer.write("{\"mcHTML\":\"" + template.getFinishedMC(temp.scoreMC(user.uid, answers)) + "\"}");
+                MCSubmission submission = temp.scoreMC(user.uid, answers);
+                writer.write("{\"mcHTML\":\"" + template.getFinishedMC(submission) + "\"}");
                 temp.update();
                 template.updateScoreboard();
+
+                // Send it to the teacher
+                CompetitionSocket socket = CompetitionSocket.connected.get(((Student)user).teacherId);
+                if(socket != null) {
+                    JsonObject obj = new JsonObject();
+                    obj.addProperty("action", "addSmallMC");
+                    obj.addProperty("html", template.getSmallMC(user,temp, submission));
+                    socket.send(gson.toJson(obj));
+                }
                 return;
             } else if(competitionStatus.frqDuring && action.equals("submitFRQ")){
                 Part filePart = request.getPart("textfile");
@@ -405,6 +414,28 @@ public class Competition {
                 } else if(submission.result == FRQSubmission.Result.UNCLEAR_FILE_TYPE) {
                     writer.write("{\"status\":\"error\",\"error\":\"Unclear file type. Files must end in .java, .py, or .cpp.\"}");
                 }
+
+                // Send it to the teacher
+                CompetitionSocket socket = CompetitionSocket.connected.get(user.teacherId);
+                if(socket != null) {
+                    JsonObject obj = new JsonObject();
+                    obj.addProperty("action", "addSmallFRQ");
+                    obj.addProperty("html", template.getSmallFRQ(frqSubmissions.indexOf(submission), submission));
+                    socket.send(gson.toJson(obj));
+                }
+
+                // Update all of their team member's frqProblems
+                for(short uid: temp.uids) {
+                    socket = CompetitionSocket.connected.get(uid);
+                    System.out.println("Looking at uid="+uid);
+                    if(socket != null) {
+                        System.out.println("Socket != null for uid="+uid);
+                        JsonObject obj = new JsonObject();
+                        obj.addProperty("action", "updateFRQProblems");
+                        obj.addProperty("html", template.getFRQProblems(temp));
+                        socket.send(gson.toJson(obj));
+                    }
+                }
             } else if(competitionStatus.frqFinished && action.equals("finishFRQ")) {
                 writer.write("{\"frqHTML\":\""+template.getFinishedFRQ(temp)+"\"}");
             }
@@ -429,6 +460,24 @@ public class Competition {
                     entry.updateUIDS();
                     template.updateScoreboard();
                     writer.write("{\"status\":\"success\",\"reload\":\"/uil\"}");
+
+                    // Tell the existing team members to get a new html
+                    for(short uid: entry.uids) {
+                        if(uid == user.uid) continue;
+
+                        CompetitionSocket socket = CompetitionSocket.connected.get(uid);
+                        if (socket != null) {
+                            JsonObject obj = new JsonObject();
+                            obj.addProperty("action", "updateTeam");
+                            obj.addProperty("html", template.getTeamMembers(StudentMap.getByUID(uid), entry));
+                            try {
+                                socket.send(gson.toJson(obj));
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+
                     return;
                 }
                 writer.write("{\"status\":\"error\",\"error\":\"Code is incorrect.\"}");
@@ -545,6 +594,20 @@ public class Competition {
         }
 
         if(template.frqTest.exists) template.frqTest.deleteTestcaseDir();
+
+        // Finally, tell all of the people viewing this competition to stop viewing it
+        ArrayList<CompetitionSocket> sockets = CompetitionSocket.competitions.get(template.cid);
+        if(sockets != null) {
+            for (CompetitionSocket socket : sockets) {
+                JsonObject obj = new JsonObject();
+                obj.addProperty("action", "competitionDeleted");
+                try {
+                    socket.send(gson.toJson(obj));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }
 

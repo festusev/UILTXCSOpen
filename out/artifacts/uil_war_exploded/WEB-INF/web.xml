@@ -7,10 +7,6 @@
   <listener>
     <listener-class>Outlet.ContextListener</listener-class>
   </listener>
-  <context-param>
-    <param-name>log4j-config-location</param-name>
-    <param-value>WEB-INF/log4j2.properties</param-value>
-  </context-param>
 
   <!-- Error Pages -->
   <error-page>
@@ -55,7 +51,7 @@
     <servlet-class>Outlet.Profile</servlet-class>
     <load-on-startup>1</load-on-startup>
     <multipart-config>
-      <location>/usr/share/jetty9/TXCSSubmissions/</location>
+      <location>/tmp/</location>
       <max-file-size>10485760</max-file-size>
       <max-request-size>10485760</max-request-size>
       <file-size-threshold>0</file-size-threshold>
@@ -151,7 +147,7 @@
     <servlet-class>Outlet.uil.UIL</servlet-class>
     <load-on-startup>1</load-on-startup>
     <multipart-config>
-      <location>/usr/share/jetty9/TXCSSubmissions/</location>
+      <location>/tmp/</location>
       <max-file-size>10485760</max-file-size>
       <max-request-size>10485760</max-request-size>
       <file-size-threshold>0</file-size-threshold>

@@ -28,12 +28,12 @@ public class Profile extends HttpServlet{
     protected static Gson gson = new Gson();
     private static final String PAGE_NAME = "console";
 
-    private String getClassHTML(User u, Teacher teacher) {
+    public static String getClassHTML(User u, Teacher teacher) {
         String html = "<div class='profile_cmpnt full'>";
 
         if(teacher != null) {
             if (u.teacher) {
-                html += "<h2>Class Code: <b>" + ((Teacher) u).classCode + "</b></h2></div>";
+                html += "<h2 onload='loadCompetitions();'>Class Code: <b>" + ((Teacher) u).classCode + "</b></h2></div>";
             } else {
                 html += "<h2>Teacher: <b>" + teacher.fname + " " + teacher.lname + "</b></h2><span onclick='leaveClass()' class='leaveClass'>Leave Class</span></div>";
             }
@@ -52,12 +52,13 @@ public class Profile extends HttpServlet{
                 html += "</ul>";
             }
         } else {    // They are not a teacher and do not belong to a class
-            html += "<script>showJoinClass();createLoadClassInterval();</script>";
+            html += "<script>showJoinClass();</script>"; // I use an img tag here so that the script is executed when inserted using .innerHTML
         }
         return html + "</div>";
     }
 
     private void savePublished(HttpServletRequest request, PrintWriter writer, User u) throws IOException, ServletException {
+        System.out.println("Saving published");
         String cidS = request.getParameter("cid");
         String description = request.getParameter("description");
         String name = request.getParameter("name");
@@ -114,6 +115,7 @@ public class Profile extends HttpServlet{
                         writer.write("{\"error\":\"Written answer cannot be empty.\"}");
                         return;
                     } else if(!problem[1].equals("0") && !problem[1].equals("1")) {
+                        System.out.println("Issue with problems");
                         writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
                         return;
                     }
@@ -289,12 +291,12 @@ public class Profile extends HttpServlet{
         } else {    // We are modifying an existing competition
             competition = UIL.getCompetition(cid);
             if(competition == null) {
+                System.out.println("Competition not found");
                 writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
                 return;
             }
 
             competition.published = true;
-            UIL.publish(competition);
             frqTest.setDirectories(cid, u.uid);
 
             if(frqTest.exists) {
@@ -310,6 +312,7 @@ public class Profile extends HttpServlet{
                 writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
                 return;
             }
+            UIL.publish(competition);
         }
 
         /* Now, write all of the files they updated to the disk */
@@ -525,6 +528,7 @@ public class Profile extends HttpServlet{
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         PrintWriter writer = response.getWriter();
+        System.out.println("doing post");
 
         String action = request.getParameter("action");
         if(action == null) {
@@ -803,7 +807,7 @@ public class Profile extends HttpServlet{
             Teacher teacher = (Teacher)u;
             if(competition != null && competition.teacher.uid == teacher.uid) {
                 UIL.deleteCompetition(competition);
-                teacher.cids.remove(competition.template.cid);
+                teacher.cids.remove(teacher.cids.indexOf(competition.template.cid));
                 teacher.updateUser(false);
             }
         }

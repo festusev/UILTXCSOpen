@@ -12,12 +12,48 @@ const config = {
         publicComps : "public_competitions",
         classComps : "class_competitions",
         myComps : "my_competitions",
-        frqProblems : "frqProblems"
+        frqProblems : "frqProblems",
+        mcSubmissions : "mcSubmissions",
+        mcSubmissionsTr : "mcSubmissionsTr",
+        frqSubmissionsTable : "frqSubmissionsTable",
+        frqSubmissionsTr : "frqSubmissionsTr",
+        teamMembers : "teamMembers"
     },
     CLASSES: {
         columns : "column"
     },
-    RESULTS: ["Incorrect", "Correct", "No Penalty"]
+    RESULTS: ["Incorrect", "Correct", "No Penalty"],
+    SOCKET_FUNCTIONS: { // The functions that can be called when the server sends a message using the web socket.
+        "addSmallMC" : function(response:Object) {
+            let html:string = response["html"];
+            let template = document.createElement('template');
+            template.innerHTML = html;
+
+            dom.mcSubmissions.insertBefore(template.content.firstChild, dom.mcSubmissionsTr.nextSibling);
+        }, "addSmallFRQ" : function(response:Object) {
+            let html:string = response["html"];
+            let template = document.createElement('template');
+            template.innerHTML = html;
+
+            dom.frqSubmissionsTable.insertBefore(template.content.firstChild, dom.frqSubmissionsTr.nextSibling);
+        }, "updateTeam" : function(response:Object) {
+            let html:string = response["html"];
+            dom.teamMembers.innerHTML = html;
+        }, "competitionDeleted" : function(response:Object) {   // The competition was deleted, so go to the uil list
+            window.location.replace(window.location.host + "/uil");
+        }, "updateFRQProblems" : function(response:Object) {
+            let template = document.createElement('template');
+            template.innerHTML = response["html"];
+            dom.frqProblems.replaceWith(template.content.firstChild);
+        }, "updateScoreboard" : function(response:Object) {
+            let template = document.createElement('template');
+            template.innerHTML = response["html"];
+            let display:string = dom.scoreboard.style.display;
+            dom.scoreboard.replaceWith(template.content.firstChild);
+            dom.cached[config.IDs.scoreboard] = null;
+            showColumn();
+        }
+    }
 };
 
 let dom = {
@@ -35,6 +71,11 @@ let dom = {
     get classComps() {return this.getHelper(config.IDs.classComps)},
     get myComps() {return this.getHelper(config.IDs.myComps)},
     get frqProblems() {return this.getHelper(config.IDs.frqProblems)},
+    get mcSubmissions() {return this.getHelper(config.IDs.mcSubmissions)},
+    get mcSubmissionsTr() {return this.getHelper(config.IDs.mcSubmissionsTr)},
+    get frqSubmissionsTable() {return this.getHelper(config.IDs.frqSubmissionsTable)},
+    get frqSubmissionsTr() {return this.getHelper(config.IDs.frqSubmissionsTr)},
+    get teamMembers() {return this.getHelper(config.IDs.teamMembers)},
 
     classes : {
         cached: {},    // DOM objects that have already been accessed
@@ -52,6 +93,11 @@ declare var $: any;
 declare var xmcTestTimer: any;
 
 $(document).ready(function(){
+    showColumn();
+});
+
+let ws: WebSocket;
+(function() {
     let sPageURL = window.location.search.substring(1),
         sURLVariables = sPageURL.split('&'),
         sParameterName,
@@ -65,8 +111,38 @@ $(document).ready(function(){
         }
     }
 
-    showColumn();
-});
+    if(cid != null) {
+        ws = new WebSocket("ws://" + window.location.host + "/compsocket/" + cid);
+        ws.onmessage = function(evt) {
+            try {
+                let msg: { action: string } = JSON.parse(evt.data);
+                config.SOCKET_FUNCTIONS[msg.action](msg);
+            } catch (e) {}
+        };
+    }
+})();
+
+function setCookie(cname, cvalue, exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+    var expires = "expires="+d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
 
 function showColumn(){
     // Check if there is an anchor, and if there is show that section of the page
@@ -199,11 +275,11 @@ function setChoice(question, dom) {
     if(choices[question] === choice) {  // They are clicking a selected bubble
         choices[question] = null;
         $dom.removeClass("mcSelected");
-        return;
+    } else {
+        choices[question] = choice;
+        $dom.parent().parent().children().children().removeClass("mcSelected");
+        $dom.addClass("mcSelected");
     }
-    choices[question] = choice;
-    $dom.parent().parent().children().children().removeClass("mcSelected");
-    $dom.addClass("mcSelected");
 }
 
 function setSAQChoice(question,dom) {
@@ -259,7 +335,6 @@ function updatePage(){
  * @param success
  */
 
-var grabFRQProblemsTimer;
 function grabFRQProblems(){
     $.ajax({
         url: window.location.href,
@@ -334,7 +409,7 @@ function submitFRQ(){
                     addErrorBox(box, response["error"]);
                 }
 
-                grabFRQProblems();
+                // grabFRQProblems();
             } else {    // A server error occurred. Show an error message
                 addErrorBox(box, "Whoops! A server error occurred. Contact an admin if the problem continues.");
             }
@@ -355,7 +430,6 @@ function finishFRQ(){
         method: "POST",
         data: {"action": "finishFRQ"},
         success: function(result) {
-            clearInterval(grabFRQProblemsTimer);
             if(result!=null) {
                 dom.frq.replaceWith(result["frqHTML"]);
                 delete dom.cached[config.CLASSES.columns];
@@ -450,7 +524,7 @@ function codeEntered(code) {
                     addSignupErrorBox("Whoops! A server error occurred. Contact an admin if the problem continues.");
                 }
             }
-        }
+        };
         xhr.open('POST', 'uil', true);
         xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
         xhr.send('cid='+cid+'&action=jointeam&code=' + code.value);

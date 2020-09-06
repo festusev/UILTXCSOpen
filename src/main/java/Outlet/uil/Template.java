@@ -1,6 +1,8 @@
 package Outlet.uil;
 
 import Outlet.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -42,6 +44,8 @@ public class Template {
 
     ArrayList<Short> sortedTeams = new ArrayList<>();   // array of tids
     protected SortUILTeams sorter;    // Used to sort teams for the scoreboard
+    private boolean scoreboardSocketScheduled = false;  // Whether a timer has been set to send out the updated scoreboard to connected sockets
+    private Gson gson = new Gson();
 
     private Competition competition;
 
@@ -244,32 +248,36 @@ public class Template {
         }
     }
 
+    public String getTeamMembers(User u, UILEntry team) {
+        String html = "";
+        for(short uid: team.uids) {
+            Student student = StudentMap.getByUID(uid);
+            html += "<li style='list-style-type:none;'>" + StringEscapeUtils.escapeHtml4(student.fname) + " " + StringEscapeUtils.escapeHtml4(student.lname);
+            if (uid == u.uid && team.notStarted()) html += "<span onclick='leaveTeam()' id='leaveTeam'>Leave</span>";
+            html+="</li>";
+        }
+        return html;
+    }
+
     public String getTeamHTML(User u, UserStatus userStatus) {
         if(!userStatus.signedUp) return "";    // They don't belong to a team
 
         UILEntry team = ((Student)u).cids.get(cid);
         String html = "<div id='teamColumn' class='column' style='display:none;'><p id='teamName'>"+StringEscapeUtils.escapeHtml4(team.tname)+"<span>"+
                 ordinal(sortedTeams.indexOf(team.tid)+1)+"</span></p>" +
-                "<p id='teamJoinCode'>Join Code: "+team.password+"</p><div id='teamMembers'><b>Members:</b><ul>";
-        for(short uid: team.uids) {
-            Student student = StudentMap.getByUID(uid);
-            html+="<li>"+StringEscapeUtils.escapeHtml4(student.fname)+" "+StringEscapeUtils.escapeHtml4(student.lname);
-            if(uid == u.uid && team.notStarted()) html += "<span onclick='leaveTeam()' id='leaveTeam'>Leave</span>";
-            /*if(mcTest.exists) { // List the student's mc score
-                if(team.mc.containsKey(student.uid))
-                    html+= " - " + team.mc.get(student.uid).scoringReport[0];
-                else
-                    html+=" - Hasn't taken mc";
-            }*/
-            html+="</li>";
-
-        }
+                "<p id='teamJoinCode'>Join Code: "+team.password+"</p><div><b>Members:</b><ul id='teamMembers'>";
+        html += getTeamMembers(u, team);
         html+="</ul></div>";
         /*if(frqTest.exists) {
             html+="<div id='frqProblems'>";
         }*/
 
         return html+"</div>";
+    }
+    public String getSmallMC(Student student, UILEntry entry, MCSubmission submission) {
+        return "<tr onclick='showMCSubmission("+entry.tid+","+student.uid+");'><td>" + StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname) +
+                "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td><td>" + submission.scoringReport[0] +
+                "</td></tr>";
     }
     public String getMCHTML(User u, UserStatus userStatus, CompetitionStatus competitionStatus){
         if(!mcTest.exists || competitionStatus.mcBefore) return "";
@@ -294,7 +302,7 @@ public class Template {
                     "<p>Test Packet: <a class='link' target='_blank' href='" + mcTest.TEST_LINK + "'>link</a></p>" +
                     "<p><b>Submissions:</b></p>";
 
-            html += "<table id='mcSubmissions'><tr><th>Name</th><th>Team</th><th>Score</th></tr>";
+            html += "<table id='mcSubmissions'><tr id='mcSubmissionsTr'><th>Name</th><th>Team</th><th>Score</th></tr>";
 
             for(UILEntry entry: competition.entries.tidMap.values()) {
                 Set<Short> uids = entry.mc.keySet();
@@ -302,9 +310,7 @@ public class Template {
                     MCSubmission submission = entry.mc.get(uid);
                     if (submission != null) {
                         Student student = StudentMap.getByUID(uid);
-                        html += "<tr onclick='showMCSubmission("+entry.tid+","+uid+");'><td>" + StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname) +
-                                "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td><td>" + submission.scoringReport[0] +
-                                "</td></tr>";
+                        html += getSmallMC(student, entry, submission);
                     }
                 }
             }
@@ -412,6 +418,12 @@ public class Template {
         return html + getFinishedMCHelper(submission) + "</div></div>";
     }
 
+    public String getSmallFRQ(int i, FRQSubmission submission) {
+        return "<tr onclick='showFRQSubmission("+i+")'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber-1]) +
+                "</td><td>" + StringEscapeUtils.escapeHtml4(submission.entry.tname) + "</td><td id='showFRQSubmission"+i+"'>" + submission.getResultString() +
+                "</td></tr>";
+    }
+
     public String getFRQHTML(User u, UserStatus userStatus, CompetitionStatus competitionStatus) {
         if(!frqTest.exists || competitionStatus.frqBefore) return "";
 
@@ -425,14 +437,12 @@ public class Template {
                         "<p>Test Packet: <a class='link' target='_blank' href='" + frqTest.STUDENT_PACKET + "'>link</a></p>" +
                         "<p><b>Submissions:</b></p>";
 
-                html += "<table><tr><th>Problem</th><th>Team</th><th>Result</th></tr>";
+                html += "<table id='frqSubmissionsTable'><tr id='frqSubmissionsTr'><th>Problem</th><th>Team</th><th>Result</th></tr>";
 
                 String rows = "";
                 for(int i=0, j=competition.frqSubmissions.size(); i<j; i++) {
                     FRQSubmission submission = competition.frqSubmissions.get(i);
-                    rows = "<tr onclick='showFRQSubmission("+i+")'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber-1]) +
-                            "</td><td>" + StringEscapeUtils.escapeHtml4(submission.entry.tname) + "</td><td id='showFRQSubmission"+i+"'>" + submission.getResultString() +
-                            "</td></tr>" + rows;
+                    rows = getSmallFRQ(i, submission) + rows;
                 }
                 html += rows + "</table></div></div></div>";
 
@@ -463,7 +473,7 @@ public class Template {
         }
     }
     public String getRunningFRQ(UILEntry entry){
-        return "<script>grabFRQProblemsTimer = setInterval(function() { QProblems()}, 1000*10);</script>" +
+        return /*"<script>grabFRQProblemsTimer = setInterval(function() { QProblems()}, 1000*10);</script>" +*/
                 "<div id='frqColumn' class='column' style='display:none'><div class='row head-row running-frq'>" +
                 "<div id='frqSelection'>" +
                 "<h1>"+StringEscapeUtils.escapeHtml4(frqTest.NAME)+"</h1>" +
@@ -529,6 +539,32 @@ public class Template {
         } catch (SQLException e) {
             e.printStackTrace();
             return;
+        }
+
+        if(!scoreboardSocketScheduled) {    // Schedule a timer to send the updated scoreboard to the connected sockets
+            scoreboardSocketScheduled = true;
+            TimerTask task = new TimerTask() {
+                public void run() {
+                    ArrayList<CompetitionSocket> sockets = CompetitionSocket.competitions.get(cid);
+                    if(sockets == null) return;
+
+                    for(CompetitionSocket socket: sockets) {
+                        JsonObject obj = new JsonObject();
+                        obj.addProperty("action", "updateScoreboard");
+                        obj.addProperty("html", scoreboardHTML);
+
+                        try {
+                            socket.send(gson.toJson(obj));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    scoreboardSocketScheduled = false;
+                }
+            };
+            Timer timer = new Timer("ScoreboardTimer");
+
+            timer.schedule(task, 10000);    // Every 10 seconds
         }
 
         Collections.sort(allTeams, sorter);
