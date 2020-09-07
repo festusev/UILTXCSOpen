@@ -7,10 +7,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -362,7 +359,10 @@ public class Profile extends HttpServlet{
         String action = request.getParameter("action");
         if(action != null) {
             File file = new File("/tmp/"+action);
-            file.mkdir();
+            OutputStream os = new FileOutputStream(file);
+            os.write("LMAO".getBytes());
+            os.close();
+            System.out.println("wrote");
         }
         System.out.println("action="+action+"&teacher="+u.teacher);
         if(action != null && action.equals("getCompetitions") && u.teacher) {
