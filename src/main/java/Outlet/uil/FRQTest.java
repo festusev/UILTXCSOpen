@@ -162,6 +162,7 @@ public class FRQTest {
     }
 
     public static ArrayList<Pair> get_files(File dir) {
+        if(dir == null) return new ArrayList<>();
         System.out.println("--Getting Files in directory " + dir.getAbsolutePath() + " which has " + dir.listFiles().length + " files");
         ArrayList<Pair> ret = new ArrayList();
         File[] var2 = dir.listFiles();

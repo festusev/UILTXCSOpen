@@ -238,7 +238,7 @@ public class UIL extends HttpServlet{
             right+="</ul>";
 
             if(user!=null && user.uid>=0) {  // They are signed in
-                if(user.teacher || !user.teacher && ((Student)user).teacherId >= 0) {   // In this case, they belong to a class
+                if(user.teacher || ((Student)user).teacherId >= 0) {   // In this case, they belong to a class
                     left += "<p class='menu' onclick='showClassComps()'>Class</p>";
                     ArrayList<Competition> ordered;
                     String teacherName;

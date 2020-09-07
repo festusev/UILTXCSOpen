@@ -36,7 +36,7 @@ public class ProfileSocket {
 
     @OnClose
     public void onClose(Session session) throws IOException {
-        connected.remove(this.user.uid);
+        if(user != null) connected.remove(user.uid);
     }
 
     @OnError

@@ -161,7 +161,8 @@ public class Template {
         UserStatus userStatus = UserStatus.getCompeteStatus(uData, cid);
         writer.write(HEADERS+
                         Dynamic.loadNav(request) +
-                getNavBarHTML(userStatus, competitionStatus) + "<span id='columns'>" + getColumnsHTML(uData, userStatus, competitionStatus) + "</span>" +
+                getNavBarHTML(userStatus, competitionStatus) + /*getLeftBarHTML(uData, userStatus, competitionStatus) +*/
+                "<span id='columns'>" + getColumnsHTML(uData, userStatus, competitionStatus) + "</span>" +
                 "</body></html>"
         );
     }
@@ -190,6 +191,81 @@ public class Template {
                 "<div class='row1'>"+StringEscapeUtils.escapeHtml4(name)+"<p class='right' style='color:"+signupColor+"'>"+signupText+"</p></div>" +
                 "<div class='row2'>Created by "+StringEscapeUtils.escapeHtml4(competition.teacher.fname) + " " + StringEscapeUtils.escapeHtml4(competition.teacher.lname) +
                 "<p class='right'>"+month+"/"+day+"</p></div>";
+    }
+
+    public String getLeftBarHTML(User uData, UserStatus userStatus, CompetitionStatus competitionStatus) {
+        String string = "<div id='leftBar'>";
+        if(userStatus.creator || userStatus.signedUp) {
+            if(mcTest.exists) {
+                String written = "<div class='written'><h2>Written</h2>";
+                if(userStatus.creator) {
+                    int submissionCount = 0;
+                    int submissionTotal = 0;    // All of the scores added up
+                    for(UILEntry entry: competition.entries.tidMap.values()) {
+                        Set<Short> uids = entry.mc.keySet();
+                        for (short uid : uids) {
+                            MCSubmission submission = entry.mc.get(uid);
+                            if (submission != null) {
+                                submissionCount++;
+                                submissionTotal += submission.scoringReport[0];
+                            }
+                        }
+                    }
+                    written += "<p id='writtenSubmissionCount'>" + submissionCount + " submissions</p>";
+                    written += "<p id='writtenAverage'>" + Math.round(submissionTotal/submissionCount) + "</p>";
+                } else {
+                    UILEntry entry = ((Student)uData).cids.get(cid);
+                    for(short uid: entry.uids) {
+                        Student student = StudentMap.getByUID(uid);
+                        written += "<p>" + StringEscapeUtils.escapeHtml4(student.fname) + " " +
+                                StringEscapeUtils.escapeHtml4(student.lname) + " <span id='"+student.uid+"writtenScore'>" +
+                                entry.mc.get(uid).scoringReport[0] + "</span>pts</p>";
+                    }
+                }
+                written += "</div>";
+                string += written;
+            }
+
+            if(frqTest.exists) {
+                String handsOn = "<div class='handsOn'><h2>Hands-On</h2>";
+                if(userStatus.creator) {
+                    int submissionCount = competition.frqSubmissions.size();
+                    int submissionTotal = 0;
+                    for(UILEntry entry: competition.entries.tidMap.values()) {
+                        for(short frqResponse: entry.frqResponses) {
+                            if(frqResponse != 0) submissionCount ++;
+                        }
+                        submissionTotal += entry.frqScore;
+                    }
+
+                    handsOn += "<p id='handsOnSubmissionCount'>" + submissionCount + "</p>";
+                    handsOn += "<p id='handsOnSubmissionAverage'>" + Math.round(submissionTotal/competition.entries.tidMap.values().size()) + "</p>";
+                } else {
+                    int solved = 0;
+                    int wrong = 0;
+                    int untried = 0;
+
+                    UILEntry entry = ((Student)uData).cids.get(cid);
+                    for(short frqResponse: entry.frqResponses) {
+                        if(frqResponse == 0) untried++;
+                        else if(frqResponse > 0) solved++;
+                        else wrong++;
+                    }
+
+                    handsOn += "<p id='handsOnSolved'>" + solved + "</p>" +
+                               "<p id='handsOnWrong'>" + wrong + "</p>" +
+                               "<p id='handsOnUntried'>" + untried + "</p>" +
+                               "<p id='handsOnScore'>" + entry.frqScore + "</p>";
+                }
+                handsOn += "</div>";
+                string += handsOn;
+            }
+
+            if(userStatus.creator) {
+                string += "<div id='leftBarBottom'><p id='numTeams'>";
+            }
+        }
+        return string;
     }
 
     public String getColumnsHTML(User uData, UserStatus userStatus, CompetitionStatus competitionStatus){
@@ -502,9 +578,9 @@ public class Template {
 
     public String getNavBarHTML(UserStatus userStatus, CompetitionStatus competitionStatus){
         String nav = navBarHTML;
-        if(userStatus.signedUp) {
+        /*if(userStatus.signedUp) {
             nav += "<li id='team' onclick='showTeam()'>Team</li>";
-        }
+        }*/
         if((!frqTest.exists || competitionStatus.frqBefore) && (!mcTest.exists || competitionStatus.mcBefore)) {
             if(mcFirst) return nav + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
             else return nav + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
