@@ -264,8 +264,8 @@ public class UIL extends HttpServlet{
 
                     right+="<div id='class_competitions' style='display:none' class='column'>" +
                             "<p class='teacher_name'><b>Teacher:</b>" + StringEscapeUtils.escapeHtml4(teacherName) + "</p>" +
-                            "<p id='classmates'><b>Students</b><div>"+classmates+"</div></p>" +
-                            "<p id='class_competitions_list'><b>Competitions</b><ul>";
+                            "<p id='classmates'><b>Students:</b><div>"+classmates+"</div></p>" +
+                            "<p id='class_competitions_list'><b>Competitions:</b><ul>";
                     for(Competition comp: ordered) {
                         if(comp.published) right+="<li class='competitionCnt'>"+comp.template.getMiniHTML(user)+"</li>";
                     }
@@ -279,7 +279,7 @@ public class UIL extends HttpServlet{
                     right+="<ul id='my_competitions' style='display:none' class='column'>";
                     if(myCompetitions.size() <= 0) right+="<p class='emptyWarning'>You haven't signed up for any competitions.</p>";
                     for(UILEntry comp: myCompetitions) {
-                        right+="<li class='competitionCnt'>"+comp.competition.template.getMiniHTML(user)+"</li>";
+                        if(comp.competition.published) right+="<li class='competitionCnt'>"+comp.competition.template.getMiniHTML(user)+"</li>";
                     }
                     right+="</ul>";
                 }

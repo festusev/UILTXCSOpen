@@ -24,7 +24,7 @@ Dynamic.loadNav(request)
         <div id="body-title"><img draggable="false" alt="TXCSOpen" src="res/logo_dark_texasless.svg"/></div>
         <div id="body-description">Seamlessly Run UIL Competitions Online.</div>
         <p>TXCSOpen helps you run UIL competitions with just a few clicks. Register below to create a competition or start competing:</p>
-        <a id="register_cta" href="https://www.txcsopen.com/register">Register</a>
+        <a id="register_cta" href="${pageContext.request.contextPath}/register">Register</a>
         <!--<p>Join the community <a href="https://discord.gg/ukT4QnZ" class="link">discord</a> to receive announcements and
             ask for help. You can always email us at <a href="mailto: contact@txcsopen.com" class="link">contact@txcsopen.com</a>.
             Feel free to send us suggestions for improvements.</p>-->

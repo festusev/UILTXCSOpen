@@ -25,8 +25,8 @@ public class Template {
     public final boolean mcFirst;   // Whether the mcTest is first.
     public final short cid; // The competition id and the name of the competition's table
     public final String HEADERS;
-    public final String MC_HEADER = "<li onclick='showMC();'>Written</li>";
-    public final String FRQ_HEADER = "<li onclick='showFRQ();'>Hands-On</li>";
+    public final String MC_HEADER = "<li onclick='showMC();' id='writtenNav' class='secondNavItem'>Written</li>";
+    public final String FRQ_HEADER = "<li onclick='showFRQ();' id='handsOnNav' class='secondNavItem'>Hands-On</li>";
 
     public String navBarHTML;   // For the competition-specific nav bar that goes underneath the header nav bar
     public String scoreboardHTML;  // The scoreboard page html after the nav bars
@@ -79,7 +79,9 @@ public class Template {
             }
         }
 
-        navBarHTML = "<ul id='upperHalf'><li id='nav_compname' onclick='location.href=\"/uil\"' style='cursor:pointer'>"+name+"</li><li onclick='showAbout();'>About</li><li onclick='showScoreboard();'>Scoreboard</li>";
+        navBarHTML = "<ul id='upperHalf'><li id='nav_compname'>"+
+                name+"</li><li onclick='showAbout();' id='aboutNav' class='secondNavItem'>About</li><li onclick='showScoreboard();' " +
+                "class='secondNavItem' id='scoreboardNav'>Scoreboard</li>";
         // answersHTML = "<div id='answersColumn' class='column' style='display:none'><div class='row head-row'><h1>Answers</h1></div>";
         if(mc.exists) {
             mcHTML = new String[2];
@@ -161,9 +163,8 @@ public class Template {
         UserStatus userStatus = UserStatus.getCompeteStatus(uData, cid);
         writer.write(HEADERS+
                         Dynamic.loadNav(request) +
-                getNavBarHTML(userStatus, competitionStatus) + /*getLeftBarHTML(uData, userStatus, competitionStatus) +*/
-                "<span id='columns'>" + getColumnsHTML(uData, userStatus, competitionStatus) + "</span>" +
-                "</body></html>"
+                getNavBarHTML(userStatus, competitionStatus) + "<div id='content'>" + getLeftBarHTML(uData, userStatus) +
+                "<span id='columns'>" + getColumnsHTML(uData, userStatus, competitionStatus) + "</span></div></body></html>"
         );
     }
 
@@ -193,11 +194,11 @@ public class Template {
                 "<p class='right'>"+month+"/"+day+"</p></div>";
     }
 
-    public String getLeftBarHTML(User uData, UserStatus userStatus, CompetitionStatus competitionStatus) {
+    public String getLeftBarHTML(User uData, UserStatus userStatus) {
         String string = "<div id='leftBar'>";
         if(userStatus.creator || userStatus.signedUp) {
             if(mcTest.exists) {
-                String written = "<div class='written'><h2>Written</h2>";
+                String written = "<div class='written'><h2>Written Test</h2>";
                 if(userStatus.creator) {
                     int submissionCount = 0;
                     int submissionTotal = 0;    // All of the scores added up
@@ -211,15 +212,21 @@ public class Template {
                             }
                         }
                     }
-                    written += "<p id='writtenSubmissionCount'>" + submissionCount + " submissions</p>";
-                    written += "<p id='writtenAverage'>" + Math.round(submissionTotal/submissionCount) + "</p>";
+                    int submissionAverage = 0;
+                    if(submissionCount > 0) submissionAverage = submissionTotal/submissionCount;
+                    written += "<p id='writtenSubmissionCount'>" + submissionCount + " submitted</p>";
+                    written += "<p id='writtenAverage'>" + Math.round(submissionAverage) + " average</p>";
                 } else {
                     UILEntry entry = ((Student)uData).cids.get(cid);
                     for(short uid: entry.uids) {
                         Student student = StudentMap.getByUID(uid);
-                        written += "<p>" + StringEscapeUtils.escapeHtml4(student.fname) + " " +
-                                StringEscapeUtils.escapeHtml4(student.lname) + " <span id='"+student.uid+"writtenScore'>" +
-                                entry.mc.get(uid).scoringReport[0] + "</span>pts</p>";
+                        short score = 0;
+                        if(entry.mc.containsKey(uid)) {
+                            MCSubmission submission = entry.mc.get(uid);
+                            if(submission!=null) score = submission.scoringReport[0];
+                        }
+                        written += "<p>" + StringEscapeUtils.escapeHtml4(student.fname) + " <span id='"+student.uid+"writtenScore'>" +
+                                score + "</span>pts</p>";
                     }
                 }
                 written += "</div>";
@@ -238,8 +245,10 @@ public class Template {
                         submissionTotal += entry.frqScore;
                     }
 
-                    handsOn += "<p id='handsOnSubmissionCount'>" + submissionCount + "</p>";
-                    handsOn += "<p id='handsOnSubmissionAverage'>" + Math.round(submissionTotal/competition.entries.tidMap.values().size()) + "</p>";
+                    handsOn += "<p><span id='handsOnSubmissionCount'>" + submissionCount + "</span> submissions</p>";
+                    int average = competition.entries.tidMap.values().size();
+                    if(average > 0) average = Math.round(submissionTotal/average);
+                    handsOn += "<p><span id='handsOnSubmissionAverage'>" + average + "</span> average</p>";
                 } else {
                     int solved = 0;
                     int wrong = 0;
@@ -252,20 +261,38 @@ public class Template {
                         else wrong++;
                     }
 
-                    handsOn += "<p id='handsOnSolved'>" + solved + "</p>" +
-                               "<p id='handsOnWrong'>" + wrong + "</p>" +
-                               "<p id='handsOnUntried'>" + untried + "</p>" +
-                               "<p id='handsOnScore'>" + entry.frqScore + "</p>";
+                    handsOn += "<p id='handsOnSolved'>" + solved + " solved</p>" +
+                               "<p id='handsOnWrong'>" + wrong + " wrong</p>" +
+                               "<p id='handsOnUntried'>" + untried + " untried</p>" +
+                               "<p id='handsOnScore'>" + entry.frqScore + " pts</p>";
                 }
                 handsOn += "</div>";
                 string += handsOn;
             }
 
             if(userStatus.creator) {
-                string += "<div id='leftBarBottom'><p id='numTeams'>";
+                int numStudents = 0;
+                for(UILEntry entry: competition.entries.tidMap.values()) {
+                    numStudents += entry.uids.size();
+                }
+                string += "<div id='leftBarBottom'><p><span id='numTeams'>"+competition.entries.tidMap.values().size()+"</span> teams</p>" +
+                                                  "<p><span id='numUsers'>"+numStudents+"</span> students</p></div>";
+            } else if(userStatus.signedUp) {
+                UILEntry entry = ((Student)uData).cids.get(cid);
+                int rank = sortedTeams.indexOf(entry.tid) + 1;
+
+                string += "<div id='leftBarBottom'><p id='bottomRank'>" + ordinal(rank) + "</p>" +
+                                                  "<p>out of <span id='bottomOutOf'>" + competition.entries.tidMap.values().size() +
+                        "</span> teams</p></div>";
             }
+        } else if(!userStatus.loggedIn) {
+            string += "<div id='leftBarBottom'><a href='/login' class='bottomLeftLink'>Login</a><a href='/register' class='bottomLeftLink'>Register</a></div>";
+        } else if(userStatus.teacher) {
+            string += "<div id='leftBarBottom'><a href='/profile' class='bottomLeftLink'>Create Competition</a></div>";
+        } else {    // They are a student but not signed up
+            string += "<div id='leftBarBottom'><p onclick='showSignup()' class='bottomLeftLink'>Sign Up</p></div>";
         }
-        return string;
+        return string + "</div>";
     }
 
     public String getColumnsHTML(User uData, UserStatus userStatus, CompetitionStatus competitionStatus){
@@ -273,37 +300,37 @@ public class Template {
         // competition", a message saying "You must belong to a team to sign up", or a message saying
         // "you must be logged in to sign up for this competition"
         String actMessage = "<button id='signUp' onclick='showSignup()'>Sign Up</button><div id='signUpBox' style='display:none'><div class='center'><h1>Join Team</h1>" +
+                "<img src='/res/close.svg' id='signUpClose' onclick='hideSignup()'/>" +
                 "<p id='errorBoxERROR'></p><p class='instruction'>Enter team join code:</p><input name='teamCode' id='teamCode' oninput='codeEntered(this)' maxlength='6'>" +
-                "<p id='toggleCreateTeam' onclick='toggleCreateTeam()'>or create a new team.</p></div></div>";  // They haven't signed up yet
+                "<p id='toggleCreateTeam' onclick='toggleCreateTeam(event)'>or create a new team.</p></div></div>";  // They haven't signed up yet
         if(!userStatus.loggedIn){ // They are not logged in
             actMessage = "<h3 class='subtitle'>Log in to compete</h3>";
         } else if(userStatus.teacher) {
-            actMessage = "<h3 class='subtitle'>Teacher's cannot compete</h3>";
+            actMessage = "<h3 class='subtitle'>Teacher's can't compete</h3>";
         } else if(userStatus.signedUp) { // If they are already signed up for this competition
             actMessage = "<h3 class='subtitle'>You have signed up for this competition</h3>";
         }
+        Teacher teacher = competition.teacher;
+        String school = "";
+        if(!teacher.school.isEmpty()) school = "<h2>School</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.school)+"</p>";
         String about = "<div class='column' id='aboutColumn'>" +
                 "<div class='row head-row'>" +
                 "<h1>" + StringEscapeUtils.escapeHtml4(name) + "</h1>" +
                 actMessage + "" +
                 "</div>" +
-                "<div class='row'>" +
-                //"<h2>What it is</h2>" +
-                "<p>" + StringEscapeUtils.escapeHtml4(description) + "</p>" +
-                "</div>" +
-                /*"<div class='row'>" +
-                "<h2>Rules</h2>" +
-                "<p>" + StringEscapeUtils.escapeHtml4(rules) + "</p>" +
-                "</div>" +
-                /*"<div class='row'>" +
-                "<h2>Practice</h2>" +
-                "<p>" + practice + "</p>" +
-                "</div>" +*/
-                "</div>";
-        // String answers = "";
-        // if(competitionStatus.mcFinished && competitionStatus.frqFinished)  answers = answersHTML;
+                "<div class='row' id='aboutDescriptionRow'>" +
+                "<div id='aboutDescription'>" + StringEscapeUtils.escapeHtml4(description) + "</div>" +
+                "<div id='aboutInfo'><h2>Created by</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.fname)+" "+
+                StringEscapeUtils.escapeHtml4(teacher.lname)+"</p>"+school;
+        if(mcTest.exists) {
+            about += "<h2>Written</h2><p>"+mcTest.opens.DATE_STRING+"<br>"+(mcTest.TIME/(1000*60))+" min<br>"+mcTest.KEY.length+" questions</p>";
+        }
+        if(frqTest.exists) {
+            about += "<h2>Hands-On</h2><p>"+frqTest.opens.DATE_STRING+"<br>"+(frqTest.TIME/(1000*60))+" min<br>"+frqTest.PROBLEM_MAP.length+" questions</p>";
+        }
+        about += "</div></div></div>";
         return getFRQHTML(uData, userStatus, competitionStatus) + about + scoreboardHTML + /*answers +*/
-                getMCHTML(uData, userStatus, competitionStatus) + getTeamHTML(uData, userStatus);
+                getMCHTML(uData, userStatus, competitionStatus) /*getTeamHTML(uData, userStatus)*/;
     }
 
     /***
@@ -562,7 +589,7 @@ public class Template {
                 getFRQProblems(entry)+"</div></div>";
     }
     public String getFRQProblems(UILEntry entry){
-        String problems = "<div id='frqProblems'><h1>Problems - " + entry.frqScore +"pts</h1>";
+        String problems = "<div id='frqProblems'><h1>Hands-On Problems - " + entry.frqScore +"pts</h1>";
         for(int i=0; i<entry.frqResponses.length; i++) {
             problems+="<p>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[i]) + " - ";
             short tries = entry.frqResponses[i];
@@ -619,7 +646,9 @@ public class Template {
 
         if(!scoreboardSocketScheduled) {    // Schedule a timer to send the updated scoreboard to the connected sockets
             scoreboardSocketScheduled = true;
-            TimerTask task = new TimerTask() {
+            Timer task = new Timer();
+            task.schedule(new TimerTask() {
+                @Override
                 public void run() {
                     ArrayList<CompetitionSocket> sockets = CompetitionSocket.competitions.get(cid);
                     if(sockets == null) return;
@@ -636,11 +665,10 @@ public class Template {
                         }
                     }
                     scoreboardSocketScheduled = false;
+                    task.cancel();
+                    task.purge();
                 }
-            };
-            Timer timer = new Timer("ScoreboardTimer");
-
-            timer.schedule(task, 10000);    // Every 10 seconds
+            }, 1000);
         }
 
         Collections.sort(allTeams, sorter);

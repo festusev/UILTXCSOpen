@@ -27,6 +27,10 @@ body{
   border-radius:5px;
   border: 1px solid lightgray;
 }
+.profile_div .checkbox {
+  width:unset;
+  float:right;
+}
 .profile_cmpnt {
   padding:8px 0;
   position:relative;
@@ -98,7 +102,7 @@ body{
   grid-column-end: 3;
 }
 #Competitions .comp{
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
   margin-bottom: 1rem;
 }
 #Competitions .comp_head {
@@ -171,11 +175,12 @@ body{
   margin:10px 0;
 }
 .writtenSectionAnswerList input{
-  width:38rem;
+  width:35rem;
   border-radius:0;
   border: none;
   border-bottom: 1px solid lightgray;
   padding:2px 5px;
+  margin-right: 1rem;
 }
 .writtenSectionAnswerList p {
   display:inline-block;
@@ -206,15 +211,23 @@ button {
   width:20rem;
 }
 .handsOnProblemList .handsOn_probIn, .handsOnProblemList .handsOn_probOut {
-  border:none;
-  padding:10px;
-  font-size: 1rem;
+  border: 1px solid lightgray;
+  background-color: white;
+  margin-left: 10px;
+  padding: 10px 0px !important;
+  font-size: 0.9rem;
 }
 .handsOnProblemList button {
-  width:unset !important;
+  width: 8rem !important;
+  border-radius: 0.2em;
 }
 .handsOnSectionProblemCnt button {
+  background-color:white;
+  border: 1px solid lightgray;
   width: 100%;
+  margin-top: 10px;
+  border-radius:3px;
+  font-size: 1rem;
 }
 .handsOnSectionProblemCnt .save {
   right: 1rem;
@@ -223,7 +236,7 @@ button {
   float: right;
   padding: 0 0.5rem;
   cursor:pointer;
-  border-radius: 5px;
+  border-radius: 0.2em;
   color: white;
   margin-left: 10px;
 }
@@ -272,6 +285,7 @@ button {
   z-index:0;
   display: flex;
   flex-flow: row;
+  overflow: auto;
 }
 #profile_nav_cnt {
   display: inline-block;
@@ -284,13 +298,14 @@ button {
   text-align: right;
   height:20rem;
   border-right: 1px solid lightgray;
+  position: fixed;
+  left:20%;
 }
 #profile_cnt {
   display: inline-block;
   height: 100%;
   vertical-align: top;
   flex-grow: 1;
-  overflow: auto;
   padding-top: 8rem;
   padding-bottom: 4rem;
   box-sizing: border-box;
@@ -306,4 +321,18 @@ button {
 .helpSection h2{
   font-weight: bold;
   margin-bottom: 5px;
+}
+.handsOnProblemList, .writtenSectionAnswerList {
+  list-style: none;
+  counter-reset: item;
+}
+.handsOnProblemList li, .writtenSectionAnswerList li{
+  counter-increment: item;
+}
+.handsOnProblemList li:before, .writtenSectionAnswerList li:before{
+  content: counter(item);
+  display: inline-block;
+  width: 2rem;
+  text-align: right;
+  padding-right: 10px;
 }

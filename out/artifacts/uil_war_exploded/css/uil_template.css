@@ -2,6 +2,31 @@ body{
     overflow-y:visible;
     position:relative;
     z-index:-1000;
+    display: flex;
+    flex-flow: column;
+    height: 100vh;
+}
+#content{
+    flex-grow: 1;
+    display: flex;
+}
+#leftBar {
+    background-color: var(--prim-light);
+    padding: 0.5rem 2rem;
+    color: white;
+    width: 7rem;
+}
+#bottomRank {
+    font-weight: bold;
+    text-align:center;
+    font-size:2.5rem;
+}
+#leftBar h2{
+    font-weight:bold;
+}
+#leftBarBottom {
+    position: absolute;
+    bottom:1rem;
 }
 .tab{
     padding-left:2em;
@@ -9,15 +34,15 @@ body{
 #columns{
     position:relative;
     z-index: 1;
+    flex-grow:1;
+    flex-shrink:1000000;
 }
 .column{
-    width:40em;
     max-width:100%;
-    margin:auto;
-    padding:4rem 20px 10em 20px;
-}
-.column h1, .column .subtitle{
-    text-align: center;
+    padding:4rem 7rem 10em 7rem;
+    width: 100%;
+    height: 55rem;
+    overflow: scroll;
 }
 .column h1{
     padding-bottom:5px;
@@ -63,6 +88,8 @@ body{
     color:white;
     cursor:pointer;
     margin:auto;
+    float: right;
+    margin-top: 2rem;
 }
 #signUp:hover{
     background-color: var(--sec-dark);
@@ -200,7 +227,7 @@ body{
     top:0;
     width:100vw;
     height:100vh;
-    background-color:rgba(255,255,255,1);
+    background-color:rgba(255,255,255,0.95);
 }
 #signUpBox .center{
     position: absolute;
@@ -233,6 +260,12 @@ body{
 }
 #signUpBox #toggleCreateTeam {
     cursor:pointer;
+    color: var(--prim-light);
+    margin-top: 10px;
+}
+#signUpBox #errorBoxERROR{
+    display: block !important;
+    width: 100%;
 }
 #signUpBox #toggleCreateTeam button {
     display:block;
@@ -262,6 +295,7 @@ body{
     width:100%;
     text-align:center;
 }
+#mcSubmissions tr:nth-child(even) {background-color: #f2f2f2;}
 #mcSubmissions tr *:last-child{
     text-align:right;
 }
@@ -278,8 +312,10 @@ body{
     text-align:left;
     cursor: pointer;
 }
-.frqSubmissionList {
-    position: relative;
+#frqSubmissions {
+    display: inline-block;
+    vertical-align: top;
+    width: 50rem;
 }
 #frqSubmissions table{
     width:100%;
@@ -295,13 +331,14 @@ body{
     text-align:right;
 }
 .frqSubmissionEditor {
-    position: absolute;
-    transform: translateX(-105%);
     width: 30rem;
+    height: 45rem;
+    overflow: auto;
     border: 1px solid lightgray;
     padding: 1rem;
     border-radius: 5px;
-    display: block;
+    display: inline-block;
+    margin-left: 3rem;
 }
 .frqSubmissionEditor .half{
     width:50%;
@@ -330,4 +367,49 @@ body{
     margin-top: -2rem;
     color: var(--warn-col);
     text-align: right;
+}
+#aboutColumn .head-row{
+    border-bottom: 1px solid lightgray;
+    position: relative;
+}
+#aboutColumn .head-row *{
+    display: inline-block;
+}
+#aboutColumn .head-row .subtitle {
+    float: right;
+    margin-top: 2rem;
+}
+#aboutDescriptionRow {
+    display: flex;
+    flex-flow: row;
+    margin-top: 1rem;
+}
+#aboutDescription {
+    width:75%;
+    max-width: calc(100% - 10rem);
+    padding-right: 1rem;
+    box-sizing: border-box;
+}
+#aboutInfo{
+    flex-grow:1;
+}
+#aboutInfo h2{
+    font-size: 1em;
+    color: var(--font-col);
+}
+#leftBarBottom .bottomLeftLink{
+    cursor: pointer;
+    background-color: var(--sec-col);
+    padding: 0.5rem 1.5rem;
+    border-radius:5px;
+}
+.navSelected {
+    background-color: rgb(250,250,250);
+}
+#signUpClose {
+    width: 1.5rem;
+    position: absolute;
+    top: 0.5rem;
+    right: 0.2rem;
+    cursor: pointer;
 }

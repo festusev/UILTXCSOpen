@@ -3,10 +3,11 @@ package Outlet.uil;
 import Outlet.Countdown;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Scanner;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,6 +35,22 @@ public class FRQTest {
 
     public final String[] PROBLEM_MAP;  // A list of the problem names
     private static ArrayList<ArrayList<Pair>> files = null;
+
+    private static Set<PosixFilePermission> FILE_PERMISSIONS = null;
+    static {
+        FILE_PERMISSIONS = new HashSet<>();
+        FILE_PERMISSIONS.add(PosixFilePermission.OWNER_READ);
+        FILE_PERMISSIONS.add(PosixFilePermission.OWNER_WRITE);
+        FILE_PERMISSIONS.add(PosixFilePermission.OWNER_EXECUTE);
+
+        FILE_PERMISSIONS.add(PosixFilePermission.GROUP_READ);
+        FILE_PERMISSIONS.add(PosixFilePermission.GROUP_WRITE);
+        FILE_PERMISSIONS.add(PosixFilePermission.GROUP_EXECUTE);
+
+        FILE_PERMISSIONS.add(PosixFilePermission.OTHERS_READ);
+        FILE_PERMISSIONS.add(PosixFilePermission.OTHERS_WRITE);
+        FILE_PERMISSIONS.add(PosixFilePermission.OTHERS_EXECUTE);
+    }
 
     public Countdown opens; // The time that this opens
     public Countdown closes;
@@ -169,17 +186,24 @@ public class FRQTest {
         File[] var2 = dir.listFiles();
         int var3 = var2.length;
 
-        for(int var4 = 0; var4 < var3; ++var4) {
-            File test = var2[var4];
+        for (File test : var2) {
             System.out.println(">Looking at file " + test.getAbsolutePath());
             File[] var6 = dir.listFiles();
-            int var7 = var6.length;
+            try {
+                Files.setPosixFilePermissions(test.toPath(),FILE_PERMISSIONS);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
-            for(int var8 = 0; var8 < var7; ++var8) {
-                File ans = var6[var8];
+            for (File ans : var6) {
                 if (ans.getName().equals(test.getName() + ".a")) {
                     System.out.println(">Found input-output match of " + test.getName() + " and " + ans.getName());
                     ret.add(new Pair(test, ans));
+                    try {
+                        Files.setPosixFilePermissions(ans.toPath(),FILE_PERMISSIONS);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
@@ -216,9 +240,12 @@ public class FRQTest {
     public FRQSubmission grade(String source_file, String compile_cmd, String dir, String run_cmd, short problemNum) throws IOException {
         System.out.printf("Compiling %s\n", source_file);
         System.out.printf("Compiling %s\n", compile_cmd);
-        Process p = Runtime.getRuntime().exec(new String[]{"bash", "-c", compile_cmd});
+        System.out.println("chmod -R 777 " + dir);
+        Process p = Runtime.getRuntime().exec(new String[]{"bash", "-c", compile_cmd, "chmod -R 777 " + dir});
 
         try {
+            p.waitFor();
+
             int ret = p.waitFor();
             if (ret != 0) {
                 System.out.println("Program exited with code: " + ret);
@@ -233,6 +260,7 @@ public class FRQTest {
             return new FRQSubmission(problemNum, FRQSubmission.Result.COMPILETIME_ERROR, "", "");
         }
 
+        System.out.println("Looking for file with probNum="+problemNum);
         ArrayList<Pair> problem_dir = files.get(problemNum - 1);
         Iterator var7 = problem_dir.iterator();
 
@@ -245,10 +273,22 @@ public class FRQTest {
         Pair x = (Pair)var7.next();
         File in_file = x.key;
         File ans_file = x.value;
-        Runtime.getRuntime().exec(new String[]{"bash", "-c", "ln -s " + in_file.getAbsolutePath() + " " + dir + PROBLEM_MAP[problemNum-1].toLowerCase() + ".dat"});
+        try {
+            Runtime.getRuntime().exec(new String[]{"bash", "-c", "ln -s " + in_file.getAbsolutePath() + " " + dir + PROBLEM_MAP[problemNum-1].toLowerCase() + ".dat"}).waitFor();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "");
+        }
         System.out.println("Test Case " + in_file.getName());
         System.out.println("--Executing command '" + run_cmd + "'");
-        Process r = Runtime.getRuntime().exec(new String[]{"bash", "-c", run_cmd});
+        Process r = null;
+        try {
+            r = Runtime.getRuntime().exec(new String[]{"bash", "-c", run_cmd});
+            r.waitFor();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "");
+        }
         InputStream stdout = r.getInputStream();
         InputStream stderr = r.getErrorStream();
         long a = System.currentTimeMillis();
@@ -349,6 +389,8 @@ public class FRQTest {
             File file = new File(path);
             //if(isInput) files.get(probNum-1).get(0).key = file;
             //else files.get(probNum-1).get(0).value = file;
+            Files.createFile(file.toPath(), PosixFilePermissions.asFileAttribute(FILE_PERMISSIONS));
+            Files.setPosixFilePermissions(file.toPath(),FILE_PERMISSIONS);
 
             OutputStream os = new FileOutputStream(file);
             os.write(bytes);
@@ -388,17 +430,21 @@ public class FRQTest {
                     dirMade = dir.mkdir();
                     if (!dirMade) {
                         System.out.println("ERROR: Cannot create directory, trying another method");
-                        Runtime.getRuntime().exec("mkdir "+ SCORE_DIR_PATH + directory);
+                        Runtime.getRuntime().exec("mkdir "+ SCORE_DIR_PATH + directory).waitFor();
                     }
 
                     try {
-                        OutputStream os = new FileOutputStream(new File(fileName));
+                        File file = new File(fileName);
+                        OutputStream os = new FileOutputStream(file);
                         os.write(bytes);
                         os.close();
+                        file.setWritable(true, true);
+                        file.setExecutable(true, true);
+                        file.setReadable(true, true);
                     } catch (Exception var18) {
                         var18.printStackTrace();
                         System.out.println("--Could not write file, trying another method");
-                        Runtime.getRuntime().exec("touch " + fileName);
+                        Runtime.getRuntime().exec("touch " + fileName).waitFor();
                     }
                 } catch (Exception var19) {
                     var19.printStackTrace();

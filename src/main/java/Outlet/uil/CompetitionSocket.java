@@ -54,7 +54,7 @@ public class CompetitionSocket {
     @OnClose
     public void onClose(Session session) throws IOException {
         if(this.user != null) connected.remove(this.user.uid);
-        competitions.get(competition.template.cid).remove(this);
+        if(competition != null) competitions.get(competition.template.cid).remove(this);
     }
 
     @OnError

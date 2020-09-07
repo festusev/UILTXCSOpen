@@ -363,7 +363,6 @@ a:focus{
 }
 .column h1{
     display:block;
-    width:100%;
     font-weight:bold;
     color:var(--prim-light);
     font-size:3rem;
@@ -388,10 +387,6 @@ a:focus{
 
 /* How a scoreboard is styled */
 #scoreboardColumn{
-    text-align:left;
-    width:70em;
-    max-width:100%;
-    margin:auto;
 }
 #scoreboardColumn tr{
     border-bottom:1px solid #e8e8e8;

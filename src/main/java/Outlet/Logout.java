@@ -17,15 +17,12 @@ public class Logout extends HttpServlet{
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        BigInteger token = Conn.getToken(request);
+        System.out.println("Context Path="+request.getContextPath());
         User u = UserMap.getUserByRequest(request);
-        if(u == null || u.token == null){
-            response.sendRedirect(request.getContextPath());
-            return;
-        } else {
+        if(u != null && u.token != null) {
             Conn.delToken(request, response, u);    // Remove the token from the cookie
-            Conn.logout(token);      // Set the token to null in the database
+            Conn.logout(u.token);      // Set the token to null in the database
         }
-        response.sendRedirect(request.getContextPath());
+        response.sendRedirect(request.getContextPath() + "/");
     }
 }

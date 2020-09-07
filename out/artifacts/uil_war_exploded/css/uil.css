@@ -42,15 +42,16 @@
 }
 .competition{
     padding:10px;
-    border:1px solid #b7b7b7;
+    border: 1px solid lightgray;
     border-radius:10px;
     margin-bottom:1rem;
+    margin-top:0.5rem;
     cursor: pointer;
     display: block;
 }
 .competition:hover{
-    background-color:#e8f0fe;
-    border-color:#e8f0fe;
+    background-color:var(--prim-light);
+    color: white;
 }
 .competition .row1 *, .competition .row2 *{
     display:inline-block;
@@ -95,6 +96,10 @@
     overflow: auto;
     padding: 8rem 0 4rem 4rem;
     box-sizing: border-box;
+    flex-grow:1;
+}
+#comp{
+    width:40rem;
 }
 #comp h1{
     font-size:2rem;

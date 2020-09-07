@@ -234,22 +234,24 @@ class Competition {
         }
     }
 
-    toggleWrittenKey() {
+    toggleWrittenKey(h2:HTMLHeadElement) {
         if(this.dom.writtenKey.style.display !== "block") {
             this.dom.writtenKey.style.display = "block";
-            if(this.dom.writtenInstructionCnt.style.display === "block") {
-                this.dom.writtenInstructionCnt.style.display = "none";
-            }
+            h2.innerHTML = "Answers<span style='float:right;font-weight:bold;'>-</span>";
         } else {
             this.dom.writtenKey.style.display = "none";
+            h2.innerHTML = "Answers<span style='float:right;font-weight:bold;'>+</span>";
         }
     }
 
-    toggleHandsOnProblems() {
-        if(this.dom.handsOnProblems.style.display !== "block")
+    toggleHandsOnProblems(h2:HTMLHeadElement) {
+        if(this.dom.handsOnProblems.style.display !== "block") {
             this.dom.handsOnProblems.style.display = "block";
-        else
+            h2.innerHTML = "Problems<span style='float:right;font-weight:bold;'>-</span>";
+        } else {
             this.dom.handsOnProblems.style.display = "none";
+            h2.innerHTML = "Problems<span style='float:right;font-weight:bold;'>+</span>";
+        }
     }
 
     toggleWrittenTest() {
@@ -270,15 +272,14 @@ class Competition {
         this.handsOnExists = !this.handsOnExists;
     }
 
-    toggleWrittenInstructions() {
+    toggleWrittenInstructions(h2:HTMLHeadElement) {
         if(this.dom.writtenInstructionCnt.style.display === "none") {
             this.dom.writtenInstructionCnt.style.display = "block";
-            if(this.dom.writtenKey.style.display === "block") { // Written key is showing
-                this.dom.writtenKey.style.display = "none";
-            }
+            h2.innerHTML = "Instructions<span style='float:right;font-weight:bold'>-</span>"
         } else {
             this.dom.writtenInstructionCnt.style.display = "none";
             this.written.instructions = this.dom.writtenInstructions.value;
+            h2.innerHTML = "Instructions<span style='float:right;font-weight:bold'>+</span>"
         }
     }
 
@@ -351,7 +352,6 @@ class Competition {
                 problemIndices.push(problem.oldIndex);
                 problem.oldIndex = i+1; /* Now that the problem has been saved, we set it to be its current index */
 
-                console.log("Input file length="+problem.dom.input.files.length+", output file length="+problem.dom.output.files.length);
                 if(problem.dom.input.files.length > 0) {
                     formData.append("fi:"+i, problem.dom.input.files[0]);
                 }
@@ -403,14 +403,28 @@ class Competition {
     }
 
     unPublishCompetition(callback:Function) {
+        try {this.dom.comp_edit.removeChild(document.getElementById("ERROR"));}
+        catch (e){}
+
         this.published = false;
 
+        let thisComp:Competition = this;
         let formData = new FormData();
         formData.append("action", "unPublishCompetition");
         formData.append("cid", this.cid);
         let xhr:XMLHttpRequest = new XMLHttpRequest();
         xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {if (xhr.status === 200) {callback();}}
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    let response = JSON.parse(xhr.responseText);
+                    if(response["success"] != null) {
+                        addSuccessBox(thisComp.dom.comp_edit, response["success"]);
+                        callback();
+                    } else {
+                        addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error);
+                    }
+                }
+            }
         };
         xhr.open('POST', "/profile", true);
         xhr.send(formData);
@@ -473,7 +487,7 @@ class Competition {
             let newValue:string = newInput.value;
             writtenProblem.answer = newValue;
 
-            if(!config.COMPETITION.mcOptions.includes(newValue)) {  /* Switch to SAQ */
+            if(newValue.length>0 && !config.COMPETITION.mcOptions.includes(newValue)) {  /* Switch to SAQ */
                 writtenProblem.type = WrittenType.SAQ;
                 newP.selectedIndex = 1;
             }
@@ -492,7 +506,7 @@ class Competition {
         newP.onchange = function(){
             if(writtenProblem.type === WrittenType.MC) {  /* Switch to SAQ */
                 writtenProblem.type = WrittenType.SAQ;
-            } else if(config.COMPETITION.mcOptions.includes(newInput.value)) { /* It must be a valid multiple choice option */
+            } else if(newInput.value.length === 0 || config.COMPETITION.mcOptions.includes(newInput.value)) { /* It must be a valid multiple choice option */
                 writtenProblem.type = WrittenType.MC;
             } else {
                 newP.selectedIndex = 1;
@@ -590,7 +604,7 @@ class Competition {
             /* OPEN */
             let written_answers = document.createElement("div");
             makeFull(written_answers);
-            written_answers.onclick = function() {thisComp.toggleWrittenKey();};
+            written_answers.onclick = function() {thisComp.toggleWrittenKey(h2_written_answers);};
             written_section.appendChild(written_answers);
             written_answers.style.cursor = "pointer";
 
@@ -637,7 +651,7 @@ class Competition {
             /* OPEN */
             let written_instructions = document.createElement("div");
             makeFull(written_instructions);
-            written_instructions.onclick = function(){thisComp.toggleWrittenInstructions();};
+            written_instructions.onclick = function(){thisComp.toggleWrittenInstructions(h2_written_instructions);};
             written_section.appendChild(written_instructions);
             written_instructions.style.cursor = "pointer";
 
@@ -695,13 +709,21 @@ class Competition {
             written_section.appendChild(written_ppc);
 
             let h2_written_ppc = document.createElement("h2");
-            h2_written_ppc.innerText = "Points Per Correct";
+            h2_written_ppc.innerText = "Points Per Correct Problem";
             written_ppc.appendChild(h2_written_ppc);
 
-            let input_written_ppc = document.createElement("input");
+            let input_written_ppc:HTMLInputElement = document.createElement("input");
             input_written_ppc.name = "mcCorrectPoints";
             input_written_ppc.type = "number";
             input_written_ppc.placeholder = "6";
+            input_written_ppc.min = "0";
+            input_written_ppc.max = "999";
+            input_written_ppc.step = "1";
+            let input_written_ppc_old: string = "6";
+            input_written_ppc.onchange = function() {
+                if(!input_written_ppc.validity.valid) input_written_ppc.value = input_written_ppc_old;
+                else input_written_ppc_old = input_written_ppc.value;
+            };
             input_written_ppc.value = ""+thisComp.written.correctPoints?""+thisComp.written.correctPoints:"";
             written_ppc.appendChild(input_written_ppc);
             thisComp.dom.writtenPointsPerCorrect = input_written_ppc;
@@ -713,14 +735,22 @@ class Competition {
             written_section.appendChild(written_ppi);
 
             let h2_written_ppi = document.createElement("h2");
-            h2_written_ppi.innerText = "Points per Incorrect";
+            h2_written_ppi.innerText = "Points Per Incorrect Problem";
             written_ppi.appendChild(h2_written_ppi);
 
             let input_written_ppi = document.createElement("input");
             input_written_ppi.name = "mcIncorrectPoints";
             input_written_ppi.type = "number";
+            input_written_ppi.placeholder = "-2";
+            input_written_ppi.max = "0";
+            input_written_ppi.min = "-999";
+            input_written_ppi.step = "1";
+            let input_written_ppi_old: string = "-2";
+            input_written_ppi.onchange = function() {
+                if(!input_written_ppi.validity.valid) input_written_ppi.value = input_written_ppi_old;
+                else input_written_ppi_old = input_written_ppi.value;
+            };
             input_written_ppi.value = ""+thisComp.written.incorrectPoints?""+thisComp.written.incorrectPoints:"";
-            input_written_ppi.placeholder = "2";
             written_ppi.appendChild(input_written_ppi);
             thisComp.dom.writtenPointsPerIncorrect = input_written_ppi;
             /* CLOSE */
@@ -756,7 +786,7 @@ class Competition {
 
                 let input_in_proxy = document.createElement("button");
                 input_in_proxy.classList.add("handsOn_probIn");
-                input_in_proxy.innerText = "Input File";
+                input_in_proxy.innerText = "Judge Input File";
                 li.appendChild(input_in_proxy);
                 input_in_proxy.onclick = function(){input_in_hidden.click();};
 
@@ -768,7 +798,7 @@ class Competition {
 
                 let input_out_proxy = document.createElement("button");
                 input_out_proxy.classList.add("handsOn_probOut");
-                input_out_proxy.innerText = "Output File";
+                input_out_proxy.innerText = "Judge Output File";
                 input_out_proxy.onclick = function(){input_out_hidden.click();};
                 li.appendChild(input_out_proxy);
 
@@ -842,7 +872,7 @@ class Competition {
             /* OPEN */
             let handsOn_problems = document.createElement("div");
             makeFull(handsOn_problems);
-            handsOn_problems.onclick = function(){thisComp.toggleHandsOnProblems();};
+            handsOn_problems.onclick = function(){thisComp.toggleHandsOnProblems(handsOn_problems);};
             handsOn_problems.innerHTML = "Problems<span style='float:right;font-weight:bold;'>+</span>";
             handsOn_problems.style.cursor = "pointer";
             handsOn_section.appendChild(handsOn_problems);
@@ -901,6 +931,14 @@ class Competition {
             input_handsOn_maxPoints.type = "number";
             input_handsOn_maxPoints.name = "frqMaxPoints";
             input_handsOn_maxPoints.value = ""+thisComp.handsOn.maxPoints?""+thisComp.handsOn.maxPoints:"60";
+            input_handsOn_maxPoints.min = "0";
+            input_handsOn_maxPoints.max = "999";
+            input_handsOn_maxPoints.step = "1";
+            let input_handsOn_maxPoints_old: string = ""+thisComp.handsOn.maxPoints?""+thisComp.handsOn.maxPoints:"60";
+            input_handsOn_maxPoints.onchange = function() {
+                if(!input_handsOn_maxPoints.validity.valid) input_handsOn_maxPoints.value = input_handsOn_maxPoints_old;
+                else input_handsOn_maxPoints_old = input_handsOn_maxPoints.value;
+            };
             handsOn_maxPoints.appendChild(input_handsOn_maxPoints);
             thisComp.dom.handsOnMaxPoints = input_handsOn_maxPoints;
             /* CLOSE */
@@ -908,13 +946,22 @@ class Competition {
             /* OPEN */
             let handsOn_incorrectPenalty = document.createElement("div");
             makeHalf(handsOn_incorrectPenalty);
-            handsOn_incorrectPenalty.innerHTML = "<h2>Incorrect Penalty</h2>";
+            handsOn_incorrectPenalty.innerHTML = "<h2>Incorrect Submission Penalty</h2>";
             handsOn_section.appendChild(handsOn_incorrectPenalty);
 
-            let input_handsOn_incorrectPenalty = document.createElement("input");
+            let input_handsOn_incorrectPenalty:HTMLInputElement = document.createElement("input");
             input_handsOn_incorrectPenalty.name = "frqIncorrectPenalty";
             input_handsOn_incorrectPenalty.type = "number";
-            input_handsOn_incorrectPenalty.value = ""+thisComp.handsOn.incorrectPenalty?""+thisComp.handsOn.incorrectPenalty:"5";
+            input_handsOn_incorrectPenalty.value = ""+thisComp.handsOn.incorrectPenalty?""+thisComp.handsOn.incorrectPenalty:"-5";
+            input_handsOn_incorrectPenalty.min = "-999";
+            input_handsOn_incorrectPenalty.max = "0";
+            input_handsOn_incorrectPenalty.step = "1";
+            input_handsOn_incorrectPenalty.placeholder = "-5";
+            let input_handsOn_incorrectPenalty_old: string = ""+thisComp.handsOn.incorrectPenalty?""+thisComp.handsOn.incorrectPenalty:"-5";
+            input_handsOn_incorrectPenalty.onchange = function() {
+                if(!input_handsOn_incorrectPenalty.validity.valid) input_handsOn_incorrectPenalty.value = input_handsOn_incorrectPenalty_old;
+                else input_handsOn_incorrectPenalty_old = input_handsOn_incorrectPenalty.value;
+            };
             handsOn_incorrectPenalty.appendChild(input_handsOn_incorrectPenalty);
             thisComp.dom.handsOnIncorrectPenalty = input_handsOn_incorrectPenalty;
             /* CLOSE */
@@ -1137,7 +1184,7 @@ class Competition {
         /* OPEN */
         let h2_handsOn_toggle = document.createElement("div");
         makeHalf(h2_handsOn_toggle);
-        h2_handsOn_toggle.innerHTML = "<h2><b>Hands-On Programming</b></h2>";
+        h2_handsOn_toggle.innerHTML = "<h2><b>Hands-On (for UIL CS)</b></h2>";
         body.appendChild(h2_handsOn_toggle);
         /* CLOSE */
 
@@ -1187,7 +1234,7 @@ function asyncConnectHelper(url:string, params:string, teamBox:HTMLElement):bool
             if (xhr.status === 200) { // If an error occurred
                 const response:object = JSON.parse(xhr.responseText);
                 if(Object.keys(response).includes("reload")) window.location.href=response["reload"];
-                else if(Object.keys(response).includes("success")) addSuccessBox(teamBox, "SUCCESS: " + response["success"]);
+                else if(Object.keys(response).includes("success")) addSuccessBox(teamBox, "" + response["success"]);
                 else addErrorBox(teamBox, response["error"]);
             } else {    // A server error occurred. Show an error message
                 addErrorBox(teamBox, config.TEXT.server_error);
@@ -1212,7 +1259,7 @@ function saveChanges():boolean {
                     window.location.href=response["reload"];
                 // @ts-ignore
                 } else if(Object.keys(response).includes("success")) {
-                    addSuccessBox(dom.profile, "SUCCESS: " + response["success"]);
+                    addSuccessBox(dom.profile, "" + response["success"]);
                 } else {
                     addErrorBox(dom.profile, response["error"]);
                 }
@@ -1318,10 +1365,10 @@ function delUser():boolean {
 function addErrorBox(box:HTMLElement, error:string): void{
     let errorBox:HTMLElement = document.getElementById(box.id + "ERROR");
     if(!errorBox) {
-        box.insertAdjacentHTML('afterbegin', "<div class='error' id='" + box.id + "ERROR'>ERROR: " + error + "</div>");
+        box.insertAdjacentHTML('afterbegin', "<div class='error' id='" + box.id + "ERROR'>" + error + "</div>");
     }
     else {
-        errorBox.innerHTML = "ERROR: " + error;
+        errorBox.innerHTML = "" + error;
         errorBox.className = "error";
     }
 }

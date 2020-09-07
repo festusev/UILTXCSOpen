@@ -161,22 +161,25 @@ var Competition = /** @class */ (function () {
             this.handsOn.time = handsOnObj.time;
         }
     }
-    Competition.prototype.toggleWrittenKey = function () {
+    Competition.prototype.toggleWrittenKey = function (h2) {
         if (this.dom.writtenKey.style.display !== "block") {
             this.dom.writtenKey.style.display = "block";
-            if (this.dom.writtenInstructionCnt.style.display === "block") {
-                this.dom.writtenInstructionCnt.style.display = "none";
-            }
+            h2.innerHTML = "Answers<span style='float:right;font-weight:bold;'>-</span>";
         }
         else {
             this.dom.writtenKey.style.display = "none";
+            h2.innerHTML = "Answers<span style='float:right;font-weight:bold;'>+</span>";
         }
     };
-    Competition.prototype.toggleHandsOnProblems = function () {
-        if (this.dom.handsOnProblems.style.display !== "block")
+    Competition.prototype.toggleHandsOnProblems = function (h2) {
+        if (this.dom.handsOnProblems.style.display !== "block") {
             this.dom.handsOnProblems.style.display = "block";
-        else
+            h2.innerHTML = "Problems<span style='float:right;font-weight:bold;'>-</span>";
+        }
+        else {
             this.dom.handsOnProblems.style.display = "none";
+            h2.innerHTML = "Problems<span style='float:right;font-weight:bold;'>+</span>";
+        }
     };
     Competition.prototype.toggleWrittenTest = function () {
         if (this.writtenExists) { /* It is now unchecked so show the div */
@@ -196,16 +199,15 @@ var Competition = /** @class */ (function () {
         }
         this.handsOnExists = !this.handsOnExists;
     };
-    Competition.prototype.toggleWrittenInstructions = function () {
+    Competition.prototype.toggleWrittenInstructions = function (h2) {
         if (this.dom.writtenInstructionCnt.style.display === "none") {
             this.dom.writtenInstructionCnt.style.display = "block";
-            if (this.dom.writtenKey.style.display === "block") { // Written key is showing
-                this.dom.writtenKey.style.display = "none";
-            }
+            h2.innerHTML = "Instructions<span style='float:right;font-weight:bold'>-</span>";
         }
         else {
             this.dom.writtenInstructionCnt.style.display = "none";
             this.written.instructions = this.dom.writtenInstructions.value;
+            h2.innerHTML = "Instructions<span style='float:right;font-weight:bold'>+</span>";
         }
     };
     Competition.prototype.delete = function () {
@@ -270,7 +272,6 @@ var Competition = /** @class */ (function () {
                 problems.push(probName);
                 problemIndices.push(problem.oldIndex);
                 problem.oldIndex = i + 1; /* Now that the problem has been saved, we set it to be its current index */
-                console.log("Input file length=" + problem.dom.input.files.length + ", output file length=" + problem.dom.output.files.length);
                 if (problem.dom.input.files.length > 0) {
                     formData.append("fi:" + i, problem.dom.input.files[0]);
                 }
@@ -325,7 +326,12 @@ var Competition = /** @class */ (function () {
         return false;
     };
     Competition.prototype.unPublishCompetition = function (callback) {
+        try {
+            this.dom.comp_edit.removeChild(document.getElementById("ERROR"));
+        }
+        catch (e) { }
         this.published = false;
+        var thisComp = this;
         var formData = new FormData();
         formData.append("action", "unPublishCompetition");
         formData.append("cid", this.cid);
@@ -333,7 +339,14 @@ var Competition = /** @class */ (function () {
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
                 if (xhr.status === 200) {
-                    callback();
+                    var response = JSON.parse(xhr.responseText);
+                    if (response["success"] != null) {
+                        addSuccessBox(thisComp.dom.comp_edit, response["success"]);
+                        callback();
+                    }
+                    else {
+                        addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error);
+                    }
                 }
             }
         };
@@ -396,7 +409,7 @@ var Competition = /** @class */ (function () {
         newInput.onchange = function () {
             var newValue = newInput.value;
             writtenProblem.answer = newValue;
-            if (!config.COMPETITION.mcOptions.includes(newValue)) { /* Switch to SAQ */
+            if (newValue.length > 0 && !config.COMPETITION.mcOptions.includes(newValue)) { /* Switch to SAQ */
                 writtenProblem.type = WrittenType.SAQ;
                 newP.selectedIndex = 1;
             }
@@ -414,7 +427,7 @@ var Competition = /** @class */ (function () {
             if (writtenProblem.type === WrittenType.MC) { /* Switch to SAQ */
                 writtenProblem.type = WrittenType.SAQ;
             }
-            else if (config.COMPETITION.mcOptions.includes(newInput.value)) { /* It must be a valid multiple choice option */
+            else if (newInput.value.length === 0 || config.COMPETITION.mcOptions.includes(newInput.value)) { /* It must be a valid multiple choice option */
                 writtenProblem.type = WrittenType.MC;
             }
             else {
@@ -503,7 +516,7 @@ var Competition = /** @class */ (function () {
             /* OPEN */
             var written_answers = document.createElement("div");
             makeFull(written_answers);
-            written_answers.onclick = function () { thisComp.toggleWrittenKey(); };
+            written_answers.onclick = function () { thisComp.toggleWrittenKey(h2_written_answers); };
             written_section.appendChild(written_answers);
             written_answers.style.cursor = "pointer";
             var h2_written_answers = document.createElement("h2");
@@ -543,7 +556,7 @@ var Competition = /** @class */ (function () {
             /* OPEN */
             var written_instructions = document.createElement("div");
             makeFull(written_instructions);
-            written_instructions.onclick = function () { thisComp.toggleWrittenInstructions(); };
+            written_instructions.onclick = function () { thisComp.toggleWrittenInstructions(h2_written_instructions); };
             written_section.appendChild(written_instructions);
             written_instructions.style.cursor = "pointer";
             var h2_written_instructions = document.createElement("h2");
@@ -592,12 +605,22 @@ var Competition = /** @class */ (function () {
             makeHalf(written_ppc);
             written_section.appendChild(written_ppc);
             var h2_written_ppc = document.createElement("h2");
-            h2_written_ppc.innerText = "Points Per Correct";
+            h2_written_ppc.innerText = "Points Per Correct Problem";
             written_ppc.appendChild(h2_written_ppc);
             var input_written_ppc = document.createElement("input");
             input_written_ppc.name = "mcCorrectPoints";
             input_written_ppc.type = "number";
             input_written_ppc.placeholder = "6";
+            input_written_ppc.min = "0";
+            input_written_ppc.max = "999";
+            input_written_ppc.step = "1";
+            var input_written_ppc_old = "6";
+            input_written_ppc.onchange = function () {
+                if (!input_written_ppc.validity.valid)
+                    input_written_ppc.value = input_written_ppc_old;
+                else
+                    input_written_ppc_old = input_written_ppc.value;
+            };
             input_written_ppc.value = "" + thisComp.written.correctPoints ? "" + thisComp.written.correctPoints : "";
             written_ppc.appendChild(input_written_ppc);
             thisComp.dom.writtenPointsPerCorrect = input_written_ppc;
@@ -607,13 +630,23 @@ var Competition = /** @class */ (function () {
             makeHalf(written_ppi);
             written_section.appendChild(written_ppi);
             var h2_written_ppi = document.createElement("h2");
-            h2_written_ppi.innerText = "Points per Incorrect";
+            h2_written_ppi.innerText = "Points Per Incorrect Problem";
             written_ppi.appendChild(h2_written_ppi);
             var input_written_ppi = document.createElement("input");
             input_written_ppi.name = "mcIncorrectPoints";
             input_written_ppi.type = "number";
+            input_written_ppi.placeholder = "-2";
+            input_written_ppi.max = "0";
+            input_written_ppi.min = "-999";
+            input_written_ppi.step = "1";
+            var input_written_ppi_old = "-2";
+            input_written_ppi.onchange = function () {
+                if (!input_written_ppi.validity.valid)
+                    input_written_ppi.value = input_written_ppi_old;
+                else
+                    input_written_ppi_old = input_written_ppi.value;
+            };
             input_written_ppi.value = "" + thisComp.written.incorrectPoints ? "" + thisComp.written.incorrectPoints : "";
-            input_written_ppi.placeholder = "2";
             written_ppi.appendChild(input_written_ppi);
             thisComp.dom.writtenPointsPerIncorrect = input_written_ppi;
             /* CLOSE */
@@ -646,7 +679,7 @@ var Competition = /** @class */ (function () {
                 problem.dom.input = input_in_hidden;
                 var input_in_proxy = document.createElement("button");
                 input_in_proxy.classList.add("handsOn_probIn");
-                input_in_proxy.innerText = "Input File";
+                input_in_proxy.innerText = "Judge Input File";
                 li.appendChild(input_in_proxy);
                 input_in_proxy.onclick = function () { input_in_hidden.click(); };
                 var input_out_hidden = document.createElement("input");
@@ -656,7 +689,7 @@ var Competition = /** @class */ (function () {
                 problem.dom.output = input_out_hidden;
                 var input_out_proxy = document.createElement("button");
                 input_out_proxy.classList.add("handsOn_probOut");
-                input_out_proxy.innerText = "Output File";
+                input_out_proxy.innerText = "Judge Output File";
                 input_out_proxy.onclick = function () { input_out_hidden.click(); };
                 li.appendChild(input_out_proxy);
                 var delQuestion = document.createElement("img");
@@ -723,7 +756,7 @@ var Competition = /** @class */ (function () {
             /* OPEN */
             var handsOn_problems = document.createElement("div");
             makeFull(handsOn_problems);
-            handsOn_problems.onclick = function () { thisComp.toggleHandsOnProblems(); };
+            handsOn_problems.onclick = function () { thisComp.toggleHandsOnProblems(handsOn_problems); };
             handsOn_problems.innerHTML = "Problems<span style='float:right;font-weight:bold;'>+</span>";
             handsOn_problems.style.cursor = "pointer";
             handsOn_section.appendChild(handsOn_problems);
@@ -775,18 +808,39 @@ var Competition = /** @class */ (function () {
             input_handsOn_maxPoints.type = "number";
             input_handsOn_maxPoints.name = "frqMaxPoints";
             input_handsOn_maxPoints.value = "" + thisComp.handsOn.maxPoints ? "" + thisComp.handsOn.maxPoints : "60";
+            input_handsOn_maxPoints.min = "0";
+            input_handsOn_maxPoints.max = "999";
+            input_handsOn_maxPoints.step = "1";
+            var input_handsOn_maxPoints_old = "" + thisComp.handsOn.maxPoints ? "" + thisComp.handsOn.maxPoints : "60";
+            input_handsOn_maxPoints.onchange = function () {
+                if (!input_handsOn_maxPoints.validity.valid)
+                    input_handsOn_maxPoints.value = input_handsOn_maxPoints_old;
+                else
+                    input_handsOn_maxPoints_old = input_handsOn_maxPoints.value;
+            };
             handsOn_maxPoints.appendChild(input_handsOn_maxPoints);
             thisComp.dom.handsOnMaxPoints = input_handsOn_maxPoints;
             /* CLOSE */
             /* OPEN */
             var handsOn_incorrectPenalty = document.createElement("div");
             makeHalf(handsOn_incorrectPenalty);
-            handsOn_incorrectPenalty.innerHTML = "<h2>Incorrect Penalty</h2>";
+            handsOn_incorrectPenalty.innerHTML = "<h2>Incorrect Submission Penalty</h2>";
             handsOn_section.appendChild(handsOn_incorrectPenalty);
             var input_handsOn_incorrectPenalty = document.createElement("input");
             input_handsOn_incorrectPenalty.name = "frqIncorrectPenalty";
             input_handsOn_incorrectPenalty.type = "number";
-            input_handsOn_incorrectPenalty.value = "" + thisComp.handsOn.incorrectPenalty ? "" + thisComp.handsOn.incorrectPenalty : "5";
+            input_handsOn_incorrectPenalty.value = "" + thisComp.handsOn.incorrectPenalty ? "" + thisComp.handsOn.incorrectPenalty : "-5";
+            input_handsOn_incorrectPenalty.min = "-999";
+            input_handsOn_incorrectPenalty.max = "0";
+            input_handsOn_incorrectPenalty.step = "1";
+            input_handsOn_incorrectPenalty.placeholder = "-5";
+            var input_handsOn_incorrectPenalty_old = "" + thisComp.handsOn.incorrectPenalty ? "" + thisComp.handsOn.incorrectPenalty : "-5";
+            input_handsOn_incorrectPenalty.onchange = function () {
+                if (!input_handsOn_incorrectPenalty.validity.valid)
+                    input_handsOn_incorrectPenalty.value = input_handsOn_incorrectPenalty_old;
+                else
+                    input_handsOn_incorrectPenalty_old = input_handsOn_incorrectPenalty.value;
+            };
             handsOn_incorrectPenalty.appendChild(input_handsOn_incorrectPenalty);
             thisComp.dom.handsOnIncorrectPenalty = input_handsOn_incorrectPenalty;
             /* CLOSE */
@@ -984,7 +1038,7 @@ var Competition = /** @class */ (function () {
         /* OPEN */
         var h2_handsOn_toggle = document.createElement("div");
         makeHalf(h2_handsOn_toggle);
-        h2_handsOn_toggle.innerHTML = "<h2><b>Hands-On Programming</b></h2>";
+        h2_handsOn_toggle.innerHTML = "<h2><b>Hands-On (for UIL CS)</b></h2>";
         body.appendChild(h2_handsOn_toggle);
         /* CLOSE */
         /* OPEN */
@@ -1031,7 +1085,7 @@ function asyncConnectHelper(url, params, teamBox) {
                 if (Object.keys(response).includes("reload"))
                     window.location.href = response["reload"];
                 else if (Object.keys(response).includes("success"))
-                    addSuccessBox(teamBox, "SUCCESS: " + response["success"]);
+                    addSuccessBox(teamBox, "" + response["success"]);
                 else
                     addErrorBox(teamBox, response["error"]);
             }
@@ -1058,7 +1112,7 @@ function saveChanges() {
                     // @ts-ignore
                 }
                 else if (Object.keys(response).includes("success")) {
-                    addSuccessBox(dom.profile, "SUCCESS: " + response["success"]);
+                    addSuccessBox(dom.profile, "" + response["success"]);
                 }
                 else {
                     addErrorBox(dom.profile, response["error"]);
@@ -1159,10 +1213,10 @@ function delUser() {
 function addErrorBox(box, error) {
     var errorBox = document.getElementById(box.id + "ERROR");
     if (!errorBox) {
-        box.insertAdjacentHTML('afterbegin', "<div class='error' id='" + box.id + "ERROR'>ERROR: " + error + "</div>");
+        box.insertAdjacentHTML('afterbegin', "<div class='error' id='" + box.id + "ERROR'>" + error + "</div>");
     }
     else {
-        errorBox.innerHTML = "ERROR: " + error;
+        errorBox.innerHTML = "" + error;
         errorBox.className = "error";
     }
 }

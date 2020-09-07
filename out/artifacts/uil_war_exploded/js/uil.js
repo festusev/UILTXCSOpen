@@ -17,10 +17,18 @@ var config = {
         mcSubmissionsTr: "mcSubmissionsTr",
         frqSubmissionsTable: "frqSubmissionsTable",
         frqSubmissionsTr: "frqSubmissionsTr",
-        teamMembers: "teamMembers"
+        teamMembers: "teamMembers",
+        aboutNav: "aboutNav",
+        scoreboardNav: "scoreboardNav",
+        writtenNav: "writtenNav",
+        handsOnNav: "handsOnNav",
+        signUpBox: "signUpBox",
+        teamCode: "teamCode",
+        toggleCreateTeam: "toggleCreateTeam"
     },
     CLASSES: {
-        columns: "column"
+        columns: "column",
+        secondNavItem: 'secondNavItem'
     },
     RESULTS: ["Incorrect", "Correct", "No Penalty"],
     SOCKET_FUNCTIONS: {
@@ -74,6 +82,13 @@ var dom = {
     get frqSubmissionsTable() { return this.getHelper(config.IDs.frqSubmissionsTable); },
     get frqSubmissionsTr() { return this.getHelper(config.IDs.frqSubmissionsTr); },
     get teamMembers() { return this.getHelper(config.IDs.teamMembers); },
+    get aboutNav() { return this.getHelper(config.IDs.aboutNav); },
+    get scoreboardNav() { return this.getHelper(config.IDs.scoreboardNav); },
+    get writtenNav() { return this.getHelper(config.IDs.writtenNav); },
+    get handsOnNav() { return this.getHelper(config.IDs.handsOnNav); },
+    get signUpBox() { return this.getHelper(config.IDs.signUpBox); },
+    get teamCode() { return this.getHelper(config.IDs.teamCode); },
+    get toggleCreateTeam() { return this.getHelper(config.IDs.toggleCreateTeam); },
     classes: {
         cached: {},
         getHelper: function (className) {
@@ -81,7 +96,8 @@ var dom = {
                 this.cached[className] = document.getElementsByClassName(className);
             return this.cached[className];
         },
-        get columns() { return this.getHelper(config.CLASSES.columns); }
+        get columns() { return this.getHelper(config.CLASSES.columns); },
+        get secondNavItems() { return this.getHelper(config.CLASSES.secondNavItem); }
     }
 };
 var cid = null; // Undefined if we are looking at the UIL list
@@ -138,11 +154,6 @@ function showColumn() {
     }
     else if (window.location.hash === "#frq") {
         showFRQ();
-    } /*else if(window.location.hash==="#answers") {
-        showAnswers();
-    } */
-    else if (window.location.hash === "#team") {
-        showTeam();
     }
     else if (cid != null) {
         showAbout();
@@ -151,28 +162,32 @@ function showColumn() {
         showPublic();
     }
 }
-function showHelper(show, hash) {
+function showHelper(show, hash, navDom) {
     var columns = dom.classes.columns;
     for (var i = 0, j = columns.length; i < j; i++) {
         columns.item(i).style.display = "none";
+    }
+    if (navDom != null) {
+        columns = dom.classes.secondNavItems;
+        for (var i = 0, j = columns.length; i < j; i++) {
+            columns.item(i).classList.remove("navSelected");
+        }
+        navDom.classList.add("navSelected");
     }
     show.style.display = "block";
     window.location.hash = hash;
 }
 function showAbout() {
-    showHelper(dom.about, "#about");
+    showHelper(dom.about, "#about", dom.aboutNav);
 }
 function showScoreboard() {
-    showHelper(dom.scoreboard, "#scoreboard");
-}
-function showTeam() {
-    showHelper(dom.team, "#team");
+    showHelper(dom.scoreboard, "#scoreboard", dom.scoreboardNav);
 }
 function showMC() {
-    showHelper(dom.mc, "#mc");
+    showHelper(dom.mc, "#mc", dom.writtenNav);
 }
 function showFRQ() {
-    showHelper(dom.frq, "#frq");
+    showHelper(dom.frq, "#frq", dom.handsOnNav);
 }
 /*function showAnswers(){
     showHelper(answers, "#answers");
@@ -192,26 +207,52 @@ function updateNav() {
 }
 // Show the signup box
 function showSignup() {
-    $("#signUpBox").show();
+    dom.signUpBox.style.display = "block";
+}
+function hideSignup() {
+    dom.signUpBox.style.display = "none";
 }
 // Switches between joining a team and creating a team
 var jointeamShowing = true;
-function toggleCreateTeam() {
+function toggleCreateTeam(event) {
+    console.log("testing");
     if (jointeamShowing) { // Switch to creating a team
-        $("#signUpBox h1").text("Create Team");
-        $("#signUpBox .instruction").text("Team Name");
-        $("#signUpBox input").val("");
-        $("#teamCode").attr({ "maxlength": "25", "oninput": "''" }).addClass("creatingTeam");
-        $("#toggleCreateTeam").html("<button onclick='createTeam()' class='chngButton'>Create</button><span onclick='toggleCreateTeam()'>or join a team.</span>").click(function () { });
+        dom.signUpBox.querySelector("h1").innerText = "Create Team";
+        dom.signUpBox.querySelector(".instruction").innerHTML = "Team Name";
+        dom.signUpBox.querySelector("input").value = "";
+        dom.teamCode.maxLength = "25";
+        dom.teamCode.oninput = null;
+        dom.teamCode.classList.add("creatingTeam");
+        var button = document.createElement("button");
+        button.onclick = createTeam;
+        button.classList.add("chngButton");
+        button.innerText = "Create";
+        dom.toggleCreateTeam.innerHTML = "";
+        dom.toggleCreateTeam.appendChild(button);
+        var span = document.createElement("span");
+        span.onclick = function (event) {
+            toggleCreateTeam(event);
+        };
+        span.innerText = "or join a team.";
+        dom.toggleCreateTeam.appendChild(span);
+        dom.toggleCreateTeam.onclick = null;
     }
     else { // Switch to joining a team
-        $("#signUpBox h1").text("Join Team");
-        $("#signUpBox .instruction").text("Enter team join code:");
-        $("#signUpBox input").val("");
-        $("#teamCode").attr({ "maxlength": "6", "oninput": "codeEntered(this)" }).removeClass("creatingTeam");
-        $("#toggleCreateTeam").html("or create a team.").click(toggleCreateTeam);
+        dom.signUpBox.querySelector("h1").innerText = "Join Team";
+        dom.signUpBox.querySelector(".instruction").innerHTML = "Enter team join code:";
+        dom.signUpBox.querySelector("input").value = "";
+        dom.teamCode.maxLength = "6";
+        dom.teamCode.oninput = function () {
+            codeEntered(dom.teamCode);
+        };
+        dom.teamCode.classList.remove("creatingTeam");
+        dom.toggleCreateTeam.innerHTML = "or create a team.";
+        dom.toggleCreateTeam.onclick = function (event) {
+            toggleCreateTeam(event);
+        };
     }
     jointeamShowing = !jointeamShowing;
+    event.stopPropagation();
 }
 function createTeam() {
     addSignupSuccessBox("Creating team...");
@@ -355,10 +396,10 @@ function addScoredBox(box, success) {
 function addErrorBox(box, error) {
     var errorBox = document.getElementById(box.id + "ERROR");
     if (!errorBox) {
-        box.insertAdjacentHTML('afterbegin', "<div class='error' id='" + box.id + "ERROR'>ERROR: " + error + "</div>");
+        box.insertAdjacentHTML('afterbegin', "<div class='error' id='" + box.id + "ERROR'>" + error + "</div>");
     }
     else {
-        errorBox.innerHTML = "ERROR: " + error;
+        errorBox.innerHTML = "" + error;
         errorBox.className = "error";
     }
 }
@@ -509,7 +550,7 @@ var showingFRQSubmission = null;
 function showFRQSubmission(submissionId) {
     function add(element) {
         if (!showingFRQSubmission) {
-            dom.frq.insertAdjacentElement('afterbegin', element);
+            dom.frq.appendChild(element);
         }
         else {
             showingFRQSubmission.replaceWith(element);
