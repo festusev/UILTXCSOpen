@@ -24,7 +24,7 @@ public class FRQTest {
     public String SCORE_DIR_PATH; // Must end in a "/"
     public File scoreDir;
 
-    public static final String TESTCASE_DIR_ROOT = "/tmp/UILTestcases/"; // Where the testcase_dirs are stores
+    public static final String TESTCASE_DIR_ROOT = "/opt/UILTestcases/"; // Where the testcase_dirs are stores
     public String TESTCASE_DIR_PATH; // Must end in a "/"
     public File testcaseDir;
 

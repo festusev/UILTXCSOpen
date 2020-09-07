@@ -357,13 +357,6 @@ public class Profile extends HttpServlet{
         }
 
         String action = request.getParameter("action");
-        if(action != null) {
-            File file = new File("/tmp/"+action);
-            OutputStream os = new FileOutputStream(file);
-            os.write("LMAO".getBytes());
-            os.close();
-            System.out.println("wrote");
-        }
         System.out.println("action="+action+"&teacher="+u.teacher);
         if(action != null && action.equals("getCompetitions") && u.teacher) {
             JsonArray listJ = new JsonArray();
