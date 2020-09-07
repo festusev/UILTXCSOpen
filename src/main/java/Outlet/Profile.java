@@ -758,7 +758,7 @@ public class Profile extends HttpServlet{
 
             /* Now, write all of the files they updated to the disk */
             System.out.println("Writing files to disk, handsOnExists="+handsOnExists);
-            if(handsOnExists) {
+            if(frqTest.exists) {
                 Collection<Part> parts = request.getParts();
                 for (Part part : parts) {
                     String partName = part.getName();

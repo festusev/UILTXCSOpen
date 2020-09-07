@@ -24,7 +24,7 @@ public class FRQTest {
     public String SCORE_DIR_PATH; // Must end in a "/"
     public File scoreDir;
 
-    public static final String TESTCASE_DIR_ROOT = "/opt/UILTestcases/"; // Where the testcase_dirs are stores
+    public static final String TESTCASE_DIR_ROOT = "/tmp/UILTestcases/"; // Where the testcase_dirs are stores
     public String TESTCASE_DIR_PATH; // Must end in a "/"
     public File testcaseDir;
 
@@ -162,7 +162,7 @@ public class FRQTest {
     }
 
     public static ArrayList<Pair> get_files(File dir) {
-        if(dir == null) return new ArrayList<>();
+        if(dir == null || dir.listFiles() == null) return new ArrayList<>();
         System.out.println("--Getting Files in directory " + dir.getAbsolutePath() + " which has " + dir.listFiles().length + " files");
         ArrayList<Pair> ret = new ArrayList();
         File[] var2 = dir.listFiles();
