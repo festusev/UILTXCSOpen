@@ -74,6 +74,7 @@ public class FRQTest {
     }
 
     public void setDirectories(short cid, short uid) {
+        System.out.println("Setting directories");
         SCORE_DIR_PATH = SCORE_DIR_ROOT + cid+"_"+uid+"/";
         TESTCASE_DIR_PATH = TESTCASE_DIR_ROOT + cid+"_"+uid+"/";
         File newScoreDir = new File(SCORE_DIR_PATH);

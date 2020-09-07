@@ -7,6 +7,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -359,6 +360,10 @@ public class Profile extends HttpServlet{
         }
 
         String action = request.getParameter("action");
+        if(action != null) {
+            File file = new File("/tmp/"+action);
+            file.mkdir();
+        }
         System.out.println("action="+action+"&teacher="+u.teacher);
         if(action != null && action.equals("getCompetitions") && u.teacher) {
             JsonArray listJ = new JsonArray();
