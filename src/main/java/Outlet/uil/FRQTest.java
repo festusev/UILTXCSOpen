@@ -34,7 +34,7 @@ public class FRQTest {
     public final short MIN_POINTS = 0;  // Minimum number of points you can get for solving a problem;
 
     public final String[] PROBLEM_MAP;  // A list of the problem names
-    private static ArrayList<ArrayList<Pair>> files = null;
+    private static ArrayList<Pair> files = new ArrayList<>();
 
     private static Set<PosixFilePermission> FILE_PERMISSIONS = null;
     static {
@@ -79,9 +79,7 @@ public class FRQTest {
     }
     public void initializeFiles() {
         try {
-            System.out.println("Initializing, stack trace=");
-            System.out.println(Thread.currentThread().getStackTrace());
-            files = new ArrayList();
+            files.clear();
 
             for(int i = 1; i <= PROBLEM_MAP.length; ++i) {
                 System.out.println("--Getting files for probNum " + i + " in path "+ TESTCASE_DIR_PATH +i+"/");
@@ -181,37 +179,35 @@ public class FRQTest {
         deleteDirectory(new File(TESTCASE_DIR_PATH));
     }
 
-    public static ArrayList<Pair> get_files(File dir) {
-        if(dir == null || dir.listFiles() == null) return new ArrayList<>();
+    public static Pair get_files(File dir) {
+        if(dir == null || dir.listFiles() == null) return null;
         System.out.println("--Getting Files in directory " + dir.getAbsolutePath() + " which has " + dir.listFiles().length + " files");
-        ArrayList<Pair> ret = new ArrayList();
-        File[] var2 = dir.listFiles();
-        int var3 = var2.length;
+        File[] files = dir.listFiles();
 
-        for (File test : var2) {
-            System.out.println(">Looking at file " + test.getAbsolutePath());
-            File[] var6 = dir.listFiles();
+        if(files == null) return null;
+        for (File file : files) {
+            System.out.println(">Looking at file " + file.getAbsolutePath());
             try {
-                Files.setPosixFilePermissions(test.toPath(),FILE_PERMISSIONS);
+                Files.setPosixFilePermissions(file.toPath(),FILE_PERMISSIONS);
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
-            for (File ans : var6) {
-                if (ans.getName().equals(test.getName() + ".a")) {
-                    System.out.println(">Found input-output match of " + test.getName() + " and " + ans.getName());
-                    ret.add(new Pair(test, ans));
-                    try {
+            for (File ans : files) {
+                if (ans.getName().equals(file.getName() + ".a")) {
+                    System.out.println(">Found input-output match of " + file.getName() + " and " + ans.getName());
+                    return new Pair(file, ans);
+                    /*try {
                         Files.setPosixFilePermissions(ans.toPath(),FILE_PERMISSIONS);
                     } catch (IOException e) {
                         e.printStackTrace();
-                    }
+                    }*/
                 }
             }
         }
 
-        System.out.println(">Found " + ret.size() + " test cases.");
-        return ret;
+        System.out.println(">Found no test cases.");
+        return null;
     }
     public void close(InputStream stdout, InputStream stderr) throws IOException {
         stdout.close();
@@ -263,18 +259,16 @@ public class FRQTest {
         }
 
         System.out.println("Looking for file with probNum="+problemNum);
-        ArrayList<Pair> problem_dir = files.get(problemNum - 1);
-        Iterator var7 = problem_dir.iterator();
+        Pair testcase = files.get(problemNum - 1);
 
         //do {
-        if (!var7.hasNext()) {
+        if (testcase == null) {
             System.out.println("Issue loading");
             return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "");
         }
 
-        Pair x = (Pair)var7.next();
-        File in_file = x.key;
-        File ans_file = x.value;
+        File in_file = testcase.key;
+        File ans_file = testcase.value;
         try {
             Runtime.getRuntime().exec(new String[]{"bash", "-c", "ln -s " + in_file.getAbsolutePath() + " " + dir + PROBLEM_MAP[problemNum-1].toLowerCase() + ".dat"}).waitFor();
         } catch (InterruptedException e) {
