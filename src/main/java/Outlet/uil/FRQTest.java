@@ -79,6 +79,8 @@ public class FRQTest {
     }
     public void initializeFiles() {
         try {
+            System.out.println("Initializing, stack trace=");
+            System.out.println(Thread.currentThread().getStackTrace());
             files = new ArrayList();
 
             for(int i = 1; i <= PROBLEM_MAP.length; ++i) {
