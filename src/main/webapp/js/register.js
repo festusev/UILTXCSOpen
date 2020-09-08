@@ -31,7 +31,7 @@ function register() {
                     addErrorBox(response["error"]);
                 }
             } else {    // A server error occurred. Show an error message
-                addErrorBox("ERROR:  Whoops! A server error occurred. Contact an admin if the problem continues.");
+                addErrorBox("Whoops! A server error occurred. Contact an admin if the problem continues.");
             }
         }
     }
@@ -53,7 +53,7 @@ function resend(){
                     addErrorBox(response["error"]);
                 }
             } else {    // A server error occurred. Show an error message
-                addErrorBox("ERROR:  Whoops! A server error occurred. Contact an admin if the problem continues.");
+                addErrorBox("Whoops! A server error occurred. Contact an admin if the problem continues.");
             }
         }
     }
@@ -65,11 +65,11 @@ function resend(){
 var errorBox;
 function addErrorBox(error){
     if(!errorBox) {
-        regBox.insertAdjacentHTML('afterbegin', "<div class='error' id='errorBox'>ERROR: " + error + "</div>");
+        regBox.insertAdjacentHTML('afterbegin', "<div class='error' id='errorBox'>" + error + "</div>");
         errorBox = document.getElementsByClassName("error")[0];
     }
     else {
-        errorBox.innerHTML = "ERROR: " + error;
+        errorBox.innerHTML = "" + error;
         errorBox.className = "error";
     }
 }

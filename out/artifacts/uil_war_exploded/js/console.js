@@ -1066,7 +1066,7 @@ document.onreadystatechange = function () {
 };
 var ws;
 (function () {
-    ws = new WebSocket("ws://" + window.location.host + "/profilesocket");
+    ws = new WebSocket("wss://" + window.location.host + "/profilesocket");
     ws.onmessage = function (evt) {
         try {
             var msg = JSON.parse(evt.data);

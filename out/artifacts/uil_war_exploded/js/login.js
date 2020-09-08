@@ -19,7 +19,7 @@ function login() {
                     addErrorBox(response["error"]);
                 }
             } else {    // A server error occurred. Show an error message
-                addErrorBox("ERROR:  Whoops! A server error occurred. Contact an admin if the problem continues.");
+                addErrorBox("Whoops! A server error occurred. Contact an admin if the problem continues.");
             }
         }
     }
@@ -31,11 +31,11 @@ function login() {
 var errorBox = null;
 function addErrorBox(error){
     if(!errorBox) {
-        loginBox.insertAdjacentHTML('afterbegin', "<div class='error' id='errorBox'>ERROR: " + error + "</div>");
+        loginBox.insertAdjacentHTML('afterbegin', "<div class='error' id='errorBox'>" + error + "</div>");
         errorBox = document.getElementsByClassName("error")[0];
     }
     else {
-        errorBox.innerHTML = "ERROR: "+error;
+        errorBox.innerHTML = ""+error;
         errorBox.className = "error";
     }
 }
@@ -70,7 +70,7 @@ function resetPassword() {
                     addErrorBox(response["error"]);
                 }
             } else {    // A server error occurred. Show an error message
-                addErrorBox("ERROR:  Whoops! A server error occurred. Contact an admin if the problem continues.");
+                addErrorBox("Whoops! A server error occurred. Contact an admin if the problem continues.");
             }
         }
     }
@@ -92,7 +92,7 @@ function resend(){
                     addErrorBox(response["error"]);
                 }
             } else {    // A server error occurred. Show an error message
-                addErrorBox("ERROR:  Whoops! A server error occurred. Contact an admin if the problem continues.");
+                addErrorBox("Whoops! A server error occurred. Contact an admin if the problem continues.");
             }
         }
     }

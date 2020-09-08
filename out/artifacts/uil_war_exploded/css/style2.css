@@ -363,7 +363,7 @@ a:focus{
 }
 .column h1{
     display:block;
-    font-weight:bold;
+    /*! font-weight:bold; */
     color:var(--prim-light);
     font-size:3rem;
     font-family:var(--head-font);
@@ -403,8 +403,8 @@ a:focus{
     text-align:right;
 }
 #scoreboardColumn h1{
-    font-weight:bold;
-    font-family:var(--head-font);
+    /*! font-weight:bold; */
+    font-family:var(--body-font);
     color:var(--prim-light);
 }
 #scoreboardColumn h2{
