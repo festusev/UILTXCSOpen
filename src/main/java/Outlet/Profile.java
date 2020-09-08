@@ -277,11 +277,13 @@ public class Profile extends HttpServlet{
         }
 
         Competition competition = null;
+        boolean retCid = false; // If we should return the cid since we are creating the competition
         if(cidS == null || cidS.isEmpty() || !((Teacher)u).cids.contains(cid = Short.parseShort(cidS))) {
             // We are creating a competition and returning the cid
             try {
                 competition = Competition.createCompetition((Teacher)u, true, isPublic,
                         name, description, mcTest, frqTest);
+                retCid = true;
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -343,7 +345,11 @@ public class Profile extends HttpServlet{
             }
             frqTest.initializeFiles();
         }
-        return true;
+        if(!retCid) return true;
+        else {
+            writer.write("{\"success\":\"Competition saved.\",\"cid\":\""+competition.template.cid+"\"}");
+            return false;
+        }
     }
 
     @Override
@@ -788,7 +794,7 @@ public class Profile extends HttpServlet{
             }
             writer.write("{\"success\":\"Competition saved.\",\"cid\":\""+competition.template.cid+"\"}");
         } else if(action.equals("publishCompetition") && u.teacher) {
-            if(savePublished(request, writer, u)) writer.write("{\"success\":\"Competition saved and published.\"}");
+            if(savePublished(request, writer, u)) writer.write("{\"success\":\"Competition saved and published.\",\"cid\"}");
         } else if(action.equals("unPublishCompetition")) {
             short cid = Short.parseShort(request.getParameter("cid"));
             Competition competition = UIL.getCompetition(cid);

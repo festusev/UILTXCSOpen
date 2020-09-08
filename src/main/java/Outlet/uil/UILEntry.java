@@ -149,7 +149,7 @@ public class UILEntry {
 
     public static UILEntry loadUILEntry(short tid, short cid) {
         try {
-            return UIL.getCompetition(cid).getEntry(tid);
+            return Objects.requireNonNull(UIL.getCompetition(cid)).getEntry(tid);
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
