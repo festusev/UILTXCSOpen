@@ -85,6 +85,10 @@ public class FRQTest {
                 System.out.println("--Getting files for probNum " + i + " in path "+ TESTCASE_DIR_PATH +i+"/");
                 files.add(get_files(new File(TESTCASE_DIR_PATH + i + "/")));
             }
+            Pair testcase = files.get(0);
+
+            if (testcase == null) System.out.println("First file testcase is null");
+            else System.out.println("Key path="+testcase.key.getAbsolutePath()+", Value path="+testcase.value.getAbsolutePath());
         } catch (Exception var1) {
             var1.printStackTrace();
         }
@@ -180,11 +184,16 @@ public class FRQTest {
     }
 
     public static Pair get_files(File dir) {
-        if(dir == null || dir.listFiles() == null) return null;
+        if(dir == null) {
+            System.out.println("Directory is null");
+            return null;
+        } else if(dir.listFiles() == null) {
+            System.out.println("Directory " + dir.getAbsolutePath() + " is empty");
+            return null;
+        }
         System.out.println("--Getting Files in directory " + dir.getAbsolutePath() + " which has " + dir.listFiles().length + " files");
         File[] files = dir.listFiles();
 
-        if(files == null) return null;
         for (File file : files) {
             System.out.println(">Looking at file " + file.getAbsolutePath());
             try {
