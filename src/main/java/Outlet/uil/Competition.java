@@ -388,7 +388,13 @@ public class Competition {
                     return;
                 }
 
-                FRQSubmission submission = template.frqTest.score(probNum, bytes, filePart.getSubmittedFileName(), user.uid, temp.tid);
+                String fname = filePart.getSubmittedFileName();
+                if(!fname.matches("^[a-zA-Z0-9]*$")) {   // Make sure it doesn't have commands
+                    writer.write("{\"status\":\"error\",\"error\":\"The file name must be alphanumeric.\"}");
+                    return;
+                }
+
+                FRQSubmission submission = template.frqTest.score(probNum, bytes, fname, user.uid, temp.tid);
                 submission.entry = temp;
                 temp.addFRQRun(submission, probNum);
                 frqSubmissions.add(submission);

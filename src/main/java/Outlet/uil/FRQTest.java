@@ -226,13 +226,13 @@ public class FRQTest {
         String compile_cmd = "";
         String run_cmd = "";
         if (language == 0) {
-            compile_cmd = "javac " + source_file;
-            run_cmd = "cd " + sourceDir + " && java " + exe_file;
+            compile_cmd = "/usr/bin/javac " + source_file;
+            run_cmd = "cd " + sourceDir + " && /usr/bin/java " + exe_file;
         } else if (language == 1) {
             compile_cmd = "";
-            run_cmd = "cd " + sourceDir + " && python " + source_file;
+            run_cmd = "cd " + sourceDir + " && /usr/lib/python3.7/python " + source_file;
         } else if (language == 2) {
-            compile_cmd = "cd " + sourceDir + " && g++ -std=c++17 " + source_file + " -o " + exe_file;
+            compile_cmd = "cd " + sourceDir + " && /usr/bin/g++ -std=c++17 " + source_file + " -o " + exe_file;
             run_cmd = "cd " + sourceDir + " && ./" + exe_file;
         }
 
@@ -247,8 +247,8 @@ public class FRQTest {
     public FRQSubmission grade(String source_file, String compile_cmd, String dir, String run_cmd, short problemNum) throws IOException {
         System.out.printf("Compiling %s\n", source_file);
         System.out.printf("Compiling %s\n", compile_cmd);
-        System.out.println("chmod -R 777 " + dir);
-        Process p = Runtime.getRuntime().exec(new String[]{"bash", "-c", compile_cmd, "chmod -R 777 " + dir});
+        System.out.println("/bin/chmod -R 777 " + dir);
+        Process p = Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", compile_cmd, "/bin/chmod -R 777 " + dir});
 
         try {
             p.waitFor();
@@ -279,7 +279,7 @@ public class FRQTest {
         File in_file = testcase.key;
         File ans_file = testcase.value;
         try {
-            Runtime.getRuntime().exec(new String[]{"bash", "-c", "ln -s " + in_file.getAbsolutePath() + " " + dir + PROBLEM_MAP[problemNum-1].toLowerCase() + ".dat"}).waitFor();
+            Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", "/bin/ln -s " + in_file.getAbsolutePath() + " " + dir + PROBLEM_MAP[problemNum-1].toLowerCase() + ".dat"}).waitFor();
         } catch (InterruptedException e) {
             e.printStackTrace();
             return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "");
@@ -325,7 +325,7 @@ public class FRQTest {
         }
 
         String errors = error_bytes.toString("UTF-8");
-        if (!errors.equals("")) {
+        if (!errors.equals("") && !errors.contains("NOTE:")) {
             System.out.println("Runtime error");
             System.out.println(errors);
             close(stdout, stderr);
