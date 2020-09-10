@@ -389,7 +389,7 @@ public class Competition {
                 }
 
                 String fname = filePart.getSubmittedFileName();
-                if(!fname.matches("^[a-zA-Z0-9]*$")) {   // Make sure it doesn't have commands
+                if(!fname.matches("^[a-zA-Z0-9.]*$")) {   // Make sure it doesn't have commands
                     writer.write("{\"status\":\"error\",\"error\":\"The file name must be alphanumeric.\"}");
                     return;
                 }
