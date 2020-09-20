@@ -24,7 +24,7 @@ var dom = {
 };
 var ws;
 (function () {
-    ws = new WebSocket("ws://" + window.location.host + "/profilesocket");
+    ws = new WebSocket("wss://" + window.location.host + "/profilesocket");
     ws.onmessage = function (evt) {
         try {
             var msg = JSON.parse(evt.data);
@@ -39,9 +39,12 @@ function showPublic(nav) {
         nodes[i].classList.remove("selected");
     }
     nav.classList.add("selected");
-    document.getElementById("class_competitions").style.display = "none";
     document.getElementById("public_competitions").style.display = "block";
-    document.getElementById("upcoming_competitions").style.display = "none";
+    try {
+        document.getElementById("upcoming_competitions").style.display = "none";
+        document.getElementById("class_competitions").style.display = "none";
+    }
+    catch (e) { }
 }
 function showClassComps(nav) {
     var nodes = document.getElementById("nav").getElementsByTagName("p");
@@ -49,9 +52,12 @@ function showClassComps(nav) {
         nodes[i].classList.remove("selected");
     }
     nav.classList.add("selected");
-    document.getElementById("class_competitions").style.display = "block";
     document.getElementById("public_competitions").style.display = "none";
-    document.getElementById("upcoming_competitions").style.display = "none";
+    try {
+        document.getElementById("class_competitions").style.display = "block";
+        document.getElementById("upcoming_competitions").style.display = "none";
+    }
+    catch (e) { }
 }
 function showUpcomingComps(nav) {
     var nodes = document.getElementById("nav").getElementsByTagName("p");
@@ -59,9 +65,12 @@ function showUpcomingComps(nav) {
         nodes[i].classList.remove("selected");
     }
     nav.classList.add("selected");
-    document.getElementById("class_competitions").style.display = "none";
     document.getElementById("public_competitions").style.display = "none";
-    document.getElementById("upcoming_competitions").style.display = "block";
+    try {
+        document.getElementById("class_competitions").style.display = "none";
+        document.getElementById("upcoming_competitions").style.display = "block";
+    }
+    catch (e) { }
 }
 var WrittenType;
 (function (WrittenType) {

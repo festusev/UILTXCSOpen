@@ -25,7 +25,7 @@ let dom = {
 
 let ws: WebSocket;
 (function() {
-    ws = new WebSocket("ws://" + window.location.host + "/profilesocket");
+    ws = new WebSocket("wss://" + window.location.host + "/profilesocket");
 
     ws.onmessage = function(evt) {
         try {
@@ -41,9 +41,11 @@ function showPublic(nav:HTMLElement) {
         nodes[i].classList.remove("selected");
     }
     nav.classList.add("selected");
-    document.getElementById("class_competitions").style.display = "none";
     document.getElementById("public_competitions").style.display = "block";
-    document.getElementById("upcoming_competitions").style.display = "none";
+    try {
+        document.getElementById("upcoming_competitions").style.display = "none";
+        document.getElementById("class_competitions").style.display = "none";
+    } catch(e) {}
 }
 
 function showClassComps(nav:HTMLElement) {
@@ -52,9 +54,11 @@ function showClassComps(nav:HTMLElement) {
         nodes[i].classList.remove("selected");
     }
     nav.classList.add("selected");
-    document.getElementById("class_competitions").style.display = "block";
     document.getElementById("public_competitions").style.display = "none";
-    document.getElementById("upcoming_competitions").style.display = "none";
+    try {
+        document.getElementById("class_competitions").style.display = "block";
+        document.getElementById("upcoming_competitions").style.display = "none";
+    } catch(e) {}
 }
 function showUpcomingComps(nav:HTMLElement) {
     let nodes = document.getElementById("nav").getElementsByTagName("p");
@@ -62,9 +66,11 @@ function showUpcomingComps(nav:HTMLElement) {
         nodes[i].classList.remove("selected");
     }
     nav.classList.add("selected");
-    document.getElementById("class_competitions").style.display = "none";
     document.getElementById("public_competitions").style.display = "none";
-    document.getElementById("upcoming_competitions").style.display = "block";
+    try {
+        document.getElementById("class_competitions").style.display = "none";
+        document.getElementById("upcoming_competitions").style.display = "block";
+    } catch(e) {}
 }
 enum WrittenType {
     MC,
@@ -1348,7 +1354,7 @@ function createNewCompetition():void {
     if(competitions.length <= 0) {
         dom.class_competitions.innerHTML = "";
     }
-    
+
     let competition:Competition = new Competition("", false,false, "New Competition", false, false);
 
     dom.class_competitions.appendChild(competition.getDOM([], "", ""));
