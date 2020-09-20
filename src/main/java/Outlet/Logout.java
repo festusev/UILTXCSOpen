@@ -20,8 +20,9 @@ public class Logout extends HttpServlet{
         System.out.println("Context Path="+request.getContextPath());
         User u = UserMap.getUserByRequest(request);
         if(u != null && u.token != null) {
+            BigInteger token = u.token;
             Conn.delToken(request, response, u);    // Remove the token from the cookie
-            Conn.logout(u.token);      // Set the token to null in the database
+            Conn.logout(token);      // Set the token to null in the database
         }
         response.sendRedirect(request.getContextPath() + "/");
     }

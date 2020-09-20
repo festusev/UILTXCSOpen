@@ -28,7 +28,7 @@ public class MCTest {
     public Countdown opens; // The time that this opens
     public Countdown closes;
 
-    public static String SKIP_CODE = "SK";  // The code entered to signify a skipped problem
+    public static String SKIP_CODE = "jieKYL";  // The code entered to signify a skipped problem
 
     public MCTest() {
         exists = false;KEY= new String[0][];NUM_PROBLEMS = 0; CORRECT_PTS =0;INCORRECT_PTS=0;

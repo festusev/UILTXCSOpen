@@ -1,0 +1,324 @@
+#title{
+    height: 4rem;
+    margin:0;
+}
+#center{
+    width:60rem;
+    margin:auto;
+    margin-top:70px;
+}
+#center h1{
+    font-size:20px;
+    font-weight:bold;
+    height:4rem;
+    padding-right:10px;
+    color:black;
+}
+
+#left{
+    text-align:right;
+    position:fixed;
+    height:40rem;
+    width:20rem;
+}
+#left .menu{
+    border-right:1px solid lightgray;
+    padding-right:10px;
+    font-size:16px;
+    color:black;
+    cursor:pointer;
+    font-weight:bold;
+}
+#nav #createNewCompetition {
+    background-color: unset !important;
+    box-shadow: unset !important;
+    color: var(--success-dark);
+}
+#right .column {
+    padding: 0;
+}
+.competitionCnt{
+    height:6rem;
+}
+.error, .success {
+    grid-column-start: 1;
+    grid-column-end: 3;
+}
+
+#content {
+    position: absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height: 100%;
+    display: flex;
+    flex-flow:row;
+}
+#nav_cnt {
+    display: inline-block;
+    width:30%;
+    height: 100%;
+    position: relative;
+}
+#nav p {
+    display: block;
+    cursor: pointer;
+    font-size:18px;
+    padding: 3px 10px;
+    margin-bottom: 5px;
+    min-width: 8rem;
+    cursor: pointer;
+}
+#nav p.selected, #nav p:hover {
+    background-color: white !important;
+    box-shadow: var(--shadow);
+}
+#nav {
+    margin-bottom: 1rem;
+    padding:4rem 1rem 0 0.5rem;
+}
+#comp-list {
+    flex-grow: 1;
+    padding-left: 10px;
+}
+#class_competitions {
+    margin-bottom: 10rem;
+}
+#competitions {
+    display: flex;
+    flex-flow: row;
+    width: 50rem;
+    box-sizing: border-box;
+    margin: auto;
+    margin-top: 5rem;
+}
+.comp_head {
+    padding:5px 10px;
+    border-radius:8px 8px 0 0;
+    position: relative;
+    height: calc(36px + 1.5rem);
+    box-sizing: border-box;
+}
+.comp_head span, .competition.published .publishCompetition {
+    line-height: calc(26px + 1.5rem);
+    display: inline-block;
+    vertical-align: middle;
+}
+.comp_head span {
+    padding-left:10px;
+}
+.competition.published .comp_head {
+    cursor: pointer;
+}
+.competition.published .comp_head: hover{
+    color: var(--prim-light);
+}
+#Competitions .comp_edit {
+    display:grid;
+    grid-column-gap: 40px;
+    grid-template-columns: auto auto;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding:0 20px 10px 20px;
+    position:relative;
+}
+.competition_controls {
+    position: absolute;
+    right: 0;
+    top: 0;
+    transform: translateX(calc(100% + 15px));
+    background-color: white;
+    box-shadow: var(--shadow);
+    z-index: 2;
+    cursor: default;
+}
+.competition_controls img {
+    display: block;
+    margin: 10px;
+    padding:8px;
+    border-radius: 5px;
+    width: 1.5rem;
+    cursor: pointer;
+}
+.competition_controls img:hover{
+    background-color: #eee;
+}
+.unit {
+    position: absolute;
+    transform:translateX(-200%);
+}
+.checkbox {
+    cursor: pointer;
+}
+.comp_head {
+    grid-column-start: 1;
+    grid-column-end: 3;
+}
+.writtenSection, .handsOnSection{
+    grid-column-start: 1;
+    grid-column-end: 3;
+    display:grid;
+    grid-template-columns: auto auto;
+    grid-column-gap: 40px;
+}
+.save {
+    position: absolute;
+    right:0;
+    top:8px;
+    border: none;
+    color: green;
+    font-size:1rem;
+    cursor: pointer;
+}
+.saveWrittenAnswers {
+    position:absolute;
+    right:0;
+    top:8px;
+    color:green;
+    width:3rem;
+    cursor:pointer;
+}
+.writtenSectionAnswerList li{
+    margin:10px 0;
+}
+.writtenSectionAnswerList input{
+    width:35rem;
+    border-radius:0;
+    border: none;
+    border-bottom: 1px solid lightgray;
+    padding:2px 5px;
+    margin-right: 1rem;
+}
+.writtenSectionAnswerList p {
+    display:inline-block;
+    margin-left:10px;
+    width: 3rem;
+}
+.addWrittenQuestion {
+    background-color:white;
+    border: 1px solid lightgray;
+    cursor:pointer;
+    border-radius:3px;
+    font-size:1rem;
+    width: 100%;
+    margin-top: 10px;
+}
+.writtenAnswerType {
+    cursor:pointer;
+}
+.competitionSubgroup {
+    border: 1px solid lightgray;
+    padding: 1rem 1rem !important;
+    border-radius: 3px;
+}
+button {
+    cursor:pointer;
+}
+.handsOnProblemList .handsOn_probIn, .handsOnProblemList .handsOn_probOut {
+    border: 1px solid lightgray;
+    background-color: white;
+    margin-left: 10px;
+    padding: 10px 0px !important;
+    font-size: 0.9rem;
+}
+.handsOnProblemList button {
+    width: 8rem !important;
+    border-radius: 0.2em;
+}
+.handsOnSectionProblemCnt button {
+    background-color:white;
+    border: 1px solid lightgray;
+    width: 100%;
+    margin-top: 10px;
+    border-radius:3px;
+    font-size: 1rem;
+}
+.handsOnSectionProblemCnt .save {
+    right: 1rem;
+}
+.competitionControl {
+    float: right;
+    padding: 0 0.5rem;
+    cursor:pointer;
+    color: white;
+    margin-left: 10px;
+}
+.deleteCompetition {
+    background-color: var(--warn-col);
+}
+.publishCompetition {
+    background-color: var(--prim-middle);
+    border-radius: 2px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 20px;
+}
+.publishCompetition:hover{
+    background-color: var(--prim-light);
+}
+.saveCompetition {
+    background-color: green;
+}
+.viewCompetition {
+    background-color:var(--sec-col);
+}
+.deleteProblem {
+    width:1.5rem;
+    margin-left:1rem;
+    vertical-align: middle;
+    cursor:pointer;
+}
+.writtenSectionInstructions {
+    width:100%;
+}
+.handsOnProblemList, .writtenSectionAnswerList {
+    list-style: none;
+    counter-reset: item;
+}
+.handsOnProblemList li, .writtenSectionAnswerList li{
+    display: flex;
+    flex-flow: row;
+}
+.handsOnProblemList input, .writtenSectionAnswerList input {
+    flex-grow: 1;
+}
+.handsOnProblemList li, .writtenSectionAnswerList li{
+    counter-increment: item;
+}
+.handsOnProblemList li:before, .writtenSectionAnswerList li:before{
+    content: counter(item);
+    display: inline-block;
+    width: 2rem;
+    text-align: right;
+    padding-right: 10px;
+}
+.competition input {
+    width:100%;
+    font-size:1.2rem;
+    background-color:white;
+    border-radius:5px;
+    border: 1px solid lightgray;
+}
+.competition .checkbox {
+    width:unset;
+    float:right;
+}
+.profile_cmpnt {
+    padding:8px 0;
+    position:relative;
+}
+.full {
+    grid-column-start: 1;
+    grid-column-end: 3;
+}
+.pageTextTextarea {
+    display: block;
+    width:100%;
+}
+#class_competitions_list {
+    margin-top: 1rem;
+}
+#public_instructions{
+    margin-bottom: 1rem;
+}

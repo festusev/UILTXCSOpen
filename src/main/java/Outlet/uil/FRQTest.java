@@ -85,10 +85,6 @@ public class FRQTest {
                 System.out.println("--Getting files for probNum " + i + " in path "+ TESTCASE_DIR_PATH +i+"/");
                 files.add(get_files(new File(TESTCASE_DIR_PATH + i + "/")));
             }
-            Pair testcase = files.get(0);
-
-            if (testcase == null) System.out.println("First file testcase is null");
-            else System.out.println("Key path="+testcase.key.getAbsolutePath()+", Value path="+testcase.value.getAbsolutePath());
         } catch (Exception var1) {
             var1.printStackTrace();
         }

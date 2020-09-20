@@ -59,7 +59,37 @@
   </servlet>
   <servlet-mapping>
     <servlet-name>Profile</servlet-name>
-    <url-pattern>/profile</url-pattern>
+    <url-pattern>/console/profile</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>Class</servlet-name>
+    <servlet-class>Outlet.Class</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Class</servlet-name>
+    <url-pattern>/console/class</url-pattern>
+  </servlet-mapping>
+
+  <!--<servlet>
+    <servlet-name>Upcoming</servlet-name>
+    <servlet-class>Outlet.uil.Upcoming</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Upcoming</servlet-name>
+    <url-pattern>/console/upcoming</url-pattern>
+  </servlet-mapping>-->
+
+  <servlet>
+    <servlet-name>Help</servlet-name>
+    <servlet-class>Outlet.Help</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Help</servlet-name>
+    <url-pattern>/console/help</url-pattern>
   </servlet-mapping>
 
   <!--<servlet>
@@ -155,7 +185,7 @@
   </servlet>
   <servlet-mapping>
     <servlet-name>UIL</servlet-name>
-    <url-pattern>/uil</url-pattern>
+    <url-pattern>/console/competitions</url-pattern>
   </servlet-mapping>
 
 

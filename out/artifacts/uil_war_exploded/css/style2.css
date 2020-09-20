@@ -57,11 +57,11 @@ body{
     /**
     Document variables
      */
-    --prim-col: #262626;
     --sec-col: #edad3e;
     --sec-dark: #d18b11;
-    --prim-light: #124f67;
-    --prim-middle:#124f67;
+    --prim-light: #42A5F5;
+    --prim-middle:#2196F3;
+    --prim-dark:#1976D2;
     --warn-col: #db4125;
     --warn-dark: #b83018;
     --success-col:#1ccf00;
@@ -111,7 +111,7 @@ Everything to do with the navigation bar
     box-shadow: 0 0 7px 1px rgba(0,0,0,0.1);
     list-style-type: none;
     margin: 0;
-    padding: 0;
+    padding: 0 25rem;
     display:none;
     background-color: white;
 }
@@ -402,11 +402,7 @@ a:focus{
 #scoreboardColumn .right{
     text-align:right;
 }
-#scoreboardColumn h1{
-    /*! font-weight:bold; */
-    font-family:var(--body-font);
-    color:var(--prim-light);
-}
+
 #scoreboardColumn h2{
     font-size:1rem;
 }

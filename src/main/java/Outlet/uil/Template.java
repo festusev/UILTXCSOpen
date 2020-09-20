@@ -134,8 +134,9 @@ public class Template {
 
         HEADERS = "<html><head><title>" + name + " - TXCSOpen</title>" +
                 Dynamic.loadHeaders() +
-                "<link rel='stylesheet' href='/css/uil_template.css'>" +
-                "<script src='/js/uil.js'></script>" +
+                "<link rel='stylesheet' href='/css/console/console.css'>" +
+                "<link rel='stylesheet' href='/css/console/uil_template.css'>" +
+                "<script src='/js/console/uil.js'></script>" +
                 "</head><body>";
 
         // Create a timer to update the scoreboard every SCOREBOARD_UPDATE_INTERVAL seconds
@@ -162,9 +163,10 @@ public class Template {
         CompetitionStatus competitionStatus = new CompetitionStatus(mcTest, frqTest);
         UserStatus userStatus = UserStatus.getCompeteStatus(uData, cid);
         writer.write(HEADERS+
-                        Dynamic.loadNav(request) +
-                getNavBarHTML(userStatus, competitionStatus) + "<div id='content'>" + getLeftBarHTML(uData, userStatus) +
-                "<span id='columns'>" + getColumnsHTML(uData, userStatus, competitionStatus) + "</span></div></body></html>"
+                        // Dynamic.loadNav(request) +
+                Dynamic.get_consoleHTML(2,getNavBarHTML(userStatus, competitionStatus) + "<div id='content'>" +
+                        "<span id='columns'>" + getColumnsHTML(uData, userStatus, competitionStatus) +
+                        "</span>"+getLeftBarHTML(uData, userStatus)+"</div></body></html>")
         );
     }
 
@@ -188,7 +190,7 @@ public class Template {
         int month = cal.get(Calendar.MONTH);
         int day = cal.get(Calendar.DAY_OF_MONTH);
 
-        return "<div class='competition' onclick='location.href=\"/uil?cid="+cid+"\"'>" +
+        return "<div class='competition mini_competition' onclick='location.href=\"/console/competitions?cid="+cid+"\"'>" +
                 "<div class='row1'>"+StringEscapeUtils.escapeHtml4(name)+"<p class='right' style='color:"+signupColor+"'>"+signupText+"</p></div>" +
                 "<div class='row2'>Created by "+StringEscapeUtils.escapeHtml4(competition.teacher.fname) + " " + StringEscapeUtils.escapeHtml4(competition.teacher.lname) +
                 "<p class='right'>"+month+"/"+day+"</p></div>";
@@ -198,7 +200,7 @@ public class Template {
         String string = "<div id='leftBar'>";
         if(userStatus.creator || userStatus.signedUp) {
             if(mcTest.exists) {
-                String written = "<div class='written'><h2>Written Test</h2>";
+                String written = "<div id='leftBarWritten'><h2>Written Test</h2>";
                 if(userStatus.creator) {
                     int submissionCount = 0;
                     int submissionTotal = 0;    // All of the scores added up
@@ -234,7 +236,7 @@ public class Template {
             }
 
             if(frqTest.exists) {
-                String handsOn = "<div class='handsOn'><h2>Hands-On</h2>";
+                String handsOn = "<div id='leftBarHandsOn'><h2>Hands-On</h2>";
                 if(userStatus.creator) {
                     int submissionCount = competition.frqSubmissions.size();
                     int submissionTotal = 0;
@@ -285,8 +287,6 @@ public class Template {
                                                   "<p>out of <span id='bottomOutOf'>" + competition.entries.tidMap.values().size() +
                         "</span> teams</p></div>";
             }
-        } else if(!userStatus.loggedIn) {
-            string += "<div id='leftBarBottom'><a href='/login' class='bottomLeftLink'>Login</a><a href='/register' class='bottomLeftLink'>Register</a></div>";
         } else if(userStatus.teacher) {
             string += "<div id='leftBarBottom'><a href='/profile' class='bottomLeftLink'>Create Competition</a></div>";
         } else {    // They are a student but not signed up
@@ -303,9 +303,8 @@ public class Template {
                 "<img src='/res/close.svg' id='signUpClose' onclick='hideSignup()'/>" +
                 "<p id='errorBoxERROR'></p><p class='instruction'>Enter team join code:</p><input name='teamCode' id='teamCode' oninput='codeEntered(this)' maxlength='6'>" +
                 "<p id='toggleCreateTeam' onclick='toggleCreateTeam(event)'>or create a new team.</p></div></div>";  // They haven't signed up yet
-        if(!userStatus.loggedIn){ // They are not logged in
-            actMessage = "<h3 class='subtitle'>Log in to compete</h3>";
-        } else if(userStatus.teacher) {
+
+        if(userStatus.teacher) {
             actMessage = "<h3 class='subtitle'>Teacher's can't compete</h3>";
         } else if(userStatus.signedUp) { // If they are already signed up for this competition
             actMessage = "<h3 class='subtitle'>You have signed up for this competition</h3>";
@@ -314,12 +313,10 @@ public class Template {
         String school = "";
         if(!teacher.school.isEmpty()) school = "<h2>School</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.school)+"</p>";
         String about = "<div class='column' id='aboutColumn'>" +
-                "<div class='row head-row'>" +
-                "<h1>" + StringEscapeUtils.escapeHtml4(name) + "</h1>" +
-                actMessage + "" +
-                "</div>" +
-                "<div class='row' id='aboutDescriptionRow'>" +
-                "<div id='aboutDescription'>" + StringEscapeUtils.escapeHtml4(description) + "</div>" +
+                "<div id='aboutDescription'>" +
+                "<h1>" + StringEscapeUtils.escapeHtml4(name) + actMessage + "</h1>" +
+                //"<div class='row' id='aboutDescriptionRow'>" +
+                "<p>" + StringEscapeUtils.escapeHtml4(description) + "</p></div>" +
                 "<div id='aboutInfo'><h2>Created by</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.fname)+" "+
                 StringEscapeUtils.escapeHtml4(teacher.lname)+"</p>"+school;
         if(mcTest.exists) {
@@ -328,7 +325,7 @@ public class Template {
         if(frqTest.exists) {
             about += "<h2>Hands-On</h2><p>"+frqTest.opens.DATE_STRING+"<br>"+(frqTest.TIME/(1000*60))+" min<br>"+frqTest.PROBLEM_MAP.length+" questions</p>";
         }
-        about += "</div></div></div>";
+        about += "</div></div>";
         return getFRQHTML(uData, userStatus, competitionStatus) + about + scoreboardHTML + /*answers +*/
                 getMCHTML(uData, userStatus, competitionStatus) /*getTeamHTML(uData, userStatus)*/;
     }
@@ -385,20 +382,20 @@ public class Template {
     public String getMCHTML(User u, UserStatus userStatus, CompetitionStatus competitionStatus){
         if(!mcTest.exists || competitionStatus.mcBefore) return "";
 
-        if(userStatus.signedUp && userStatus.loggedIn && !userStatus.teacher) {
+        if(userStatus.signedUp && !userStatus.teacher) {
             Student s = (Student) u;
             UILEntry entry = s.cids.get(cid);
             /*if (!entry.mc.containsKey(u.uid)) {
                 return mcHTML[0];
             } else*/
             if (entry.finishedMC(u.uid)) {
-                return getFinishedMC(entry.mc.get(u.uid));
+                return getFinishedMC(entry.mc.get(u.uid), entry.tid, u.uid);
             } else {
                 return getRunningMC();
             }
         } else if(userStatus.teacher && userStatus.creator) {  // This is the teacher who made this competition
-            String html =  "<div id='mcColumn' class='column' style='display:none;'>" +
-                    "<div class='row head-row'>" +
+            String html =  "<div id='mcColumn' class='column mcSubmissionList' style='display:none;'>" +
+                    "<div id='mcColumn_submissionList'><div class='row head-row'>" +
                     "<h1>Written</h1>" +
                     "</div>" +
                     "<div class='row'>" +
@@ -417,7 +414,7 @@ public class Template {
                     }
                 }
             }
-            html += "</table></div></div>";
+            html += "</table></div></div></div>";
 
             return html;
         } else if(competitionStatus.mcFinished) {
@@ -452,11 +449,7 @@ public class Template {
 
             return html;
         } else {
-            if(!userStatus.loggedIn) {
-                return "<div id='mcColumn' class='column' style='display:none;'>" +
-                        "<h1 class='forbiddenPage'>You must be logged in to compete</h1>" +
-                        "</div>";
-            } else if(userStatus.teacher) { // They are a teacher
+            if(userStatus.teacher) { // They are a teacher
                 return "<div id='mcColumn' class='column' style='display:none;'>" +
                         "<h1 class='forbiddenPage'>Teachers cannot compete.</h1>" +
                         "</div>";
@@ -477,7 +470,7 @@ public class Template {
     public String getRunningMC() {
         return mcHTML[0]+mcTest.getTimer().toString()+mcHTML[1];
     }
-    public String getFinishedMCHelper(MCSubmission submission) {
+    public String getFinishedMCHelper(MCSubmission submission, short tid, short uid, boolean isTeacher) {
         String html = "<table id='mcQuestions'><tr><th>#</th>";
         for(char c: mcTest.options) {
             html += "<th>"+c+"</th>";
@@ -499,13 +492,28 @@ public class Template {
                 if(!answer.equals(mcTest.KEY[i-1][0])) {
                     correctAnswer = "<p class='mcTextCorrectAnswer'>"+ mcTest.KEY[i-1][0]+"</p>";
                 }
-                html += "<td colspan='5'><input type='text' class='mcText' value='"+answer+"' disabled>"+correctAnswer+"</td>";
+                String tempAnswer = answer;
+                if(tempAnswer.equals(MCTest.SKIP_CODE)) tempAnswer = "";
+                html += "<td colspan='5'><input type='text' class='mcText' value='"+tempAnswer+"' disabled>"+correctAnswer+"</td>";
             }
+            String mcResult = "";
+            if(isTeacher) mcResult = "onchange='changeMCJudgement(this,"+tid+","+uid+","+i+")'";
+            else mcResult = "disabled";
+             // Add in a "correct"/"incorrect"/"skipped" dropdown
+            html += "<td><select class='changeMCResult' "+mcResult+">";
+            String correctString = "";
+            String incorrectString = "";
+            String skippedString = "";
+            if(answer.equals(mcTest.KEY[i-1][0])) correctString = " selected";
+            else if(answer.equals(MCTest.SKIP_CODE)) skippedString = " selected";
+            else incorrectString = " selected";
+            html += "<option "+correctString+">Correct</option><option "+incorrectString+">Incorrect</option><option "+
+                    skippedString+">Skipped</option></select></td></tr>";
         }
         html += "</table>";
         return html;
     }
-    public String getFinishedMC(MCSubmission submission) {
+    public String getFinishedMC(MCSubmission submission, short tid, short uid) {
         String html =  "<div id='mcColumn' class='column' style='display:none;'>" +
                         "<div class='row head-row'>" +
                         "<h1>Written</h1>" +
@@ -518,7 +526,7 @@ public class Template {
                         "<p>Skipped: "+submission.scoringReport[2]+"</p><br>" +
                         "<p>Scoring Report</p>";
 
-        return html + getFinishedMCHelper(submission) + "</div></div>";
+        return html + getFinishedMCHelper(submission, tid, uid,false) + "</div></div>";
     }
 
     public String getSmallFRQ(int i, FRQSubmission submission) {
@@ -551,10 +559,6 @@ public class Template {
 
                 return html;
             } else return "<div id='frqColumn' class='column' style='display:none;'><h1 class='forbiddenPage'>Teachers cannot compete.</h1></div>";
-        } else if(!userStatus.loggedIn) {
-            return  "<div id='frqColumn' class='column' style='display:none;'>" +
-                    "<h1 class='forbiddenPage'>You must be logged in to compete</h1>" +
-                    "</div>";
         } else if(!userStatus.signedUp) {
             if(!opens.done()) {
                 return "<div id='frqColumn' class='column' style='display:none;'><div class='row'>" +
@@ -688,12 +692,12 @@ public class Template {
         }
 
         // create HTML
-        scoreboardHTML = "<div class='column' id='scoreboardColumn' style='display:none;'><div class='row head-row'><h1>Scoreboard</h1>" +
+        scoreboardHTML = "<div class='column' id='scoreboardColumn' style='display:none;'><h1>Scoreboard</h1>" +
                 "<table id='teamList'><tr><th>#</th><th>Team</th>";
         if(competition.isPublic) scoreboardHTML += "<th>School</th>";
         scoreboardHTML += "<th class='right'>"+((frqTest.exists&&mcTest.exists)?"Written":"")+"</th><th class='right'>"+
                 (frqTest.exists?"Hands-On":"Written")+"</th>" +
-                "</tr>" + teamList + "</table></div></div>";
+                "</tr>" + teamList + "</table></div>";
     }
 
     /***
@@ -725,28 +729,22 @@ class UpdateScoreboard extends TimerTask {
 }
 
 class UserStatus {
-    boolean loggedIn;
     boolean signedUp;
     boolean teacher;
     boolean creator;
 
-    UserStatus(boolean loggedIn, boolean signedUp, boolean teacher, boolean creator) {
-        this.loggedIn = loggedIn;
+    UserStatus(boolean signedUp, boolean teacher, boolean creator) {
         this.signedUp = signedUp;
         this.teacher = teacher;
         this.creator = creator;
     }
 
     public static UserStatus getCompeteStatus(User u, short cid) {
-        boolean loggedIn = true;
         boolean signedUp = true;
         boolean teacher = false;
         boolean creator = false;
 
-        if(u == null || !Conn.isLoggedIn(u.token)) {
-            loggedIn = false;
-            signedUp = false;
-        } else if(u.teacher) {
+        if(u.teacher) {
             signedUp = false;
             teacher = true;
             if(((Teacher)u).cids.contains(cid)){
@@ -755,7 +753,7 @@ class UserStatus {
         } else if(!((Student)u).cids.containsKey(cid)) {
             signedUp = false;
         }
-        return new UserStatus(loggedIn, signedUp, teacher, creator);
+        return new UserStatus(signedUp, teacher, creator);
     }
 }
 

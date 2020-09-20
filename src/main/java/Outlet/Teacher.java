@@ -35,7 +35,7 @@ public class Teacher extends User{
         if(students.size() > 0) {
             JsonObject obj = new JsonObject();
             obj.addProperty("action", "updateStudentList");
-            obj.addProperty("html", Profile.getClassHTML(students.iterator().next(), this));
+            obj.addProperty("html", Class.getClassHTML(students.iterator().next(), this));
             String send = gson.toJson(obj);
             for (Student student : students) {
                 ProfileSocket socket = ProfileSocket.connected.get(student.uid);
@@ -52,7 +52,7 @@ public class Teacher extends User{
         if(socket != null) {
             JsonObject obj = new JsonObject();
             obj.addProperty("action", "updateStudentList");
-            obj.addProperty("html", Profile.getClassHTML(this, this));
+            obj.addProperty("html", Class.getClassHTML(this, this));
             try {
                 socket.send(gson.toJson(obj));
             } catch (IOException e) {

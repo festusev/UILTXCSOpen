@@ -20,8 +20,6 @@ public class Dynamic {
             "   if(dropdownNav.style.display == \"none\"){dropdownNav.style.display = \"block\";} else{dropdownNav.style.display = \"none\";} \n" +
             "}</script>" +
             "<div id=\"dropdownNav\"><div class=\"topBar\"><img src=\"/res/HamburgerIcon.svg\" onclick=\"toggleDropdownNav()\" id=\"hamburger\"/><img src=\"/res/logo_dark_texasless.svg\" class=\"logo\" onclick=\"location.href='/'\"/></div><ul id=\"dropdownNavList\" style=\"display:none;\">";
-    public static final String RIGHT_FLAIR = "<img class=\"flair\" id=\"right_flair\" src=\"res/blue_flair.svg\">";
-    public static final String LEFT_FLAIR = "<img class=\"flair\" id=\"left_flair\" src=\"res/orange_flair.svg\"/>";
 
     private static String announcement = ""; // The announcement pinned underneath the top bar
 
@@ -45,19 +43,19 @@ public class Dynamic {
         return  "    <ul id=\"top-bar\">\n" +
                 "            <li class=\"nav-item\" id=\"logoCnt\">\n" +
                 "                <img draggable=\"false\" src=\"/res/logo_dark_texasless.svg\" id=\"logo\" onclick=\"location.href='/'\"/>\n" +
-                "            </li>\n" +
+                //"            </li>\n" +
                 //"            <li class=\"nav-item\">\n" +
                 //"                <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
                 //"            </li>\n" +
-                "            <li class=\"nav-item\" id=\"uil_nav\">\n" +
-                "                <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
+                //"            <li class=\"nav-item\" id=\"uil_nav\">\n" +
+                //"                <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
                 /*"                <ul id=\"uil_dropdown\">" +
                 "                    <li class=\"drop-nav-item\" onclick=\"window.location.href='/uil/cs'\"><a class=\"nav-link\" href=\"/uil/cs\">CS</a></li><br>" +
                 "                    <li class=\"drop-nav-item\" onclick=\"window.location.href='/uil/calculator_applications'\"><a class=\"nav-link\" href=\"/uil/calculator_applications\">Calculator Applications</a></li><br>" +
                 "                    <li class=\"drop-nav-item\" onclick=\"window.location.href='/uil/math'\"><a class=\"nav-link\" href=\"/uil/math\">Math</a></li><br>" +
                 "                    <li class=\"drop-nav-item\" onclick=\"window.location.href='/uil/number_sense'\"><a class=\"nav-link\" href=\"/uil/number_sense\">Number Sense</a></li>" +
                  "                </ul>" +*/
-                "            </li>\n" +
+                //"            </li>\n" +
                 //"            <li class=\"nav-item\">\n" +
                 //"                <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
                 //"            </li>\n" +
@@ -94,19 +92,19 @@ public class Dynamic {
         return  "    <ul id=\"top-bar\">\n" +
                 "            <li class=\"nav-item\" id=\"logoCnt\">\n" +
                 "                <img draggable=\"false\" src=\"/res/logo_dark_texasless.svg\" id=\"logo\" onclick=\"location.href='/'\"/>\n" +
-                "            </li>\n" +
+                //"            </li>\n" +
                 //"            <li class=\"nav-item\">\n" +
                 //"                <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
                 //"            </li>\n" +
-                "            <li class=\"nav-item\" id=\"uil_nav\">\n" +
-                "                <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
+                //"            <li class=\"nav-item\" id=\"uil_nav\">\n" +
+                //"                <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
                 /*"                <ul id=\"uil_dropdown\">" +
                 "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/cs\">CS</a></li><br>" +
                 "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/calculator_applications\">Calculator Applications</a></li><br>" +
                 "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/math\">Math</a></li><br>" +
                 "                    <li class=\"drop-nav-item\"><a class=\"nav-link\" href=\"/uil/number_sense\">Number Sense</a></li>" +
                 "                </ul>" +*/
-                "            </li>\n" +
+                //"            </li>\n" +
                 //"            <li class=\"nav-item\">\n" +
                 //"                <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
                 //"            </li>\n" +
@@ -114,21 +112,21 @@ public class Dynamic {
                 "                <a class=\"nav-link\" href=\"/logout\">Logout</a>\n" +
                 "            </li>\n" +
                 "            <li class=\"nav-item rightNav\">\n" +
-                "                <a class=\"nav-link\" href=\"/profile\">Profile</a>\n" +
+                "                <a class=\"nav-link\" href=\"/console/competitions\">Profile</a>\n" +
                 "            </li>\n" +
                 "        </ul>\n" +
                 DROPDOWN +
                 //"      <li class=\"drop-nav-item\">\n" +
                 //"        <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
                 //"      </li>\n" +
-                "      <li class=\"drop-nav-item\">\n" +
-                "        <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
-                "      </li>\n" +
+                //"      <li class=\"drop-nav-item\">\n" +
+                //"        <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
+                //"      </li>\n" +
                 //"      <li class=\"drop-nav-item\">\n" +
                 //"        <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
                 //"      </li>\n" +
                 "      <li class=\"drop-nav-item\">\n" +
-                "        <a class=\"nav-link\" href=\"/profile\">Profile</a>\n" +
+                "        <a class=\"nav-link\" href=\"/console/competitions\">Profile</a>\n" +
                 "      </li>\n" +
                 "      <li class=\"drop-nav-item\">\n" +
                 "        <a class=\"nav-link\" href=\"/logout\">Logout</a>\n" +
@@ -141,7 +139,28 @@ public class Dynamic {
     public static String loadBigCopyright(){
         return "<div id=\"big_copyright\"><div id=\"copyright_contact\"><a href=\"https://twitter.com/TXCSOpen\"><img src=\"/res/contact/twitter.png\"/></a><a href=\"https://discord.gg/ukT4QnZ\"><img src=\"/res/contact/discord.png\"/></a><a href=\"mailto:contact@txcsopen.com\"><img src=\"/res/contact/gmail.png\"/></a></div><div id=\"copyright_privacy\"><a href=\"/privacy-policy.jsp\">Privacy Policy</a><a href=\"https://forms.gle/eKJSTFn7BTp6Gu538\">Report an Issue</a></div><div id=\"copyright_notice\">© 2020. All rights reserved.</div></div>";
     }
-    public static String loadTimer(String timerTo, long milli, String onTimerDone, boolean includeHour) {
+
+    /***
+     * page is 0, 1, 2, 3, or 4, corresponding to upcoming, competitions, class, help, and profile respectively
+     * @param page
+     * @param content
+     * @return
+     */
+    public static String get_consoleHTML(int page, String content) {
+        String leftBar = "<div id='left-bar'>" +
+                            "<img src='/res/icon.png' id='tx'>" +
+                            //"<img onclick='window.location.href=\"/console/upcoming\"' src='/res/console/surveys.svg' "+(page==0?"class='selected'":"")+"/>" +
+                            "<img onclick='window.location.href=\"/console/competitions\"' src='/res/console/champion-winner-trophy.svg' "+(page==1?"class='selected'":"")+"/>" +
+                            "<img onclick='window.location.href=\"/console/class\"' src='/res/console/graduation-cap.svg' "+(page==2?"class='selected'":"")+"/>" +
+                            "<img onclick='window.location.href=\"/console/help\"' src='/res/console/question-mark-line.svg' id='nav-help' "+(page==3?"class='selected'":"")+"/>" +
+                            "<div id='nav-profile-cnt'><img src='/res/console/profile.svg' id='nav-profile' "+(page==4?"class='selected'":"")+"/>" +
+                            "<div><a href='/console/profile' id='nav-my-settings'>My Settings</a><a href='/logout'>Logout</a></div></div>" +
+                         "</div>" +
+                         "<div id='right'>" + content + "</div>";
+        return leftBar;
+    }
+
+    /*public static String loadTimer(String timerTo, long milli, String onTimerDone, boolean includeHour) {
         Instant instant = Instant.now();
         ZoneId zoneId = ZoneId.of( "America/Chicago" );
         ZonedDateTime zdt = ZonedDateTime.ofInstant( instant , zoneId );
@@ -192,16 +211,5 @@ public class Dynamic {
                 "    }" +
                 "}, 1000);}</script>";
         return html;
-    }
-
-    /**
-     * Returns 0 if the MC section hasn't begun, 1 if it is currently open, and 2 if it has closed.
-     * @return
-     */
-    public static String loadRightFlair(){
-        return RIGHT_FLAIR;
-    }
-    public static String loadLeftFlair(){
-        return LEFT_FLAIR;
-    }
+    }*/
 }

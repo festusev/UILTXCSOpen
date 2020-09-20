@@ -1,0 +1,14 @@
+#Help {
+    width: 50rem;
+    margin: auto;
+    margin-top: 8rem;
+    margin-bottom: 8rem;
+}
+#Help h1 {
+    margin-bottom: 1rem;
+    font-size: 3rem;
+}
+#Help h2 {
+    font-weight: bold;
+    margin: 1rem 0;
+}

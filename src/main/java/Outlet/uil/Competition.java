@@ -2,6 +2,7 @@ package Outlet.uil;
 
 import Outlet.*;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import javax.servlet.ServletException;
@@ -335,10 +336,42 @@ public class Competition {
 
                         compJ.addProperty("user", StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname));
                         compJ.addProperty("team", StringEscapeUtils.escapeHtml4(entry.tname));
-                        compJ.addProperty("answers", template.getFinishedMCHelper(submission));
+                        compJ.addProperty("answers", template.getFinishedMCHelper(submission, tid, uid, true));
                         compJ.addProperty("scoringReport", gson.toJson(submission.scoringReport));
 
                         writer.write(new Gson().toJson(compJ));
+                    }
+                } else if(action.equals("changeMCJudgement")) {
+                    short uid = Short.parseShort(request.getParameter("uid"));
+                    short tid = Short.parseShort(request.getParameter("tid"));
+                    String judgement = request.getParameter("judgement");
+                    int probNum = Short.parseShort(request.getParameter("probNum")) - 1;
+
+                    UILEntry entry = entries.getByTid(tid);
+                    System.out.println("Changing MC Judgement, uid="+uid+", tid="+tid+", judgement="+judgement+", probNum="+probNum);
+                    if(entry != null && entry.mc.containsKey(uid)) {
+                        System.out.println("User in mc");
+                        MCSubmission submission = entry.mc.get(uid);
+                        if(submission.finished) {
+                            System.out.println("Finished");
+                            if(judgement.equals("Correct")) {
+                                submission.answers[probNum] = template.mcTest.KEY[probNum][0];
+                            } else if(judgement.equals("Incorrect")) {
+                                if(template.mcTest.KEY[probNum][0].equals("a")) submission.answers[probNum] = "b";
+                                else submission.answers[probNum] = "a";
+                            } else {
+                                submission.answers[probNum] = MCTest.SKIP_CODE;
+                            }
+                            submission = entry.scoreMC(uid, submission.answers);
+                            System.out.println("SCORING REPORT="+gson.toJson(submission.scoringReport));
+                            template.updateScoreboard();
+
+                            for(short teamMemberUID: entry.uids) {
+                                CompetitionSocket socket = CompetitionSocket.connected.get(teamMemberUID);
+                                if(socket != null)
+                                    socket.send("[\"reScoreMC\",\""+uid+"\",\""+submission.scoringReport[0]+"\"]");
+                            }
+                        }
                     }
                 }
             }
@@ -361,16 +394,16 @@ public class Competition {
             } else if (competitionStatus.mcDuring && action.equals("submitMC")) {
                 String[] answers = gson.fromJson(request.getParameter("answers"), String[].class);
                 MCSubmission submission = temp.scoreMC(user.uid, answers);
-                writer.write("{\"mcHTML\":\"" + template.getFinishedMC(submission) + "\"}");
+                writer.write("{\"mcHTML\":\"" + template.getFinishedMC(submission, temp.tid, user.uid) + "\"}");
                 temp.update();
                 template.updateScoreboard();
 
                 // Send it to the teacher
                 CompetitionSocket socket = CompetitionSocket.connected.get(((Student)user).teacherId);
                 if(socket != null) {
-                    JsonObject obj = new JsonObject();
-                    obj.addProperty("action", "addSmallMC");
-                    obj.addProperty("html", template.getSmallMC(user,temp, submission));
+                    JsonArray obj = new JsonArray();
+                    obj.add("addSmallMC");
+                    obj.add(template.getSmallMC(user,temp, submission));
                     socket.send(gson.toJson(obj));
                 }
                 return;
@@ -424,9 +457,9 @@ public class Competition {
                 // Send it to the teacher
                 CompetitionSocket socket = CompetitionSocket.connected.get(user.teacherId);
                 if(socket != null) {
-                    JsonObject obj = new JsonObject();
-                    obj.addProperty("action", "addSmallFRQ");
-                    obj.addProperty("html", template.getSmallFRQ(frqSubmissions.indexOf(submission), submission));
+                    JsonArray obj = new JsonArray();
+                    obj.add("addSmallFRQ");
+                    obj.add(template.getSmallFRQ(frqSubmissions.indexOf(submission), submission));
                     socket.send(gson.toJson(obj));
                 }
 
@@ -436,9 +469,9 @@ public class Competition {
                     System.out.println("Looking at uid="+uid);
                     if(socket != null) {
                         System.out.println("Socket != null for uid="+uid);
-                        JsonObject obj = new JsonObject();
-                        obj.addProperty("action", "updateFRQProblems");
-                        obj.addProperty("html", template.getFRQProblems(temp));
+                        JsonArray obj = new JsonArray();
+                        obj.add("updateFRQProblems");
+                        obj.add(template.getFRQProblems(temp));
                         socket.send(gson.toJson(obj));
                     }
                 }
@@ -473,9 +506,9 @@ public class Competition {
 
                         CompetitionSocket socket = CompetitionSocket.connected.get(uid);
                         if (socket != null) {
-                            JsonObject obj = new JsonObject();
-                            obj.addProperty("action", "updateTeam");
-                            obj.addProperty("html", template.getTeamMembers(StudentMap.getByUID(uid), entry));
+                            JsonArray obj = new JsonArray();
+                            obj.add("updateTeam");
+                            obj.add(template.getTeamMembers(StudentMap.getByUID(uid), entry));
                             try {
                                 socket.send(gson.toJson(obj));
                             } catch (IOException e) {

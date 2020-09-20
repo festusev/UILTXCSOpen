@@ -24,7 +24,7 @@ public class Register extends HttpServlet{
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         if(Conn.isLoggedIn(request)){
-            response.sendRedirect(request.getContextPath() + "/profile");
+            response.sendRedirect(request.getContextPath() + "/console/competitions");
         }
         Conn.setHTMLHeaders(response);
 
@@ -73,7 +73,7 @@ public class Register extends HttpServlet{
         response.setCharacterEncoding("UTF-8");
         PrintWriter writer = response.getWriter();
         if(Conn.isLoggedIn(request)){
-            writer.write("{\"success\":\"" +request.getContextPath() + "/profile\"}");
+            writer.write("{\"success\":\"" +request.getContextPath() + "/console/competitions\"}");
             return;
         }
 

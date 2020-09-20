@@ -6,7 +6,7 @@ body{
     margin:auto;
 }
 #center h1{
-    font-weight:bold;
+    font-weight: bold;
     font-family:var(--head-font);
     color:var(--prim-light);
 }

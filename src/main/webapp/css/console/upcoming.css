@@ -1,0 +1,27 @@
+#upcoming {
+    width: 40rem;
+    margin: auto;
+    margin-top: 8rem;
+}
+.competitionCnt{
+    height:6rem;
+}
+.competition{
+    padding:10px;
+    border: 1px solid lightgray;
+    border-radius:10px;
+    margin-bottom:1rem;
+    margin-top:0.5rem;
+    cursor: pointer;
+    display: block;
+}
+.competition:hover{
+    background-color:var(--prim-light);
+    color: white;
+}
+.competition .row1 *, .competition .row2 *{
+    display:inline-block;
+}
+.competition .right {
+    float:right;
+}

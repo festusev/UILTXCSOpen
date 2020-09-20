@@ -1,0 +1,166 @@
+body{
+  overflow-y:auto;
+}
+h1 {
+  grid-column-start: 1;
+  grid-column-end: 3;
+}
+#nav-my-settings {
+  color: var(--prim-light) !important;
+}
+#profile_nav li{
+  padding-right:15px;
+  cursor: pointer;
+  font-size:18px;
+  font-weight:bold;
+  color: #777;
+}
+#profile_logout {
+  color:var(--warn-col) !important;
+}
+#Profile {
+  display:grid;
+  grid-column-gap: 40px;
+  grid-template-columns: auto auto;
+  width: 50rem;
+  max-width: 100%;
+  margin: auto;
+  margin-top: 8rem;
+  background-color: white;
+  padding: 2rem 3rem;
+  box-shadow: var(--shadow);
+  /*margin-left: 5rem;
+  margin-bottom: 8rem;*/
+}
+#Profile input {
+  width:100%;
+  font-size:1.2rem;
+  background-color:white;
+  border-radius:5px;
+  border: 1px solid lightgray;
+}
+#Profile .checkbox {
+  width:unset;
+  float:right;
+}
+.profile_cmpnt {
+  padding:8px 0;
+  position:relative;
+}
+.full {
+  grid-column-start: 1;
+  grid-column-end: 3;
+}
+.pageTextTextarea {
+  display: block;
+  width:100%;
+}
+#saveChanges, #delAccount {
+  font-size:18px;
+  font-weight:bold;
+  cursor: pointer;
+}
+#saveChanges {
+  color:var(--success-dark);
+}
+.selected {
+  color:#333 !important;;
+}
+#copyright_notice {
+  position: fixed;
+  bottom:0;
+}
+.success, .error{
+  grid-column-start: 1;
+  grid-column-end: 3;
+}
+#delUserPasswordCnt {
+  position:fixed;
+  width:100%;
+  left:0;
+  top:0;
+  height:100%;
+  background-color:rgba(255,255,255,0.9);
+  z-index: 1000;
+}
+#delUserPasswordCnt .center{
+  width:20rem;
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translateX(-50%) translateY(-100%);
+  display:block;
+}
+#delUserPasswordCnt .center h1{
+  font-size:1.3rem;
+  font-weight:bold;
+}
+#delUserPasswordCnt .center button{
+  display:block;
+  background-color:var(--warn-col);
+  border:none;
+  color:white;
+  padding:5px 10px;
+  border-radius:3px;
+  margin-top:10px;
+  font-weight:bold;
+  cursor:pointer;
+}
+#delUserPasswordCnt .center a{
+  cursor:pointer;
+}
+
+
+.kick, .leaveClass {
+  color:var(--warn-col);
+  cursor:pointer;
+}
+.kick {
+  float:right;
+}
+.leaveClass{
+  position:absolute;
+  right:0;
+  top:8px;
+}
+.classCodeInput {
+  text-transform: uppercase;
+}
+/*#content {
+  position: absolute;
+  top:0;
+  left:0;
+  width: 100%;
+  height: 100%;
+  z-index:0;
+  display: flex;
+  flex-flow: row;
+  overflow: auto;
+}
+/*#profile_nav_cnt {
+  display: inline-block;
+  width:30%;
+  height: 100%;
+  position: relative;
+}
+#profile_nav {
+  margin-top:8rem;
+  text-align: right;
+  height:20rem;
+  border-right: 1px solid lightgray;
+  position: fixed;
+  left:20%;
+}*/
+#profile_cnt {
+  display: block;
+  margin: auto;
+  height: 100%;
+  vertical-align: top;
+  flex-grow: 1;
+  padding-top: 8rem;
+  padding-bottom: 4rem;
+  box-sizing: border-box;
+}
+#delAccount {
+  color:var(--warn-col) !important;
+}

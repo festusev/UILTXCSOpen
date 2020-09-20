@@ -22,36 +22,6 @@ import javax.servlet.http.Part;
  */
 public class Profile extends HttpServlet{
     protected static Gson gson = new Gson();
-    private static final String PAGE_NAME = "console";
-
-    public static String getClassHTML(User u, Teacher teacher) {
-        String html = "<div class='profile_cmpnt full'>";
-
-        if(teacher != null) {
-            if (u.teacher) {
-                html += "<script>loadCompetitions();</script><h2>Class Code: <b>" + ((Teacher) u).classCode + "</b></h2></div>";
-            } else {
-                html += "<h2>Teacher: <b>" + teacher.fname + " " + teacher.lname + "</b></h2><span onclick='leaveClass()' class='leaveClass'>Leave Class</span></div>";
-            }
-            html += "<div class='profile_cmpnt full'><h2>Students</h2>";
-
-            Collection<Student> students = StudentMap.getByTeacher(teacher.uid).values();    // All of the students in the class
-            if (students.size() <= 0) {
-                html += "<div>No students.</div>";
-            } else {
-                html += "<ul id='studentList'>";
-                for (Student s : students) {
-                    html += "<li>" + s.fname + " " + s.lname;
-                    if (u.teacher) html += "<span></span><span class='kick' onclick='kickStudent(this, "+s.uid+")'>Kick</span>";
-                    html += "</li>";
-                }
-                html += "</ul>";
-            }
-        } else {    // They are not a teacher and do not belong to a class
-            html += "<script>showJoinClass();</script>"; // I use an img tag here so that the script is executed when inserted using .innerHTML
-        }
-        return html + "</div>";
-    }
 
     private boolean savePublished(HttpServletRequest request, PrintWriter writer, User u) throws IOException, ServletException {
         System.out.println("Saving published");
@@ -423,83 +393,28 @@ public class Profile extends HttpServlet{
             writer.write(new Gson().toJson(listJ));
             return;
         } else {
-            Teacher teacher;
-            if (u.teacher) teacher = (Teacher) u;
-            else teacher = TeacherMap.getByUID(((Student) u).teacherId);
-
             Conn.setHTMLHeaders(response);
 
-            String nav = "<div id='profile_nav_cnt'><ul id='profile_nav'><li onclick='navTo(this)' class='selected' id='profile_link'>Profile</li><li onclick='navTo(this)'>Class</li>";
-            String right = "<div id='profile_cnt'>" +
-                    "<div class='profile_div' id='Profile'>" +
-                    "<div class='profile_cmpnt half'><h2>First Name</h2><input type='text' name='fname' id='fname' value='" + StringEscapeUtils.escapeHtml4(u.fname) + "'/></div>" +
+            String right = //"<div id='profile_cnt'>" +
+                    "<div id='Profile'>" +
+                    "<h1>Profile</h1><div class='profile_cmpnt half'><h2>First Name</h2><input type='text' name='fname' id='fname' value='" + StringEscapeUtils.escapeHtml4(u.fname) + "'/></div>" +
                     "<div class='profile_cmpnt half'><h2>Last Name</h2><input type='text' name='lname' id='lname' value='" + StringEscapeUtils.escapeHtml4(u.lname) + "'></div>";
             String delUserPassText = "Your information cannot be recovered.";    // The warning text that we display when the user tries to delete their account.
             if (u.teacher) {
-                nav += "<li onclick='navTo(this)'>Competitions</li>";
-                right += "<div class='profile_cmpnt full'><h2>School</h2><input type='text' name='school' id='school' value='" + StringEscapeUtils.escapeHtml4(u.school) + "'></div>";
+                String school = "";
+                if(u.school != null) school = StringEscapeUtils.escapeHtml4(u.school);
+                right += "<div class='profile_cmpnt full'><h2>School</h2><input type='text' name='school' id='school' value='" + school + "'></div>";
                 delUserPassText = "Your class and competitions will be permanently deleted.";
             }
-            nav += "<li onclick='navTo(this)'>Help</li><li id='delAccount' onclick='document.getElementById(\"delUserPasswordCnt\").style.display=\"block\";'>Delete Account</li></ul></div>";
             right += "<div class='profile_cmpnt full'><h2><b>Change Password</b></h2><h2>Old Password</h2>" +
                     "<input type='password' name='oldPassword' id='oldPassword'/><h2>New Password</h2>" +
                     "<input type='password' name='newPassword' id='newPassword'/></div>" +
                     "<div class='profile_cmpnt full'><span onclick='saveChanges()' id='saveChanges'>Save Changes</span></div>" +
-                    "</div><div class='profile_div' id='Class' style='display:none'>" + getClassHTML(u, teacher) + "</div>" +
+                    "<div class='profile_cmpnt full'><span onclick='document.getElementById(\"delUserPasswordCnt\").style.display=\"block\";' id='delAccount'>Delete Account</span></div>" +
                     "<div id='delUserPasswordCnt' style='display:none'><div class='center'><h1>Are you sure?</h1><p>" + delUserPassText +
-                    "</p><label for='delPass'>Retype your password:</label><input name='delPass' type='password' id='delUserPassword'/><button onclick='delUser()'>Yes, delete my account.</button><a onclick='hideDelUser()'>Cancel</a></div></div>";
-
-            if (u.teacher) {    // List the competitions that the teacher has created and include a "New" button
-                right += "<div class='profile_div' id='Competitions'  style='display:none'><p id='newCompetition' data-hasCompetitions='false''>New</p></div>";
-            }
-            right += "<div class='profile_div' id='Help' style='display:none'><div class='helpSection'>Join the community <a href='https://discord.gg/ukT4QnZ'" +
-                    "class='link'>discord</a> to receive announcements and ask for help. You can always email us at " +
-                    "<a href='mailto: contact@txcsopen.com' class='link'>contact@txcsopen.com</a>.</div>";
-            if(u.teacher) {
-                right += "<div class='helpSection'><h2>Quick Help</h2>Right now you are in your teacher profile. " +
-                        "On the left sidebar, you will see links to access your Profile, Class, Competitions, and the Help " +
-                        "page (where you are now).</div>" +
-
-                        "<div class='helpSection'><h2>Profile</h2>In the profile page, you can update your name, school, " +
-                        "and password. Then click save changes to publish your changes.</div>" +
-
-                        "<div class='helpSection'><h2>Class</h2>The class page lets you manage the students in your classroom, " +
-                        "who are able to view nonpublic competitions. Give your class code out to your students so that " +
-                        "they can sign up to join your class. In their profile page, they will have the option to use " +
-                        "this class code to join your class. If you want to remove a student, simply click the ‘kick’ " +
-                        "button to the right of their name. The ability to send messages to your class is coming soon.</div>" +
-
-                        "<div class='helpSection'><h2>Competitions</h2>The competitions page allows you to quickly create " +
-                        "UIL competitions. Click the orange new button to create a new competition. From there you initially " +
-                        "have a few options. You can name and give a description for your competition, which your students " +
-                        "will see on the competition’s page when competing. This is where we suggest adding links to resources " +
-                        "other than the tests, like the student packets. You can select whether the competition is public " +
-                        "(viewable to everyone) or nonpublic (viewable to the students in your class). You can choose whether " +
-                        "you want a written test and/or hands on programming test by clicking the checkboxes on the right " +
-                        "of the labels. Finally, at the top of each competition, you can choose to save, publish, delete, " +
-                        "or, if your competition is already published, jump to the competition’s page, where you can score students.<br><br>" +
-
-                        "The written test has a start date and length (usually 45 mins). Click the plus button to the right " +
-                        "of answers to insert the test key. Click the add button to add questions to the key. The key supports " +
-                        "two types of questions, multiple choice questions (MC) from A to E, and short answer questions (SAQ), " +
-                        "which allow any text. Click the drop down box on the right of a question to change its type. All " +
-                        "questions can be rescored in the competition’s page after and when students are competing. To quickly " +
-                        "edit the key, press tab after clicking on the input to a given question, and you will automatically " +
-                        "highlight text from question to question. To attach the written test file, just put a link to the " +
-                        "file in the test link section. (which you can do with Google Drive). You can also manually set the " +
-                        "number of points per correct and incorrect problem (default 8 and 2).<br><br>" +
-
-                        "The hands-on programming section also contains a start date and length (usually 2 hours). Click " +
-                        "change problems to add problems. Next to the problem number, you can name a problem, add the judge " +
-                        "input file, and the judge output file. You can manually judge student outputs on the competition’s " +
-                        "page. You can link to the hands on programming test in the student packet link section. You can " +
-                        "also set the number of points per correct and incorrect problem (default 60 and 5).</div>";
-            } else {
-                right += "<div class='helpSection'><h2>Class</h2>To join a class, enter your class’ code, which your teacher " +
-                        "will give out to you. Once you’ve joined a class, you will be able to see your teacher, your classmates, " +
-                        "and any competitions your teacher has published.</div>";
-            }
-            right += "</div></div>";
+                    "</p><label for='delPass'>Retype your password:</label><input name='delPass' type='password' id='delUserPassword'/>" +
+                    "<button onclick='delUser()'>Yes, delete my account.</button><a onclick='hideDelUser()'>Cancel</a></div></div>";
+            if(u.teacher) right+="</div>";
 
 
             // create HTML form
@@ -507,17 +422,13 @@ public class Profile extends HttpServlet{
             writer.append("<html>\n" +
                     "<head>\n" +
                     "    <title>Profile - TXCSOpen</title>\n" + Dynamic.loadHeaders() +
-                    "    <link rel=\"stylesheet\" href=\"./css/console.css\">\n" +
+                    "    <link rel=\"stylesheet\" href=\"/css/console/console.css\">\n" +
+                    "    <link rel=\"stylesheet\" href=\"/css/console/profile.css\">\n" +
                     "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
-                    "    <script src=\"./js/console.js\"></script>\n" +
-                    "    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css\">\n" +
-                    "    <script src=\"https://cdn.jsdelivr.net/npm/flatpickr\"></script>" +
+                    "    <script src=\"/js/console/profile.js\"></script>\n" +
                     "</head>\n" +
                     "<body>\n" +
-                    Dynamic.loadNav(request) +
-                    //"<div id='changeInstructions' style='display:none;'></div>" +
-                    "<div id='content'>" + nav + right + "</div>" +
-                    // Dynamic.loadCopyright() +
+                    Dynamic.get_consoleHTML(4, right) +
                     "</body>\n" +
                     "</html>");
         }
@@ -543,44 +454,7 @@ public class Profile extends HttpServlet{
                 return;
             }
         }
-        if(action.equals("joinClass") && !u.teacher) {
-            String code = request.getParameter("code");
-            if(code == null || code.length() != 6) {
-                writer.write("{\"error\":\"Class Code must be 6 characters.\"}");
-                return;
-            }
-            Teacher teacher = TeacherMap.getByClassCode(code.toUpperCase());
-            if(teacher == null) {
-                writer.write("{\"error\":\"Class Code is incorrect.\"}");
-                return;
-            }
-            ((Student)u).joinClass(teacher);
-            writer.write("{\"html\":\""+getClassHTML(u, teacher)+"\"}");
-            return;
-        } else if(action.equals("kickStudent") && u.teacher) {
-            short uid = Short.parseShort(request.getParameter("uid"));
-            Teacher teacher = (Teacher) u;
-            Student student = StudentMap.getByUID(uid);
-            if(student != null && student.teacherId == teacher.uid) {
-                student.leaveClass(teacher);
-            }
-            return;
-        } else if(action.equals("leaveClass") && !u.teacher) {
-            Student student = (Student)u;
-            Teacher teacher = TeacherMap.getByUID(student.teacherId);
-            if(teacher != null) {
-                student.leaveClass(teacher);
-            }
-        } else if(action.equals("getClass")) {  // Gets the class html
-            JsonObject obj = new JsonObject();
-            obj.addProperty("success", true);
-            Teacher teacher;
-            if(u.teacher) teacher = (Teacher) u;
-            else teacher = TeacherMap.getByUID(((Student)u).teacherId);
-            obj.addProperty("classHTML", getClassHTML(u, teacher));
-            writer.write(new Gson().toJson(obj));
-            return;
-        } else if(action.equals("saveChanges")) {   // They are updating their user's information
+        if(action.equals("saveChanges")) {   // They are updating their user's information
             String fname = request.getParameter("fname");
             String lname = request.getParameter("lname");
             String school = request.getParameter("school");
