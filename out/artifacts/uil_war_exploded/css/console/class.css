@@ -3,7 +3,11 @@
 }
 h2 {
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 15px;
+}
+#class.join h2 {
+    text-align: center;
+    font-size: 2rem;
 }
 #class {
     width: 40rem;
@@ -13,10 +17,26 @@ h2 {
     padding: 2rem 3rem;
     box-shadow: var(--shadow);
 }
-#class h2 {
+#class.join {
+    width: 20rem;
 }
-#studentList li{
-
+#class input {
+    font-size: 2rem;
+    max-width: 100%;
+    text-align: center;
+    padding: 10px 0;
+}
+#class.join button {
+    width: 100%;
+    margin-top: 20px;
+    border: none;
+    box-shadow: var(--shadow);
+    font-size: 1.2rem;
+    padding: 6px 0;
+    cursor: pointer;
+    background-color: var(--sec-col);
+    color: white;
+    font-weight: bold;
 }
 #studentList .kick {
     float: right;

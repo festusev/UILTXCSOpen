@@ -317,7 +317,7 @@ public class Profile extends HttpServlet{
         }
         if(!retCid) return true;
         else {
-            writer.write("{\"success\":\"Competition saved.\",\"cid\":\""+competition.template.cid+"\"}");
+            writer.write("{\"success\":\"Competition published.\",\"cid\":\""+competition.template.cid+"\"}");
             return false;
         }
     }
@@ -668,7 +668,7 @@ public class Profile extends HttpServlet{
             }
             writer.write("{\"success\":\"Competition saved.\",\"cid\":\""+competition.template.cid+"\"}");
         } else if(action.equals("publishCompetition") && u.teacher) {
-            if(savePublished(request, writer, u)) writer.write("{\"success\":\"Competition saved and published.\",\"cid\"}");
+            savePublished(request, writer, u);
         } else if(action.equals("unPublishCompetition")) {
             short cid = Short.parseShort(request.getParameter("cid"));
             Competition competition = UIL.getCompetition(cid);

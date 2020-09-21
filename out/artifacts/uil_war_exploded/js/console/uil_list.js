@@ -41,8 +41,11 @@ function showPublic(nav) {
     nav.classList.add("selected");
     document.getElementById("public_competitions").style.display = "block";
     try {
-        document.getElementById("upcoming_competitions").style.display = "none";
         document.getElementById("class_competitions").style.display = "none";
+    }
+    catch (e) { }
+    try {
+        document.getElementById("upcoming_competitions").style.display = "none";
     }
     catch (e) { }
 }
@@ -55,6 +58,9 @@ function showClassComps(nav) {
     document.getElementById("public_competitions").style.display = "none";
     try {
         document.getElementById("class_competitions").style.display = "block";
+    }
+    catch (e) { }
+    try {
         document.getElementById("upcoming_competitions").style.display = "none";
     }
     catch (e) { }
@@ -68,6 +74,9 @@ function showUpcomingComps(nav) {
     document.getElementById("public_competitions").style.display = "none";
     try {
         document.getElementById("class_competitions").style.display = "none";
+    }
+    catch (e) { }
+    try {
         document.getElementById("upcoming_competitions").style.display = "block";
     }
     catch (e) { }
@@ -245,8 +254,7 @@ var Competition = /** @class */ (function () {
         }
         dom.class_competitions.removeChild(this.dom.form);
         competitions.splice(competitions.indexOf(this), 1);
-        if (dom.class_competitions.childNodes.length <= 0) {
-            dom.class_competitions.dataset.hasCompetitions = "false";
+        if (competitions.length <= 0) {
             dom.class_competitions.innerHTML = "Click 'New' to create a competition.";
         }
     };
@@ -405,6 +413,8 @@ var Competition = /** @class */ (function () {
                             thisComp.cid = response["cid"];
                         thisComp.dom.comp_head.onclick = function (event) { event.stopPropagation(); window.location.href = "/console/competitions?cid=" + thisComp.cid; };
                         thisComp.dom.controls.insertBefore(thisComp.getOpenCompetition(), thisComp.dom.controlsSave);
+                        thisComp.published = true;
+                        console.log("temp");
                         callback();
                     }
                     else if (response["error"] != null) { // An error occurred
@@ -907,6 +917,7 @@ var Competition = /** @class */ (function () {
         controls.onclick = function (event) {
             event.stopPropagation();
         };
+        this.dom.controls = controls;
         header.appendChild(controls);
         var controls_edit = document.createElement("img");
         controls_edit.src = "/res/console/edit.svg";
@@ -916,14 +927,18 @@ var Competition = /** @class */ (function () {
         };
         this.dom.controlsEdit = controls_edit;
         controls.appendChild(controls_edit);
-        if (this.published)
-            controls.appendChild(this.getOpenCompetition());
+        if (this.published) {
+            var temp = this.getOpenCompetition();
+            temp.style.display = "none";
+            controls.appendChild(temp);
+        }
         var controls_save = document.createElement("img");
         controls_save.src = "/res/console/save.svg";
         controls_save.onclick = function (event) {
             event.stopPropagation();
             thisComp.saveCompetition();
         };
+        controls_save.style.display = "none";
         this.dom.controlsSave = controls_save;
         controls.appendChild(controls_save);
         var controls_delete = document.createElement("img");
@@ -932,6 +947,7 @@ var Competition = /** @class */ (function () {
             event.stopPropagation();
             thisComp.delete();
         };
+        controls_delete.style.display = "none";
         this.dom.controlsDelete = controls_delete;
         controls.appendChild(controls_delete);
         /* CLOSE */
@@ -956,6 +972,7 @@ var Competition = /** @class */ (function () {
             publishCompetition.onclick = function (event) {
                 event.stopPropagation();
                 thisComp.publishCompetition(function () {
+                    console.log("published competition");
                     publishCompetition.onclick = null;
                     publishCompetition.innerHTML = "Published";
                     publishCompetition.style.backgroundColor = "unset";
@@ -988,6 +1005,7 @@ var Competition = /** @class */ (function () {
         header.appendChild(viewCompetition);*/
         var body = document.createElement("div");
         body.classList.add("comp_edit");
+        body.style.display = "none";
         form.appendChild(body);
         this.dom.comp_edit = body;
         /* OPEN *
@@ -1135,8 +1153,6 @@ function loadCompetitions() {
             if (xhr.status === 200) { // If an error occurred
                 var responses = JSON.parse(xhr.responseText);
                 if (responses.length > 0) {
-                    dom.class_competitions.dataset.hasCompetitions = "true";
-                    var first = true;
                     for (var _i = 0, responses_1 = responses; _i < responses_1.length; _i++) {
                         var competition = responses_1[_i];
                         var obj = new Competition(competition["cid"], competition["published"], competition["isPublic"], competition["name"], competition["written"], competition["handsOn"]);
@@ -1144,9 +1160,6 @@ function loadCompetitions() {
                         if (competition["handsOn"] != null)
                             handsOnProblemsList = competition["handsOn"]["problems"];
                         var compDom = obj.getDOM(handsOnProblemsList, competition["description"], competition["rules"]);
-                        if (first) {
-                            visible_competition_edit_dom = obj.dom.comp_edit;
-                        }
                         dom.class_competitions.appendChild(compDom);
                     }
                 }
@@ -1194,7 +1207,7 @@ function createNewCompetition() {
         dom.class_competitions.innerHTML = "";
     }
     var competition = new Competition("", false, false, "New Competition", false, false);
-    dom.class_competitions.appendChild(competition.getDOM([], "", ""));
+    dom.class_competitions.insertBefore(competition.getDOM([], "", ""), dom.class_competitions.firstChild);
     toggleEditCompetition(competition);
     showClassComps(document.getElementById("showClassComps"));
 }

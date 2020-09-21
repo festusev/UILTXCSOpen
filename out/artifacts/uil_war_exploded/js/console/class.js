@@ -105,7 +105,8 @@ function leaveClass() {
     // showJoinClass();
 }
 function showJoinClass() {
-    dom.class.innerHTML = "<h2>Join a Class</h2></div><div class='profile_cmpnt half'>Class Code:</div>";
+    dom.class.innerHTML = "<h2>Join a Class</h2>";
+    dom.class.classList.add("join");
     var classCode = document.createElement("div");
     classCode.classList.add("profile_cmpnt");
     classCode.classList.add("half");

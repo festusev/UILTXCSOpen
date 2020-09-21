@@ -227,7 +227,7 @@ public class UIL extends HttpServlet{
             PrintWriter writer = response.getWriter();
             String right = "<div id='competitions'><div id='nav'><p onclick='showPublic(this)' class='selected'>Public</p>";
 
-            boolean showClassHTML = user.teacher || ((Student)user).teacherId >= 0;
+            boolean showClassHTML = user.teacher || TeacherMap.getByUID(((Student)user).teacherId) != null;
             if(showClassHTML) right += "<p onclick='showClassComps(this)' id='showClassComps'>Class</p>";
             if(user.teacher) right+="<p id='createNewCompetition' onclick='createNewCompetition()'>New</p>";
             else right += "<p id='showUpcomingComps' onclick='showUpcomingComps(this)'>Upcoming</p>";
@@ -247,16 +247,16 @@ public class UIL extends HttpServlet{
             }
             right+="</div>";
 
-            ArrayList<Competition> ordered;
-            if(!user.teacher) {
-                Teacher teacher = TeacherMap.getByUID(((Student)user).teacherId);
-                ordered = teacher.getCompetitions();
-            } else {
-                ordered = ((Teacher) user).getCompetitions();
-            }
-
             if(showClassHTML) {
                 right += "<div id='class_competitions' style='display:none' class='column'>";
+                ArrayList<Competition> ordered;
+                if(!user.teacher) {
+                    Teacher teacher = TeacherMap.getByUID(((Student)user).teacherId);
+                    ordered = teacher.getCompetitions();
+                } else {
+                    ordered = ((Teacher) user).getCompetitions();
+                }
+
                 if (ordered.size() <= 0) {   // There are no class competitions
                     if (user.teacher) {
                         right += "You have not created any competitions.";
@@ -272,7 +272,7 @@ public class UIL extends HttpServlet{
                         }
                     }
                 }
-                right += "</div></div>";
+                right += "</div>";
             }
 
             if (!user.teacher) {
