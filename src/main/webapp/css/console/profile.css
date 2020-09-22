@@ -25,10 +25,12 @@ h1 {
   width: 50rem;
   max-width: 100%;
   margin: auto;
-  margin-top: 8rem;
+  margin-top: 8%;
+  margin-bottom: 8%;
   background-color: white;
   padding: 2rem 3rem;
   box-shadow: var(--shadow);
+  box-sizing: border-box;
   /*margin-left: 5rem;
   margin-bottom: 8rem;*/
 }
@@ -163,4 +165,9 @@ h1 {
 }
 #delAccount {
   color:var(--warn-col) !important;
+}
+@media only screen and (max-width: 600px){
+  #Profile {
+    display: block;
+  }
 }

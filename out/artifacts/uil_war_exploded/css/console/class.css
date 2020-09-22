@@ -11,6 +11,8 @@ h2 {
 }
 #class {
     width: 40rem;
+    max-width: 100%;
+    box-sizing: border-box;
     margin: auto;
     margin-top: 10rem;
     background-color: white;

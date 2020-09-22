@@ -88,6 +88,7 @@
     display: flex;
     flex-flow: row;
     width: 50rem;
+    max-width: calc(100% - 10rem);
     box-sizing: border-box;
     margin: auto;
     margin-top: 5rem;
@@ -325,4 +326,9 @@ button {
 }
 #public_instructions{
     margin-bottom: 1rem;
+}
+@media only screen and (max-width: 860px){
+    #competitions {
+        margin: 10px 0 0 0;
+    }
 }
