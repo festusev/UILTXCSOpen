@@ -15,19 +15,26 @@ h1 {
     box-sizing: border-box;
     border-right: var(--border);
     height: 100vh;
-    position: relative;
+    min-height: 20rem;
     background-color: white;
     z-index: 1000;
+    position: relative;
 }
 #left-bar img{
     width: 2.5rem;
     height: 2.5rem;
     display: block;
     cursor: pointer;
-    margin-bottom: 1rem;
     padding: 8px;
     box-sizing: border-box;
     border-radius: 5px;
+    margin-bottom: 1rem;
+}
+#left-bar .tooltip-cnt {
+    margin-bottom: 1rem;
+}
+#left-bar .tooltip-cnt img {
+    margin-bottom: 0;
 }
 #left-bar img:hover, #left-bar img.selected{
     background-color: #eee;
@@ -41,8 +48,6 @@ h1 {
 }
 #right {
     flex-grow: 1;
-    overflow: auto;
-    height: 100vh;
 }
 #nav-profile-cnt {
     position: absolute;
@@ -67,7 +72,7 @@ h1 {
 }
 #nav-profile-cnt a{
     display: block;
-    color: var(--font-col);
+    color: var(--body-col);
     text-decoration: none;
 }
 #nav-profile-cnt a:hover {
@@ -100,4 +105,23 @@ h1 {
 }
 .competition .right {
     float:right;
+}
+.tooltip-cnt {
+    position: relative;
+}
+.tooltip-cnt .tooltip {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+.tooltip-cnt:hover .tooltip {
+    display: block;
+}
+#left-bar .tooltip {
+    transform: translateX(calc(100% + 20px)) translateY(0%);
+    background-color: var(--prim-middle);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
 }

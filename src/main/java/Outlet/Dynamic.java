@@ -150,9 +150,15 @@ public class Dynamic {
         String leftBar = "<div id='left-bar'>" +
                             "<img src='/res/icon.png' id='tx'>" +
                             //"<img onclick='window.location.href=\"/console/upcoming\"' src='/res/console/surveys.svg' "+(page==0?"class='selected'":"")+"/>" +
-                            "<img onclick='window.location.href=\"/console/competitions\"' src='/res/console/champion-winner-trophy.svg' "+(page==1?"class='selected'":"")+"/>" +
-                            "<img onclick='window.location.href=\"/console/class\"' src='/res/console/graduation-cap.svg' "+(page==2?"class='selected'":"")+"/>" +
-                            "<img onclick='window.location.href=\"/console/help\"' src='/res/console/question-mark-line.svg' id='nav-help' "+(page==3?"class='selected'":"")+"/>" +
+                            "<div onclick='window.location.href=\"/console/competitions\"' class='tooltip-cnt'>" +
+                            "<img src='/res/console/champion-winner-trophy.svg' "+(page==1?"class='selected'":"")+"/>" +
+                            "<p class='tooltip'>Competitions</p></div>" +
+                            "<div onclick='window.location.href=\"/console/class\"' class='tooltip-cnt'>" +
+                            "<img src='/res/console/graduation-cap.svg' "+(page==2?"class='selected'":"")+"/>" +
+                            "<p class='tooltip'>Class</p></div>" +
+                            "<div onclick='window.location.href=\"/console/help\"' class='tooltip-cnt' id='nav-help'>" +
+                            "<img src='/res/console/question-mark-line.svg' "+(page==3?"class='selected'":"")+"/>" +
+                            "<p class='tooltip'>Help</p></div>" +
                             "<div id='nav-profile-cnt'><img src='/res/console/profile.svg' id='nav-profile' "+(page==4?"class='selected'":"")+"/>" +
                             "<div><a href='/console/profile' id='nav-my-settings'>My Settings</a><a href='/logout'>Logout</a></div></div>" +
                          "</div>" +

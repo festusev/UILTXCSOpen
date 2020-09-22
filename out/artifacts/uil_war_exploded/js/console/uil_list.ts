@@ -182,8 +182,7 @@ class Competition {
         writtenTime : HTMLInputElement,
         writtenKey: HTMLElement,
         writtenAnswerList: HTMLElement,
-        writtenInstructionCnt: HTMLElement,
-        writtenInstructions: HTMLTextAreaElement,
+        writtenInstructionCnt: HTMLTextAreaElement,
         writtenTestLink : HTMLInputElement,
         writtenPointsPerCorrect : HTMLInputElement,
         writtenPointsPerIncorrect : HTMLInputElement,
@@ -219,7 +218,6 @@ class Competition {
         writtenKey: null,
         writtenAnswerList: null,
         writtenInstructionCnt: null,
-        writtenInstructions: null,
         writtenTestLink : null,
         writtenPointsPerCorrect : null,
         writtenPointsPerIncorrect : null,
@@ -316,7 +314,7 @@ class Competition {
             h2.innerHTML = "Instructions<span style='float:right;font-weight:bold'>-</span>"
         } else {
             this.dom.writtenInstructionCnt.style.display = "none";
-            this.written.instructions = this.dom.writtenInstructions.value;
+            this.written.instructions = this.dom.writtenInstructionCnt.value;
             h2.innerHTML = "Instructions<span style='float:right;font-weight:bold'>+</span>"
         }
     }
@@ -361,7 +359,7 @@ class Competition {
             formData.append("mcTime", ""+this.dom.writtenTime.value);
             formData.append("mcCorrectPoints", ""+this.dom.writtenPointsPerCorrect.value);
             formData.append("mcIncorrectPoints", ""+this.dom.writtenPointsPerIncorrect.value);
-            formData.append("mcInstructions", this.dom.writtenInstructions.value);
+            formData.append("mcInstructions", this.dom.writtenInstructionCnt.value);
             formData.append("mcTestLink", this.dom.writtenTestLink.value);
             formData.append("mcAnswersLink", "");   // TODO: Add this
             let answers:string[][] = [];
@@ -523,6 +521,7 @@ class Competition {
         let newInput:HTMLInputElement = document.createElement("input");
         newInput.type = "text";
         newInput.value = writtenProblem.answer;
+        newInput.placeholder = "Answer";
         newInput.onchange = function() {
             let newValue:string = newInput.value;
             writtenProblem.answer = newValue;
@@ -599,7 +598,7 @@ class Competition {
 
             /* OPEN */
             let written_open = document.createElement("div");
-            makeHalf(written_open);
+            makeFull(written_open);
             written_section.appendChild(written_open);
 
             let h2_written_open = document.createElement("h3");
@@ -631,7 +630,7 @@ class Competition {
 
             /* OPEN */
             let written_length = document.createElement("div");
-            makeHalf(written_length);
+            makeFull(written_length);
             written_section.appendChild(written_length);
 
             let h2_written_length = document.createElement("h3");
@@ -712,12 +711,12 @@ class Competition {
             /* CLOSE */
 
             /* OPEN */
-            let written_instructions_change = document.createElement("div");
+            /*let written_instructions_change = document.createElement("div");
             makeFull(written_instructions_change);
             written_instructions_change.classList.add("competitionSubgroup");
             written_instructions_change.classList.add("changeWrittenInstructions");
             written_instructions_change.style.display = "none";
-            written_instructions_change.innerHTML = "<p>Instructions</p>";
+            // written_instructions_change.innerHTML = "<p>Instructions</p>";
             written_section.appendChild(written_instructions_change);
             thisComp.dom.writtenInstructionCnt = written_instructions_change;
 
@@ -730,10 +729,12 @@ class Competition {
 
             let textarea_written_instructions_change = document.createElement("textarea");
             textarea_written_instructions_change.classList.add("writtenSectionInstructions");
+            makeFull(textarea_written_instructions_change);
+            textarea_written_instructions_change.style.display = "none";
             textarea_written_instructions_change.maxLength = 144;
-            written_instructions_change.appendChild(textarea_written_instructions_change);
+            written_section.appendChild(textarea_written_instructions_change);
             textarea_written_instructions_change.value = thisComp.written.instructions;
-            thisComp.dom.writtenInstructions = textarea_written_instructions_change;
+            thisComp.dom.writtenInstructionCnt = textarea_written_instructions_change;
             /* CLOSE */
 
             /* OPEN */
@@ -742,7 +743,7 @@ class Competition {
             written_section.appendChild(written_testlink);
 
             let h2_written_testlink = document.createElement("h3");
-            h2_written_testlink.innerText = "Test Link";
+            h2_written_testlink.innerText = "Written Test Link";
             written_testlink.appendChild(h2_written_testlink);
 
             let input_written_testLink = document.createElement("input");
@@ -820,6 +821,7 @@ class Competition {
 
                 let input_name = document.createElement("input");
                 input_name.type="text";
+                input_name.placeholder = "Problem Name";
                 if(handsOnProblemNames.length > index) input_name.value = handsOnProblemNames[index];
                 else input_name.value = "";
                 input_name.classList.add("handsOn_probName");
@@ -873,7 +875,7 @@ class Competition {
 
             /* OPEN */
             let handsOn_start = document.createElement("div");
-            makeHalf(handsOn_start);
+            makeFull(handsOn_start);
             handsOn_start.innerHTML = "<h3>Start</h3>";
             handsOn_section.appendChild(handsOn_start);
 
@@ -902,7 +904,7 @@ class Competition {
 
             /* OPEN */
             let handsOn_length = document.createElement("div");
-            makeHalf(handsOn_length);
+            makeFull(handsOn_length);
             handsOn_length.innerHTML = "<h3>Length</h3>";
             handsOn_section.appendChild(handsOn_length);
 

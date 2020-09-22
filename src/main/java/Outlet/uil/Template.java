@@ -314,7 +314,7 @@ public class Template {
         if(!teacher.school.isEmpty()) school = "<h2>School</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.school)+"</p>";
         String about = "<div class='column' id='aboutColumn'>" +
                 "<div id='aboutDescription'>" +
-                "<h1>" + StringEscapeUtils.escapeHtml4(name) + actMessage + "</h1>" +
+                "<div id='aboutHead'><h1>" + StringEscapeUtils.escapeHtml4(name) + "</h1>" + actMessage + "</div>" +
                 //"<div class='row' id='aboutDescriptionRow'>" +
                 "<p>" + StringEscapeUtils.escapeHtml4(description) + "</p></div>" +
                 "<div id='aboutInfo'><h2>Created by</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.fname)+" "+

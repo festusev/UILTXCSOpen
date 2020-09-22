@@ -16,6 +16,7 @@ h2 {
     background-color: white;
     padding: 2rem 3rem;
     box-shadow: var(--shadow);
+    position: relative;
 }
 #class.join {
     width: 20rem;
@@ -38,11 +39,16 @@ h2 {
     color: white;
     font-weight: bold;
 }
-#studentList .kick {
+#studentList .kick, #class .leaveClass {
     float: right;
     color: white;
     background-color: var(--warn-col);
     padding: 2px 8px;
     cursor: pointer;
     box-shadow: var(--shadow);
+}
+#class .leaveClass {
+    position: absolute;
+    top: 2rem;
+    right: 3rem;
 }
