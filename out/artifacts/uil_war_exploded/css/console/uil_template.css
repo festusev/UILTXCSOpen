@@ -10,9 +10,10 @@
 }
 #leftBar {
     padding: 0.5rem 2rem;
-    width: 7rem;
+    width: 11rem;
     background-color: white;
     border-left: var(--border);
+    box-sizing: border-box;
 }
 #bottomRank {
     font-weight: bold;
@@ -33,7 +34,7 @@
     position:relative;
     z-index: 1;
     flex-grow:1;
-    flex-shrink:1000000;
+    max-width: calc(100% - 11rem);
 }
 .column{
     max-width:100%;
@@ -116,9 +117,12 @@
     width:100%;
     text-align:center;
 }
-#frqColumn .head-row{
+#frqColumn{
     display:flex;
     flex-flow:row;
+    padding: 0;
+    box-shadow: none;
+    background-color: unset;
 }
 
 #mcColumn .chngButton{
@@ -339,6 +343,10 @@
     display: inline-block;
     vertical-align: top;
     width: 50rem;
+    box-sizing: border-box;
+    background-color: white;
+    box-shadow: var(--shadow);
+    padding: 3rem 4rem;
 }
 #frqSubmissions table{
     width:100%;
@@ -359,7 +367,8 @@
     display: inline-block;
     background-color: white;
     box-shadow: var(--shadow);
-    padding: 3rem 5rem;
+    padding: 3rem 4rem;
+    margin-left: 1rem;
 }
 .frqSubmissionEditor .half{
     width:50%;
