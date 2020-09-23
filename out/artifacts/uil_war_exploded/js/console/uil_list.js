@@ -136,7 +136,7 @@ var Competition = /** @class */ (function () {
             comp_edit: null,
             compName: null,
             compPublic: null,
-            viewCompetition: null,
+            // viewCompetition : null,
             controls: null,
             controlsEdit: null,
             controlsOpen: null,
@@ -340,7 +340,7 @@ var Competition = /** @class */ (function () {
                         addSuccessBox(thisComp.dom.comp_edit, response["success"]);
                         if (thisComp.cid.length === 0 && response["cid"] != null)
                             thisComp.cid = response["cid"];
-                        thisComp.dom.viewCompetition.onclick = function () { window.location.href = "/console/competitions?cid=" + thisComp.cid; };
+                        // thisComp.dom.viewCompetition.onclick = function(){window.location.href = "/console/competitions?cid="+thisComp.cid;};
                     }
                     else if (response["error"] != null) { // An error occurred
                         addErrorBox(thisComp.dom.comp_edit, response["error"]);
@@ -432,6 +432,8 @@ var Competition = /** @class */ (function () {
         xhr.send(formData);
     };
     Competition.prototype.addWrittenQuestion = function (writtenProblem) {
+        if (this.written.key.length >= 240)
+            return; // No more than 240 questions.
         if (writtenProblem == null) { // This question doesn't exist
             writtenProblem = new WrittenProblem("a", WrittenType.MC);
             this.written.key.push(writtenProblem);
@@ -443,6 +445,7 @@ var Competition = /** @class */ (function () {
         newInput.type = "text";
         newInput.value = writtenProblem.answer;
         newInput.placeholder = "Answer";
+        newInput.maxLength = 40;
         newInput.onchange = function () {
             var newValue = newInput.value;
             writtenProblem.answer = newValue;
@@ -706,6 +709,8 @@ var Competition = /** @class */ (function () {
         }
         function getHandsOnSection() {
             function addProblem(probIndex) {
+                if (thisComp.handsOn.problemMap.length >= 50)
+                    return;
                 var index = thisComp.handsOn.problemMap.length;
                 var problem = new HandsOnProblem();
                 problem.oldIndex = probIndex;
@@ -715,6 +720,7 @@ var Competition = /** @class */ (function () {
                 var input_name = document.createElement("input");
                 input_name.type = "text";
                 input_name.placeholder = "Problem Name";
+                input_name.maxLength = 20;
                 if (handsOnProblemNames.length > index)
                     input_name.value = handsOnProblemNames[index];
                 else

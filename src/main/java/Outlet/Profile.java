@@ -84,6 +84,9 @@ public class Profile extends HttpServlet{
                         System.out.println("Issue with problems");
                         writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
                         return false;
+                    } else if(problem[0].length() > 40) {
+                        writer.write("{\"error\":\"Written answer cannot be longer than 40 characters.\"}");
+                        return false;
                     }
                 }
             } catch(Exception e) {
@@ -136,7 +139,7 @@ public class Profile extends HttpServlet{
             }
             mcTest = new MCTest(true, mcOpensString, mcAnswers, mcCorrectPoints,
                     mcIncorrectPoints,request.getParameter("mcInstructions"),
-                    request.getParameter("mcTestLink"), request.getParameter("mcAnswersLink"),
+                    request.getParameter("mcAnswersLink"),
                     mcTime);
         }
 
@@ -171,14 +174,17 @@ public class Profile extends HttpServlet{
                 if(frqProblemMap.length <= 0) {
                     writer.write("{\"error\":\"Hands-On Test is empty.\"}");
                     return false;
-                } else if(frqProblemMap.length > 48) {
-                    writer.write("{\"error\":\"Hands-On Test cannot have more than 48 problems.\"}");
+                } else if(frqProblemMap.length > 50) {
+                    writer.write("{\"error\":\"Hands-On Test cannot have more than 50 problems.\"}");
                     return false;
                 }
 
                 Set<String> duplicateChecker = new HashSet<>();
                 for(String s: frqProblemMap) {
-                    if(duplicateChecker.contains(s)) {
+                    if(s.length() > 20) {
+                        writer.write("{\"error\":\"Hands-On problem names cannot be longer than 20 characters.\"}");
+                        return false;
+                    } else if(duplicateChecker.contains(s)) {
                         writer.write("{\"error\":\"Duplicate Hands-On problem name '"+s+"'.\"}");
                         return false;
                     } else if(s.isEmpty()) {
@@ -571,7 +577,7 @@ public class Profile extends HttpServlet{
 
                 mcTest = new MCTest(false, mcOpensString, mcAnswers, mcCorrectPoints,
                         mcIncorrectPoints,request.getParameter("mcInstructions"),
-                        request.getParameter("mcTestLink"), request.getParameter("mcAnswersLink"),
+                        request.getParameter("mcAnswersLink"),
                         mcTime);
             }
 

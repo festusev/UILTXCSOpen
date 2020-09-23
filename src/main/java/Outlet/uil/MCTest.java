@@ -12,6 +12,7 @@ public class MCTest {
 
     public final String NAME = "Hands-On";
     public String[][] KEY; // The answer key. Each problem is a String tuple with the first value being the answer and the second being the answer type ("0","1")
+    // The key string cannot be longer than 40 characters
     public short NUM_PROBLEMS;
     public short CORRECT_PTS;   // Number of points for getting a question correct
     public short INCORRECT_PTS;
@@ -22,8 +23,8 @@ public class MCTest {
     public final char[] options = new char[]{'a', 'b', 'c', 'd', 'e'};
     public long TIME;  // The length of time in milliseconds that they have to test
     public String TEST_LINK;  // The url to the test
-    public String ANSWERS;    // Either a url to an answer packet or a text list of the answers for each question.
-    public boolean ANSWERS_LINK;  // True if the ANSWERS variable is a link
+    // public String ANSWERS;    // Either a url to an answer packet or a text list of the answers for each question.
+    // public boolean ANSWERS_LINK;  // True if the ANSWERS variable is a link
 
     public Countdown opens; // The time that this opens
     public Countdown closes;
@@ -32,19 +33,19 @@ public class MCTest {
 
     public MCTest() {
         exists = false;KEY= new String[0][];NUM_PROBLEMS = 0; CORRECT_PTS =0;INCORRECT_PTS=0;
-        TIME_TEXT = ""; INSTRUCTIONS = ""; TIME = 0; MAX_POINTS=0;TEST_LINK="";ANSWERS="";ANSWERS_LINK=false;
+        TIME_TEXT = ""; INSTRUCTIONS = ""; TIME = 0; MAX_POINTS=0;TEST_LINK="";/*ANSWERS="";ANSWERS_LINK=false;*/
     }
 
 
     public MCTest (boolean published, String opensString, String[][] key, short c, short incorrectPoints, String instructions,
-                   String testLink, String answers, long time) {
+                   String testLink, long time) {
         if(published) {
             opens = new Countdown(opensString, "countdown");NUM_PROBLEMS = (short)key.length; CORRECT_PTS = c; INCORRECT_PTS = incorrectPoints; exists = true;
             TIME_TEXT = (time/(1000*60)) + " minutes";INSTRUCTIONS = instructions;TEST_LINK=testLink;this.TIME = time;MAX_POINTS = (short)(NUM_PROBLEMS*CORRECT_PTS);
 
             KEY = key;
 
-            if(answers.isEmpty()) { // In this case, we generate a text list of the answers
+            /*if(answers.isEmpty()) { // In this case, we generate a text list of the answers
                 answers="";
                 ANSWERS_LINK=false;
                 for(int counter=1; counter<=KEY.length;counter++) {
@@ -52,8 +53,8 @@ public class MCTest {
                 }
             } else {
                 ANSWERS_LINK=true;
-            }
-            ANSWERS=answers;
+            }*/
+            // ANSWERS=answers;
 
             closes = Countdown.add(opens, TIME, "countdown");
         } else {
@@ -72,7 +73,7 @@ public class MCTest {
 
             KEY = key;
 
-            if (answers == null || answers.isEmpty()) { // In this case, we generate a text list of the answers
+            /*if (answers == null || answers.isEmpty()) { // In this case, we generate a text list of the answers
                 answers = "";
                 ANSWERS_LINK = false;
                 for (int counter = 1; counter <= KEY.length; counter++) {
@@ -81,7 +82,7 @@ public class MCTest {
             } else {
                 ANSWERS_LINK = true;
             }
-            ANSWERS = answers;
+            ANSWERS = answers;*/
 
             closes = new Countdown(opensString);
         }

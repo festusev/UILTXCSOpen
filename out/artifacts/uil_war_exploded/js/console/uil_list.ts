@@ -166,7 +166,7 @@ class Competition {
         comp_edit: HTMLDivElement,
         compName : HTMLInputElement,
         compPublic : HTMLInputElement,
-        viewCompetition : HTMLElement,
+        // viewCompetition : HTMLElement,
 
         controls: HTMLElement,
         controlsEdit: HTMLDivElement,
@@ -201,7 +201,7 @@ class Competition {
         comp_edit: null,
         compName : null,
         compPublic : null,
-        viewCompetition : null,
+        // viewCompetition : null,
 
         controls: null,
         controlsEdit: null,
@@ -421,7 +421,7 @@ class Competition {
                         }
                         addSuccessBox(thisComp.dom.comp_edit, response["success"]);
                         if(thisComp.cid.length === 0 && response["cid"] != null) thisComp.cid = response["cid"];
-                        thisComp.dom.viewCompetition.onclick = function(){window.location.href = "/console/competitions?cid="+thisComp.cid;};
+                        // thisComp.dom.viewCompetition.onclick = function(){window.location.href = "/console/competitions?cid="+thisComp.cid;};
                     } else if(response["error"] != null) {    // An error occurred
                         addErrorBox(thisComp.dom.comp_edit, response["error"]);
                     } else {
@@ -508,6 +508,8 @@ class Competition {
     }
 
     addWrittenQuestion(writtenProblem:WrittenProblem) {
+        if(this.written.key.length >= 240) return;   // No more than 240 questions.
+
         if(writtenProblem == null) {    // This question doesn't exist
             writtenProblem =new WrittenProblem("a", WrittenType.MC);
             this.written.key.push(writtenProblem);
@@ -522,6 +524,7 @@ class Competition {
         newInput.type = "text";
         newInput.value = writtenProblem.answer;
         newInput.placeholder = "Answer";
+        newInput.maxLength = 40;
         newInput.onchange = function() {
             let newValue:string = newInput.value;
             writtenProblem.answer = newValue;
@@ -812,6 +815,7 @@ class Competition {
         }
         function getHandsOnSection():HTMLElement {
             function addProblem(probIndex: number): void {
+                if(thisComp.handsOn.problemMap.length >= 50) return;
                 let index:number = thisComp.handsOn.problemMap.length;
                 let problem:HandsOnProblem = new HandsOnProblem();
                 problem.oldIndex = probIndex;
@@ -823,6 +827,7 @@ class Competition {
                 let input_name = document.createElement("input");
                 input_name.type="text";
                 input_name.placeholder = "Problem Name";
+                input_name.maxLength = 20;
                 if(handsOnProblemNames.length > index) input_name.value = handsOnProblemNames[index];
                 else input_name.value = "";
                 input_name.classList.add("handsOn_probName");

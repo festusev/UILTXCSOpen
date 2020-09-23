@@ -54,7 +54,7 @@ public class UIL extends HttpServlet{
                 mcTest = new MCTest(published,rs.getString("mcOpens"), gson.fromJson(rs.getString("mcKey"), String[][].class),
                         rs.getShort("mcCorrectPoints"),
                         rs.getShort("mcIncorrectPoints"),rs.getString("mcInstructions"),
-                        rs.getString("mcTestLink"), rs.getString("mcAnswers"), rs.getLong("mcTime"));
+                        rs.getString("mcTestLink"), rs.getLong("mcTime"));
             }
             short cid = rs.getShort("cid");
             short uid = rs.getShort("uid");
