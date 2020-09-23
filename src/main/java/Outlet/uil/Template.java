@@ -164,7 +164,7 @@ public class Template {
         UserStatus userStatus = UserStatus.getCompeteStatus(uData, cid);
         writer.write(HEADERS+
                         // Dynamic.loadNav(request) +
-                Dynamic.get_consoleHTML(2,getNavBarHTML(userStatus, competitionStatus) + "<div id='content'>" +
+                Dynamic.get_consoleHTML(1,getNavBarHTML(userStatus, competitionStatus) + "<div id='content'>" +
                         "<span id='columns'>" + getColumnsHTML(uData, userStatus, competitionStatus) +
                         "</span>"+getLeftBarHTML(uData, userStatus)+"</div></body></html>")
         );
@@ -290,7 +290,8 @@ public class Template {
         } else if(userStatus.teacher) {
             string += "<div id='leftBarBottom'><a href='/profile' class='bottomLeftLink'>Create Competition</a></div>";
         } else {    // They are a student but not signed up
-            string += "<div id='leftBarBottom'><p onclick='showSignup()' class='bottomLeftLink'>Sign Up</p></div>";
+            // string += "<div id='leftBarBottom'><p onclick='showSignup()' class='bottomLeftLink'>Sign Up</p></div>";
+            return "";
         }
         return string + "</div>";
     }

@@ -96,13 +96,12 @@
     border:none;
     background-color:var(--sec-col);
     padding:0.5em 1em;
+    height: 2rem;
+    float: right;
     border-radius:5px;
     font-weight:bold;
     color:white;
     cursor:pointer;
-    margin:auto;
-    float: right;
-    margin-top: 2rem;
 }
 #signUp:hover{
     background-color: var(--sec-dark);
@@ -191,7 +190,7 @@
 }
 .mcSelected{
     background-color:var(--prim-light);
-    border:none;
+    border-color:var(--prim-light);
 }
 #frqSubmitHeader{
     font-family:var(--head-font);
@@ -419,7 +418,6 @@
 #aboutHead h1 {
     flex-grow: 1;
     overflow: hidden;
-    max-width: 25rem;
     white-space:nowrap;
 }
 #aboutHead h3{

@@ -322,18 +322,17 @@ function setSAQChoice(question,dom) {
 
 function submitMC() {
     var numQuestions = document.getElementsByClassName("mcQuestion").length;
-    var answers = "[";
+    // var answers = "[";
+    let answers = [];
     for(var i=1; i<=numQuestions; i++) {
-        if(choices[i] != null && choices[i].trim().length > 0) answers+='"'+choices[i]+'"';
-        else answers+='"jieKYL"';  // The character if they skipped it
-        if(i<numQuestions) answers +=",";
+        if(choices[i] != null && choices[i].trim().length > 0) answers.push(choices[i]);
+        else answers.push('jieKYL');  // The character if they skipped it
     }
-    answers+="]";
 
     $.ajax({
         url: window.location.href,
         method: "POST",
-        data: {"action": "submitMC", "answers": answers},
+        data: {"action": "submitMC", "answers": JSON.stringify(answers)},
         success: function(result) {
             if(result!=null){
                 let template = document.createElement('template');

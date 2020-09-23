@@ -294,20 +294,18 @@ function setSAQChoice(question, dom) {
 }
 function submitMC() {
     var numQuestions = document.getElementsByClassName("mcQuestion").length;
-    var answers = "[";
+    // var answers = "[";
+    var answers = [];
     for (var i = 1; i <= numQuestions; i++) {
         if (choices[i] != null && choices[i].trim().length > 0)
-            answers += '"' + choices[i] + '"';
+            answers.push(choices[i]);
         else
-            answers += '"jieKYL"'; // The character if they skipped it
-        if (i < numQuestions)
-            answers += ",";
+            answers.push('jieKYL'); // The character if they skipped it
     }
-    answers += "]";
     $.ajax({
         url: window.location.href,
         method: "POST",
-        data: { "action": "submitMC", "answers": answers },
+        data: { "action": "submitMC", "answers": JSON.stringify(answers) },
         success: function (result) {
             if (result != null) {
                 var template = document.createElement('template');
