@@ -18,6 +18,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import static Outlet.Class.*;
+import static java.lang.Class.forName;
+
 /***
  * A class containing all of the necessary functions for communicating with the server.
  * Created by Evan Ellis.
@@ -29,7 +32,7 @@ public class Conn {
     private static final String USER = "admin";
     private static final String PASS = "1pcdEy31lxTSp6x$";	// TODO Possibly in the future have an admin type this in.
     // private static final String DB_NAME = "uil";
-    private static final String DB_NAME = "comptest";
+    private static final String DB_NAME = "uil";
 
     private static Gson gson = new Gson();
 
@@ -112,7 +115,7 @@ public class Conn {
         Connection conn;
         for(int i=0;i<100;i++) {
             try {
-                Class.forName(JDBC_DRIVER);    // Load up the Driver's class
+                forName(JDBC_DRIVER);    // Load up the Driver's class
                 conn = DriverManager.getConnection("jdbc:mysql://" + DB_URL + ":" + DB_PORT + "/" + DB_NAME +
                         "?autoReconnect=true&useSSL=false", USER, PASS);
                 if(conn!=null) return conn;

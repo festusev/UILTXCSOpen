@@ -28,6 +28,7 @@ h2 {
     max-width: 100%;
     text-align: center;
     padding: 10px 0;
+    text-transform: uppercase;
 }
 #class.join button {
     width: 100%;
@@ -41,11 +42,14 @@ h2 {
     color: white;
     font-weight: bold;
 }
+#studentList li {
+    margin-bottom: 7px;
+}
 #studentList .kick, #class .leaveClass {
     float: right;
     color: white;
     background-color: var(--warn-col);
-    padding: 2px 8px;
+    padding: 0px 8px;
     cursor: pointer;
     box-shadow: var(--shadow);
 }
