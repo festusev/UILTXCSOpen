@@ -121,7 +121,7 @@ h1 {
 .tooltip-cnt:hover .tooltip {
     display: block;
 }
-#left-bar .tooltip {
+.tooltip {
     transform: translateX(calc(100% + 20px)) translateY(0%);
     background-color: var(--prim-middle);
     color: white;

@@ -1,8 +1,11 @@
 #Help {
     width: 50rem;
     margin: auto;
-    margin-top: 8rem;
+    margin-top: 8%;
     margin-bottom: 8rem;
+    max-width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
 }
 #Help h1 {
     margin-bottom: 1rem;

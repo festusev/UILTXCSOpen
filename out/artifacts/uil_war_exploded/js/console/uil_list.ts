@@ -169,10 +169,10 @@ class Competition {
         viewCompetition : HTMLElement,
 
         controls: HTMLElement,
-        controlsEdit: HTMLImageElement,
-        controlsOpen: HTMLImageElement,
-        controlsSave: HTMLImageElement,
-        controlsDelete: HTMLImageElement,
+        controlsEdit: HTMLDivElement,
+        controlsOpen: HTMLDivElement,
+        controlsSave: HTMLDivElement,
+        controlsDelete: HTMLDivElement,
 
         description : HTMLTextAreaElement,
         rules : HTMLTextAreaElement,
@@ -487,7 +487,7 @@ class Competition {
                         }
                         addSuccessBox(thisComp.dom.comp_edit, response["success"]);
                         if(thisComp.cid.length === 0 && response["cid"] != null) thisComp.cid = response["cid"];
-                        thisComp.dom.comp_head.onclick = function(event){event.stopPropagation();window.location.href = "/console/competitions?cid="+thisComp.cid;};
+                        // thisComp.dom.comp_head.onclick = function(event){event.stopPropagation();window.location.href = "/console/competitions?cid="+thisComp.cid;};
 
                         thisComp.dom.controls.insertBefore(thisComp.getOpenCompetition(), thisComp.dom.controlsSave);
                         thisComp.published = true;
@@ -569,8 +569,9 @@ class Competition {
 
     getOpenCompetition(): HTMLElement {
         let thisComp:Competition = this;
-        let controls_open = document.createElement("img");
-        controls_open.src = "/res/console/open.svg";
+        let controls_open = document.createElement("div");
+        controls_open.classList.add("tooltip-cnt");
+        controls_open.innerHTML = "<img src='/res/console/open.svg'/><p class='tooltip'>Open</p>";
         controls_open.onclick = function() {
             if(thisComp.published) window.location.href = "/console/competitions?cid="+thisComp.cid;
         };
@@ -1031,7 +1032,8 @@ class Competition {
         let header = document.createElement("div");
         header.onclick = function(event){
             event.stopPropagation();
-            if(thisComp.published) window.location.href = "/console/competitions?cid="+thisComp.cid;
+            toggleEditCompetition(thisComp);
+            // if(thisComp.published) window.location.href = "/console/competitions?cid="+thisComp.cid;
         };
         header.classList.add("comp_head");
         form.appendChild(header);
@@ -1051,12 +1053,12 @@ class Competition {
         this.dom.controls = controls;
         header.appendChild(controls);
 
-        let controls_edit = document.createElement("img");
-        controls_edit.src = "/res/console/edit.svg";
-        controls_edit.classList.add("competition_edit");
-        controls_edit.onclick = function()  {
+        let controls_edit = document.createElement("div");
+        controls_edit.classList.add("tooltip-cnt");
+        controls_edit.onclick = function() {
             toggleEditCompetition(thisComp);
         };
+        controls_edit.innerHTML = "<img src='/res/console/edit.svg' class='competition_edit'/><p class='tooltip'>Edit</p>";
         this.dom.controlsEdit = controls_edit;
         controls.appendChild(controls_edit);
 
@@ -1066,18 +1068,20 @@ class Competition {
             controls.appendChild(temp);
         }
 
-        let controls_save = document.createElement("img");
-        controls_save.src = "/res/console/save.svg";
-        controls_save.onclick = function(event) {
+        let controls_save = document.createElement("div");
+        controls_save.classList.add('tooltip-cnt');
+        controls_save.onclick = function() {
             event.stopPropagation();
             thisComp.saveCompetition();
         };
         controls_save.style.display = "none";
+        controls_save.innerHTML = "<img src='/res/console/save.svg'/><p class='tooltip'>Save</p>";
         this.dom.controlsSave = controls_save;
         controls.appendChild(controls_save);
 
-        let controls_delete = document.createElement("img");
-        controls_delete.src = "/res/console/delete.svg";
+        let controls_delete = document.createElement("div");
+        controls_delete.classList.add("tooltip-cnt");
+        controls_delete.innerHTML = "<img src='/res/console/delete.svg'/><p class='tooltip'>Delete</p>";
         controls_delete.onclick = function(event) {
             event.stopPropagation();
             thisComp.delete();
