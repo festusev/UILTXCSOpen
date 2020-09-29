@@ -121,17 +121,15 @@ public class UILEntry {
             delete();
         }
 
-        for(short uid: uids) {
-            CompetitionSocket socket = CompetitionSocket.connected.get(uid);
-            if (socket != null) {
-                JsonObject obj = new JsonObject();
-                obj.addProperty("action", "updateTeam");
-                obj.addProperty("html", competition.template.getTeamMembers(StudentMap.getByUID(uid), this));
-                try {
-                    socket.send(gson.toJson(obj));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        ArrayList<ClassSocket> list = ClassSocket.classes.get(tid);
+        for(ClassSocket socket: list) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("action", "updateTeam");
+            obj.addProperty("html", competition.template.getTeamMembers(StudentMap.getByUID(socket.user.uid), this));
+            try {
+                socket.send(gson.toJson(obj));
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
 

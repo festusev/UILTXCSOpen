@@ -24,17 +24,18 @@ public class UIL extends HttpServlet{
     protected static Gson gson = new Gson();
 
     // TODO: Be sure that competitions change which array they are in
-    private static HashMap<Short, Competition> upcoming;    // Upcoming competitions
-    private static HashMap<Short, Competition> running;     // Running competitions
-    private static HashMap<Short, Competition> archived;    // Past competitions
+    //private static HashMap<Short, Competition> upcoming;    // Upcoming competitions
+    //private static HashMap<Short, Competition> running;     // Running competitions
+    //private static HashMap<Short, Competition> archived;    // Past competitions
+    private static HashMap<Short, Competition> published;
     private static HashMap<Short, Competition> unpublished; // Unpublished competitions
     public static boolean initialized = false;
     public static void initialize() throws SQLException {
         if(initialized) return;
         unpublished = new HashMap<>();
-        upcoming = new HashMap<>();
-        running = new HashMap<>();
-        archived = new HashMap<>();
+        // upcoming = new HashMap<>();
+        // running = new HashMap<>();
+        published = new HashMap<>();
         System.out.println("Getting connection");
         Connection conn = Conn.getConnection();
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM competitions");
@@ -74,13 +75,17 @@ public class UIL extends HttpServlet{
 
             if(!comp.published) {
                 unpublished.put(comp.template.cid, comp);
-            } else if(!comp.template.opens.done()) {   // The competition is yet to open
+            } else {
+                UIL.published.put(comp.template.cid, comp);
+            }
+            /*else if(!comp.template.opens.done()) {   // The competition is yet to open
                 upcoming.put(comp.template.cid, comp);
             } else if(!comp.template.closes.done()) {   // The competition is yet to close
                 running.put(comp.template.cid, comp);
             } else {    // The competition is over
                 archived.put(comp.template.cid, comp);
             }
+            }*/
         }
         initialized = true;
     }
@@ -94,12 +99,12 @@ public class UIL extends HttpServlet{
                 return null;
             }
         }
-        Competition up = upcoming.get(cid);
+        /*Competition up = upcoming.get(cid);
         if(up != null) return up;
         Competition run = running.get(cid);
         if(run != null) return run;
-        Competition done = archived.get(cid);
-        return done;
+        Competition done = archived.get(cid);*/
+        return published.get(cid);
     }
 
     public static Competition getCompetition(short cid) {
@@ -111,16 +116,16 @@ public class UIL extends HttpServlet{
                 return null;
             }
         }
-        Competition up = upcoming.get(cid);
+        /*Competition up = upcoming.get(cid);
         if(up != null) return up;
         Competition run = running.get(cid);
         if(run != null) return run;
         Competition done = archived.get(cid);
-        if(done != null) return done;
-        return unpublished.get(cid);
+        if(done != null) return done;*/
+        return published.get(cid);
     }
 
-    public static HashMap<Short,Competition> getUpcoming() {
+    /*public static HashMap<Short,Competition> getUpcoming() {
         if(!initialized) {
             try {
                 initialize();
@@ -154,14 +159,14 @@ public class UIL extends HttpServlet{
             }
         }
         return archived;
-    }
-    public static HashMap<Short, Competition> getAll() {
+    }*/
+    /*public static HashMap<Short, Competition> getAllPublished() {
         HashMap<Short, Competition> competitions = getRunning();
         competitions.putAll(getArchived());
         competitions.putAll(getUpcoming());
 
         return competitions;
-    }
+    }*/
     public static void addCompetition(Competition comp) {
         if(!initialized) {
             try {
@@ -172,18 +177,22 @@ public class UIL extends HttpServlet{
             }
         }
         unpublished.remove(comp.template.cid);
-        upcoming.remove(comp.template.cid);
-        running.remove(comp.template.cid);
-        archived.remove(comp.template.cid);
+        published.remove(comp.template.cid);
+        //upcoming.remove(comp.template.cid);
+        //running.remove(comp.template.cid);
+        //archived.remove(comp.template.cid);
         if(!comp.published) {
             unpublished.put(comp.template.cid, comp);
-        } else if(!comp.template.opens.done()) {   // The competition is yet to open
+        } else {
+            published.put(comp.template.cid, comp);
+        }
+        /*else if(!comp.template.opens.done()) {   // The competition is yet to open
             upcoming.put(comp.template.cid, comp);
         } else if(!comp.template.closes.done()) {   // The competition is yet to close
             running.put(comp.template.cid, comp);
         } else {    // The competition is over
             archived.put(comp.template.cid, comp);
-        }
+        }*/
     }
     public static void deleteCompetition(Competition comp){
         comp.delete();
@@ -195,15 +204,17 @@ public class UIL extends HttpServlet{
                 return;
             }
         }
-        running.remove(comp.template.cid);
+        /*running.remove(comp.template.cid);
         archived.remove(comp.template.cid);
-        upcoming.remove(comp.template.cid);
+        upcoming.remove(comp.template.cid);*/
+        published.remove(comp.template.cid);
         unpublished.remove(comp.template.cid);
     }
     public static void unPublish(Competition comp) {
-        running.remove(comp.template.cid);
+        /*running.remove(comp.template.cid);
         archived.remove(comp.template.cid);
-        upcoming.remove(comp.template.cid);
+        upcoming.remove(comp.template.cid);*/
+        published.remove(comp.template.cid);
         unpublished.put(comp.template.cid, comp);
     }
     public static void publish(Competition comp) {
@@ -234,15 +245,46 @@ public class UIL extends HttpServlet{
 
             right += "</div><div id='comp-list'><h1 id='title'>Competitions</h1><div id='public_competitions' class='column'>";
 
-            if(getUpcoming().size() <=0) {  // There are no upcoming competitions
-                right+="<p class='emptyWarning'>There are no upcoming competitions.</p>";
-            } else {    // There are upcoming competitions
-                ArrayList<Competition> ordered = new ArrayList<>(getUpcoming().values());  // Sort them by date
+            if(published.size() <=0) {  // There are no published competitions
+                right+="<p class='emptyWarning'>There are no public competitions.</p>";
+            } else {    // There are published competitions
+                ArrayList<Competition> ordered = new ArrayList<>(published.values());  // Sort them by date
                 Collections.sort(ordered, new SortCompByDate());
 
+                boolean foundPublic = false;
+                String upcoming = "";
+                String running = "";
+                String archived = "";
                 for(Competition comp: ordered) {
-                    if(comp.isPublic)
-                        right+=comp.template.getMiniHTML(user);
+                    if(comp.isPublic) {
+                        String html = comp.template.getMiniHTML(user);
+                        if(!comp.template.opens.done()) upcoming += html;
+                        else if(!comp.template.closes.done()) running += html;
+                        else archived += html;
+                        foundPublic = true;
+                    }
+                }
+                if(!foundPublic) {
+                    right+="<p class='emptyWarning'>There are no public competitions.</p>";
+                } else {
+                    right += "<h3>Upcoming</h3>";
+                    if(upcoming.isEmpty()) {
+                        right += "<p class='emptyWarning'>There are no upcoming public competitions</p>";
+                    } else {
+                        right += upcoming;
+                    }
+                    right += "<h3>Running</h3>";
+                    if(running.isEmpty()) {
+                        right += "<p class='emptyWarning'>There are no running competitions.</p>";
+                    } else {
+                        right += running;
+                    }
+                    right += "<h3>Archived</h3>";
+                    if(archived.isEmpty()) {
+                        right += "<p class='emptyWarning'>There are no archived competitions.</p>";
+                    } else {
+                        right += archived;
+                    }
                 }
             }
             right+="</div>";
@@ -280,11 +322,11 @@ public class UIL extends HttpServlet{
                 right+="<div id='upcoming_competitions' style='display:none' class='column'>";
                 if(myCompetitions.size() <= 0) right+="<p class='emptyWarning'>You haven't signed up for any competitions.</p>";
                 for(UILEntry comp: myCompetitions) {
-                    if(comp.competition.published) right+=comp.competition.template.getMiniHTML(user);
+                    if(comp.competition.published) right += comp.competition.template.getMiniHTML(user);
                 }
                 right+="</div>";
             }
-            right+="</div></div></div>";
+            right+="</div></div>";
 
             /*=if (!user.teacher) {
                 Collection<UILEntry> myCompetitions = ((Student) user).cids.values();
@@ -328,5 +370,24 @@ public class UIL extends HttpServlet{
         } else {
             competition.doPost(request, response);
         }
+    }
+}
+
+/***
+ * Moves a competition between maps (upcoming, running, archived)
+ */
+class UpdateCompetitionMap extends TimerTask {
+    private Competition competition;
+    private HashMap<Short, Competition> oldMap;
+    private HashMap<Short, Competition> newMap;
+
+    public UpdateCompetitionMap(Competition competition, HashMap<Short, Competition> oldMap, HashMap<Short, Competition> newMap) {
+        this.competition = competition;
+        this.oldMap = oldMap;
+        this.newMap = newMap;
+    }
+    @Override
+    public void run() {
+
     }
 }

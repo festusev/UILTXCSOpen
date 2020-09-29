@@ -2,12 +2,9 @@ package Outlet;
 
 import Outlet.uil.UIL;
 import Outlet.uil.UILEntry;
-import com.google.gson.JsonObject;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Set;
 
 public class Student extends User{
     public HashMap<Short, UILEntry> cids = new HashMap<>();    // Maps the cid of each competition they are competing in to the UILEntry of their team in that competition

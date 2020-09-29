@@ -3,14 +3,12 @@ package Outlet;
 import Outlet.Websocket.*;
 
 import javax.websocket.*;
-import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 
-@ServerEndpoint(value = "/profilesocket",
+@ServerEndpoint(value = "/console/sockets/profile",
         configurator = Configurator.class,
         decoders = MessageDecoder.class,
         encoders = MessageEncoder.class)
@@ -25,6 +23,10 @@ public class ProfileSocket {
         this.session = session;
 
         User u = (User) session.getUserProperties().get("user");
+        if(u == null) {
+            session.close();
+            return;
+        }
         user = u;
         connected.put(u.uid, this);
     }

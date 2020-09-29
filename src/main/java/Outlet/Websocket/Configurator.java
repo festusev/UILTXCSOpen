@@ -38,5 +38,6 @@ public class Configurator extends ServerEndpointConfig.Configurator {
         }
         Map<String, Object> properties = conf.getUserProperties();
         if(u != null) properties.put("user", u);
+
     }
 }

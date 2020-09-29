@@ -23,7 +23,7 @@ import javax.servlet.http.Part;
 public class Profile extends HttpServlet{
     protected static Gson gson = new Gson();
 
-    private boolean savePublished(HttpServletRequest request, PrintWriter writer, User u) throws IOException, ServletException {
+    private boolean savePublished(HttpServletRequest request, PrintWriter writer, Teacher u) throws IOException, ServletException {
         System.out.println("Saving published");
         String cidS = request.getParameter("cid");
         String description = request.getParameter("description");
@@ -321,6 +321,18 @@ public class Profile extends HttpServlet{
             }
             frqTest.initializeFiles();
         }
+
+        /*ArrayList<UILSocket> sockets = UILSocket.classes.get(u.uid);
+        for(UILSocket socket: sockets) {
+            if(socket.user.uid != u.uid) {
+                JsonArray array = new JsonArray();
+                array.add("addCompetition");
+                array.add("")
+                array.add(competition.template.getMiniHTML(socket.user));
+                socket.send("[\"addCompetition\",\""+uid+"\",\""+submission.scoringReport[0]+"\"]");
+            }
+        }*/
+
         if(!retCid) return true;
         else {
             writer.write("{\"success\":\"Competition published.\",\"cid\":\""+competition.template.cid+"\"}");
@@ -521,7 +533,7 @@ public class Profile extends HttpServlet{
 
                 Teacher teacher = (Teacher) u;
                 if (competition != null && competition.teacher.uid == teacher.uid) {
-                    if(savePublished(request, writer, u)) writer.write("{\"success\":\"Competition saved.\",\"cid\":\""+competition.template.cid+"\"}");
+                    if(savePublished(request, writer, (Teacher)u)) writer.write("{\"success\":\"Competition saved.\",\"cid\":\""+competition.template.cid+"\"}");
                 }
                 return;
             } catch (Exception e) {}
@@ -674,7 +686,7 @@ public class Profile extends HttpServlet{
             }
             writer.write("{\"success\":\"Competition saved.\",\"cid\":\""+competition.template.cid+"\"}");
         } else if(action.equals("publishCompetition") && u.teacher) {
-            savePublished(request, writer, u);
+            savePublished(request, writer, (Teacher) u);
         } else if(action.equals("unPublishCompetition")) {
             short cid = Short.parseShort(request.getParameter("cid"));
             Competition competition = UIL.getCompetition(cid);

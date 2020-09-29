@@ -99,6 +99,8 @@ h1 {
 .mini_competition {
     padding: 0.7rem 1rem;
     cursor: pointer;
+    color: var(--font-col);
+    text-decoration: none;
 }
 .mini_competition .row1 {
     padding-bottom: 0.5rem;

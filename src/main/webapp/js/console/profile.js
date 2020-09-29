@@ -38,7 +38,7 @@ var dom = {
 };
 var ws;
 (function () {
-    ws = new WebSocket("wss://" + window.location.host + "/profilesocket");
+    ws = new WebSocket("wss://" + window.location.host + "/console/sockets/profile");
     ws.onmessage = function (evt) {
         try {
             var msg = JSON.parse(evt.data);

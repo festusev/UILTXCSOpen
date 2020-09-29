@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 
-@ServerEndpoint(value = "/compsocket/{cid}",
+@ServerEndpoint(value = "/console/sockets/c/{cid}",
         configurator = Configurator.class,
         decoders = MessageDecoder.class,
         encoders = MessageEncoder.class)

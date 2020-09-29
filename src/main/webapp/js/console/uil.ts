@@ -129,7 +129,7 @@ let ws: WebSocket;
         }
     }
 
-    ws = new WebSocket("wss://" + window.location.host + "/compsocket/" + cid);
+    ws = new WebSocket("wss://" + window.location.host + "/console/sockets/c/" + cid);
     ws.onmessage = function(evt) {
         try {
             let msg: string[] = JSON.parse(evt.data);

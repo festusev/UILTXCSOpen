@@ -37,7 +37,7 @@ public class Upcoming extends HttpServlet{
         Conn.setHTMLHeaders(response);
         PrintWriter writer = response.getWriter();
         String right = "<div id='upcoming'><h1 id='title'>Upcoming</h1><ul>";
-        if(UIL.getUpcoming().size() <=0) {  // There are no upcoming competitions
+        /*if(UIL.getUpcoming().size() <=0) {  // There are no upcoming competitions
             right+="<p class='emptyWarning'>There are no upcoming competitions.</p>";
         } else {    // There are upcoming competitions
             ArrayList<Competition> ordered = new ArrayList(UIL.getUpcoming().values());  // Sort them by date
@@ -71,6 +71,6 @@ public class Upcoming extends HttpServlet{
                 "<body>\n" + // Dynamic.loadNav(request) +
                 Dynamic.get_consoleHTML(0, right + "</div>") +
 //                    "<div id='content'>" + left + "</div></div>"+right+"</div></div>" +
-                "</div></body></html>");
+                "</div></body></html>");*/
     }
 }

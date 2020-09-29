@@ -25,7 +25,7 @@ let dom = {
 
 let ws: WebSocket;
 (function() {
-    ws = new WebSocket("wss://" + window.location.host + "/profilesocket");
+    ws = new WebSocket("wss://" + window.location.host + "/console/sockets/uil_list");
 
     ws.onmessage = function(evt) {
         try {
@@ -56,7 +56,8 @@ function showClassComps(nav:HTMLElement) {
     for(let i=0;i<nodes.length;i++) {
         nodes[i].classList.remove("selected");
     }
-    nav.classList.add("selected");
+    if(nav == null) document.getElementById("showClassComps").classList.add("selected");
+    else nav.classList.add("selected");
     document.getElementById("public_competitions").style.display = "none";
     try {
         document.getElementById("class_competitions").style.display = "block";
@@ -64,6 +65,25 @@ function showClassComps(nav:HTMLElement) {
     try {
         document.getElementById("upcoming_competitions").style.display = "none";
     } catch(e) {}
+}
+
+/***
+ * When the teacher clicks the edit icon from a mini html, switch to the corresponding one in their class and open it for editing.
+ */
+function editCompFromMini(cid) {
+    if(cid >= 0) return;
+    for(let competition of competitions) {
+        if(competition.cid === cid) {
+            showClassComps(null);
+            toggleEditCompetition(competition);
+        }
+    }
+}
+function addPreventDefault(element:HTMLElement) {
+    console.log("Preventing default");
+    element.onclick = function(event) {
+        event.preventDefault();
+    }
 }
 function showUpcomingComps(nav:HTMLElement) {
     let nodes = document.getElementById("nav").getElementsByTagName("p");
@@ -1060,10 +1080,11 @@ class Competition {
 
         let controls_edit = document.createElement("div");
         controls_edit.classList.add("tooltip-cnt");
+        controls_edit.classList.add("competition_edit");
         controls_edit.onclick = function() {
             toggleEditCompetition(thisComp);
         };
-        controls_edit.innerHTML = "<img src='/res/console/edit.svg' class='competition_edit'/><p class='tooltip'>Edit</p>";
+        controls_edit.innerHTML = "<img src='/res/console/edit.svg'/><p class='tooltip'>Edit</p>";
         this.dom.controlsEdit = controls_edit;
         controls.appendChild(controls_edit);
 
@@ -1406,3 +1427,24 @@ function addSuccessBox(box:HTMLElement, success:string):void {
         errorBox.className = "success";
     }
 }
+
+document.addEventListener("DOMContentLoaded", function(event) {
+    let controls = document.getElementsByClassName("mini_comp_controls");
+    for(let i=0,j=controls.length;i<j;i++) {
+        let element:HTMLElement = <HTMLElement>controls.item(i);
+        element.onclick = function(event) {
+            event.preventDefault();
+        };
+        let cid = element.dataset.id;
+
+        let edit = <HTMLElement>element.getElementsByClassName("competition_edit")[0];
+        edit.onclick = function(event) {
+            for(let i=0;i<competitions.length;i++) {
+                if(competitions[i].cid == cid) {
+                    showClassComps(null);
+                    toggleEditCompetition(competitions[i]);
+                }
+            }
+        };
+    }
+});

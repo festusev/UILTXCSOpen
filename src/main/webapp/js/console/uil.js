@@ -115,7 +115,7 @@ var ws;
             cid = sParameterName[1] === undefined ? null : decodeURIComponent(sParameterName[1]);
         }
     }
-    ws = new WebSocket("wss://" + window.location.host + "/compsocket/" + cid);
+    ws = new WebSocket("wss://" + window.location.host + "/console/sockets/c/" + cid);
     ws.onmessage = function (evt) {
         try {
             var msg = JSON.parse(evt.data);

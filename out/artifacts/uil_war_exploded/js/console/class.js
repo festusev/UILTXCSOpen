@@ -19,7 +19,7 @@ var config = {
 };
 var ws;
 (function () {
-    ws = new WebSocket("wss://" + window.location.host + "/profilesocket");
+    ws = new WebSocket("wss://" + window.location.host + "/console/sockets/class");
     ws.onmessage = function (evt) {
         try {
             var msg = JSON.parse(evt.data);

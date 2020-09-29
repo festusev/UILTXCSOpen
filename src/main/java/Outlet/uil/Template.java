@@ -108,7 +108,7 @@ public class Template {
                         mcHTML[1] += "<td><div class='mcBubble' onclick='setChoice(" + i + ",this)' data-val='" + c + "'></div></td>";
                     }
                 } else {    // This is an SAQ problem
-                    mcHTML[1] += "<td colspan='5'><input type='text' class='mcText' onchange='setSAQChoice(" + i + ",this)'></td>";
+                    mcHTML[1] += "<td colspan='5'><input type='text' maxlength='40' class='mcText' onchange='setSAQChoice(" + i + ",this)'></td>";
                 }
             }
             mcHTML[1]+="</table></div>";
@@ -179,7 +179,7 @@ public class Template {
     {
         String signupColor = "green";
         String signupText = "Sign Up";
-        if(u == null || u.teacher) {
+        if(u == null || u.teacher || closes.done()) {
             signupText = "";
         } else if(((Student)u).cids.containsKey(cid)){
             signupColor = "grey";
@@ -190,10 +190,16 @@ public class Template {
         int month = cal.get(Calendar.MONTH);
         int day = cal.get(Calendar.DAY_OF_MONTH);
 
-        return "<div class='competition mini_competition' onclick='location.href=\"/console/competitions?cid="+cid+"\"'>" +
+        String html =  "<a class='competition mini_competition' href='/console/competitions?cid="+cid+"'>" +
                 "<div class='row1'>"+StringEscapeUtils.escapeHtml4(name)+"<p class='right' style='color:"+signupColor+"'>"+signupText+"</p></div>" +
                 "<div class='row2'>Created by "+StringEscapeUtils.escapeHtml4(competition.teacher.fname) + " " + StringEscapeUtils.escapeHtml4(competition.teacher.lname) +
                 "<p class='right'>"+month+"/"+day+"</p></div>";
+        if(competition.teacher.uid == u.uid) {
+            html += "<div class='competition_controls mini_comp_controls' data-id='"+cid+"'><div class='tooltip-cnt competition_edit' style='display: block;'>" +
+                    "<img src='/res/console/edit.svg'><p class='tooltip'>Edit</p></div></div>";
+        }
+
+        return html + "</a>";
     }
 
     public String getLeftBarHTML(User uData, UserStatus userStatus) {
@@ -305,7 +311,9 @@ public class Template {
                 "<p id='errorBoxERROR'></p><p class='instruction'>Enter team join code:</p><input name='teamCode' id='teamCode' oninput='codeEntered(this)' maxlength='6'>" +
                 "<p id='toggleCreateTeam' onclick='toggleCreateTeam(event)'>or create a new team.</p></div></div>";  // They haven't signed up yet
 
-        if(userStatus.teacher) {
+        if(closes.done()) {
+            actMessage = "";
+        } else if(userStatus.teacher) {
             actMessage = "<h3 class='subtitle'>Teacher's can't compete</h3>";
         } else if(userStatus.signedUp) { // If they are already signed up for this competition
             actMessage = "<h3 class='subtitle'>You have signed up for this competition</h3>";
@@ -442,14 +450,16 @@ public class Template {
                         html += "<td><div class='mcBubble "+className+"' data-val='" + c + "' style='cursor:unset'></div></td>";
                     }
                 } else {    // This is an SAQ problem
-                    html += "<td colspan='5'><input type='text' class='mcText'><p class='mcTextCorrectAnswer'>"+
+                    html += "<td colspan='5'><input type='text' class='mcText' disabled><p class='mcTextCorrectAnswer'>"+
                             mcTest.KEY[i-1][0]+"</p></td>";
                 }
             }
             html += "</table></div></div>";
 
             return html;
-        } else {
+        }
+        return "";
+        /*else {
             if(userStatus.teacher) { // They are a teacher
                 return "<div id='mcColumn' class='column' style='display:none;'>" +
                         "<h1 class='forbiddenPage'>Teachers cannot compete.</h1>" +
@@ -466,7 +476,7 @@ public class Template {
                             "</div>";
                 }
             }
-        }
+        }*/
     }
     public String getRunningMC() {
         return mcHTML[0]+mcTest.getTimer().toString()+mcHTML[1];
@@ -608,7 +618,7 @@ public class Template {
         return problems + "</div>";
     }
 
-    public String getNavBarHTML(UserStatus userStatus, CompetitionStatus competitionStatus){
+        public String getNavBarHTML(UserStatus userStatus, CompetitionStatus competitionStatus){
         String nav = navBarHTML;
         /*if(userStatus.signedUp) {
             nav += "<li id='team' onclick='showTeam()'>Team</li>";
@@ -617,11 +627,11 @@ public class Template {
             if(mcFirst) return nav + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
             else return nav + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
         } else {
-            if(competitionStatus.mcFinished && mcTest.exists) nav += MC_HEADER;
-            if(competitionStatus.frqFinished && frqTest.exists) nav += FRQ_HEADER;
+            if(competitionStatus.mcFinished && mcTest.exists && (userStatus.signedUp || userStatus.creator)) nav += MC_HEADER;
+            if(competitionStatus.frqFinished && frqTest.exists && (userStatus.signedUp || userStatus.creator)) nav += FRQ_HEADER;
 
             if (competitionStatus.mcDuring && !competitionStatus.frqDuring) {
-                if(!userStatus.teacher || userStatus.creator)
+                if(userStatus.signedUp || userStatus.creator)
                     return nav + MC_HEADER + "<li id='countdownCnt'>Written ends in <p id='countdown'>" + mcTest.closes + "</p></li></ul>";
                 else
                     return nav + "<li id='countdownCnt'>Written ends in <p id='countdown'>" + mcTest.closes + "</p></li></ul>";
