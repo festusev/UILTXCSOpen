@@ -640,7 +640,7 @@ public class Template {
                 return nav + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
             } else if (competitionStatus.mcFinished && competitionStatus.frqFinished) {
                 return nav + "<li id='countdownCnt'>The competition has ended!</li></ul>";
-            } else return nav + "</ul>";  // This shouldn't happen
+            } else return nav + "<li id='countdownCnt'>Competition closes in <p id='countdown'>" + closes + "</ul>";  // MC and FRQ at the same time.
         }
     }
 
