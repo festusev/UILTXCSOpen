@@ -48,7 +48,6 @@
     font-size: 2rem;
     display: inline-block;
     width: 50%;
-    overflow: hidden;
 }
 #aboutColumn {
     background-color: unset;
@@ -120,11 +119,10 @@
 #frqColumn{
     display:flex;
     flex-flow:row;
-    padding: 0;
-    box-shadow: none;
-    background-color: unset;
 }
-
+#frqColumn .head-row {
+    width:100%;
+}
 #mcColumn .chngButton{
     margin:auto;
     margin-top:10px;
@@ -236,6 +234,9 @@
 }
 .running-frq #frqProblems{
     padding-left:1em;
+    width:50%;
+    box-sizing: border-box;
+    vertical-align: top;
 }
 .probSum{
     background-color:var(--sec-col);
@@ -426,8 +427,6 @@
 }
 #aboutHead h1 {
     flex-grow: 1;
-    overflow: hidden;
-    white-space:nowrap;
 }
 #aboutHead h3{
     color: var(--body-col);
@@ -439,8 +438,8 @@
     flex-grow: 1;
 }
 #aboutInfo {
-    margin-left: 2rem;
-    padding: 1rem 2rem;
+    margin-left: 1rem;
+    padding: 1rem 1.5rem;
 }
 #aboutInfo h2{
     font-size: 1em;
@@ -482,7 +481,6 @@
         width: 100%;
     }
     #nav_compname {
-        width: 10% !important;
         white-space: nowrap;
     }
 }

@@ -139,7 +139,7 @@ public class Template {
                 "<script src='/js/console/uil.js'></script>" +
                 "</head><body>";
 
-        // Create a timer to update the scoreboard every SCOREBOARD_UPDATE_INTERVAL seconds
+        // Cre a timer to update the scoreboard every SCOREBOARD_UPDATE_INTERVAL seconds
         /*Timer timer = new Timer();
         UpdateScoreboard updater = new UpdateScoreboard();
         updater.template = this;
@@ -192,7 +192,7 @@ public class Template {
 
         String html =  "<a class='competition mini_competition' href='/console/competitions?cid="+cid+"'>" +
                 "<div class='row1'>"+StringEscapeUtils.escapeHtml4(name)+"<p class='right' style='color:"+signupColor+"'>"+signupText+"</p></div>" +
-                "<div class='row2'>Created by "+StringEscapeUtils.escapeHtml4(competition.teacher.fname) + " " + StringEscapeUtils.escapeHtml4(competition.teacher.lname) +
+                "<div class='row2'>Author "+StringEscapeUtils.escapeHtml4(competition.teacher.fname) + " " + StringEscapeUtils.escapeHtml4(competition.teacher.lname) +
                 "<p class='right'>"+month+"/"+day+"</p></div>";
         if(competition.teacher.uid == u.uid) {
             html += "<div class='competition_controls mini_comp_controls' data-id='"+cid+"'><div class='tooltip-cnt competition_edit' style='display: block;'>" +
@@ -326,7 +326,7 @@ public class Template {
                 "<div id='aboutHead'><h1>" + StringEscapeUtils.escapeHtml4(name) + "</h1>" + actMessage + "</div>" +
                 //"<div class='row' id='aboutDescriptionRow'>" +
                 "<p>" + StringEscapeUtils.escapeHtml4(description) + "</p></div>" +
-                "<div id='aboutInfo'><h2>Created by</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.fname)+" "+
+                "<div id='aboutInfo'><h2>Author</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.fname)+" "+
                 StringEscapeUtils.escapeHtml4(teacher.lname)+"</p>"+school;
         if(mcTest.exists) {
             about += "<h2>Written</h2><p>"+mcTest.opens.DATE_STRING+"<br>"+(mcTest.TIME/(1000*60))+" min<br>"+mcTest.KEY.length+" questions</p>";
@@ -604,7 +604,7 @@ public class Template {
                 getFRQProblems(entry)+"</div></div>";
     }
     public String getFRQProblems(UILEntry entry){
-        String problems = "<div id='frqProblems'><h1>Hands-On Problems - " + entry.frqScore +"pts</h1>";
+        String problems = "<div id='frqProblems'><b>Problems - " + entry.frqScore +"pts</b>";
         for(int i=0; i<entry.frqResponses.length; i++) {
             problems+="<p>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[i]) + " - ";
             short tries = entry.frqResponses[i];
@@ -618,7 +618,7 @@ public class Template {
         return problems + "</div>";
     }
 
-        public String getNavBarHTML(UserStatus userStatus, CompetitionStatus competitionStatus){
+    public String getNavBarHTML(UserStatus userStatus, CompetitionStatus competitionStatus) {
         String nav = navBarHTML;
         /*if(userStatus.signedUp) {
             nav += "<li id='team' onclick='showTeam()'>Team</li>";
@@ -627,26 +627,20 @@ public class Template {
             if(mcFirst) return nav + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
             else return nav + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
         } else {
-            if(competitionStatus.mcFinished && mcTest.exists && (userStatus.signedUp || userStatus.creator)) nav += MC_HEADER;
-            if(competitionStatus.frqFinished && frqTest.exists && (userStatus.signedUp || userStatus.creator)) nav += FRQ_HEADER;
+            if(mcTest.exists && (userStatus.signedUp || userStatus.creator)) nav += MC_HEADER;
+            if(frqTest.exists && (userStatus.signedUp || userStatus.creator)) nav += FRQ_HEADER;
 
             if (competitionStatus.mcDuring && !competitionStatus.frqDuring) {
-                if(userStatus.signedUp || userStatus.creator)
-                    return nav + MC_HEADER + "<li id='countdownCnt'>Written ends in <p id='countdown'>" + mcTest.closes + "</p></li></ul>";
-                else
-                    return nav + "<li id='countdownCnt'>Written ends in <p id='countdown'>" + mcTest.closes + "</p></li></ul>";
+                return nav + "<li id='countdownCnt'>Written ends in <p id='countdown'>" + mcTest.closes + "</p></li></ul>";
             } else if (!competitionStatus.mcDuring && competitionStatus.frqDuring) {
-                if(!userStatus.teacher || userStatus.creator)
-                    return nav + FRQ_HEADER + "<li id='countdownCnt'>Hands-On ends in <p id='countdown'>" + frqTest.closes + "</p></li></ul>";
-                else
-                    return nav + "<li id='countdownCnt'>Hands-On ends in <p id='countdown'>" + frqTest.closes + "</p></li></ul>";
+                return nav + FRQ_HEADER + "<li id='countdownCnt'>Hands-On ends in <p id='countdown'>" + frqTest.closes + "</p></li></ul>";
             } else if (competitionStatus.mcFinished && competitionStatus.frqBefore) {
                 return nav + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
             } else if (competitionStatus.mcBefore && competitionStatus.frqFinished) {
                 return nav + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
             } else if (competitionStatus.mcFinished && competitionStatus.frqFinished) {
                 return nav + "<li id='countdownCnt'>The competition has ended!</li></ul>";
-            } else return "";  // This shouldn't happen
+            } else return nav + "</ul>";  // This shouldn't happen
         }
     }
 
