@@ -633,7 +633,7 @@ public class Template {
             if (competitionStatus.mcDuring && !competitionStatus.frqDuring) {
                 return nav + "<li id='countdownCnt'>Written ends in <p id='countdown'>" + mcTest.closes + "</p></li></ul>";
             } else if (!competitionStatus.mcDuring && competitionStatus.frqDuring) {
-                return nav + FRQ_HEADER + "<li id='countdownCnt'>Hands-On ends in <p id='countdown'>" + frqTest.closes + "</p></li></ul>";
+                return nav + "<li id='countdownCnt'>Hands-On ends in <p id='countdown'>" + frqTest.closes + "</p></li></ul>";
             } else if (competitionStatus.mcFinished && competitionStatus.frqBefore) {
                 return nav + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
             } else if (competitionStatus.mcBefore && competitionStatus.frqFinished) {
