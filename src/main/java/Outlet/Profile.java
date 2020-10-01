@@ -139,7 +139,7 @@ public class Profile extends HttpServlet{
             }
             mcTest = new MCTest(true, mcOpensString, mcAnswers, mcCorrectPoints,
                     mcIncorrectPoints,request.getParameter("mcInstructions"),
-                    request.getParameter("mcAnswersLink"),
+                    request.getParameter("mcTestLink"),
                     mcTime);
         }
 
