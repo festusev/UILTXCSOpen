@@ -120,6 +120,10 @@
     display:flex;
     flex-flow:row;
 }
+#frqColumn.frqSubmissionList {
+    box-shadow:none;
+    background-color: unset;
+}
 #frqColumn .head-row {
     width:100%;
 }
