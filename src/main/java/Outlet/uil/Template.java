@@ -293,9 +293,9 @@ public class Template {
                                                   "<p>out of <span id='bottomOutOf'>" + competition.entries.tidMap.values().size() +
                         "</span> teams</p></div>";
             }
-        } else if(userStatus.teacher) {
+        } /*else if(userStatus.teacher) {
             string += "<div id='leftBarBottom'><a href='/profile' class='bottomLeftLink'>Create Competition</a></div>";
-        } else {    // They are a student but not signed up
+        }*/ else {    // They are a student but not signed up
             // string += "<div id='leftBarBottom'><p onclick='showSignup()' class='bottomLeftLink'>Sign Up</p></div>";
             return "";
         }

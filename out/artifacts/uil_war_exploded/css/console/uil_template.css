@@ -7,6 +7,8 @@
 #content{
     flex-grow: 1;
     display: flex;
+    max-height: 100vh;
+    overflow: hidden;
 }
 #leftBar {
     padding: 0.5rem 2rem;
@@ -35,6 +37,7 @@
     z-index: 1;
     flex-grow:1;
     max-width: calc(100% - 11rem);
+    overflow-y: auto;
 }
 .column{
     max-width:100%;
