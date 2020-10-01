@@ -229,6 +229,13 @@ public class UIL extends HttpServlet{
             response.sendRedirect(request.getContextPath() + "/");
             return;
         }
+        if(!initialized) {
+            try {
+                initialize();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
 
         String cidS = request.getParameter("cid");
         System.out.println("Doing get for cid="+cidS);
