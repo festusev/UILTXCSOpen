@@ -63,6 +63,19 @@
     box-shadow: var(--shadow);
 }
 
+.clarification {
+    border: 1px solid rgba(0,0,0,0.1);
+    padding:1rem 2rem;
+    border-radius: 8px;
+}
+.clarification h3 {
+    font-weight:bold;
+}
+.clarification span {
+    display:block;
+    padding: 6px 0;
+}
+
 #upperHalf{
     list-style: none;
     background-color:white;
@@ -467,6 +480,12 @@
     top: 0.5rem;
     right: 0.2rem;
     cursor: pointer;
+}
+#clarificationsColumn textarea {
+    border: 1px solid lightgray;
+}
+#clarificationsColumn button {
+    margin-left: 10px;
 }
 @media only screen and (max-width: 720px){
     #countdownCnt {

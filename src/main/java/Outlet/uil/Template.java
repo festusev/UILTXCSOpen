@@ -52,7 +52,7 @@ public class Template {
     // Used whenever the competition is not published. 'published' should always be false.
     public Template(boolean published, String n, String description, MCTest mc, FRQTest fr, short cid, Competition competition) {
         name = n;this.description = description;this.mcTest = mc;this.frqTest=fr;this.cid=cid;this.competition=competition;
-        mcFirst = true;HEADERS="";
+        mcFirst = true;HEADERS="";this.sorter = new SortUILTeams();
     }
 
     public Template(String n, String description, MCTest mc, FRQTest fr, short cid, Competition competition){
@@ -121,7 +121,7 @@ public class Template {
                         "<form id='submit' onsubmit='submitFRQ(); return false;' enctype='multipart/form-data'>" +
                         "<select id='frqProblem'>";
             for(int i=1; i<=frqTest.PROBLEM_MAP.length;i++){
-                frqHTML += "<option value='"+i+"' id='frqProblem"+i+"'>"+frqTest.PROBLEM_MAP[i-1]+"</option>";
+                frqHTML += "<option value='"+i+"' id='frqProblem"+i+"'>"+frqTest.PROBLEM_MAP[i-1].name+"</option>";
             }
             frqHTML += "</select>" +
                     "<input type='file' accept='.java,.cpp,.py' id='frqTextfile'/>" +
@@ -136,6 +136,8 @@ public class Template {
                 Dynamic.loadHeaders() +
                 "<link rel='stylesheet' href='/css/console/console.css'>" +
                 "<link rel='stylesheet' href='/css/console/uil_template.css'>" +
+                //"<script src='/js/diff/base.js'></script>" +
+                //"<script src='/js/diff/line.js'></script>" +
                 "<script src='/js/console/uil.js'></script>" +
                 "</head><body>";
 
@@ -166,7 +168,7 @@ public class Template {
                         // Dynamic.loadNav(request) +
                 Dynamic.get_consoleHTML(1,getNavBarHTML(userStatus, competitionStatus) + "<div id='content'>" +
                         "<span id='columns'>" + getColumnsHTML(uData, userStatus, competitionStatus) +
-                        "</span>"+getLeftBarHTML(uData, userStatus)+"</div></body></html>")
+                        "</span>"+ getRightBarHTML(uData, userStatus, competitionStatus)+"</div></body></html>")
         );
     }
 
@@ -187,12 +189,12 @@ public class Template {
         }
         Calendar cal = Calendar.getInstance();
         cal.setTime(opens.date);
-        int month = cal.get(Calendar.MONTH);
+        int month = cal.get(Calendar.MONTH)+1;
         int day = cal.get(Calendar.DAY_OF_MONTH);
 
         String html =  "<a class='competition mini_competition' href='/console/competitions?cid="+cid+"'>" +
                 "<div class='row1'>"+StringEscapeUtils.escapeHtml4(name)+"<p class='right' style='color:"+signupColor+"'>"+signupText+"</p></div>" +
-                "<div class='row2'>Author "+StringEscapeUtils.escapeHtml4(competition.teacher.fname) + " " + StringEscapeUtils.escapeHtml4(competition.teacher.lname) +
+                "<div class='row2'>"+StringEscapeUtils.escapeHtml4(competition.teacher.fname) + " " + StringEscapeUtils.escapeHtml4(competition.teacher.lname) +
                 "<p class='right'>"+month+"/"+day+"</p></div>";
         if(competition.teacher.uid == u.uid) {
             html += "<div class='competition_controls mini_comp_controls' data-id='"+cid+"'><div class='tooltip-cnt competition_edit' style='display: block;'>" +
@@ -202,7 +204,7 @@ public class Template {
         return html + "</a>";
     }
 
-    public String getLeftBarHTML(User uData, UserStatus userStatus) {
+    public String getRightBarHTML(User uData, UserStatus userStatus, CompetitionStatus competitionStatus) {
         String string = "<div id='leftBar'>";
         if(userStatus.creator || userStatus.signedUp) {
             if(mcTest.exists) {
@@ -289,8 +291,10 @@ public class Template {
                 UILEntry entry = ((Student)uData).cids.get(cid);
                 int rank = sortedTeams.indexOf(entry.tid) + 1;
 
-                string += "<div id='leftBarBottom'><p id='bottomRank'>" + ordinal(rank) + "</p>" +
-                                                  "<p>out of <span id='bottomOutOf'>" + competition.entries.tidMap.values().size() +
+                string += "<div id='leftBarBottom'>";
+                string += 
+                        "<p id='bottomRank'>" + ordinal(rank) + "</p>" +
+                        "<p>out of <span id='bottomOutOf'>" + competition.entries.tidMap.values().size() +
                         "</span> teams</p></div>";
             }
         } /*else if(userStatus.teacher) {
@@ -336,7 +340,7 @@ public class Template {
         }
         about += "</div></div>";
         return getFRQHTML(uData, userStatus, competitionStatus) + about + scoreboardHTML + /*answers +*/
-                getMCHTML(uData, userStatus, competitionStatus) /*getTeamHTML(uData, userStatus)*/;
+                getMCHTML(uData, userStatus, competitionStatus) + getClarificationHTML(uData, userStatus, competitionStatus); /*getTeamHTML(uData, userStatus)*/
     }
 
     /***
@@ -541,7 +545,7 @@ public class Template {
     }
 
     public String getSmallFRQ(int i, FRQSubmission submission) {
-        return "<tr onclick='showFRQSubmission("+i+")'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber-1]) +
+        return "<tr onclick='showFRQSubmission("+i+")'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber-1].name) +
                 "</td><td>" + StringEscapeUtils.escapeHtml4(submission.entry.tname) + "</td><td id='showFRQSubmission"+i+"'>" + submission.getResultString() +
                 "</td></tr>";
     }
@@ -606,7 +610,7 @@ public class Template {
     public String getFRQProblems(UILEntry entry){
         String problems = "<div id='frqProblems'><b>Problems - " + entry.frqScore +"pts</b>";
         for(int i=0; i<entry.frqResponses.length; i++) {
-            problems+="<p>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[i]) + " - ";
+            problems+="<p>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[i].name) + " - ";
             short tries = entry.frqResponses[i];
             if(tries > 0) {
                 problems += frqTest.calcScore(tries) + "pts";
@@ -618,6 +622,44 @@ public class Template {
         return problems + "</div>";
     }
 
+    public String getClarificationHTML(User user, UserStatus userStatus, CompetitionStatus competitionStatus) {
+        System.out.println("SignedUp="+userStatus.signedUp+", Creator="+userStatus.creator+", FRQDuring="+competitionStatus.frqDuring+
+                ", FRQFinished="+competitionStatus.frqFinished+", MCDuring="+competitionStatus.mcDuring+", MCFinished="+competitionStatus.mcFinished);
+        if ((userStatus.signedUp || userStatus.creator) && (competitionStatus.frqDuring || competitionStatus.frqFinished) &&
+                (competitionStatus.mcDuring || competitionStatus.mcFinished)) {
+            String html = "<div id='clarificationsColumn' class='column' style='display:none;'><h1>Clarifications</h1>";
+
+            if (!user.teacher) {
+                html += "<textarea maxlength='255' id='clarification_input' placeholder='Ask a question.'></textarea><button onclick='sendClarification()'>Send Clarification</button>";
+            }
+
+            html += "<div class='clarification_group'>";
+
+            boolean noClarifications = true;
+            for (int i=competition.clarifications.size()-1;i>=0;i--) {
+                Clarification clarification = competition.clarifications.get(i);
+                if(clarification.responded) {  // Only show responded clarifications to non creators
+                    html += "<div class='clarification'><h3>Question</h3><span>" + clarification.question +
+                            "</span><h3>Answer</h3><span>" + clarification.response + "</span></div>";
+                    noClarifications = false;
+                } else if (userStatus.creator) {    // Not yet responded, so add in the response textarea
+                    html += "<div class='clarification'><h3>Question</h3><span>" + clarification.question +
+                            "</span><h3>Answer</h3><span><textarea placeholder='Send a response.'></textarea><button " +
+                            "onclick='answerClarification(this, "+i+")'>Send</button></span></div>";
+
+                    noClarifications = false;
+                }
+            }
+
+            if(noClarifications) {
+                html += "There are no clarifications.";
+            }
+
+            return html + "</div></div>";
+        }
+        return "";
+    }
+
     public String getNavBarHTML(UserStatus userStatus, CompetitionStatus competitionStatus) {
         String nav = navBarHTML;
         /*if(userStatus.signedUp) {
@@ -627,8 +669,12 @@ public class Template {
             if(mcFirst) return nav + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
             else return nav + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
         } else {
-            if(mcTest.exists && (userStatus.signedUp || userStatus.creator)) nav += MC_HEADER;
-            if(frqTest.exists && (userStatus.signedUp || userStatus.creator)) nav += FRQ_HEADER;
+            if(userStatus.signedUp || userStatus.creator) {
+                if (mcTest.exists) nav += MC_HEADER;
+                if (frqTest.exists) nav += FRQ_HEADER;
+                if((competitionStatus.frqDuring || competitionStatus.frqFinished) && (competitionStatus.mcDuring || competitionStatus.mcFinished))
+                    nav += "<li id='clarificationNav' onclick='showClarifications()' class='secondNavItem'>Clarifications</li>";
+            }
 
             if (competitionStatus.mcDuring && !competitionStatus.frqDuring) {
                 return nav + "<li id='countdownCnt'>Written ends in <p id='countdown'>" + mcTest.closes + "</p></li></ul>";
@@ -645,13 +691,12 @@ public class Template {
     }
 
     public void updateScoreboard(){
-        ArrayList<UILEntry> allTeams;
-        try {
+        /*try {
             allTeams = competition.getAllEntries();
         } catch (SQLException e) {
             e.printStackTrace();
             return;
-        }
+        }*/
 
         if(!scoreboardSocketScheduled) {    // Schedule a timer to send the updated scoreboard to the connected sockets
             scoreboardSocketScheduled = true;
@@ -680,13 +725,13 @@ public class Template {
             }, 1000);
         }
 
-        Collections.sort(allTeams, sorter);
+        competition.entries.allEntries.sort(sorter);
 
         // The table row list of teams in order of points
         String teamList = "";
         int rank = 1;
         sortedTeams.clear();
-        for(UILEntry entry: allTeams) {
+        for(UILEntry entry: competition.entries.allEntries) {
             sortedTeams.add(entry.tid);
             entry.getMCScore();
             teamList += "<tr><td>" + rank + "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td>";
@@ -721,7 +766,6 @@ public class Template {
             e.printStackTrace();
         } finally {
             updateScoreboard();
-            //Scoreboard.generateScoreboard();
         }
     }
 }

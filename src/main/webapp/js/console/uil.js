@@ -1,3 +1,4 @@
+///<reference path="../websocket.ts"/>
 var config = {
     TEXT: {
         server_error: "Whoops! A server error occurred. Contact an admin if the problem continues."
@@ -8,6 +9,7 @@ var config = {
         team: "teamColumn",
         mc: "mcColumn",
         frq: "frqColumn",
+        clarificationColumn: "clarificationsColumn",
         // answers : "answersColumn",
         publicComps: "public_competitions",
         classComps: "class_competitions",
@@ -22,9 +24,11 @@ var config = {
         scoreboardNav: "scoreboardNav",
         writtenNav: "writtenNav",
         handsOnNav: "handsOnNav",
+        clarificationNav: "clarificationNav",
         signUpBox: "signUpBox",
         teamCode: "teamCode",
-        toggleCreateTeam: "toggleCreateTeam"
+        toggleCreateTeam: "toggleCreateTeam",
+        clarification_input: "clarification_input"
     },
     CLASSES: {
         columns: "column",
@@ -33,33 +37,47 @@ var config = {
     RESULTS: ["Incorrect", "Correct", "No Penalty"],
     SOCKET_FUNCTIONS: {
         "addSmallMC": function (response) {
-            var html = response[1];
+            var html = response["html"];
             var template = document.createElement('template');
             template.innerHTML = html;
             dom.mcSubmissions.insertBefore(template.content.firstChild, dom.mcSubmissionsTr.nextSibling);
         }, "addSmallFRQ": function (response) {
-            var html = response[1];
+            var html = response["html"];
             var template = document.createElement('template');
             template.innerHTML = html;
             dom.frqSubmissionsTable.insertBefore(template.content.firstChild, dom.frqSubmissionsTr.nextSibling);
         }, "updateTeam": function (response) {
-            var html = response[1];
-            dom.teamMembers.innerHTML = html;
+            dom.teamMembers.innerHTML = response["html"];
         }, "competitionDeleted": function (response) {
             window.location.replace(window.location.host + "/console/competitions");
         }, "updateFRQProblems": function (response) {
             var template = document.createElement('template');
-            template.innerHTML = response[1];
+            template.innerHTML = response["html"];
             dom.frqProblems.replaceWith(template.content.firstChild);
         }, "updateScoreboard": function (response) {
             var template = document.createElement('template');
-            template.innerHTML = response[1];
+            template.innerHTML = response["html"];
             var display = dom.scoreboard.style.display;
             dom.scoreboard.replaceWith(template.content.firstChild);
             dom.cached[config.IDs.scoreboard] = null;
             showColumn();
         }, "reScoreMC": function (response) {
             // TODO: Write this
+        }, "nc": function (response) {
+            var clarification_list = dom.clarificationColumn.querySelector(".clarification_group");
+            if (clarification_list.innerHTML == "There are no clarifications.") {
+                clarification_list.innerHTML = "";
+            }
+            clarification_list.innerHTML = "<div class='clarification'><h3>Question</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
+                "<textarea placeholder='Send a response.'></textarea><button onclick='answerClarification(this, " +
+                response["id"] + ")'>Send</button></span></div>" + clarification_list.innerHTML;
+        }, "ac": function (response) {
+            var clarification_list = dom.clarificationColumn.querySelector(".clarification_group");
+            if (clarification_list.innerHTML == "There are no clarifications.") {
+                clarification_list.innerHTML = "";
+            }
+            clarification_list.innerHTML = "<div class='clarification'><h3>Question</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
+                response["answer"] + "</span></div>" + clarification_list.innerHTML;
         }
     }
 };
@@ -91,6 +109,9 @@ var dom = {
     get signUpBox() { return this.getHelper(config.IDs.signUpBox); },
     get teamCode() { return this.getHelper(config.IDs.teamCode); },
     get toggleCreateTeam() { return this.getHelper(config.IDs.toggleCreateTeam); },
+    get clarificationColumn() { return this.getHelper(config.IDs.clarificationColumn); },
+    get clarificationNav() { return this.getHelper(config.IDs.clarificationNav); },
+    get clarification_input() { return this.getHelper(config.IDs.clarification_input); },
     classes: {
         cached: {},
         getHelper: function (className) {
@@ -106,7 +127,6 @@ var cid = null; // Undefined if we are looking at the UIL list
 $(document).ready(function () {
     showColumn();
 });
-var ws;
 (function () {
     var sPageURL = window.location.search.substring(1), sURLVariables = sPageURL.split('&'), sParameterName, i;
     for (i = 0; i < sURLVariables.length; i++) {
@@ -115,14 +135,7 @@ var ws;
             cid = sParameterName[1] === undefined ? null : decodeURIComponent(sParameterName[1]);
         }
     }
-    ws = new WebSocket("wss://" + window.location.host + "/console/sockets/c/" + cid);
-    ws.onmessage = function (evt) {
-        try {
-            var msg = JSON.parse(evt.data);
-            config.SOCKET_FUNCTIONS[msg[0]](msg);
-        }
-        catch (e) { }
-    };
+    getWebSocket(window.location.host + "/console/sockets/c/" + cid, config.SOCKET_FUNCTIONS);
 })();
 function setCookie(cname, cvalue, exdays) {
     var d = new Date();
@@ -185,6 +198,9 @@ function showMC() {
 }
 function showFRQ() {
     showHelper(dom.frq, "#frq", dom.handsOnNav);
+}
+function showClarifications() {
+    showHelper(dom.clarificationColumn, "#clarifications", dom.clarificationNav);
 }
 /*function showAnswers(){
     showHelper(answers, "#answers");
@@ -256,6 +272,8 @@ function createTeam() {
             }
         }
     });
+}
+function toggle_clarify() {
 }
 // Begin the multiple choice
 function beginMC() {
@@ -609,6 +627,7 @@ function showFRQSubmission(submissionId) {
                             .replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>") + "</span>";
                         div.appendChild(output_cnt);
                     }
+                    console.log(output);
                 }
                 add(div);
                 submissionMap[submissionId] = div;
@@ -683,4 +702,34 @@ function showMCSubmission(tid, uid) {
     xhr.open('POST', "/console/competitions", true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send("cid=" + cid + "&action=showMCSubmission&tid=" + tid + "&uid=" + uid);
+}
+/***
+ * Loads the clarifications that this user asked.
+ */
+function loadPersonalClarifications() {
+    ws.send("Testing!");
+}
+/***
+ * Lets a teacher answer a clarification.
+ */
+function answerClarification(button, id) {
+    var span = button.parentNode; // The <span> that holds the textarea and the button
+    var textarea = span.getElementsByTagName("textarea")[0];
+    var msg = textarea.value;
+    if (msg.trim().length != 0 && msg.length <= 255) {
+        var response = ["rc", "" + id, msg];
+        ws.send(JSON.stringify(response));
+        span.innerHTML = msg;
+    }
+}
+/***
+ * Sends a clarification if the text box is not empty.
+ */
+function sendClarification() {
+    var msg = dom.clarification_input.value;
+    if (msg.trim().length != 0 && msg.length <= 255) {
+        var response = ["nc", msg];
+        ws.send(JSON.stringify(response));
+    }
+    dom.clarification_input.value = "";
 }

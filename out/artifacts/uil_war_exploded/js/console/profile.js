@@ -1,3 +1,4 @@
+///<reference path="../websocket.ts"/>
 var config = {
     TEXT: {
         server_error: "Whoops! A server error occurred. Contact an admin if the problem continues."
@@ -36,16 +37,8 @@ var dom = {
     get profileLink() { return this.getHelper(config.IDs.profile_link); },
     get profile() { return this.getHelper(config.IDs.Profile); }
 };
-var ws;
 (function () {
-    ws = new WebSocket("wss://" + window.location.host + "/console/sockets/profile");
-    ws.onmessage = function (evt) {
-        try {
-            var msg = JSON.parse(evt.data);
-            config.SOCKET_FUNCTIONS[msg.action](msg);
-        }
-        catch (e) { }
-    };
+    getWebSocket(window.location.host + "/console/sockets/profile", config.SOCKET_FUNCTIONS);
 })();
 function asyncConnectHelper(url, params, teamBox) {
     addSuccessBox(teamBox, "Running...");

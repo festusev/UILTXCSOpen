@@ -96,7 +96,7 @@ public class Verify extends HttpServlet{
                 response.addCookie(tokenCookie);
                 writer.write("{\"reload\":\""+request.getContextPath() + "/console/competitions\"}");
             } else if(bToken.compareTo(BigInteger.valueOf(-2)) == 0){ // The token has expired
-                writer.write("{\"error\":\"This code has expired.\"}");
+                writer.write("{\"error\":\"Incorrect Code.\"}");
             }
             else{   // A server error occurred. token should be = -1, but who knows
                 writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
@@ -105,7 +105,7 @@ public class Verify extends HttpServlet{
             String email = request.getParameter("email");
             System.out.println("Resetting password for user " + email);
             if(!Conn.verifyResetCode(code, email)) {   // The code is incorrect, so return a message saying that
-                writer.write("{\"error\":\"This code has expired.\"}");
+                writer.write("{\"error\":\"Incorrect Code.\"}");
                 return;
             }
 

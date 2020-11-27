@@ -1,3 +1,4 @@
+///<reference path="../websocket.ts"/>
 var config = {
     TEXT: {
         server_error: "Whoops! A server error occurred. Contact an admin if the problem continues."
@@ -8,7 +9,77 @@ var config = {
     COMPETITION: {
         mcOptions: ["a", "b", "c", "d", "e"]
     },
-    SOCKET_FUNCTIONS: {}
+    SOCKET_FUNCTIONS: {},
+    TEMPLATES: {
+        cs: {
+            writtenExists: true,
+            handsOnExists: true,
+            written: {
+                numProblems: 40,
+                correctPoints: 6,
+                incorrectPoints: -2,
+                instructions: "You have 45 minutes to complete the 40 question written portion. You will be quized on computer science principles, syntax, and more.",
+                time: 45
+            },
+            handsOn: {
+                maxPoints: 60,
+                incorrectPenalty: -5,
+                numProblems: 12,
+                time: 120
+            }
+        },
+        numbersense: {
+            writtenExists: true,
+            handsOnExists: false,
+            written: {
+                numProblems: 80,
+                correctPoints: 1,
+                incorrectPoints: 0,
+                instructions: "You have 10 minutes to complete this 80 question mental math test covering all high school mathematics courses.",
+                time: 10
+            },
+            handsOn: {
+                maxPoints: 60,
+                incorrectPenalty: -5,
+                numProblems: 1,
+                time: 120
+            }
+        },
+        calculatorapplications: {
+            writtenExists: true,
+            handsOnExists: false,
+            written: {
+                numProblems: 70,
+                correctPoints: 1,
+                incorrectPoints: 0,
+                instructions: "You have 30 minutes to complete this 70 question mathematics test. You may use a handheld calculator.",
+                time: 30
+            },
+            handsOn: {
+                maxPoints: 60,
+                incorrectPenalty: -5,
+                numProblems: 1,
+                time: 120
+            }
+        },
+        mathematics: {
+            writtenExists: true,
+            handsOnExists: false,
+            written: {
+                numProblems: 60,
+                correctPoints: 1,
+                incorrectPoints: 0,
+                instructions: "You have 40 minutes to complete this 60 question mathematics test, testing knowledge from algebra 1 to elementary calculus.",
+                time: 40
+            },
+            handsOn: {
+                maxPoints: 60,
+                incorrectPenalty: -5,
+                numProblems: 1,
+                time: 120
+            }
+        }
+    }
 };
 /***
  * Helps interfacing with static elements (are not deleted *
@@ -22,16 +93,8 @@ var dom = {
     },
     get class_competitions() { return this.getHelper(config.IDs.class_competitions); }
 };
-var ws;
 (function () {
-    ws = new WebSocket("wss://" + window.location.host + "/console/sockets/uil_list");
-    ws.onmessage = function (evt) {
-        try {
-            var msg = JSON.parse(evt.data);
-            config.SOCKET_FUNCTIONS[msg.action](msg);
-        }
-        catch (e) { }
-    };
+    getWebSocket(window.location.host + "/console/sockets/uil_list", config.SOCKET_FUNCTIONS);
 })();
 function showPublic(nav) {
     var nodes = document.getElementById("nav").getElementsByTagName("p");
@@ -182,7 +245,8 @@ var Competition = /** @class */ (function () {
             handsOnProblems: null,
             handsOnStudentPacket: null,
             handsOnMaxPoints: null,
-            handsOnIncorrectPenalty: null
+            handsOnIncorrectPenalty: null,
+            list_handsOn_changeproblems: null
         };
         competitions.push(this);
         this.cid = cid;
@@ -270,14 +334,48 @@ var Competition = /** @class */ (function () {
     Competition.prototype.delete = function () {
         if (this.cid.length !== 0) { /* This competition has already been saved */
             var xhr = new XMLHttpRequest();
-            xhr.open('POST', "/console/profile", true);
+            xhr.open('POST', "/console/competitions", true);
             xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-            xhr.send("action=deleteCompetition&cid=" + this.cid);
+            xhr.send("action=deleteCompetition&op_cid=" + this.cid);
         }
         dom.class_competitions.removeChild(this.dom.form);
         competitions.splice(competitions.indexOf(this), 1);
         if (competitions.length <= 0) {
             dom.class_competitions.innerHTML = "Click 'New' to create a competition.";
+        }
+    };
+    Competition.prototype.applyTemplate = function (template) {
+        if (template.handsOnExists != this.handsOnExists) {
+            this.toggleHandsOnTest();
+            this.dom.handsOnCheckbox.checked = this.handsOnExists;
+        }
+        if (template.writtenExists != this.writtenExists) {
+            this.toggleWrittenTest();
+            this.dom.writtenCheckbox.checked = this.writtenExists;
+        }
+        this.handsOn.incorrectPenalty = template.handsOn.incorrectPenalty;
+        this.dom.handsOnIncorrectPenalty.value = "" + template.handsOn.incorrectPenalty;
+        this.handsOn.maxPoints = template.handsOn.maxPoints;
+        this.dom.handsOnMaxPoints.value = "" + template.handsOn.maxPoints;
+        this.handsOn.time = template.handsOn.time;
+        this.dom.handsOnTime.value = "" + template.handsOn.time;
+        if (this.handsOn.problemMap.length < template.handsOn.numProblems) {
+            for (var i = this.handsOn.problemMap.length + 1, j = template.handsOn.numProblems; i <= j; i++) {
+                this.addHandsOnProblem(-1, "", false, false);
+            }
+        }
+        this.written.instructions = template.written.instructions;
+        this.dom.writtenInstructionCnt.value = template.written.instructions; // writtenInstructionCnt is a textarea
+        this.written.correctPoints = template.written.correctPoints;
+        this.dom.writtenPointsPerCorrect.value = "" + template.written.correctPoints;
+        this.written.incorrectPoints = template.written.incorrectPoints;
+        this.dom.writtenPointsPerIncorrect.value = "" + template.written.incorrectPoints;
+        this.written.time = template.written.time;
+        this.dom.writtenTime.value = "" + template.written.time;
+        if (this.written.key.length < template.written.numProblems) {
+            for (var i = this.written.key.length + 1, j = template.written.numProblems; i <= j; i++) {
+                this.addWrittenQuestion(null);
+            }
         }
     };
     Competition.prototype.getFormData = function () {
@@ -292,7 +390,7 @@ var Competition = /** @class */ (function () {
         };
         this.dom.comp_head.appendChild(deleteCompetition);*/
         var formData = new FormData();
-        formData.append("cid", this.cid);
+        formData.append("op_cid", this.cid); // The CID we are operating on
         formData.append("name", this.dom.compName.value);
         formData.append("isPublic", "" + this.dom.compPublic.checked);
         formData.append("description", this.dom.description.value);
@@ -324,8 +422,7 @@ var Competition = /** @class */ (function () {
             var problemIndices = []; /* A list like [1, 2, -1, 9, 5], corresponding to a name in the problems array */
             for (var i = 0, j = this.handsOn.problemMap.length; i < j; i++) {
                 var problem = this.handsOn.problemMap[i];
-                var probName = problem.dom.name.value;
-                problems.push(probName);
+                problems.push([problem.dom.name.value, problem.hasInput, problem.hasOutput]);
                 problemIndices.push(problem.oldIndex);
                 problem.oldIndex = i + 1; /* Now that the problem has been saved, we set it to be its current index */
                 if (problem.dom.input.files.length > 0) {
@@ -377,7 +474,7 @@ var Competition = /** @class */ (function () {
                 }
             }
         };
-        xhr.open('POST', "/console/profile", true);
+        xhr.open('POST', "/console/competitions", true);
         xhr.send(formData);
         return false;
     };
@@ -406,7 +503,7 @@ var Competition = /** @class */ (function () {
                 }
             }
         };
-        xhr.open('POST', "/console/profile", true);
+        xhr.open('POST', "/console/competitions", true);
         xhr.send(formData);
         return false;
     };
@@ -451,7 +548,7 @@ var Competition = /** @class */ (function () {
                 }
             }
         };
-        xhr.open('POST', "/console/profile", true);
+        xhr.open('POST', "/console/competitions", true);
         xhr.send(formData);
     };
     Competition.prototype.addWrittenQuestion = function (writtenProblem) {
@@ -510,6 +607,153 @@ var Competition = /** @class */ (function () {
         this.dom.writtenAnswerList.appendChild(newLi);
         newLi.focus();
     };
+    /*if(thisComp.handsOn.problemMap.length >= 50) return;
+    let index:number = thisComp.handsOn.problemMap.length;
+    let problem:HandsOnProblem = new HandsOnProblem();
+    problem.oldIndex = probIndex;
+    thisComp.handsOn.problemMap.push(problem);
+
+    let li = document.createElement("li");
+    li.dataset.probNum = "" + index;
+
+    let input_name = document.createElement("input");
+    input_name.type="text";
+    input_name.placeholder = "Problem Name";
+    input_name.maxLength = 20;
+    input_name.classList.add("handsOn_probName");
+    li.appendChild(input_name);
+    problem.dom.name = input_name;
+
+    /* Each input has the actual input field that takes in the file but is hidden to the user, as well
+    *  as an alias button that serves as the proxy between the user and the input field. This is to prevent
+    *  weird file input styling. */
+    /*let input_in_hidden = document.createElement("input");
+    input_in_hidden.type = "file";
+    input_in_hidden.style.display = "none";
+    li.appendChild(input_in_hidden);
+    problem.dom.input = input_in_hidden;
+    input_in_hidden.onchange = function() {
+        problem.hasInput = true;
+        input_in_proxy.innerText = "Change";
+    };
+
+    let input_in_proxy = document.createElement("button");
+    input_in_proxy.classList.add("handsOn_probIn");
+    input_in_proxy.innerText = "Input";
+    li.appendChild(input_in_proxy);
+    input_in_proxy.onclick = function(){input_in_hidden.click();};
+
+    let input_out_hidden = document.createElement("input");
+    input_out_hidden.type = "file";
+    input_out_hidden.style.display = "none";
+    li.appendChild(input_out_hidden);
+    problem.dom.output = input_out_hidden;
+    input_out_hidden.onchange = function(){
+        problem.hasOutput = true;
+        input_out_proxy.innerText = "Change";
+    };
+
+    let input_out_proxy = document.createElement("button");
+    input_out_proxy.classList.add("handsOn_probOut");
+    input_out_proxy.innerText = "Output";
+    input_out_proxy.onclick = function(){input_out_hidden.click();};
+    li.appendChild(input_out_proxy);
+
+    if(handsOnProblemMap.length > index) {
+    input_name.value = handsOnProblemMap[index][0];
+    problem.hasInput = handsOnProblemMap[index][1];
+    problem.hasOutput = handsOnProblemMap[index][2];
+
+    if(problem.hasInput) {
+    input_in_proxy.innerText = "Change";
+}
+if(problem.hasOutput) {
+    input_out_proxy.innerText = "Change";
+}
+} else {
+    input_name.value = "";
+    problem.hasInput = false;
+    problem.hasOutput = false;
+}
+
+let delQuestion = document.createElement("img");
+delQuestion.src = "/res/close.svg";
+delQuestion.classList.add("deleteProblem");
+delQuestion.onclick = function() {
+    thisComp.handsOn.problemMap.splice(thisComp.handsOn.problemMap.indexOf(problem), 1);
+    list_handsOn_changeproblems.removeChild(li);
+};
+li.appendChild(delQuestion);
+
+list_handsOn_changeproblems.appendChild(li);
+*/
+    Competition.prototype.addHandsOnProblem = function (probIndex, name, hasInputFile, hasOutputFile) {
+        var thisComp = this;
+        if (this.handsOn.problemMap.length >= 50)
+            return;
+        var index = this.handsOn.problemMap.length;
+        var problem = new HandsOnProblem();
+        problem.oldIndex = probIndex;
+        this.handsOn.problemMap.push(problem);
+        var li = document.createElement("li");
+        li.dataset.probNum = "" + index;
+        var input_name = document.createElement("input");
+        input_name.type = "text";
+        input_name.placeholder = "Problem Name";
+        input_name.maxLength = 20;
+        input_name.classList.add("handsOn_probName");
+        li.appendChild(input_name);
+        problem.dom.name = input_name;
+        /* Each input has the actual input field that takes in the file but is hidden to the user, as well
+        *  as an alias button that serves as the proxy between the user and the input field. This is to prevent
+        *  weird file input styling. */
+        var input_in_hidden = document.createElement("input");
+        input_in_hidden.type = "file";
+        input_in_hidden.style.display = "none";
+        li.appendChild(input_in_hidden);
+        problem.dom.input = input_in_hidden;
+        input_in_hidden.onchange = function () {
+            problem.hasInput = true;
+            input_in_proxy.innerText = "Change";
+        };
+        var input_in_proxy = document.createElement("button");
+        input_in_proxy.classList.add("handsOn_probIn");
+        input_in_proxy.innerText = "Input";
+        li.appendChild(input_in_proxy);
+        input_in_proxy.onclick = function () { input_in_hidden.click(); };
+        var input_out_hidden = document.createElement("input");
+        input_out_hidden.type = "file";
+        input_out_hidden.style.display = "none";
+        li.appendChild(input_out_hidden);
+        problem.dom.output = input_out_hidden;
+        input_out_hidden.onchange = function () {
+            problem.hasOutput = true;
+            input_out_proxy.innerText = "Change";
+        };
+        var input_out_proxy = document.createElement("button");
+        input_out_proxy.classList.add("handsOn_probOut");
+        input_out_proxy.innerText = "Output";
+        input_out_proxy.onclick = function () { input_out_hidden.click(); };
+        li.appendChild(input_out_proxy);
+        input_name.value = name;
+        problem.hasInput = hasInputFile;
+        problem.hasOutput = hasOutputFile;
+        if (problem.hasInput) {
+            input_in_proxy.innerText = "Change";
+        }
+        if (problem.hasOutput) {
+            input_out_proxy.innerText = "Change";
+        }
+        var delQuestion = document.createElement("img");
+        delQuestion.src = "/res/close.svg";
+        delQuestion.classList.add("deleteProblem");
+        delQuestion.onclick = function () {
+            thisComp.handsOn.problemMap.splice(thisComp.handsOn.problemMap.indexOf(problem), 1);
+            thisComp.dom.list_handsOn_changeproblems.removeChild(li);
+        };
+        li.appendChild(delQuestion);
+        thisComp.dom.list_handsOn_changeproblems.appendChild(li);
+    };
     Competition.prototype.getOpenCompetition = function () {
         var thisComp = this;
         var controls_open = document.createElement("div");
@@ -522,7 +766,7 @@ var Competition = /** @class */ (function () {
         this.dom.controlsOpen = controls_open;
         return controls_open;
     };
-    Competition.prototype.getDOM = function (handsOnProblemNames, whatItIsText, rulesText) {
+    Competition.prototype.getDOM = function (handsOnProblemMap, whatItIsText, rulesText) {
         function makeHalf(element) {
             element.classList.add("profile_cmpnt");
             element.classList.add("half");
@@ -731,59 +975,6 @@ var Competition = /** @class */ (function () {
             return written_section;
         }
         function getHandsOnSection() {
-            function addProblem(probIndex) {
-                if (thisComp.handsOn.problemMap.length >= 50)
-                    return;
-                var index = thisComp.handsOn.problemMap.length;
-                var problem = new HandsOnProblem();
-                problem.oldIndex = probIndex;
-                thisComp.handsOn.problemMap.push(problem);
-                var li = document.createElement("li");
-                li.dataset.probNum = "" + index;
-                var input_name = document.createElement("input");
-                input_name.type = "text";
-                input_name.placeholder = "Problem Name";
-                input_name.maxLength = 20;
-                if (handsOnProblemNames.length > index)
-                    input_name.value = handsOnProblemNames[index];
-                else
-                    input_name.value = "";
-                input_name.classList.add("handsOn_probName");
-                li.appendChild(input_name);
-                problem.dom.name = input_name;
-                /* Each input has the actual input field that takes in the file but is hidden to the user, as well
-                *  as an alias button that serves as the proxy between the user and the input field. This is to prevent
-                *  weird file input styling. */
-                var input_in_hidden = document.createElement("input");
-                input_in_hidden.type = "file";
-                input_in_hidden.style.display = "none";
-                li.appendChild(input_in_hidden);
-                problem.dom.input = input_in_hidden;
-                var input_in_proxy = document.createElement("button");
-                input_in_proxy.classList.add("handsOn_probIn");
-                input_in_proxy.innerText = "Input";
-                li.appendChild(input_in_proxy);
-                input_in_proxy.onclick = function () { input_in_hidden.click(); };
-                var input_out_hidden = document.createElement("input");
-                input_out_hidden.type = "file";
-                input_out_hidden.style.display = "none";
-                li.appendChild(input_out_hidden);
-                problem.dom.output = input_out_hidden;
-                var input_out_proxy = document.createElement("button");
-                input_out_proxy.classList.add("handsOn_probOut");
-                input_out_proxy.innerText = "Output";
-                input_out_proxy.onclick = function () { input_out_hidden.click(); };
-                li.appendChild(input_out_proxy);
-                var delQuestion = document.createElement("img");
-                delQuestion.src = "/res/close.svg";
-                delQuestion.classList.add("deleteProblem");
-                delQuestion.onclick = function () {
-                    thisComp.handsOn.problemMap.splice(thisComp.handsOn.problemMap.indexOf(problem), 1);
-                    list_handsOn_changeproblems.removeChild(li);
-                };
-                li.appendChild(delQuestion);
-                list_handsOn_changeproblems.appendChild(li);
-            }
             var handsOn_section = document.createElement("span");
             handsOn_section.classList.add("handsOnSection");
             if (!thisComp.handsOnExists)
@@ -854,17 +1045,18 @@ var Competition = /** @class */ (function () {
             thisComp.dom.handsOnProblems = handsOn_changeproblems;
             var list_handsOn_changeproblems = document.createElement("ol");
             list_handsOn_changeproblems.classList.add("handsOnProblemList");
+            thisComp.dom.list_handsOn_changeproblems = list_handsOn_changeproblems;
+            handsOn_changeproblems.appendChild(list_handsOn_changeproblems);
             if (thisComp.handsOnExists) {
                 thisComp.handsOn.problemMap.length = 0;
-                for (var i = 0, j = handsOnProblemNames.length; i < j; i++) {
-                    addProblem(i);
+                for (var i = 0, j = handsOnProblemMap.length; i < j; i++) {
+                    thisComp.addHandsOnProblem(i, handsOnProblemMap[i][0], handsOnProblemMap[i][1], handsOnProblemMap[i][2]);
                 }
             }
-            handsOn_changeproblems.appendChild(list_handsOn_changeproblems);
             var add_handsOn_changeproblems = document.createElement("button");
             add_handsOn_changeproblems.innerText = "Add";
             add_handsOn_changeproblems.onclick = function () {
-                addProblem(-1);
+                thisComp.addHandsOnProblem(-1, "", false, false);
             };
             handsOn_changeproblems.appendChild(add_handsOn_changeproblems);
             /* CLOSE */
@@ -1097,14 +1289,34 @@ var Competition = /** @class */ (function () {
         isPublic_toggle.appendChild(isPublic_toggle_input);
         this.dom.compPublic = isPublic_toggle_input;
         /* CLOSE */
-        /* OPEN
-        let page_text_header = document.createElement("div");
-        makeFull(page_text_header);
-        body.appendChild(page_text_header);
-
-        let h2_page_text = document.createElement("h2");
-        h2_page_text.innerHTML = "<b>Page Text</b>";
-        page_text_header.appendChild(h2_page_text);
+        /* OPEN */
+        var template = document.createElement("div");
+        makeFull(template);
+        template.classList.add("template");
+        body.appendChild(template);
+        var h2_template = document.createElement("h3");
+        h2_template.innerHTML = "Template";
+        template.appendChild(h2_template);
+        var cs_template = document.createElement("div");
+        cs_template.innerHTML = "Computer<br>Science";
+        cs_template.classList.add("template_option");
+        cs_template.onclick = function () { thisComp.applyTemplate(config.TEMPLATES.cs); };
+        template.appendChild(cs_template);
+        var numbersense_template = document.createElement("div");
+        numbersense_template.innerHTML = "Number<br>Sense";
+        numbersense_template.classList.add("template_option");
+        numbersense_template.onclick = function () { thisComp.applyTemplate(config.TEMPLATES.numbersense); };
+        template.appendChild(numbersense_template);
+        var calcapp_template = document.createElement("div");
+        calcapp_template.innerHTML = "Calculator<br>Applications";
+        calcapp_template.classList.add("template_option");
+        calcapp_template.onclick = function () { thisComp.applyTemplate(config.TEMPLATES.calculatorapplications); };
+        template.appendChild(calcapp_template);
+        var math_template = document.createElement("div");
+        math_template.innerText = "Mathematics";
+        math_template.classList.add("template_option");
+        math_template.onclick = function () { thisComp.applyTemplate(config.TEMPLATES.mathematics); };
+        template.appendChild(math_template);
         /* CLOSE */
         /* OPEN */
         var whatItIs = document.createElement("div");
@@ -1151,6 +1363,7 @@ var Competition = /** @class */ (function () {
         if (this.writtenExists)
             written_toggle_input.checked = true;
         written_toggle.appendChild(written_toggle_input);
+        this.dom.writtenCheckbox = written_toggle_input;
         // @ts-ignore
         if (this.writtenExists)
             written_toggle.checked = true;
@@ -1174,6 +1387,7 @@ var Competition = /** @class */ (function () {
         if (this.handsOnExists)
             checkbox_handsOn_toggle.checked = true;
         handsOn_toggle.appendChild(checkbox_handsOn_toggle);
+        this.dom.handsOnCheckbox = checkbox_handsOn_toggle;
         /* CLOSE */
         body.appendChild(getHandsOnSection());
         return form;

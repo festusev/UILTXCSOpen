@@ -1,3 +1,4 @@
+///<reference path="../websocket.ts"/>
 var config = {
     TEXT: {
         server_error: "Whoops! A server error occurred. Contact an admin if the problem continues."
@@ -17,16 +18,8 @@ var config = {
         }
     }
 };
-var ws;
 (function () {
-    ws = new WebSocket("wss://" + window.location.host + "/console/sockets/class");
-    ws.onmessage = function (evt) {
-        try {
-            var msg = JSON.parse(evt.data);
-            config.SOCKET_FUNCTIONS[msg.action](msg);
-        }
-        catch (e) { }
-    };
+    getWebSocket(window.location.host + "/console/sockets/class", config.SOCKET_FUNCTIONS);
 })();
 /***
  * Helps interfacing with static elements (are not deleted *

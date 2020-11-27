@@ -33,7 +33,7 @@ public class FRQTest {
     public final short INCORRECT_PENALTY;   // Number of points taken off MAX_POINTS for each incorrect submission
     public final short MIN_POINTS = 0;  // Minimum number of points you can get for solving a problem;
 
-    public final String[] PROBLEM_MAP;  // A list of the problem names
+    public final FRQProblem[] PROBLEM_MAP;  // A list of the problems
     private static ArrayList<Pair> files = new ArrayList<>();
 
     private static Set<PosixFilePermission> FILE_PERMISSIONS = null;
@@ -57,9 +57,9 @@ public class FRQTest {
 
     public FRQTest() {
         exists = false;TIME_TEXT="";TIME=0;STUDENT_PACKET="";JUDGE_PACKET="";
-        SCORE_DIR_PATH = ""; TESTCASE_DIR_PATH = "";MAX_POINTS = 0; INCORRECT_PENALTY = 0; PROBLEM_MAP = new String[0];
+        SCORE_DIR_PATH = ""; TESTCASE_DIR_PATH = "";MAX_POINTS = 0; INCORRECT_PENALTY = 0; PROBLEM_MAP = new FRQProblem[0];
     }
-    public FRQTest(boolean published,String opensString, short mp, short ip, String[] pm, String studentPacket, String judgePacket, long time) {
+    public FRQTest(boolean published,String opensString, short mp, short ip, FRQProblem[] pm, String studentPacket, String judgePacket, long time) {
         if(published) {
             opens = new Countdown(opensString, "countdown");MAX_POINTS = mp; INCORRECT_PENALTY = ip; PROBLEM_MAP = pm;
             exists = true;TIME_TEXT=(time/(1000*60)) + " minutes";TIME=time;STUDENT_PACKET=studentPacket;JUDGE_PACKET=judgePacket;
@@ -275,7 +275,7 @@ public class FRQTest {
         File in_file = testcase.key;
         File ans_file = testcase.value;
         try {
-            Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", "/bin/ln -s " + in_file.getAbsolutePath() + " " + dir + PROBLEM_MAP[problemNum-1].toLowerCase() + ".dat"}).waitFor();
+            Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", "/bin/ln -s " + in_file.getAbsolutePath() + " " + dir + PROBLEM_MAP[problemNum-1].name.toLowerCase() + ".dat"}).waitFor();
         } catch (InterruptedException e) {
             e.printStackTrace();
             return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "");

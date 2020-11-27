@@ -30,11 +30,13 @@ public class Competition {
     public EntryMap entries;
     ArrayList<FRQSubmission> frqSubmissions = new ArrayList<>();
 
+    public ArrayList<Clarification> clarifications;
+
     private void setTemplate(boolean published, MCTest mc, FRQTest frq, String name, String description, short cid) {
         if(published) {
             template = new Template(name, description, mc, frq, cid, this);
-            template.updateScoreboard();
             entries = new EntryMap();
+            template.updateScoreboard();
         } else {
             template = new Template(false, name, description, mc, frq, cid, this);
             entries = new EntryMap();
@@ -42,7 +44,7 @@ public class Competition {
     }
 
     public Competition(Teacher teacher, short cid, boolean published, boolean isPublic, String name, String description,
-                       MCTest mc, FRQTest frq) {
+                       MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications) {
         frq.setDirectories(cid, teacher.uid);
 
         this.teacher = teacher;
@@ -56,6 +58,7 @@ public class Competition {
             frq.createProblemDirectories();
             frq.initializeFiles();
         }
+        this.clarifications = clarifications;
     }
 
     /* Returns a new competition object that has been inserted into the database */
@@ -65,7 +68,7 @@ public class Competition {
         PreparedStatement stmt = conn.prepareStatement("INSERT INTO competitions (uid, name, isPublic, description, " +
                 "mcKey, mcCorrectPoints, mcIncorrectPoints, mcInstructions, mcTestLink," +
                 "mcOpens, mcTime, frqMaxPoints, frqIncorrectPenalty, frqProblemMap, frqStudentPack," +
-                "frqJudgePacket, frqOpens, frqTime, type, published) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                "frqJudgePacket, frqOpens, frqTime, type, published, clarifications) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]')",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -136,7 +139,8 @@ public class Competition {
                     "PRIMARY KEY (`tid`))");
             stmt.executeUpdate();
 
-            Competition competition = new Competition(teacher, cid, published, isPublic, name, description, mcTest, frqTest);
+            Competition competition = new Competition(teacher, cid, published, isPublic, name, description, mcTest, frqTest,
+                    new ArrayList<>());
             System.out.println("CID = " + cid + ", " + competition.template.cid);
             UIL.addCompetition(competition);
 
@@ -159,16 +163,16 @@ public class Competition {
         stmt.executeUpdate();
     }
 
-    /* Updates the competition in the database and the template */
-    public void update(Teacher teacher, boolean published, boolean isPublic, String name, String description, MCTest mcTest, FRQTest frqTest) throws SQLException {
-        frqTest.setDirectories(template.cid, teacher.uid);
-        frqTest.initializeFiles();
+    public void update() throws SQLException {
+        updateDB(template.name, template.description, template.mcTest, template.frqTest);
+    }
 
+    public void updateDB(String name, String description, MCTest mcTest, FRQTest frqTest) throws SQLException {
         Connection conn = Conn.getConnection();
         PreparedStatement stmt = conn.prepareStatement("UPDATE competitions SET uid=?, name=?, isPublic=?, description=?, " +
                         "mcKey=?, mcCorrectPoints=?, mcIncorrectPoints=?, mcInstructions=?, mcTestLink=?," +
                         "mcOpens=?, mcTime=?, frqMaxPoints=?, frqIncorrectPenalty=?, frqProblemMap=?, frqStudentPack=?," +
-                        "frqJudgePacket=?, frqOpens=?, frqTime=?, type=?, published=? WHERE cid=?",
+                        "frqJudgePacket=?, frqOpens=?, frqTime=?, type=?, published=?, clarifications=? WHERE cid=?",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -222,8 +226,17 @@ public class Competition {
         }
         stmt.setShort(19, (short) type);
         stmt.setBoolean(20, published);
-        stmt.setShort(21, template.cid);
+        stmt.setString(21, Clarification.toJson(this.clarifications).toString());
+        stmt.setShort(22, template.cid);
         stmt.executeUpdate();
+    }
+
+    /* Updates the competition in the database and the template */
+    public void update(Teacher teacher, boolean published, boolean isPublic, String name, String description, MCTest mcTest, FRQTest frqTest) throws SQLException {
+        frqTest.setDirectories(template.cid, teacher.uid);
+        frqTest.initializeFiles();
+
+        updateDB(name, description, mcTest, frqTest);
 
         this.isPublic = isPublic;
         setTemplate(published, mcTest, frqTest, name, description, template.cid);
@@ -258,7 +271,7 @@ public class Competition {
                     if (frqSubmissions.size() > id) {
                         FRQSubmission submission = frqSubmissions.get(id);
                         JsonObject compJ = new JsonObject();
-                        compJ.addProperty("name", StringEscapeUtils.escapeHtml4(template.frqTest.PROBLEM_MAP[submission.problemNumber - 1]));
+                        compJ.addProperty("name", StringEscapeUtils.escapeHtml4(template.frqTest.PROBLEM_MAP[submission.problemNumber - 1].name));
                         compJ.addProperty("team", StringEscapeUtils.escapeHtml4(submission.entry.tname));
                         compJ.addProperty("result", submission.getCondensedResult());
 
@@ -401,9 +414,9 @@ public class Competition {
                 // Send it to the teacher
                 CompetitionSocket socket = CompetitionSocket.connected.get(((Student)user).teacherId);
                 if(socket != null) {
-                    JsonArray obj = new JsonArray();
-                    obj.add("addSmallMC");
-                    obj.add(template.getSmallMC(user,temp, submission));
+                    JsonObject obj = new JsonObject();
+                    obj.addProperty("action", "addSmallMC");
+                    obj.addProperty("html", template.getSmallMC(user,temp, submission));
                     socket.send(gson.toJson(obj));
                 }
                 return;
@@ -457,9 +470,9 @@ public class Competition {
                 // Send it to the teacher
                 CompetitionSocket socket = CompetitionSocket.connected.get(user.teacherId);
                 if(socket != null) {
-                    JsonArray obj = new JsonArray();
-                    obj.add("addSmallFRQ");
-                    obj.add(template.getSmallFRQ(frqSubmissions.indexOf(submission), submission));
+                    JsonObject obj = new JsonObject();
+                    obj.addProperty("action","addSmallFRQ");
+                    obj.addProperty("html", template.getSmallFRQ(frqSubmissions.indexOf(submission), submission));
                     socket.send(gson.toJson(obj));
                 }
 
@@ -469,9 +482,9 @@ public class Competition {
                     System.out.println("Looking at uid="+uid);
                     if(socket != null) {
                         System.out.println("Socket != null for uid="+uid);
-                        JsonArray obj = new JsonArray();
-                        obj.add("updateFRQProblems");
-                        obj.add(template.getFRQProblems(temp));
+                        JsonObject obj = new JsonObject();
+                        obj.addProperty("action", "updateFRQProblems");
+                        obj.addProperty("html", template.getFRQProblems(temp));
                         socket.send(gson.toJson(obj));
                     }
                 }
@@ -485,8 +498,6 @@ public class Competition {
                 return;
             }
             try {
-                Collection<UILEntry> teams = getAllEntries();
-                System.out.println("Num teams = " + teams.size() + " given code = " + code);
                 UILEntry entry = entries.getByPassword(code);
                 if(entry != null) {
                     if(entry.uids.size() >= 3) {    // This team is full
@@ -506,9 +517,9 @@ public class Competition {
 
                         CompetitionSocket socket = CompetitionSocket.connected.get(uid);
                         if (socket != null) {
-                            JsonArray obj = new JsonArray();
-                            obj.add("updateTeam");
-                            obj.add(template.getTeamMembers(StudentMap.getByUID(uid), entry));
+                            JsonObject obj = new JsonObject();
+                            obj.addProperty("action","updateTeam");
+                            obj.addProperty("html", template.getTeamMembers(StudentMap.getByUID(uid), entry));
                             try {
                                 socket.send(gson.toJson(obj));
                             } catch (IOException e) {
@@ -533,8 +544,8 @@ public class Competition {
                 return;
             }
             try {
-                Collection<UILEntry> teams = getAllEntries();
-                for(UILEntry entry: teams) {
+
+                for(UILEntry entry: entries.allEntries) {
                     if(entry.tname.equals(tname)) {
                         writer.write("{\"status\":\"error\",\"error\":\"Team name is taken.\"}");
                         return;
@@ -608,6 +619,7 @@ public class Competition {
 
     // Deletes this competition. Does NOT update the teacher, but does update the students. Deletes the Hands-On testcases as well
     public void delete() {
+        System.out.println("DELETING !!!");
         Collection<UILEntry> values = entries.tidMap.values();
         for(UILEntry entry: values) {
             for(short uid: entry.uids) {
@@ -651,6 +663,7 @@ public class Competition {
 }
 
 class EntryMap {
+    public ArrayList<UILEntry> allEntries = new ArrayList<>();
     public HashMap<Short, UILEntry> tidMap = new HashMap<>();    // Maps a teams tid to its UILEntry
     public HashMap<String, UILEntry> passwordMap = new HashMap<>();    // Maps a teams password to its UILEntry
 
@@ -663,11 +676,13 @@ class EntryMap {
     }
 
     public void addEntry(UILEntry entry) {
+        allEntries.add(entry);
         tidMap.put(entry.tid, entry);
         passwordMap.put(entry.password.toUpperCase(), entry);
     }
 
     public void delEntry(UILEntry entry) {
+        allEntries.remove(entry);
         tidMap.remove(entry.tid, entry);
         passwordMap.remove(entry.password, entry);
     }

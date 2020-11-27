@@ -46,11 +46,12 @@ public class User implements Comparable<User>{
             if(con==null) return -1; // If an error occurred making the connection
             PreparedStatement stmt;
             if(insert)  {
-                stmt = con.prepareStatement("INSERT INTO users(email, fname, lname, affiliation, token, cids, class) VALUES (?, ?, ?, ?, ?)");
+                stmt = con.prepareStatement("INSERT INTO users(email, fname, lname, school, token, cids, class) VALUES (?, ?, ?, ?, ?, ?, ?)");
             } else {
                 stmt = con.prepareStatement("UPDATE users SET email=?, fname=?, lname=?, school=?, token=?, cids=?, class=? WHERE uid=?");
-                stmt.setShort(6, uid);
+                stmt.setShort(8, uid);
             }
+
             String cidsString = "";
             String classString = "";
             if(teacher) {
@@ -74,10 +75,12 @@ public class User implements Comparable<User>{
             stmt.setString(2, fname);
             stmt.setString(3, lname);
             stmt.setString(4, school);
-            stmt.setString(5, token.toString(Character.MAX_RADIX));
+
+            if(token != null) stmt.setString(5, token.toString(Character.MAX_RADIX));
+            else stmt.setString(5, null);
+
             stmt.setString(6, cidsString);
             stmt.setString(7, classString);
-            stmt.setShort(8, uid);
             //LOGGER.info(stmt.toString());
 
             System.out.println(stmt.toString());

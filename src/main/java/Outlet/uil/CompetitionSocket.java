@@ -1,8 +1,12 @@
 package Outlet.uil;
 
+import Outlet.Student;
 import Outlet.Teacher;
 import Outlet.User;
 import Outlet.Websocket.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
@@ -22,7 +26,9 @@ public class CompetitionSocket {
     private Competition competition;    // The competition they are viewing
 
     public static HashMap<Short, CompetitionSocket> connected = new HashMap<>();    // Maps uid to socket
-    public static HashMap<Short, ArrayList<CompetitionSocket>> competitions = new HashMap<>(); // Maps cid to a map that maps uids to CompetitionSockets
+    public static HashMap<Short, ArrayList<CompetitionSocket>> competitions = new HashMap<>(); // Maps cid to a list of CompetitionSockets
+
+    private static Gson gson = new Gson();
 
     @OnOpen
     public void onOpen(Session session, @PathParam("cid") String cidS) throws IOException {
@@ -49,10 +55,62 @@ public class CompetitionSocket {
     @OnMessage
     public void onMessage(Session session, String message)
             throws IOException {
+        System.out.println("Message="+message);
+
+        String[] data = gson.fromJson(message, String[].class);
+
+        if(!user.teacher && ((Student)user).cids.containsKey(competition.template.cid)) {
+            if (data[0].equals("nc")) {   // They are asking a new clarification
+                System.out.println("New Clarification");
+                Clarification clarification = new Clarification(user.uid, data[1], "", false);
+
+                int index = competition.clarifications.size();  // The index of this clarification in the list
+                competition.clarifications.add(clarification);
+
+                CompetitionSocket teacherSocket = connected.get(competition.teacher.uid);
+                if(teacherSocket != null) {
+                    JsonObject object = new JsonObject();
+                    object.addProperty("action", "nc");
+                    object.addProperty("question", clarification.question);
+                    object.addProperty("id", index);
+
+                    teacherSocket.send(object.toString());
+                } else {
+                    System.out.println("Teacher socket is null");
+                }
+
+                try {competition.update();} catch(Exception ignored) {}
+            }
+        } else if(user.teacher && user.uid == competition.teacher.uid) {
+            if(data[0].equals("rc")) {   // They are responding to a clarification
+                System.out.println("Responding to a Clarification");
+                Clarification clarification = competition.clarifications.get(Integer.parseInt(data[1]));
+
+                clarification.responded = true;
+                clarification.response = data[2];
+
+                JsonObject object = new JsonObject();
+                object.addProperty("action","ac");
+                object.addProperty("question", clarification.question);
+                object.addProperty("answer", clarification.response);
+                String stringified = object.toString();
+
+                // Relay the clarification to all of the people who are connected to this competition and signed up
+                ArrayList<CompetitionSocket> sockets = competitions.get(competition.template.cid);
+                for(CompetitionSocket socket: sockets) {
+                    UserStatus status = UserStatus.getCompeteStatus(socket.user, competition.template.cid);
+
+                    if(status.signedUp) socket.send(stringified);
+                }
+
+                try {competition.update();} catch(Exception ignored) {}
+            }
+        }
     }
 
     @OnClose
     public void onClose(Session session) throws IOException {
+        System.out.println("Closing session");
         if(this.user != null) connected.remove(this.user.uid);
         if(competition != null) competitions.get(competition.template.cid).remove(this);
     }

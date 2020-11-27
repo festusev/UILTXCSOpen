@@ -1,3 +1,4 @@
+///<reference path="../websocket.ts"/>
 const config = {
     TEXT: {
         server_error: "Whoops! A server error occurred. Contact an admin if the problem continues."
@@ -8,6 +9,7 @@ const config = {
         team : "teamColumn",
         mc : "mcColumn",
         frq : "frqColumn",
+        clarificationColumn : "clarificationsColumn",
         // answers : "answersColumn",
         publicComps : "public_competitions",
         classComps : "class_competitions",
@@ -22,9 +24,11 @@ const config = {
         scoreboardNav : "scoreboardNav",
         writtenNav : "writtenNav",
         handsOnNav : "handsOnNav",
+        clarificationNav : "clarificationNav",
         signUpBox : "signUpBox",
         teamCode : "teamCode",
-        toggleCreateTeam : "toggleCreateTeam"
+        toggleCreateTeam : "toggleCreateTeam",
+        clarification_input : "clarification_input"
     },
     CLASSES: {
         columns : "column",
@@ -32,36 +36,52 @@ const config = {
     },
     RESULTS: ["Incorrect", "Correct", "No Penalty"],
     SOCKET_FUNCTIONS: { // The functions that can be called when the server sends a message using the web socket.
-        "addSmallMC" : function(response:string[]) {
-            let html:string = response[1];
+        "addSmallMC" : function(response:{[k:string]:any}) {
+            let html:string = response["html"];
             let template = document.createElement('template');
             template.innerHTML = html;
 
             dom.mcSubmissions.insertBefore(template.content.firstChild, dom.mcSubmissionsTr.nextSibling);
-        }, "addSmallFRQ" : function(response:string[]) {
-            let html:string = response[1];
+        }, "addSmallFRQ" : function(response:{[k:string]:any}) {
+            let html:string = response["html"];
             let template = document.createElement('template');
             template.innerHTML = html;
 
             dom.frqSubmissionsTable.insertBefore(template.content.firstChild, dom.frqSubmissionsTr.nextSibling);
-        }, "updateTeam" : function(response:string[]) {
-            let html:string = response[1];
-            dom.teamMembers.innerHTML = html;
+        }, "updateTeam" : function(response:{[k:string]:any}) {
+            dom.teamMembers.innerHTML = response["html"];
         }, "competitionDeleted" : function(response:string[]) {   // The competition was deleted, so go to the uil list
             window.location.replace(window.location.host + "/console/competitions");
-        }, "updateFRQProblems" : function(response:string[]) {
+        }, "updateFRQProblems" : function(response:{[k:string]:any}) {
             let template = document.createElement('template');
-            template.innerHTML = response[1];
+            template.innerHTML = response["html"];
             dom.frqProblems.replaceWith(template.content.firstChild);
-        }, "updateScoreboard" : function(response:string[]) {
+        }, "updateScoreboard" : function(response:{[k:string]:any}) {
             let template = document.createElement('template');
-            template.innerHTML = response[1];
+            template.innerHTML = response["html"];
             let display:string = dom.scoreboard.style.display;
             dom.scoreboard.replaceWith(template.content.firstChild);
             dom.cached[config.IDs.scoreboard] = null;
             showColumn();
-        }, "reScoreMC" : function(response:string[]) {
+        }, "reScoreMC" : function(response:{[k:string]:any}) {
             // TODO: Write this
+        }, "nc" : function(response:{[k:string]:any}) { // Add in a new clarification with no response
+            let clarification_list:HTMLElement = dom.clarificationColumn.querySelector(".clarification_group");
+            if(clarification_list.innerHTML == "There are no clarifications.") {
+                clarification_list.innerHTML = "";
+            }
+
+            clarification_list.innerHTML = "<div class='clarification'><h3>Question</h3><span>"+response["question"]+"</span><h3>Answer</h3><span>" +
+                "<textarea placeholder='Send a response.'></textarea><button onclick='answerClarification(this, "+
+                response["id"]+")'>Send</button></span></div>" + clarification_list.innerHTML;
+        }, "ac" : function(response:{[k:string]:any}) { // Add in a new clarification with a response
+            let clarification_list:HTMLElement = dom.clarificationColumn.querySelector(".clarification_group");
+            if(clarification_list.innerHTML == "There are no clarifications.") {
+                clarification_list.innerHTML = "";
+            }
+
+            clarification_list.innerHTML = "<div class='clarification'><h3>Question</h3><span>"+response["question"]+"</span><h3>Answer</h3><span>" +
+                response["answer"] + "</span></div>" + clarification_list.innerHTML;
         }
     }
 };
@@ -93,6 +113,9 @@ let dom = {
     get signUpBox() {return this.getHelper(config.IDs.signUpBox)},
     get teamCode() {return this.getHelper(config.IDs.teamCode)},
     get toggleCreateTeam() {return this.getHelper(config.IDs.toggleCreateTeam)},
+    get clarificationColumn() {return this.getHelper(config.IDs.clarificationColumn)},
+    get clarificationNav() {return this.getHelper(config.IDs.clarificationNav)},
+    get clarification_input() {return this.getHelper(config.IDs.clarification_input)},
 
     classes : {
         cached: {},    // DOM objects that have already been accessed
@@ -114,7 +137,6 @@ $(document).ready(function(){
     showColumn();
 });
 
-let ws: WebSocket;
 (function() {
     let sPageURL = window.location.search.substring(1),
         sURLVariables = sPageURL.split('&'),
@@ -129,13 +151,7 @@ let ws: WebSocket;
         }
     }
 
-    ws = new WebSocket("wss://" + window.location.host + "/console/sockets/c/" + cid);
-    ws.onmessage = function(evt) {
-        try {
-            let msg: string[] = JSON.parse(evt.data);
-            config.SOCKET_FUNCTIONS[msg[0]](msg);
-        } catch (e) {}
-    };
+    getWebSocket(window.location.host + "/console/sockets/c/" + cid, config.SOCKET_FUNCTIONS);
 })();
 
 function setCookie(cname, cvalue, exdays) {
@@ -202,6 +218,9 @@ function showMC(){
 }
 function showFRQ(){
     showHelper(dom.frq, "#frq", dom.handsOnNav);
+}
+function showClarifications() {
+    showHelper(dom.clarificationColumn, "#clarifications", dom.clarificationNav);
 }
 /*function showAnswers(){
     showHelper(answers, "#answers");
@@ -280,6 +299,10 @@ function createTeam(){
             }
         }
     });
+}
+
+function toggle_clarify() {
+
 }
 
 // Begin the multiple choice
@@ -447,7 +470,7 @@ function submitFRQ(){
                 addErrorBox(box, "Whoops! A server error occurred. Contact an admin if the problem continues.");
             }
         }
-    }
+    };
     xhr.open('POST', window.location.href, true);
     // xhr.setRequestHeader('Content-type', 'multipart/form-data');
     var formData = new FormData();
@@ -657,6 +680,7 @@ function showFRQSubmission(submissionId: number) {
                             .replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>")+"</span>";
                         div.appendChild(output_cnt);
                     }
+                    console.log(output);
                 }
                 add(div);
                 submissionMap[submissionId] = div;
@@ -740,4 +764,44 @@ function showMCSubmission(tid: number, uid: number) {
     xhr.open('POST', "/console/competitions", true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send("cid="+cid+"&action=showMCSubmission&tid="+tid+"&uid="+uid);
+}
+
+
+/***
+ * Loads the clarifications that this user asked.
+ */
+function loadPersonalClarifications(): void {
+    (<WebSocket>ws).send("Testing!");
+}
+
+
+/***
+ * Lets a teacher answer a clarification.
+ */
+function answerClarification(button: HTMLButtonElement, id: number):void {
+    let span:HTMLSpanElement = <HTMLSpanElement> button.parentNode;   // The <span> that holds the textarea and the button
+    let textarea:HTMLTextAreaElement = span.getElementsByTagName("textarea")[0];
+
+    let msg:string = textarea.value;
+
+    if(msg.trim().length != 0 && msg.length <=255) {
+        let response:string[] = ["rc", "" + id, msg];
+
+        (<WebSocket>ws).send(JSON.stringify(response));
+
+        span.innerHTML = msg;
+    }
+}
+
+/***
+ * Sends a clarification if the text box is not empty.
+ */
+function sendClarification(): void {
+    let msg:string = dom.clarification_input.value;
+    if(msg.trim().length != 0 && msg.length <=255) {
+        let response:string[] = ["nc", msg];
+
+        (<WebSocket>ws).send(JSON.stringify(response));
+    }
+    dom.clarification_input.value = "";
 }

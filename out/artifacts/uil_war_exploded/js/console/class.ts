@@ -1,3 +1,4 @@
+///<reference path="../websocket.ts"/>
 const config = {
     TEXT: {
         server_error: "Whoops! A server error occurred. Contact an admin if the problem continues."
@@ -18,16 +19,8 @@ const config = {
     }
 };
 
-let ws: WebSocket;
 (function() {
-    ws = new WebSocket("wss://" + window.location.host + "/console/sockets/class");
-
-    ws.onmessage = function(evt) {
-        try {
-            let msg: { action: string } = JSON.parse(evt.data);
-            config.SOCKET_FUNCTIONS[msg.action](msg);
-        } catch (e) {}
-    };
+    getWebSocket(window.location.host + "/console/sockets/class", config.SOCKET_FUNCTIONS);
 })();
 
 /***

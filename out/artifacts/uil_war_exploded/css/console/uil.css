@@ -339,6 +339,28 @@ button {
 #public_instructions{
     margin-bottom: 1rem;
 }
+.template{
+    display:grid;
+    grid-template-columns: auto auto;
+    grid-column-gap: 10px;
+}
+.template h3 {
+    grid-column-start: 1;
+    grid-column-end: 3;
+}
+.template_option {
+    display:inline-block;
+    text-align:center;
+    padding:1rem 0;
+    box-sizing: border-box;
+    color:var(--prim-col);
+    box-shadow:var(--shadow);
+    margin:1rem;
+    cursor: pointer;
+}
+.template_option:hover {
+    background-color: var(--light-gray);
+}
 @media only screen and (max-width: 860px){
     #competitions {
         margin: 10px 0 0 0;
