@@ -36,7 +36,7 @@ public class Competition {
         if(published) {
             template = new Template(name, description, mc, frq, cid, this);
             entries = new EntryMap();
-            template.updateScoreboard();
+            // template.updateScoreboard();
         } else {
             template = new Template(false, name, description, mc, frq, cid, this);
             entries = new EntryMap();
@@ -349,7 +349,7 @@ public class Competition {
 
                         compJ.addProperty("user", StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname));
                         compJ.addProperty("team", StringEscapeUtils.escapeHtml4(entry.tname));
-                        compJ.addProperty("answers", template.getFinishedMCHelper(submission, tid, uid, true));
+                        compJ.addProperty("answers", template.getFinishedMCHelper(submission, tid, uid, true, competitionStatus));
                         compJ.addProperty("scoringReport", gson.toJson(submission.scoringReport));
 
                         writer.write(new Gson().toJson(compJ));
@@ -407,7 +407,7 @@ public class Competition {
             } else if (competitionStatus.mcDuring && action.equals("submitMC")) {
                 String[] answers = gson.fromJson(request.getParameter("answers"), String[].class);
                 MCSubmission submission = temp.scoreMC(user.uid, answers);
-                writer.write("{\"mcHTML\":\"" + template.getFinishedMC(submission, temp.tid, user.uid) + "\"}");
+                writer.write("{\"mcHTML\":\"" + template.getFinishedMC(submission, temp.tid, user.uid, competitionStatus) + "\"}");
                 temp.update();
                 template.updateScoreboard();
 

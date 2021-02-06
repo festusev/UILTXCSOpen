@@ -10,7 +10,7 @@ import Outlet.Countdown;
 public class MCTest {
     public final boolean exists;    // If this MC test exists and is being run
 
-    public final String NAME = "Hands-On";
+    public final String NAME = "Written";
     public String[][] KEY; // The answer key. Each problem is a String tuple with the first value being the answer and the second being the answer type ("0","1")
     // The key string cannot be longer than 40 characters
     public short NUM_PROBLEMS;

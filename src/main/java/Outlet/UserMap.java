@@ -22,8 +22,8 @@ public class UserMap {
      * @return
      */
     public static int initialize() {
-        StudentMap.reset();
-        TeacherMap.reset();
+        StudentMap.reset(); // Initialize the StudentMap class
+        TeacherMap.reset(); // Initialize the TeacherMap class
 
         HashMap<Student, String> studentCIDMap = new HashMap<>(); // Maps a student object to their cid string. This is used b/c setCids() will load in new competitions, which requires all of the users to be loaded
 

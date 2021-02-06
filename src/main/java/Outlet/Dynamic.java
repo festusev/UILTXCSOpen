@@ -160,7 +160,7 @@ public class Dynamic {
                             "<div onclick='window.location.href=\"/console/help\"' class='tooltip-cnt' id='nav-help'>" +
                             "<img src='/res/console/question-mark-line.svg' "+(page==3?"class='selected'":"")+"/>" +
                             "<p class='tooltip'>Help</p></div>" +
-                            "<div id='nav-profile-cnt'><img src='/res/console/profile.svg' id='nav-profile' "+(page==4?"class='selected'":"")+"/>" +
+                            "<div id='nav-profile-cnt'><a href='/console/profile'><img src='/res/console/profile.svg' id='nav-profile' "+(page==4?"class='selected'":"")+"/></a>" +
                             "<div><a href='/console/profile' id='nav-my-settings'>My Settings</a><a href='/logout'>Logout</a></div></div>" +
                          "</div>" +
                          "<div id='right'>" + content + "</div>";

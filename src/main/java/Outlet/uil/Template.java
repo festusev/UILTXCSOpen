@@ -29,7 +29,7 @@ public class Template {
     public final String FRQ_HEADER = "<li onclick='showFRQ();' id='handsOnNav' class='secondNavItem'>Hands-On</li>";
 
     public String navBarHTML;   // For the competition-specific nav bar that goes underneath the header nav bar
-    public String scoreboardHTML;  // The scoreboard page html after the nav bars
+    private String scoreboardHTML;  // The scoreboard page html after the nav bars
 
     public Countdown opens;
     public Countdown closes;
@@ -48,6 +48,8 @@ public class Template {
     private Gson gson = new Gson();
 
     private Competition competition;
+
+    private boolean scoreboardInitialized = false;  // Whether or not the scoreboard has been initialized
 
     // Used whenever the competition is not published. 'published' should always be false.
     public Template(boolean published, String n, String description, MCTest mc, FRQTest fr, short cid, Competition competition) {
@@ -208,7 +210,7 @@ public class Template {
         String string = "<div id='leftBar'>";
         if(userStatus.creator || userStatus.signedUp) {
             if(mcTest.exists) {
-                String written = "<div id='leftBarWritten'><h2>Written Test</h2>";
+                String written = "<div id='leftBarWritten'><h2>Test</h2>";
                 if(userStatus.creator) {
                     int submissionCount = 0;
                     int submissionTotal = 0;    // All of the scores added up
@@ -339,7 +341,7 @@ public class Template {
             about += "<h2>Hands-On</h2><p>"+frqTest.opens.DATE_STRING+"<br>"+(frqTest.TIME/(1000*60))+" min<br>"+frqTest.PROBLEM_MAP.length+" questions</p>";
         }
         about += "</div></div>";
-        return getFRQHTML(uData, userStatus, competitionStatus) + about + scoreboardHTML + /*answers +*/
+        return getFRQHTML(uData, userStatus, competitionStatus) + about + getScoreboardHTML() + /*answers +*/
                 getMCHTML(uData, userStatus, competitionStatus) + getClarificationHTML(uData, userStatus, competitionStatus); /*getTeamHTML(uData, userStatus)*/
     }
 
@@ -393,7 +395,7 @@ public class Template {
                 "</td></tr>";
     }
     public String getMCHTML(User u, UserStatus userStatus, CompetitionStatus competitionStatus){
-        if(!mcTest.exists || competitionStatus.mcBefore) return "";
+        if(!mcTest.exists) return "";
 
         if(userStatus.signedUp && !userStatus.teacher) {
             Student s = (Student) u;
@@ -402,7 +404,7 @@ public class Template {
                 return mcHTML[0];
             } else*/
             if (entry.finishedMC(u.uid)) {
-                return getFinishedMC(entry.mc.get(u.uid), entry.tid, u.uid);
+                return getFinishedMC(entry.mc.get(u.uid), entry.tid, u.uid, competitionStatus);
             } else {
                 return getRunningMC();
             }
@@ -485,7 +487,9 @@ public class Template {
     public String getRunningMC() {
         return mcHTML[0]+mcTest.getTimer().toString()+mcHTML[1];
     }
-    public String getFinishedMCHelper(MCSubmission submission, short tid, short uid, boolean isTeacher) {
+    public String getFinishedMCHelper(MCSubmission submission, short tid, short uid, boolean isTeacher, CompetitionStatus status) {
+        if(status.mcDuring && !isTeacher) return "";    // If they aren't a teacher, don't let them see the finished mc.
+
         String html = "<table id='mcQuestions'><tr><th>#</th>";
         for(char c: mcTest.options) {
             html += "<th>"+c+"</th>";
@@ -528,7 +532,8 @@ public class Template {
         html += "</table>";
         return html;
     }
-    public String getFinishedMC(MCSubmission submission, short tid, short uid) {
+    public String getFinishedMC(MCSubmission submission, short tid, short uid, CompetitionStatus status) {
+        if(!status.mcFinished) return "<div id='mcColumn' class='column' style='display:none;'><div class='row head-row'><h1>Written</h1><p>Written scores are hidden until the competition closes.</p></div></div>";
         String html =  "<div id='mcColumn' class='column' style='display:none;'>" +
                         "<div class='row head-row'>" +
                         "<h1>Written</h1>" +
@@ -541,7 +546,7 @@ public class Template {
                         "<p>Skipped: "+submission.scoringReport[2]+"</p><br>" +
                         "<p>Scoring Report</p>";
 
-        return html + getFinishedMCHelper(submission, tid, uid,false) + "</div></div>";
+        return html + getFinishedMCHelper(submission, tid, uid,false, status) + "</div></div>";
     }
 
     public String getSmallFRQ(int i, FRQSubmission submission) {
@@ -639,11 +644,21 @@ public class Template {
             for (int i=competition.clarifications.size()-1;i>=0;i--) {
                 Clarification clarification = competition.clarifications.get(i);
                 if(clarification.responded) {  // Only show responded clarifications to non creators
-                    html += "<div class='clarification'><h3>Question</h3><span>" + clarification.question +
+                    String askerName = "";
+                    if(userStatus.creator) {
+                        Student asker = StudentMap.getByUID(clarification.uid);
+                        if (asker != null) askerName = " - " + asker.fname + " " + asker.lname;
+                    }
+
+                    html += "<div class='clarification'><h3>Question"+askerName+"</h3><span>" + clarification.question +
                             "</span><h3>Answer</h3><span>" + clarification.response + "</span></div>";
                     noClarifications = false;
                 } else if (userStatus.creator) {    // Not yet responded, so add in the response textarea
-                    html += "<div class='clarification'><h3>Question</h3><span>" + clarification.question +
+                    String askerName = "";
+                    Student asker = StudentMap.getByUID(clarification.uid);
+                    if (asker != null) askerName = " - " + asker.fname + " " + asker.lname;
+
+                    html += "<div class='clarification'><h3>Question"+askerName+"</h3><span>" + clarification.question +
                             "</span><h3>Answer</h3><span><textarea placeholder='Send a response.'></textarea><button " +
                             "onclick='answerClarification(this, "+i+")'>Send</button></span></div>";
 
@@ -690,6 +705,15 @@ public class Template {
         }
     }
 
+    // Makes sure that the scoreboard has been initialized
+    public String getScoreboardHTML() {
+        if(!scoreboardInitialized) {
+            updateScoreboard();
+            scoreboardInitialized = true;
+        }
+        return scoreboardHTML;
+    }
+
     public void updateScoreboard(){
         /*try {
             allTeams = competition.getAllEntries();
@@ -710,7 +734,7 @@ public class Template {
                     for(CompetitionSocket socket: sockets) {
                         JsonObject obj = new JsonObject();
                         obj.addProperty("action", "updateScoreboard");
-                        obj.addProperty("html", scoreboardHTML);
+                        obj.addProperty("html", getScoreboardHTML());
 
                         try {
                             socket.send(gson.toJson(obj));

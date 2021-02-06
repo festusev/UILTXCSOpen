@@ -6,8 +6,8 @@ function getWebSocket(url:string, socket_functions: {[k:string]:Function}):void 
     ws.onmessage = function(evt) {
         try {
             let msg: { action: string } = JSON.parse(evt.data);
-            console.log(msg);
-            console.log(socket_functions);
+            // console.log(msg);
+            // console.log(socket_functions);
             socket_functions[msg.action](msg);
         } catch (e) {}
     };
@@ -20,8 +20,8 @@ function getWebSocket(url:string, socket_functions: {[k:string]:Function}):void 
 
     ws.onerror = function(e) {
         ws.close();
-        setTimeout(function() {
+        /*setTimeout(function() {
             getWebSocket(url, socket_functions);
-        }, 1000);
+        }, 1000);*/
     }
 }

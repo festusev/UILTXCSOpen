@@ -557,17 +557,17 @@ public class UIL extends HttpServlet{
         if(cidS == null || cidS.isEmpty() || getPublishedCompetition(Short.parseShort(cidS))==null) {    // In this case we are showing all of the available competitions
             Conn.setHTMLHeaders(response);
             PrintWriter writer = response.getWriter();
-            String right = "<div id='competitions'><div id='nav'><p onclick='showPublic(this)' class='selected'>Public</p>";
+            StringBuilder right = new StringBuilder("<div id='competitions'><div id='nav'><p onclick='showPublic(this)' class='selected'>Public</p>");
 
             boolean showClassHTML = user.teacher || TeacherMap.getByUID(((Student)user).teacherId) != null;
-            if(showClassHTML) right += "<p onclick='showClassComps(this)' id='showClassComps'>Class</p>";
-            if(user.teacher) right+="<p id='createNewCompetition' onclick='createNewCompetition()'>New</p>";
-            else right += "<p id='showUpcomingComps' onclick='showUpcomingComps(this)'>Upcoming</p>";
+            if(showClassHTML) right.append("<p onclick='showClassComps(this)' id='showClassComps'>Class</p>");
+            if(user.teacher) right.append("<p id='createNewCompetition' onclick='createNewCompetition()'>New</p>");
+            else right.append("<p id='showUpcomingComps' onclick='showUpcomingComps(this)'>Upcoming</p>");
 
-            right += "</div><div id='comp-list'><h1 id='title'>Competitions</h1><div id='public_competitions' class='column'>";
+            right.append("</div><div id='comp-list'><h1 id='title'>Competitions</h1><div id='public_competitions' class='column'>");
 
             if(published.size() <=0) {  // There are no published competitions
-                right+="<p class='emptyWarning'>There are no public competitions.</p>";
+                right.append("<p class='emptyWarning'>There are no public competitions.</p>");
             } else {    // There are published competitions
                 ArrayList<Competition> ordered = new ArrayList<>(published.values());  // Sort them by date
                 Collections.sort(ordered, new SortCompByDate());
@@ -586,68 +586,68 @@ public class UIL extends HttpServlet{
                     }
                 }
                 if(!foundPublic) {
-                    right += "<p class='emptyWarning'>There are no public competitions.</p>";
+                    right.append("<p class='emptyWarning'>There are no public competitions.</p>");
                 } else {
-                    right += "<h3>Upcoming</h3>";
+                    right.append("<h3>Upcoming</h3>");
                     if(upcoming.isEmpty()) {
-                        right += "<p class='emptyWarning'>There are no upcoming public competitions</p>";
+                        right.append("<p class='emptyWarning'>There are no upcoming public competitions</p>");
                     } else {
-                        right += upcoming;
+                        right.append(upcoming);
                     }
-                    right += "<h3>Running</h3>";
+                    right.append("<h3>Running</h3>");
                     if(running.isEmpty()) {
-                        right += "<p class='emptyWarning'>There are no running competitions.</p>";
+                        right.append("<p class='emptyWarning'>There are no running competitions.</p>");
                     } else {
-                        right += running;
+                        right.append(running);
                     }
-                    right += "<h3>Archived</h3>";
+                    right.append("<h3>Archived</h3>");
                     if(archived.isEmpty()) {
-                        right += "<p class='emptyWarning'>There are no archived competitions.</p>";
+                        right.append("<p class='emptyWarning'>There are no archived competitions.</p>");
                     } else {
-                        right += archived;
+                        right.append(archived);
                     }
                 }
             }
-            right+="</div>";
+            right.append("</div>");
 
             if(showClassHTML) {
-                right += "<div id='class_competitions' style='display:none' class='column'>";
+                right.append("<div id='class_competitions' style='display:none' class='column'>");
                 ArrayList<Competition> ordered;
-                if(!user.teacher) {
+                if(user.teacher) {
+                    ordered = ((Teacher) user).getCompetitions();
+                } else {
                     Teacher teacher = TeacherMap.getByUID(((Student)user).teacherId);
                     ordered = teacher.getCompetitions();
-                } else {
-                    ordered = ((Teacher) user).getCompetitions();
                 }
 
                 if (ordered.size() <= 0) {   // There are no class competitions
                     if (user.teacher) {
-                        right += "You have not created any competitions.";
+                        right.append("You have not created any competitions.");
                     } else {
-                        right += "Your teacher has not created any competitions.";
+                        right.append("Your teacher has not created any competitions.");
                     }
                 } else {
                     if (user.teacher) {
-                        right += "<script>loadCompetitions()</script>";
+                        right.append("<script>loadCompetitions()</script>");
                     } else {
                         for (Competition comp : ordered) {
-                            if (comp.published) right += comp.template.getMiniHTML(user);
+                            if (comp != null && comp.published) right.append(comp.template.getMiniHTML(user));
                         }
                     }
                 }
-                right += "</div>";
+                right.append("</div>");
             }
 
             if (!user.teacher) {
                 Collection<UILEntry> myCompetitions = ((Student) user).cids.values();
-                right+="<div id='upcoming_competitions' style='display:none' class='column'>";
-                if(myCompetitions.size() <= 0) right+="<p class='emptyWarning'>You haven't signed up for any competitions.</p>";
+                right.append("<div id='upcoming_competitions' style='display:none' class='column'>");
+                if(myCompetitions.size() <= 0) right.append("<p class='emptyWarning'>You haven't signed up for any competitions.</p>");
                 for(UILEntry comp: myCompetitions) {
-                    if(comp.competition.published) right += comp.competition.template.getMiniHTML(user);
+                    if(comp.competition.published) right.append(comp.competition.template.getMiniHTML(user));
                 }
-                right+="</div>";
+                right.append("</div>");
             }
-            right+="</div></div>";
+            right.append("</div></div>");
 
             /*=if (!user.teacher) {
                 Collection<UILEntry> myCompetitions = ((Student) user).cids.values();
@@ -670,7 +670,7 @@ public class UIL extends HttpServlet{
                     "    <script src=\"https://cdn.jsdelivr.net/npm/flatpickr\"></script>" +
                     "</head>\n" +
                     "<body>\n" + // Dynamic.loadNav(request) +
-                    Dynamic.get_consoleHTML(1, right) +
+                    Dynamic.get_consoleHTML(1, right.toString()) +
 //                    "<div id='content'>" + left + "</div></div>"+right+"</div></div>" +
                     "</div></body></html>");
         } else {    // Render a specific competition. Users will be able to switch which competition they are viewing by clicking on the competition's name
@@ -810,6 +810,8 @@ public class UIL extends HttpServlet{
                                 name, description, mcTest, frqTest);
                     } catch (SQLException e) {
                         e.printStackTrace();
+                        writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
+                        return;
                     }
                 } else {    // We are modifying an existing competition
                     competition = UIL.getCompetition(cid);

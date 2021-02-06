@@ -16,12 +16,6 @@ import javax.servlet.annotation.WebListener;
 public class ContextListener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent event) {
-        /*try {
-            //Outlet.challenge.ScoreEngine.initialize();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }*/
-        //Outlet.challenge.Challenge.initialize();
         UserMap.initialize();
 
         /*
