@@ -162,15 +162,6 @@
     <url-pattern>/verify</url-pattern>
   </servlet-mapping>
 
-  <servlet>
-    <servlet-name>Announce</servlet-name>
-    <servlet-class>Outlet.Announce</servlet-class>
-    <load-on-startup>1</load-on-startup>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>Announce</servlet-name>
-    <url-pattern>/announce-qm30b0cwerev8cf3k22d</url-pattern>
-  </servlet-mapping>
 
   <servlet>
     <servlet-name>UIL</servlet-name>
@@ -188,6 +179,15 @@
     <url-pattern>/console/competitions</url-pattern>
   </servlet-mapping>
 
+  <!--<servlet>
+    <servlet-name>Announce</servlet-name>
+    <servlet-class>Outlet.Announce</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Announce</servlet-name>
+    <url-pattern>/announce-qm30b0cwerev8cf3k22d</url-pattern>
+  </servlet-mapping>-->
 
   <!-- Begin UIL Servlets -->
   <!--<servlet>

@@ -22,11 +22,11 @@ public class FRQTest {
     public final String JUDGE_PACKET;   // Link to the judge packet
 
     public static final String SCORE_DIR_ROOT = "/tmp/"; // Where the score_dirs are stores
-    public String SCORE_DIR_PATH; // Must end in a "/"
+    public String scoreDirPath; // Must end in a "/"
     public File scoreDir;
 
     public static final String TESTCASE_DIR_ROOT = "/opt/UILTestcases/"; // Where the testcase_dirs are stores
-    public String TESTCASE_DIR_PATH; // Must end in a "/"
+    public String testcaseDirPath; // Must end in a "/"
     public File testcaseDir;
 
     public final short MAX_POINTS;  // Number of points you get if you get the problem first try
@@ -57,7 +57,7 @@ public class FRQTest {
 
     public FRQTest() {
         exists = false;TIME_TEXT="";TIME=0;STUDENT_PACKET="";JUDGE_PACKET="";
-        SCORE_DIR_PATH = ""; TESTCASE_DIR_PATH = "";MAX_POINTS = 0; INCORRECT_PENALTY = 0; PROBLEM_MAP = new FRQProblem[0];
+        scoreDirPath = ""; testcaseDirPath = "";MAX_POINTS = 0; INCORRECT_PENALTY = 0; PROBLEM_MAP = new FRQProblem[0];
     }
     public FRQTest(boolean published,String opensString, short mp, short ip, FRQProblem[] pm, String studentPacket, String judgePacket, long time) {
         if(published) {
@@ -78,12 +78,14 @@ public class FRQTest {
         }
     }
     public void initializeFiles() {
+        if(testcaseDirPath == null) return;
+
         try {
             files.clear();
 
             for(int i = 1; i <= PROBLEM_MAP.length; ++i) {
-                System.out.println("--Getting files for probNum " + i + " in path "+ TESTCASE_DIR_PATH +i+"/");
-                files.add(get_files(new File(TESTCASE_DIR_PATH + i + "/")));
+                System.out.println("--Getting files for probNum " + i + " in path "+ testcaseDirPath +i+"/");
+                files.add(get_files(new File(testcaseDirPath + i + "/")));
             }
         } catch (Exception var1) {
             var1.printStackTrace();
@@ -92,10 +94,10 @@ public class FRQTest {
 
     public void setDirectories(short cid, short uid) {
         System.out.println("Setting directories");
-        SCORE_DIR_PATH = SCORE_DIR_ROOT + cid+"_"+uid+"/";
-        TESTCASE_DIR_PATH = TESTCASE_DIR_ROOT + cid+"_"+uid+"/";
-        File newScoreDir = new File(SCORE_DIR_PATH);
-        File newTestcaseDir = new File(TESTCASE_DIR_PATH);
+        scoreDirPath = SCORE_DIR_ROOT + cid+"_"+uid+"/";
+        testcaseDirPath = TESTCASE_DIR_ROOT + cid+"_"+uid+"/";
+        File newScoreDir = new File(scoreDirPath);
+        File newTestcaseDir = new File(testcaseDirPath);
 
         if(scoreDir != null && scoreDir.exists()) {
             scoreDir.renameTo(newScoreDir);
@@ -114,7 +116,7 @@ public class FRQTest {
 
     public void createProblemDirectories() {
         for(int i=1;i<=PROBLEM_MAP.length;i++) {
-            File dir = new File(TESTCASE_DIR_PATH + i);
+            File dir = new File(testcaseDirPath + i);
             dir.mkdir();
         }
     }
@@ -137,7 +139,7 @@ public class FRQTest {
 
         // Delete all of the directories for problems that have been removed
         for(int i=0;i<notDeleted.length;i++) {
-            if(!notDeleted[i]) deleteDirectory(new File(TESTCASE_DIR_PATH +(i+1)));
+            if(!notDeleted[i]) deleteDirectory(new File(testcaseDirPath +(i+1)));
         }
 
         // Now, rename the problem directories to 'tmp_#' where # is the new problem #. This will also create new directories
@@ -145,12 +147,12 @@ public class FRQTest {
         File[] dirs = new File[problemIndices.length];
         for(int i=0,j=problemIndices.length;i<j;i++) {
             if(problemIndices[i] < 0) {  // If the index is less than zero, it is a new problem
-                File newDir = new File(TESTCASE_DIR_PATH + "tmp_" + (i+1));
+                File newDir = new File(testcaseDirPath + "tmp_" + (i+1));
                 newDir.mkdir();
                 dirs[i] = newDir;
             } else {    // In this case, we rename the directory
-                File oldDir = new File(TESTCASE_DIR_PATH + problemIndices[i]);
-                File destDir = new File(TESTCASE_DIR_PATH + "tmp_"+(i+1));
+                File oldDir = new File(testcaseDirPath + problemIndices[i]);
+                File destDir = new File(testcaseDirPath + "tmp_"+(i+1));
 
                 oldDir.renameTo(destDir);
                 dirs[i] = destDir;
@@ -159,7 +161,7 @@ public class FRQTest {
 
         // Now, rename all of the 'tmp_#' directories to remove the 'tmp_'
         for(int i=0,j=dirs.length;i<j;i++) {
-            dirs[i].renameTo(new File(TESTCASE_DIR_PATH +dirs[i].getName().substring(4)));
+            dirs[i].renameTo(new File(testcaseDirPath +dirs[i].getName().substring(4)));
         }
         initializeFiles();
     }
@@ -176,7 +178,7 @@ public class FRQTest {
 
     /* Deletes the testcase directory */
     public void deleteTestcaseDir() {
-        deleteDirectory(new File(TESTCASE_DIR_PATH));
+        deleteDirectory(new File(testcaseDirPath));
     }
 
     public static Pair get_files(File dir) {
@@ -383,7 +385,7 @@ public class FRQTest {
      * @param isInput
      */
     public void setTestcaseFile(int probNum, byte[] bytes, boolean isInput) {
-        String path = TESTCASE_DIR_PATH +(probNum+1)+"/1";
+        String path = testcaseDirPath +(probNum+1)+"/1";
         if(!isInput) path+=".a";
         System.out.println("Setting testcase file, probNum="+probNum+", path="+path);
         try {
@@ -420,18 +422,18 @@ public class FRQTest {
                 }
 
                 String directory = "" + uid + "-" + tid + "-" + System.currentTimeMillis() + "/";
-                String fileName = SCORE_DIR_PATH + directory + givenFName;
+                String fileName = scoreDirPath + directory + givenFName;
 
                 boolean dirMade;
                 try {
-                    File root = new File(SCORE_DIR_PATH);
+                    File root = new File(scoreDirPath);
                     if(!root.exists()) root.mkdir();
 
-                    File dir = new File(SCORE_DIR_PATH + directory);
+                    File dir = new File(scoreDirPath + directory);
                     dirMade = dir.mkdir();
                     if (!dirMade) {
                         System.out.println("ERROR: Cannot create directory, trying another method");
-                        Runtime.getRuntime().exec("mkdir "+ SCORE_DIR_PATH + directory).waitFor();
+                        Runtime.getRuntime().exec("mkdir "+ scoreDirPath + directory).waitFor();
                     }
 
                     try {
@@ -459,13 +461,13 @@ public class FRQTest {
                         FRQSubmission submission;
                         if (extension.equals("java")) {
                             System.out.println("Compiling " + fileName + " into " + givenName + " for prob " + probNum);
-                            submission = run(fileName, givenName, SCORE_DIR_PATH + directory, 0, probNum);
+                            submission = run(fileName, givenName, scoreDirPath + directory, 0, probNum);
                         } else {
                             String exe_file;
                             if (extension.equals("py")) {
                                 exe_file = givenName + ".py";
                                 System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
-                                submission = run(fileName, exe_file, SCORE_DIR_PATH + directory, 1, probNum);
+                                submission = run(fileName, exe_file, scoreDirPath + directory, 1, probNum);
                             } else {
                                 if (!extension.equals("cpp")) {
                                     return new FRQSubmission(probNum, FRQSubmission.Result.UNCLEAR_FILE_TYPE, new String(bytes), "");
@@ -473,7 +475,7 @@ public class FRQTest {
 
                                 exe_file = givenName + ".out";
                                 System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
-                                submission = run(fileName, exe_file, SCORE_DIR_PATH + directory, 2, probNum);
+                                submission = run(fileName, exe_file, scoreDirPath + directory, 2, probNum);
                             }
                         }
 

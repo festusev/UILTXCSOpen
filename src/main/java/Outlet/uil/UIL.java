@@ -455,7 +455,10 @@ public class UIL extends HttpServlet{
                         name, description, mcTest, frqTest);
                 // retCid = true;
             } catch (SQLException e) {
+                System.out.println("Error creating the competition");
                 e.printStackTrace();
+                writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
+                return false;
             }
         } else {    // We are modifying an existing competition
             competition = UIL.getCompetition(cid);
@@ -511,6 +514,8 @@ public class UIL extends HttpServlet{
 
                     System.out.println("probNum=" + probNum);
                     frqTest.setTestcaseFile(probNum, bytes, false);
+                } else {
+                    System.out.println("ERROR: file part prefix is " + prefix);
                 }
             }
             frqTest.initializeFiles();

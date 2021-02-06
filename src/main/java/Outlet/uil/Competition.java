@@ -130,13 +130,14 @@ public class Competition {
             short cid = (short)rs.getInt(1);
 
             // Now, create a table for the competition
-            stmt = conn.prepareStatement("CREATE TABLE `c"+cid+"` (" +
+            stmt = conn.prepareStatement("DROP TABLE `c" + cid + "`; CREATE TABLE `c"+cid+"` (" +
                     "`tid` SMALLINT NOT NULL AUTO_INCREMENT UNIQUE," +
                     "`name` VARCHAR(25) NOT NULL UNIQUE," +
                     "`password` CHAR(153) NOT NULL," +
                     "`uids` TINYTEXT NOT NULL,`mc` TEXT NOT NULL," +
                     "`frqResponses` TINYTEXT NOT NULL,`frqScore` SMALLINT DEFAULT 0," +
                     "PRIMARY KEY (`tid`))");
+            System.out.println(stmt);
             stmt.executeUpdate();
 
             Competition competition = new Competition(teacher, cid, published, isPublic, name, description, mcTest, frqTest,
@@ -435,7 +436,7 @@ public class Competition {
                 }
 
                 String fname = filePart.getSubmittedFileName();
-                if(!fname.matches("^[a-zA-Z0-9.]*$")) {   // Make sure it doesn't have commands
+                if(fname == null || fname.isEmpty() || !fname.matches("^[a-zA-Z0-9.]*$")) {   // Make sure it doesn't have commands
                     writer.write("{\"status\":\"error\",\"error\":\"The file name must be alphanumeric.\"}");
                     return;
                 }
