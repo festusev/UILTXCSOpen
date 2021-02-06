@@ -129,8 +129,12 @@ public class Competition {
         if(rs.next()) {
             short cid = (short)rs.getInt(1);
 
+            // First, delete the table if it already exists
+            stmt = conn.prepareStatement("DROP TABLE IF EXISTS `c" + cid + "`;");
+            stmt.executeUpdate();
+
             // Now, create a table for the competition
-            stmt = conn.prepareStatement("DROP TABLE `c" + cid + "`; CREATE TABLE `c"+cid+"` (" +
+            stmt = conn.prepareStatement("CREATE TABLE `c"+cid+"` (" +
                     "`tid` SMALLINT NOT NULL AUTO_INCREMENT UNIQUE," +
                     "`name` VARCHAR(25) NOT NULL UNIQUE," +
                     "`password` CHAR(153) NOT NULL," +

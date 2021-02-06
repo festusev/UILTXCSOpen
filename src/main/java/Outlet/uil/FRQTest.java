@@ -84,7 +84,7 @@ public class FRQTest {
             files.clear();
 
             for(int i = 1; i <= PROBLEM_MAP.length; ++i) {
-                System.out.println("--Getting files for probNum " + i + " in path "+ testcaseDirPath +i+"/");
+                // System.out.println("--Getting files for probNum " + i + " in path "+ testcaseDirPath +i+"/");
                 files.add(get_files(new File(testcaseDirPath + i + "/")));
             }
         } catch (Exception var1) {
@@ -134,11 +134,11 @@ public class FRQTest {
     public void updateProblemDirectories(short[] problemIndices, int oldNumProblems) {
         boolean[] notDeleted = new boolean[oldNumProblems];  // Used to determine which problem directories should be deleted
         for(int i=0,j=problemIndices.length;i<j;i++) {
-            if(problemIndices[i] > 0) notDeleted[problemIndices[i]-1] = true; // If the index is less than zero, it is a new problem
+            if(problemIndices[i] >= 0) notDeleted[problemIndices[i]] = true; // If the index is less than zero, it is a new problem
         }
 
         // Delete all of the directories for problems that have been removed
-        for(int i=0;i<notDeleted.length;i++) {
+        for(int i=0;i<oldNumProblems;i++) {
             if(!notDeleted[i]) deleteDirectory(new File(testcaseDirPath +(i+1)));
         }
 
@@ -151,7 +151,7 @@ public class FRQTest {
                 newDir.mkdir();
                 dirs[i] = newDir;
             } else {    // In this case, we rename the directory
-                File oldDir = new File(testcaseDirPath + problemIndices[i]);
+                File oldDir = new File(testcaseDirPath + (problemIndices[i]+1));
                 File destDir = new File(testcaseDirPath + "tmp_"+(i+1));
 
                 oldDir.renameTo(destDir);
@@ -200,9 +200,10 @@ public class FRQTest {
                 e.printStackTrace();
             }
 
+            String fileName = file.getName();
             for (File ans : files) {
-                if (ans.getName().equals(file.getName() + ".a")) {
-                    System.out.println(">Found input-output match of " + file.getName() + " and " + ans.getName());
+                if (ans.getName().equals(fileName + ".a")) {  // We found an input-output pair
+                    System.out.println(">Found input-output match of " + fileName + " and " + ans.getName());
                     return new Pair(file, ans);
                     /*try {
                         Files.setPosixFilePermissions(ans.toPath(),FILE_PERMISSIONS);
@@ -211,6 +212,12 @@ public class FRQTest {
                     }*/
                 }
             }
+
+            if(fileName.length() > 2 && fileName.substring(fileName.length() - 2).equals(".a"))
+                return new Pair(null, file);    // We didn't find an input file, but we found an output file
+            else
+                System.out.println("ERROR: No output file for " + fileName);
+                return new Pair(file, null);    // We didn't find an output file, but we found an input file. This is an error.
         }
 
         System.out.println(">Found no test cases.");
@@ -276,13 +283,19 @@ public class FRQTest {
 
         File in_file = testcase.key;
         File ans_file = testcase.value;
-        try {
-            Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", "/bin/ln -s " + in_file.getAbsolutePath() + " " + dir + PROBLEM_MAP[problemNum-1].name.toLowerCase() + ".dat"}).waitFor();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "");
+
+        if(ans_file == null) return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "");   // There is no answer file. This is a misconfiguration.
+
+        if(in_file != null) {   // Only add in the dat file if there is one
+            try {
+                Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", "/bin/ln -s " + in_file.getAbsolutePath() + " " + dir + PROBLEM_MAP[problemNum - 1].name.toLowerCase() + ".dat"}).waitFor();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "");
+            }
+            System.out.println("Test Case " + in_file.getName());
         }
-        System.out.println("Test Case " + in_file.getName());
+
         System.out.println("--Executing command '" + run_cmd + "'");
         Process r = null;
         try {
@@ -392,6 +405,8 @@ public class FRQTest {
             File file = new File(path);
             //if(isInput) files.get(probNum-1).get(0).key = file;
             //else files.get(probNum-1).get(0).value = file;
+            file.getParentFile().mkdirs();  // If the parents doesn't exist, it will make them
+            Files.deleteIfExists(file.toPath());
             Files.createFile(file.toPath(), PosixFilePermissions.asFileAttribute(FILE_PERMISSIONS));
             Files.setPosixFilePermissions(file.toPath(),FILE_PERMISSIONS);
 

@@ -424,7 +424,7 @@ var Competition = /** @class */ (function () {
                 var problem = this.handsOn.problemMap[i];
                 problems.push([problem.dom.name.value, problem.hasInput, problem.hasOutput]);
                 problemIndices.push(problem.oldIndex);
-                problem.oldIndex = i + 1; /* Now that the problem has been saved, we set it to be its current index */
+                problem.oldIndex = i; /* Now that the problem has been saved, we set it to be its current index */
                 if (problem.dom.input.files.length > 0) {
                     formData.append("fi:" + i, problem.dom.input.files[0]);
                 }

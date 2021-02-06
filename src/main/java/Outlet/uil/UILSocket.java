@@ -30,7 +30,7 @@ public class UILSocket {
         this.session = session;
 
         if(session.getUserProperties().containsKey("user")) {
-            System.out.println("Found user");
+            // System.out.println("Found user");
             user = (User) session.getUserProperties().get("user");
             if (user != null) {
                 connected.put(user.uid, this);
@@ -71,8 +71,8 @@ public class UILSocket {
     @OnError
     public void onError(Session session, Throwable throwable) {
         // Do error handling here
-        System.out.println("ERROR!!!");
-        throwable.printStackTrace();
+        System.out.println("Websocket ERROR!!!");
+        // throwable.printStackTrace();
     }
 
     public void send(String msg) throws IOException {
