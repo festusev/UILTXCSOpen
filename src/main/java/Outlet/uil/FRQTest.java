@@ -210,14 +210,19 @@ public class FRQTest {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }*/
+                } else if(fileName.equals(ans.getName() + ".a")) {
+                    System.out.println(">Found input-output match of " + ans.getName() + " and " + fileName);
+                    return new Pair(ans, file);
                 }
             }
 
-            if(fileName.length() > 2 && fileName.substring(fileName.length() - 2).equals(".a"))
+            if(fileName.length() > 2 && fileName.substring(fileName.length() - 2).equals(".a")) {
+                System.out.println(">Found a lone output file");
                 return new Pair(null, file);    // We didn't find an input file, but we found an output file
-            else
+            } else {
                 System.out.println("ERROR: No output file for " + fileName);
                 return new Pair(file, null);    // We didn't find an output file, but we found an input file. This is an error.
+            }
         }
 
         System.out.println(">Found no test cases.");
