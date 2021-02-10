@@ -32,7 +32,7 @@ public class Conn {
     private static final String USER = "admin";
     private static final String PASS = "1pcdEy31lxTSp6x$";	// TODO Possibly in the future have an admin type this in.
     // private static final String DB_NAME = "uil";
-    private static final String DB_NAME = "comptest";
+    private static final String DB_NAME = "uil";
 
     private static Gson gson = new Gson();
 

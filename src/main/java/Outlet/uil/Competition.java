@@ -35,11 +35,11 @@ public class Competition {
     private void setTemplate(boolean published, MCTest mc, FRQTest frq, String name, String description, short cid) {
         if(published) {
             template = new Template(name, description, mc, frq, cid, this);
-            entries = new EntryMap();
+            // entries = new EntryMap();
             // template.updateScoreboard();
         } else {
             template = new Template(false, name, description, mc, frq, cid, this);
-            entries = new EntryMap();
+            // entries = new EntryMap();
         }
     }
 
@@ -50,6 +50,7 @@ public class Competition {
         this.teacher = teacher;
         this.published = published;
         this.isPublic = isPublic;
+        entries = new EntryMap();
         setTemplate(published, mc, frq, name, description, cid);
 
         /* Now, create the folder */
@@ -139,7 +140,8 @@ public class Competition {
                     "`name` VARCHAR(25) NOT NULL UNIQUE," +
                     "`password` CHAR(153) NOT NULL," +
                     "`uids` TINYTEXT NOT NULL,`mc` TEXT NOT NULL," +
-                    "`frqResponses` TINYTEXT NOT NULL,`frqScore` SMALLINT DEFAULT 0," +
+                    "`frqResponses` MEDIUMTEXT NOT NULL," +
+                    "`frqScore` SMALLINT DEFAULT 0," +
                     "PRIMARY KEY (`tid`))");
             System.out.println(stmt);
             stmt.executeUpdate();
@@ -281,9 +283,9 @@ public class Competition {
                         compJ.addProperty("result", submission.getCondensedResult());
 
                         if (submission.showInput())
-                            compJ.addProperty("input", StringEscapeUtils.escapeHtml4(submission.input));
+                            compJ.addProperty("input", StringEscapeUtils.escapeHtml4(submission.input).replaceAll("\n","<br>"));
                         if (submission.showOutput())
-                            compJ.addProperty("output", StringEscapeUtils.escapeHtml4(submission.output));
+                            compJ.addProperty("output", StringEscapeUtils.escapeHtml4(submission.output).replaceAll("\n","<br>"));
                         writer.write(new Gson().toJson(compJ));
                     }
                 } else if(action.equals("changeFRQJudgement")) {
@@ -312,24 +314,25 @@ public class Competition {
                             submission.overrideShowOutput = true;   // Don't let them circumvent the show output rule
                             submission.overriddenShowOutput = oldShowOutput;
 
-                            short currentValue = submission.entry.frqResponses[submission.problemNumber - 1];
+                            Pair<Short, ArrayList<FRQSubmission>> problem = submission.entry.frqResponses[submission.problemNumber - 1];
+                            short currentValue = problem.key;
                             if(submission.result == FRQSubmission.Result.SERVER_ERROR) {    // We switched it to not giving a penalty, so reduce the extreme
-                                submission.entry.frqResponses[submission.problemNumber - 1] = (short)((Math.abs(currentValue) - 1) * (currentValue % Math.abs(currentValue)));
+                                problem.key = (short)((Math.abs(currentValue) - 1) * (currentValue % Math.abs(currentValue)));
                             } else {
                                 if(oldTakeNoPenalty && currentValue != 0) {  // We are now taking a penalty or gaining the points, so add the extreme
-                                    submission.entry.frqResponses[submission.problemNumber - 1] = (short)((Math.abs(currentValue) + 1) * (currentValue % Math.abs(currentValue)));
-                                    currentValue = submission.entry.frqResponses[submission.problemNumber - 1];
+                                    problem.key = (short)((Math.abs(currentValue) + 1) * (currentValue % Math.abs(currentValue)));
+                                    currentValue = problem.key;
                                 } else if(oldTakeNoPenalty) {
 
                                 }
 
                                 if (submission.result == FRQSubmission.Result.RIGHT_ANSWER) {    // They switched it to right answer
                                     currentValue = (short) Math.abs(currentValue);
-                                    submission.entry.frqResponses[submission.problemNumber - 1] = currentValue;
+                                    problem.key = currentValue;
                                     submission.entry.frqScore += template.frqTest.calcScore(currentValue);
                                 } else if (oldResult == FRQSubmission.Result.RIGHT_ANSWER) {     // They switched it from right answer
                                     submission.entry.frqScore -= template.frqTest.calcScore(currentValue);
-                                    submission.entry.frqResponses[submission.problemNumber - 1] = (short) (-1 * Math.abs(currentValue));
+                                    problem.key = (short) (-1 * Math.abs(currentValue));
                                 } else return;
                             }
 
@@ -409,89 +412,98 @@ public class Competition {
                 }
             } else if(!competitionStatus.frqBefore && action.equals("grabFRQProblems")) {
                 writer.write("{\"frqProblemsHTML\":\""+template.getFRQProblems(temp)+"\"}");
-            } else if (competitionStatus.mcDuring && action.equals("submitMC")) {
-                String[] answers = gson.fromJson(request.getParameter("answers"), String[].class);
-                MCSubmission submission = temp.scoreMC(user.uid, answers);
-                writer.write("{\"mcHTML\":\"" + template.getFinishedMC(submission, temp.tid, user.uid, competitionStatus) + "\"}");
-                temp.update();
-                template.updateScoreboard();
-
-                // Send it to the teacher
-                CompetitionSocket socket = CompetitionSocket.connected.get(((Student)user).teacherId);
-                if(socket != null) {
-                    JsonObject obj = new JsonObject();
-                    obj.addProperty("action", "addSmallMC");
-                    obj.addProperty("html", template.getSmallMC(user,temp, submission));
-                    socket.send(gson.toJson(obj));
-                }
-                return;
-            } else if(competitionStatus.frqDuring && action.equals("submitFRQ")){
-                Part filePart = request.getPart("textfile");
-                InputStream fileContent = filePart.getInputStream();
-
-                byte[] bytes = new byte[fileContent.available()];
-                fileContent.read(bytes);
-
-                short probNum = Short.parseShort(request.getParameter("probNum"));
-
-                if(temp.frqResponses[probNum-1] > 0){
-                    writer.write("{\"status\":\"error\",\"error\":\"You've already gotten this problem.\"}");
-                    return;
-                }
-
-                String fname = filePart.getSubmittedFileName();
-                if(fname == null || fname.isEmpty() || !fname.matches("^[a-zA-Z0-9.]*$")) {   // Make sure it doesn't have commands
-                    writer.write("{\"status\":\"error\",\"error\":\"The file name must be alphanumeric.\"}");
-                    return;
-                }
-
-                FRQSubmission submission = template.frqTest.score(probNum, bytes, fname, user.uid, temp.tid);
-                submission.entry = temp;
-                temp.addFRQRun(submission, probNum);
-                frqSubmissions.add(submission);
-                if(submission.result == FRQSubmission.Result.RIGHT_ANSWER) {
-                    writer.write("{\"status\":\"success\",\"scored\":\"You gained points!\"}");
+            } else if (action.equals("submitMC")) {
+                if(competitionStatus.mcDuring || competitionStatus.mcOverflow) {    // submissions are open
+                    String[] answers = gson.fromJson(request.getParameter("answers"), String[].class);
+                    MCSubmission submission = temp.scoreMC(user.uid, answers);
+                    writer.write("{\"mcHTML\":\"" + template.getFinishedMC(submission, temp.tid, user.uid, competitionStatus) + "\"}");
+                    temp.update();
                     template.updateScoreboard();
-                } else if(submission.result == FRQSubmission.Result.COMPILETIME_ERROR) {
-                    writer.write("{\"status\":\"error\",\"error\":\"Compile-time error.\"}");
-                    template.updateScoreboard();
-                } else if(submission.result == FRQSubmission.Result.RUNTIME_ERROR) {
-                    writer.write("{\"status\":\"error\",\"error\":\"Runtime error\"}");
-                    template.updateScoreboard();
-                } else if(submission.result == FRQSubmission.Result.EXCEEDED_TIME_LIMIT) {
-                    writer.write("{\"status\":\"error\",\"error\":\"Time limit exceeded.\"}");
-                    template.updateScoreboard();
-                } else if(submission.result == FRQSubmission.Result.WRONG_ANSWER) {
-                    writer.write("{\"status\":\"error\",\"error\":\"Wrong answer.\"}");
-                    template.updateScoreboard();
-                } else if(submission.result == FRQSubmission.Result.SERVER_ERROR) {
-                    writer.write("{\"status\":\"error\",\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
-                } else if(submission.result == FRQSubmission.Result.EMPTY_FILE) {
-                    writer.write("{\"status\":\"error\",\"error\":\"Empty file.\"}");
-                } else if(submission.result == FRQSubmission.Result.UNCLEAR_FILE_TYPE) {
-                    writer.write("{\"status\":\"error\",\"error\":\"Unclear file type. Files must end in .java, .py, or .cpp.\"}");
-                }
 
-                // Send it to the teacher
-                CompetitionSocket socket = CompetitionSocket.connected.get(user.teacherId);
-                if(socket != null) {
-                    JsonObject obj = new JsonObject();
-                    obj.addProperty("action","addSmallFRQ");
-                    obj.addProperty("html", template.getSmallFRQ(frqSubmissions.indexOf(submission), submission));
-                    socket.send(gson.toJson(obj));
-                }
-
-                // Update all of their team member's frqProblems
-                for(short uid: temp.uids) {
-                    socket = CompetitionSocket.connected.get(uid);
-                    System.out.println("Looking at uid="+uid);
-                    if(socket != null) {
-                        System.out.println("Socket != null for uid="+uid);
+                    // Send it to the teacher
+                    CompetitionSocket socket = CompetitionSocket.connected.get(((Student) user).teacherId);
+                    if (socket != null) {
                         JsonObject obj = new JsonObject();
-                        obj.addProperty("action", "updateFRQProblems");
-                        obj.addProperty("html", template.getFRQProblems(temp));
+                        obj.addProperty("action", "addSmallMC");
+                        obj.addProperty("html", template.getSmallMC(user, temp, submission));
                         socket.send(gson.toJson(obj));
                     }
+                } else {    // Submissions are closed
+                    writer.write("{\"mcHTML\":\"" + template.getMCHTML(user,UserStatus.getCompeteStatus(user, template.cid), competitionStatus) + "\"}");
+                }
+                return;
+            } else if(action.equals("submitFRQ")) {
+                if(competitionStatus.frqDuring || competitionStatus.frqOverflow) {
+                    Part filePart = request.getPart("textfile");
+                    InputStream fileContent = filePart.getInputStream();
+
+                    byte[] bytes = new byte[fileContent.available()];
+                    fileContent.read(bytes);
+
+                    short probNum = Short.parseShort(request.getParameter("probNum"));
+
+                    if (temp.frqResponses[probNum - 1].key > 0) {
+                        writer.write("{\"status\":\"error\",\"error\":\"You've already gotten this problem.\"}");
+                        return;
+                    }
+
+                    String fname = filePart.getSubmittedFileName();
+                    if (fname == null || fname.isEmpty() || !fname.matches("^[a-zA-Z0-9.]*$")) {   // Make sure it doesn't have commands
+                        writer.write("{\"status\":\"error\",\"error\":\"The file name must be alphanumeric.\"}");
+                        return;
+                    }
+
+                    FRQSubmission submission = template.frqTest.score(probNum, bytes, fname, user.uid, temp.tid);
+                    submission.entry = temp;
+                    temp.addFRQRun(submission, probNum);
+                    frqSubmissions.add(submission);
+                    if (submission.result == FRQSubmission.Result.RIGHT_ANSWER) {
+                        writer.write("{\"status\":\"success\",\"scored\":\"You gained points!\"}");
+                        template.updateScoreboard();
+                    } else if (submission.result == FRQSubmission.Result.COMPILETIME_ERROR) {
+                        writer.write("{\"status\":\"error\",\"error\":\"Compile-time error.\"}");
+                        template.updateScoreboard();
+                    } else if (submission.result == FRQSubmission.Result.RUNTIME_ERROR) {
+                        writer.write("{\"status\":\"error\",\"error\":\"Runtime error\"}");
+                        template.updateScoreboard();
+                    } else if (submission.result == FRQSubmission.Result.EXCEEDED_TIME_LIMIT) {
+                        writer.write("{\"status\":\"error\",\"error\":\"Time limit exceeded.\"}");
+                        template.updateScoreboard();
+                    } else if (submission.result == FRQSubmission.Result.WRONG_ANSWER) {
+                        writer.write("{\"status\":\"error\",\"error\":\"Wrong answer.\"}");
+                        template.updateScoreboard();
+                    } else if (submission.result == FRQSubmission.Result.SERVER_ERROR) {
+                        writer.write("{\"status\":\"error\",\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
+                    } else if (submission.result == FRQSubmission.Result.EMPTY_FILE) {
+                        writer.write("{\"status\":\"error\",\"error\":\"Empty file.\"}");
+                    } else if (submission.result == FRQSubmission.Result.UNCLEAR_FILE_TYPE) {
+                        writer.write("{\"status\":\"error\",\"error\":\"Unclear file type. Files must end in .java, .py, or .cpp.\"}");
+                    }
+
+                    // Send it to the teacher
+                    CompetitionSocket socket = CompetitionSocket.connected.get(user.teacherId);
+                    if (socket != null) {
+                        JsonObject obj = new JsonObject();
+                        obj.addProperty("action", "addSmallFRQ");
+                        obj.addProperty("html", template.getSmallFRQ(frqSubmissions.indexOf(submission), submission));
+                        socket.send(gson.toJson(obj));
+                    }
+
+                    // Update all of their team member's frqProblems
+                    for (short uid : temp.uids) {
+                        socket = CompetitionSocket.connected.get(uid);
+                        System.out.println("Looking at uid=" + uid);
+                        if (socket != null) {
+                            System.out.println("Socket != null for uid=" + uid);
+                            JsonObject obj = new JsonObject();
+                            obj.addProperty("action", "updateFRQProblems");
+                            obj.addProperty("html", template.getFRQProblems(temp));
+                            socket.send(gson.toJson(obj));
+                        }
+                    }
+                } else {
+                    writer.write("{\"status\":\"error\",\"error\":\"FRQ submissions are closed.\"}");
+                    return;
                 }
             } else if(competitionStatus.frqFinished && action.equals("finishFRQ")) {
                 writer.write("{\"frqHTML\":\""+template.getFinishedFRQ(temp)+"\"}");
@@ -601,7 +613,10 @@ public class Competition {
         ResultSet rs = stmt.executeQuery();
         if(rs.next()) {
             entry = new UILEntry(rs,this);
-            entries.addEntry(entry);
+            for(Pair<Short, ArrayList<FRQSubmission>> pair: entry.frqResponses) {
+                this.frqSubmissions.addAll(pair.value);
+            }
+            this.entries.addEntry(entry);
             return entry;
         }
         return null;

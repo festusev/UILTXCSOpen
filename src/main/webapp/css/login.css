@@ -45,7 +45,7 @@
     margin-top:1em;
 }
 #login:hover{
-    background-color:var(--prim-col);
+    background-color:var(--sec-dark);
 }
 #regWrapper{
     display:block;

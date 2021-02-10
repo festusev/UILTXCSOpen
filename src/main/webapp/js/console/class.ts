@@ -100,7 +100,7 @@ function leaveClass() {
     xhr.open('POST', "/console/class", true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send("action=leaveClass");
-    // showJoinClass();
+    showJoinClass();
 }
 
 

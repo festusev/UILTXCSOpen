@@ -95,7 +95,7 @@ function leaveClass() {
     xhr.open('POST', "/console/class", true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send("action=leaveClass");
-    // showJoinClass();
+    showJoinClass();
 }
 function showJoinClass() {
     dom.class.innerHTML = "<h2>Join a Class</h2>";

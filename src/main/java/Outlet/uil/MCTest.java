@@ -118,7 +118,8 @@ public class MCTest {
 
     public Countdown getTimer() {
         Countdown timer = new Countdown(TIME, opens.date.getTime(), "mcTestTimer");
-        timer.onDone = "submitMC()";
+        timer.onDone = "submitMC(function(){location.reload();})";
+        String str = timer.toString();
         return timer;
     }
 }

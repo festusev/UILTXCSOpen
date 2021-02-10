@@ -627,7 +627,7 @@ class Competition {
         return false;
     }
 
-    publishCompetition(callback:Function) {
+    publishCompetition(callback:Function, errorCallback?:Function) {
         // Remove the error box
         try {this.dom.comp_edit.removeChild(document.getElementById("ERROR"));}
         catch (e){}
@@ -657,9 +657,11 @@ class Competition {
                     } else if(response["error"] != null) {    // An error occurred
                         addErrorBox(thisComp.dom.comp_edit, response["error"]);
                     } else {
+                        if(errorCallback) errorCallback();
                         addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error);
                     }
                 } else {
+                    if(errorCallback) errorCallback();
                     addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error);
                 }
             }
@@ -1379,7 +1381,10 @@ list_handsOn_changeproblems.appendChild(li);
         } else {
             publishCompetition.innerText = "Publish";
 
+            let blockPublication: boolean = false;  // Whether or not this is currently publishing, so block the publication
             publishCompetition.onclick = function(event) {
+                if(blockPublication) return;
+                blockPublication = true;
                 event.stopPropagation();
 
                 thisComp.publishCompetition(function() {
@@ -1389,6 +1394,8 @@ list_handsOn_changeproblems.appendChild(li);
                     publishCompetition.style.backgroundColor = "unset";
                     publishCompetition.style.color = "var(--body-col)";
                     form.classList.add("published");
+                }, function() { // The callback if there is an error
+                    blockPublication = false;
                 });
             };
         }

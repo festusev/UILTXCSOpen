@@ -93,6 +93,19 @@ public class UIL extends HttpServlet{
         initialized = true;
     }
 
+    public static void sortFRQResponses() {
+        try {
+            initialize();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        Collection<Competition> list = published.values();
+        for(Competition comp: list) {
+            Collections.sort(comp.frqSubmissions, new FRQSubmissionComparator());
+        }
+    }
+
     public static Competition getPublishedCompetition(short cid) {
         if(!initialized) {
             try {
@@ -925,5 +938,12 @@ class UpdateCompetitionMap extends TimerTask {
     @Override
     public void run() {
 
+    }
+}
+
+class FRQSubmissionComparator implements Comparator<FRQSubmission> {
+    @Override
+    public int compare(FRQSubmission s1, FRQSubmission s2) {
+        return (s1.submittedTime - s2.submittedTime) > 0?1:-1;
     }
 }

@@ -70,6 +70,8 @@ body{
     --light-gray:#f9f9f9;
     --head-col: #404040;
     --body-col: #333;
+    --radius: 5px;
+
 
     --head-font: 'Noto Sans JP', sans-serif;
     --body-font: 'Noto Sans JP', sans-serif;
@@ -385,18 +387,18 @@ a:focus{
 }
 
 /* How a scoreboard is styled */
-#scoreboardColumn{
-}
 #scoreboardColumn tr{
-    border-bottom:1px solid #e8e8e8;
+    background-color: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
 }
 #scoreboardColumn th{
-    padding:8px 0;
+    padding:8px 2rem;
     text-align: left;
     font-weight:bold;
 }
 #scoreboardColumn td{
-    padding:13px 0;
+    padding:13px 2rem;
 }
 #scoreboardColumn .right{
     text-align:right;

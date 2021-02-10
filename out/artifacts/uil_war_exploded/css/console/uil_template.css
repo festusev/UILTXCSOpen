@@ -43,8 +43,9 @@
     max-width:100%;
     margin:4% 7% 10% 7%;
     padding: 3rem 5rem;
-    background-color: white;
-    box-shadow: var(--shadow);
+    /*! background-color: white; */
+    /*! box-shadow: var(--shadow); */
+    /*! border-radius: var(--radius); */
 }
 .column h1{
     padding-bottom:5px;
@@ -61,12 +62,15 @@
 #aboutDescription, #aboutInfo {
     background-color: white;
     box-shadow: var(--shadow);
+    border-radius: var(--radius);
 }
 
 .clarification {
-    border: 1px solid rgba(0,0,0,0.1);
     padding:1rem 2rem;
-    border-radius: 8px;
+    border-radius: var(--radius);
+    background-color: white;
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
 }
 .clarification h3 {
     font-weight:bold;
@@ -106,7 +110,14 @@
 }
 #scoreboardColumn table{
     width:100%;
+    border-spacing: 0 1rem;
+    border-collapse: separate;
 }
+#scoreboardColumn table tr:first-of-type {
+    background-color: rgba(0,0,0,0);
+    box-shadow: none;
+}
+
 #signUp{
     display:block;
     border:none;
@@ -161,6 +172,7 @@
     padding: 3rem 5rem;
     width: 40rem;
     margin-right:2rem;
+    border-radius: var(--radius);
 }
 #mcColumn h3{
     font-size:1.2rem;
@@ -368,6 +380,7 @@
     background-color: white;
     box-shadow: var(--shadow);
     padding: 3rem 4rem;
+    border-radius: var(--radius);
 }
 #frqSubmissions table{
     width:100%;
@@ -482,10 +495,18 @@
     cursor: pointer;
 }
 #clarificationsColumn textarea {
-    border: 1px solid lightgray;
+    border: none;
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    font-family: var(--body-font);
+    padding: 0.6rem 0.7rem;
+    display: block;
+    min-width: 20rem;
+    width: 50%;
+    margin-bottom: 1rem;
 }
 #clarificationsColumn button {
-    margin-left: 10px;
+    margin-bottom: 1rem;
 }
 @media only screen and (max-width: 720px){
     #countdownCnt {

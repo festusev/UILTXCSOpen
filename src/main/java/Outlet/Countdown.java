@@ -60,7 +60,16 @@ public class Countdown {
         return date.getTime() - getNow() <= 0;
     }
 
-    public String toString(){
+    // Returns true if the timer is in the overflow time. Technically, time is up, but there is a threshold in milliseconds
+    // when this returns true. Returns false if time is not up.
+    public boolean inOverflow(long thresholdLength) {
+        long time = date.getTime();
+        long now = getNow();
+        long diff = now - time;
+        return (diff > 0) && (diff < thresholdLength);
+    }
+
+    public String getScript(String onDone) {
         if(date == null) return "";
 
         long diff = date.getTime() - getNow();
@@ -72,6 +81,7 @@ public class Countdown {
 
         return diffDays + "<span>d</span> " + diffHours +"<span>h</span> " + diffMin + "<span>m</span> " + diffSec + "<span>s</span>" +
                 "<script style='display:none'>" +
+                "(function() {" +
                 "var countdownDate"+ID+" = "+diff+";" +
                 "var compOpen"+ID+" = false;" +
                 "var cntdwnLoaded"+ID+" = new Date().getTime();" +
@@ -82,12 +92,18 @@ public class Countdown {
                 "    var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));" +
                 "    var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));" +
                 "    var seconds = Math.floor((distance % (1000 * 60)) / 1000);" +
-                "    document.getElementById('"+ID+"').innerHTML = days + '<span>d</span> ' + hours + '<span>h</span> '" +
-                "        + minutes + '<span>m</span> ' + seconds + '<span>s</span>';" +
                 "    if(countdownDate"+ID+" - (now-cntdwnLoaded"+ID+")< 0){" +
+                "       document.getElementById('"+ID+"').innerHTML =  '0<span>d</span> 0<span>h</span> 0<span>m</span> 0<span>s</span>';" +
                 "       clearInterval(x"+ID+");" + onDone +
+                "    } else {" +
+                "       document.getElementById('"+ID+"').innerHTML = days + '<span>d</span> ' + hours + '<span>h</span> '" +
+                "            + minutes + '<span>m</span> ' + seconds + '<span>s</span>';" +
                 "    }" +
-                "}, 1000);</script>";
+                "}, 1000);})();</script>";
+    }
+
+    public String toString(){
+        return getScript(onDone);
     }
 
     // Returns a new countdown object 'add' milliseconds after the start of 'countdown'

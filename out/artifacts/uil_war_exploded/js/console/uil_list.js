@@ -507,7 +507,7 @@ var Competition = /** @class */ (function () {
         xhr.send(formData);
         return false;
     };
-    Competition.prototype.publishCompetition = function (callback) {
+    Competition.prototype.publishCompetition = function (callback, errorCallback) {
         // Remove the error box
         try {
             this.dom.comp_edit.removeChild(document.getElementById("ERROR"));
@@ -540,10 +540,14 @@ var Competition = /** @class */ (function () {
                         addErrorBox(thisComp.dom.comp_edit, response["error"]);
                     }
                     else {
+                        if (errorCallback)
+                            errorCallback();
                         addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error);
                     }
                 }
                 else {
+                    if (errorCallback)
+                        errorCallback();
                     addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error);
                 }
             }
@@ -1198,7 +1202,11 @@ list_handsOn_changeproblems.appendChild(li);
         }
         else {
             publishCompetition.innerText = "Publish";
+            var blockPublication_1 = false; // Whether or not this is currently publishing, so block the publication
             publishCompetition.onclick = function (event) {
+                if (blockPublication_1)
+                    return;
+                blockPublication_1 = true;
                 event.stopPropagation();
                 thisComp.publishCompetition(function () {
                     console.log("published competition");
@@ -1207,6 +1215,8 @@ list_handsOn_changeproblems.appendChild(li);
                     publishCompetition.style.backgroundColor = "unset";
                     publishCompetition.style.color = "var(--body-col)";
                     form.classList.add("published");
+                }, function () {
+                    blockPublication_1 = false;
                 });
             };
         }

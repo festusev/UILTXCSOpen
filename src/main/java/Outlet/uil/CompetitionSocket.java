@@ -71,6 +71,7 @@ public class CompetitionSocket {
                 if(teacherSocket != null) {
                     JsonObject object = new JsonObject();
                     object.addProperty("action", "nc");
+                    object.addProperty("name", user.fname + " " + user.lname);
                     object.addProperty("question", clarification.question);
                     object.addProperty("id", index);
 

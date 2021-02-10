@@ -45,11 +45,12 @@ var config = {
             var html = response["html"];
             var template = document.createElement('template');
             template.innerHTML = html;
-            dom.frqSubmissionsTable.insertBefore(template.content.firstChild, dom.frqSubmissionsTr.nextSibling);
+            var row = dom.frqSubmissionsTable.insertRow(1);
+            row.replaceWith(template.content.firstChild);
         }, "updateTeam": function (response) {
             dom.teamMembers.innerHTML = response["html"];
         }, "competitionDeleted": function (response) {
-            window.location.replace(window.location.host + "/console/competitions");
+            window.location.href = "http://" + window.location.host + "/console/competitions";
         }, "updateFRQProblems": function (response) {
             var template = document.createElement('template');
             template.innerHTML = response["html"];
@@ -68,8 +69,8 @@ var config = {
             if (clarification_list.innerHTML == "There are no clarifications.") {
                 clarification_list.innerHTML = "";
             }
-            clarification_list.innerHTML = "<div class='clarification'><h3>Question</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
-                "<textarea placeholder='Send a response.'></textarea><button onclick='answerClarification(this, " +
+            clarification_list.innerHTML = "<div class='clarification'><h3>Question - " + response["name"] + "</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
+                "<textarea placeholder='Send a response.'></textarea><button class='chngButton' onclick='answerClarification(this, " +
                 response["id"] + ")'>Send</button></span></div>" + clarification_list.innerHTML;
         }, "ac": function (response) {
             var clarification_list = dom.clarificationColumn.querySelector(".clarification_group");
@@ -126,6 +127,43 @@ var dom = {
 var cid = null; // Undefined if we are looking at the UIL list
 $(document).ready(function () {
     showColumn();
+    // Set the multiple choice answers that are saved
+    var cookie = getCookie(cid + "MC");
+    if (cookie != null) {
+        var savedMC = null;
+        try {
+            savedMC = JSON.parse(cookie);
+        }
+        catch (e) {
+            return;
+        }
+        var questionDOMs = document.getElementsByClassName("mcQuestion");
+        if (questionDOMs.length <= 0)
+            return;
+        var aCharCode = "a".charCodeAt(0);
+        for (var questionNumberString in savedMC) {
+            var questionDOM = questionDOMs.item(parseInt(questionNumberString) - 1);
+            var savedMCAnswer = savedMC[questionNumberString];
+            if (savedMCAnswer == null)
+                continue;
+            var tableCell = questionDOM.childNodes.item(savedMCAnswer.charCodeAt(0) - aCharCode + 1);
+            if (tableCell == null)
+                continue;
+            var div = tableCell.firstChild;
+            div.classList.add("mcSelected");
+        }
+        choices = savedMC;
+        /* let $dom = $(dom);
+        let choice = dom.dataset.val;
+        if(choices[question] === choice) {  // They are clicking a selected bubble
+            choices[question] = null;
+            $dom.removeClass("mcSelected");
+        } else {
+            choices[question] = choice;
+            $dom.parent().parent().children().children().removeClass("mcSelected");
+            $dom.addClass("mcSelected");
+        }*/
+    }
 });
 (function () {
     var sPageURL = window.location.search.substring(1), sURLVariables = sPageURL.split('&'), sParameterName, i;
@@ -159,16 +197,21 @@ function getCookie(cname) {
 }
 function showColumn() {
     // Check if there is an anchor, and if there is show that section of the page
-    if (window.location.hash === "#scoreboard") {
-        showScoreboard();
+    try {
+        if (window.location.hash === "#scoreboard") {
+            showScoreboard();
+        }
+        else if (window.location.hash === "#mc") {
+            showMC();
+        }
+        else if (window.location.hash === "#frq") {
+            showFRQ();
+        }
+        else {
+            showAbout();
+        }
     }
-    else if (window.location.hash === "#mc") {
-        showMC();
-    }
-    else if (window.location.hash === "#frq") {
-        showFRQ();
-    }
-    else {
+    catch (e) {
         showAbout();
     }
 }
@@ -219,7 +262,6 @@ function hideSignup() {
 // Switches between joining a team and creating a team
 var jointeamShowing = true;
 function toggleCreateTeam(event) {
-    console.log("testing");
     if (jointeamShowing) { // Switch to creating a team
         dom.signUpBox.querySelector("h1").innerText = "Create Team";
         dom.signUpBox.querySelector(".instruction").innerHTML = "Team Name";
@@ -266,7 +308,7 @@ function createTeam() {
         data: { "action": "createteam", "cid": cid, "tname": $("#teamCode").val() },
         success: function (result) {
             if (result == null || result["status"] === "error")
-                $("#signUp").replaceWith("<p id='signUpMsg' class='error_text'>An error occurred, try again later.</p>");
+                addSignupErrorBox(result["error"]);
             if (result["status"] === "success") {
                 location.reload();
             }
@@ -306,11 +348,12 @@ function setChoice(question, dom) {
         $dom.parent().parent().children().children().removeClass("mcSelected");
         $dom.addClass("mcSelected");
     }
+    setCookie(cid + "MC", JSON.stringify(choices), 1);
 }
 function setSAQChoice(question, dom) {
     choices[question] = dom.value;
 }
-function submitMC() {
+function submitMC(callback) {
     var numQuestions = document.getElementsByClassName("mcQuestion").length;
     // var answers = "[";
     var answers = [];
@@ -326,13 +369,17 @@ function submitMC() {
         data: { "action": "submitMC", "answers": JSON.stringify(answers) },
         success: function (result) {
             if (result != null) {
-                var template = document.createElement('template');
-                template.innerHTML = result["mcHTML"];
-                dom.mc.replaceWith(template.content.firstChild);
-                clearInterval(xmcTestTimer);
-                delete dom.cached[config.IDs.mc];
-                dom.mc.style.display = "block";
-                delete dom.cached[config.CLASSES.columns];
+                if (callback)
+                    callback();
+                else {
+                    var template = document.createElement('template');
+                    template.innerHTML = result["mcHTML"];
+                    dom.mc.replaceWith(template.content.firstChild);
+                    //  clearInterval(xmcTestTimer);
+                    delete dom.cached[config.IDs.mc];
+                    dom.mc.style.display = "block";
+                    delete dom.cached[config.CLASSES.columns];
+                }
             }
         }
     });
@@ -449,7 +496,9 @@ function finishFRQ() {
         data: { "action": "finishFRQ" },
         success: function (result) {
             if (result != null) {
-                dom.frq.replaceWith(result["frqHTML"]);
+                var template = document.createElement('template');
+                template.innerHTML = result["frqHTML"];
+                dom.frq.replaceWith(template.firstChild);
                 delete dom.cached[config.CLASSES.columns];
             }
         }
@@ -627,7 +676,6 @@ function showFRQSubmission(submissionId) {
                             .replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>") + "</span>";
                         div.appendChild(output_cnt);
                     }
-                    console.log(output);
                 }
                 add(div);
                 submissionMap[submissionId] = div;

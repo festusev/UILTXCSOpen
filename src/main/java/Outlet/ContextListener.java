@@ -2,6 +2,9 @@ package Outlet;
 
 //import Outlet.uil.CS;
 
+import Outlet.uil.Competition;
+import Outlet.uil.UIL;
+
 import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -17,6 +20,7 @@ public class ContextListener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent event) {
         UserMap.initialize();
+        UIL.sortFRQResponses();
 
         /*
         // Finally, schedule the VerificationFlusher class to be called every 15 minutes

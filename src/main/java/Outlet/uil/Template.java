@@ -69,15 +69,20 @@ public class Template {
             opens = frqTest.opens;
             closes = frqTest.closes;
         } else {
-            long difference = fr.opens.date.getTime() - mc.opens.date.getTime();    // SERVER ERROR
-            if (difference > 0) {
+            long opensDifference = fr.opens.date.getTime() - mc.opens.date.getTime();
+            if (opensDifference > 0) {
                 mcFirst = true;
                 opens = mcTest.opens;
-                closes = frqTest.closes;
             } else {
                 mcFirst = false;
                 opens = mcTest.opens;
+            }
+
+            long closesDifference = fr.closes.date.getTime() - mc.closes.date.getTime();
+            if (closesDifference > 0) {
                 closes = frqTest.closes;
+            } else {
+                closes = mcTest.closes;
             }
         }
 
@@ -210,8 +215,9 @@ public class Template {
         String string = "<div id='leftBar'>";
         if(userStatus.creator || userStatus.signedUp) {
             if(mcTest.exists) {
-                String written = "<div id='leftBarWritten'><h2>Test</h2>";
+                String written = "<div id='leftBarWritten'>";
                 if(userStatus.creator) {
+                    written += "<h2>Written</h2>";
                     int submissionCount = 0;
                     int submissionTotal = 0;    // All of the scores added up
                     for(UILEntry entry: competition.entries.tidMap.values()) {
@@ -230,6 +236,7 @@ public class Template {
                     written += "<p id='writtenAverage'>" + Math.round(submissionAverage) + " average</p>";
                 } else {
                     UILEntry entry = ((Student)uData).cids.get(cid);
+                    written += "<h2>Team</h2><p style='overflow:hidden'>"+entry.tname+"</p><h2>Team Code</h2><p>"+entry.password+"</p><h2>Test</h2>";
                     for(short uid: entry.uids) {
                         Student student = StudentMap.getByUID(uid);
                         short score = 0;
@@ -248,11 +255,11 @@ public class Template {
             if(frqTest.exists) {
                 String handsOn = "<div id='leftBarHandsOn'><h2>Hands-On</h2>";
                 if(userStatus.creator) {
-                    int submissionCount = competition.frqSubmissions.size();
+                    int submissionCount = 0;
                     int submissionTotal = 0;
                     for(UILEntry entry: competition.entries.tidMap.values()) {
-                        for(short frqResponse: entry.frqResponses) {
-                            if(frqResponse != 0) submissionCount ++;
+                        for(Pair<Short, ArrayList<FRQSubmission>> problem: entry.frqResponses) {
+                            if(problem.key != 0) submissionCount ++;
                         }
                         submissionTotal += entry.frqScore;
                     }
@@ -267,9 +274,9 @@ public class Template {
                     int untried = 0;
 
                     UILEntry entry = ((Student)uData).cids.get(cid);
-                    for(short frqResponse: entry.frqResponses) {
-                        if(frqResponse == 0) untried++;
-                        else if(frqResponse > 0) solved++;
+                    for(Pair<Short, ArrayList<FRQSubmission>> problem: entry.frqResponses) {
+                        if(problem.key == 0) untried++;
+                        else if(problem.key > 0) solved++;
                         else wrong++;
                     }
 
@@ -327,11 +334,13 @@ public class Template {
         Teacher teacher = competition.teacher;
         String school = "";
         if(!teacher.school.isEmpty()) school = "<h2>School</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.school)+"</p>";
+        String escapedDescription = StringEscapeUtils.escapeHtml4(description);
+        escapedDescription = escapedDescription.replaceAll("\n","<br>");
         String about = "<div class='column' id='aboutColumn'>" +
                 "<div id='aboutDescription'>" +
                 "<div id='aboutHead'><h1>" + StringEscapeUtils.escapeHtml4(name) + "</h1>" + actMessage + "</div>" +
                 //"<div class='row' id='aboutDescriptionRow'>" +
-                "<p>" + StringEscapeUtils.escapeHtml4(description) + "</p></div>" +
+                "<p>" + escapedDescription + "</p></div>" +
                 "<div id='aboutInfo'><h2>Author</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.fname)+" "+
                 StringEscapeUtils.escapeHtml4(teacher.lname)+"</p>"+school;
         if(mcTest.exists) {
@@ -403,10 +412,18 @@ public class Template {
             /*if (!entry.mc.containsKey(u.uid)) {
                 return mcHTML[0];
             } else*/
-            if (entry.finishedMC(u.uid)) {
+            if (userStatus.finishedMC) {
                 return getFinishedMC(entry.mc.get(u.uid), entry.tid, u.uid, competitionStatus);
-            } else {
+            } else if(competitionStatus.mcBefore) {
+                return "<div id='mcColumn' class='column mcSubmissionList' style='display:none;'>" +
+                        "<div id='mcColumn_submissionList'><div class='row head-row'>" +
+                        "<h1>Written</h1></div><div class='row'><p>The written section will start soon.</p></div></div></div>";
+            } else if(competitionStatus.mcDuring) {
                 return getRunningMC();
+            } else if(competitionStatus.mcFinished) {   // The multiple choice is over, and they didn't take it
+                return "<div id='mcColumn' class='column mcSubmissionList' style='display:none;'>" +
+                        "<div id='mcColumn_submissionList'><div class='row head-row'>" +
+                        "<h1>Written</h1></div><div class='row'><p>The written section has closed.</p></div></div></div>";
             }
         } else if(userStatus.teacher && userStatus.creator) {  // This is the teacher who made this competition
             String html =  "<div id='mcColumn' class='column mcSubmissionList' style='display:none;'>" +
@@ -616,11 +633,11 @@ public class Template {
         String problems = "<div id='frqProblems'><b>Problems - " + entry.frqScore +"pts</b>";
         for(int i=0; i<entry.frqResponses.length; i++) {
             problems+="<p>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[i].name) + " - ";
-            short tries = entry.frqResponses[i];
-            if(tries > 0) {
-                problems += frqTest.calcScore(tries) + "pts";
+            Pair<Short, ArrayList<FRQSubmission>> problem = entry.frqResponses[i];
+            if(problem.key > 0) {
+                problems += frqTest.calcScore(problem.key) + "pts";
             } else{
-                problems += (tries*-1) + " tries";
+                problems += (problem.key*-1) + " tries";
             }
             problems+="</p>";
         }
@@ -628,14 +645,14 @@ public class Template {
     }
 
     public String getClarificationHTML(User user, UserStatus userStatus, CompetitionStatus competitionStatus) {
-        System.out.println("SignedUp="+userStatus.signedUp+", Creator="+userStatus.creator+", FRQDuring="+competitionStatus.frqDuring+
-                ", FRQFinished="+competitionStatus.frqFinished+", MCDuring="+competitionStatus.mcDuring+", MCFinished="+competitionStatus.mcFinished);
+        // System.out.println("SignedUp="+userStatus.signedUp+", Creator="+userStatus.creator+", FRQDuring="+competitionStatus.frqDuring+
+        //        ", FRQFinished="+competitionStatus.frqFinished+", MCDuring="+competitionStatus.mcDuring+", MCFinished="+competitionStatus.mcFinished);
         if ((userStatus.signedUp || userStatus.creator) && (competitionStatus.frqDuring || competitionStatus.frqFinished) &&
                 (competitionStatus.mcDuring || competitionStatus.mcFinished)) {
             String html = "<div id='clarificationsColumn' class='column' style='display:none;'><h1>Clarifications</h1>";
 
             if (!user.teacher) {
-                html += "<textarea maxlength='255' id='clarification_input' placeholder='Ask a question.'></textarea><button onclick='sendClarification()'>Send Clarification</button>";
+                html += "<textarea maxlength='255' id='clarification_input' placeholder='Ask a question.'></textarea><button onclick='sendClarification()' class='chngButton'>Send Clarification</button>";
             }
 
             html += "<div class='clarification_group'>";
@@ -660,7 +677,7 @@ public class Template {
 
                     html += "<div class='clarification'><h3>Question"+askerName+"</h3><span>" + clarification.question +
                             "</span><h3>Answer</h3><span><textarea placeholder='Send a response.'></textarea><button " +
-                            "onclick='answerClarification(this, "+i+")'>Send</button></span></div>";
+                            "onclick='answerClarification(this, "+i+")' class='chngButton'>Send</button></span></div>";
 
                     noClarifications = false;
                 }
@@ -692,16 +709,32 @@ public class Template {
             }
 
             if (competitionStatus.mcDuring && !competitionStatus.frqDuring) {
-                return nav + "<li id='countdownCnt'>Written ends in <p id='countdown'>" + mcTest.closes + "</p></li></ul>";
+                String closesScript;
+                if(userStatus.teacher)  {   // They are a teacher, so when the test closes, update the nav.
+                    closesScript = mcTest.closes.getScript("updateNav()");
+                } else {    // They are not a teacher, so when the test closes, do nothing
+                    closesScript = mcTest.closes.getScript("");
+                }
+                return nav + "<li id='countdownCnt'>Written ends in <p id='countdown'>" + closesScript + "</p></li></ul>";
             } else if (!competitionStatus.mcDuring && competitionStatus.frqDuring) {
-                return nav + "<li id='countdownCnt'>Hands-On ends in <p id='countdown'>" + frqTest.closes + "</p></li></ul>";
+                String closesScript = frqTest.closes.getScript("updateNav()");
+
+                return nav + "<li id='countdownCnt'>Hands-On ends in <p id='countdown'>" + closesScript + "</p></li></ul>";
             } else if (competitionStatus.mcFinished && competitionStatus.frqBefore) {
                 return nav + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
             } else if (competitionStatus.mcBefore && competitionStatus.frqFinished) {
                 return nav + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
             } else if (competitionStatus.mcFinished && competitionStatus.frqFinished) {
                 return nav + "<li id='countdownCnt'>The competition has ended!</li></ul>";
-            } else return nav + "<li id='countdownCnt'>Competition closes in <p id='countdown'>" + closes + "</ul>";  // MC and FRQ at the same time.
+            } else {
+                String closesScript;
+                if(userStatus.teacher || userStatus.finishedMC)  {   // They are a teacher
+                    closesScript = closes.getScript("updateNav()");
+                } else {
+                    closesScript = closes.getScript("");
+                }
+                return nav + "<li id='countdownCnt'>Competition closes in <p id='countdown'>" + closesScript + "</ul>";  // MC and FRQ at the same time.
+            }
         }
     }
 
@@ -805,17 +838,20 @@ class UserStatus {
     boolean signedUp;
     boolean teacher;
     boolean creator;
+    boolean finishedMC; // Whether or not they finished the MC. If they aren't signed up, this is always false.
 
-    UserStatus(boolean signedUp, boolean teacher, boolean creator) {
+    UserStatus(boolean signedUp, boolean teacher, boolean creator, boolean finishedMC) {
         this.signedUp = signedUp;
         this.teacher = teacher;
         this.creator = creator;
+        this.finishedMC = finishedMC;
     }
 
     public static UserStatus getCompeteStatus(User u, short cid) {
         boolean signedUp = true;
         boolean teacher = false;
         boolean creator = false;
+        boolean finishedMC = false;
 
         if(u.teacher) {
             signedUp = false;
@@ -825,38 +861,54 @@ class UserStatus {
             }
         } else if(!((Student)u).cids.containsKey(cid)) {
             signedUp = false;
+        } else {
+            UILEntry entry = ((Student)u).cids.get(cid);
+            finishedMC = entry.finishedMC(u.uid);
         }
-        return new UserStatus(signedUp, teacher, creator);
+
+        return new UserStatus(signedUp, teacher, creator, finishedMC);
     }
 }
 
 class CompetitionStatus {
     public final boolean mcBefore;
     public final boolean mcDuring;
+    public final boolean mcOverflow;    // If the multiple choice is in the threshold when submissions are accepted
     public final boolean mcFinished;
 
     public final boolean frqBefore;
     public final boolean frqDuring;
+    public final boolean frqOverflow;    // If the frq is in the threshold when submissions are accepted
     public final boolean frqFinished;
 
+    public static final long OVERFLOW_LENGTH = 1000*60;   // The length of time (milli) after submissions close when they are still accepted
     CompetitionStatus(MCTest mcTest, FRQTest frqTest) {
         if(mcTest.exists) {
             if (!mcTest.opens.done()) {
                 mcBefore = true;
                 mcDuring = false;
+                mcOverflow = false;
                 mcFinished = false;
             } else if (!mcTest.closes.done()) {
                 mcBefore = false;
                 mcDuring = true;
+                mcOverflow = false;
                 mcFinished = false;
+            } else if (mcTest.closes.inOverflow(OVERFLOW_LENGTH)) {
+                mcBefore = false;
+                mcDuring = false;
+                mcOverflow = true;
+                mcFinished = true;
             } else {
                 mcBefore = false;
                 mcDuring = false;
+                mcOverflow = false;
                 mcFinished = true;
             }
         } else {
             mcBefore = false;
             mcDuring = false;
+            mcOverflow = false;
             mcFinished = true;
         }
 
@@ -864,21 +916,31 @@ class CompetitionStatus {
             if (!frqTest.opens.done()) {
                 frqBefore = true;
                 frqDuring = false;
+                frqOverflow = false;
                 frqFinished = false;
             } else if (!frqTest.closes.done()) {
                 frqBefore = false;
                 frqDuring = true;
+                frqOverflow = false;
                 frqFinished = false;
+            } else if (frqTest.closes.inOverflow(OVERFLOW_LENGTH)) {
+                frqBefore = false;
+                frqDuring = false;
+                frqOverflow = true;
+                frqFinished = true;
             } else {
                 frqBefore = false;
                 frqDuring = false;
+                frqOverflow = false;
                 frqFinished = true;
             }
         } else {
             frqBefore = false;
             frqDuring = false;
+            frqOverflow = false;
             frqFinished = true;
         }
-        System.out.println("mcBefore="+mcBefore+",mcDuring="+mcDuring+",mcFinished="+mcFinished+",frqBefore="+frqBefore+",frqDuring="+frqDuring+",frqFinished="+frqFinished);
+        System.out.println("mcBefore="+mcBefore+",mcDuring="+mcDuring+",mcInOverflow="+mcOverflow+",mcFinished="+mcFinished+
+                ",frqBefore="+frqBefore+",frqDuring="+frqDuring+",frqOverflow="+frqOverflow+",frqFinished="+frqFinished);
     }
 }

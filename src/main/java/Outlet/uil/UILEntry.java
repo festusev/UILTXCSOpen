@@ -5,10 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 
 public class UILEntry {
@@ -21,7 +18,7 @@ public class UILEntry {
     // Maps uids to the corresponding MCSubmission
     public HashMap<Short, MCSubmission> mc;
 
-    public short[] frqResponses;    // All zeroes if they have not yet begun
+    public Pair<Short, ArrayList<FRQSubmission>>[] frqResponses;    // All zeroes if they have not yet begun
     public short frqScore;
     public Competition competition;
     private static Gson gson = new Gson();
@@ -44,8 +41,13 @@ public class UILEntry {
         uids = new HashSet<>();
         uids.add(student.uid);
         mc = new HashMap<>();
-        frqResponses = new short[competition.template.frqTest.PROBLEM_MAP.length];
+        frqResponses = new Pair[competition.template.frqTest.PROBLEM_MAP.length];
+        for(int i=0;i<competition.template.frqTest.PROBLEM_MAP.length;i++) {
+            frqResponses[i] = new Pair<>((short) 0, new ArrayList<>());
+        }
         frqScore = 0;
+
+        // competition.entries.addEntry(this);
     };
 
     public UILEntry(ResultSet rs, Competition comp) throws SQLException {
@@ -57,9 +59,9 @@ public class UILEntry {
         setUids(rs.getString("uids"));
 
 
+        mc = new HashMap<>();
 
         if(comp.template.mcTest.exists) {
-            mc = new HashMap<>();
             String column = rs.getString("mc").replace("\\u0027", "\"");
             column = column.substring(1, column.length() - 1);
             HashMap<String, ArrayList<Object[]>> temp = gson.fromJson(column, HashMap.class);
@@ -71,8 +73,12 @@ public class UILEntry {
             }
         }
         if(comp.template.frqTest.exists) {
-            frqResponses = gson.fromJson(rs.getString("frqResponses"), short[].class);
+            frqResponses = FRQSubmission.parseList(rs.getString("frqResponses"), this);
+
             frqScore = Short.parseShort(rs.getString("frqScore"));
+        } else {
+            frqResponses = new Pair[0];
+            frqScore = 0;
         }
     }
 
@@ -168,10 +174,10 @@ public class UILEntry {
                 stmt.setString(1, "{}");
             }
             if(competition.template.frqTest.exists) {
-                stmt.setString(2, gson.toJson(frqResponses));
+                stmt.setString(2, FRQSubmission.stringifyList(frqResponses));
                 stmt.setShort(3, frqScore);
             } else {
-                stmt.setString(2, "{}");
+                stmt.setString(2, "[]");
                 stmt.setShort(3, (short)0);
             }
             stmt.setShort(4, tid);
@@ -217,7 +223,7 @@ public class UILEntry {
                 stmt.setString(4, "{}");
             }
             if(competition.template.frqTest.exists) {
-                stmt.setString(5, gson.toJson(frqResponses));
+                stmt.setString(5, FRQSubmission.stringifyList(frqResponses));
                 stmt.setShort(6, frqScore);
             } else {
                 stmt.setString(5, "{}");
@@ -278,12 +284,16 @@ public class UILEntry {
 
         probNum--;  // We only use probNum for indexes
         boolean update = true;
-        if(result.takePenalty()) frqResponses[probNum]--;
+        Pair<Short, ArrayList<FRQSubmission>> problem = frqResponses[probNum];
+        problem.value.add(result);
+
+        if(result.takePenalty()) problem.key--;
         else if(result.result == FRQSubmission.Result.RIGHT_ANSWER) {
             //System.out.println("--ADDING SUCCESSFUL FRQ RUN, # tries = " +frqResponses[probNum] + " score = "+java.lang.Math.max(CS.template.frqTest.calcScore(frqResponses[probNum]), competition.frqTest.MIN_POINTS));
-            frqResponses[probNum] = (short)(java.lang.Math.abs(frqResponses[probNum]) + 1);
-            frqScore += java.lang.Math.max(competition.template.frqTest.calcScore(frqResponses[probNum]), competition.template.frqTest.MIN_POINTS);
+            problem.key = (short)(java.lang.Math.abs(problem.key) + 1);
+            frqScore += java.lang.Math.max(competition.template.frqTest.calcScore(problem.key), competition.template.frqTest.MIN_POINTS);
         } else update = false;
+
         if(update) update();
     }
 
@@ -316,4 +326,3 @@ public class UILEntry {
         return frq + mc;
     }
 }
-
