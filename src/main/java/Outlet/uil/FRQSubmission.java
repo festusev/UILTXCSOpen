@@ -2,7 +2,6 @@ package Outlet.uil;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.util.ArrayList;
@@ -15,8 +14,8 @@ public class FRQSubmission {
         COMPILETIME_ERROR,
         RUNTIME_ERROR,
         SERVER_ERROR,
-        WRONG_ANSWER,
-        RIGHT_ANSWER,
+        INCORRECT,
+        CORRECT,
         EMPTY_FILE,
         EXCEEDED_TIME_LIMIT,
         UNCLEAR_FILE_TYPE   // When their file name doesn't have a '.' in it
@@ -39,7 +38,7 @@ public class FRQSubmission {
     }
 
     public boolean takePenalty() {
-        return result != Result.RIGHT_ANSWER && result != Result.UNCLEAR_FILE_TYPE && result != Result.SERVER_ERROR;
+        return result != Result.CORRECT && result != Result.UNCLEAR_FILE_TYPE && result != Result.SERVER_ERROR;
     }
 
     public boolean showInput() {
@@ -49,7 +48,7 @@ public class FRQSubmission {
 
     public boolean showOutput() {
         if(overrideShowOutput) return overriddenShowOutput;
-        if(result == Result.WRONG_ANSWER || result == Result.RIGHT_ANSWER) return true;
+        if(result == Result.INCORRECT || result == Result.CORRECT) return true;
         return false;
     }
 
@@ -59,10 +58,10 @@ public class FRQSubmission {
                 return "Compile time Error";
             case RUNTIME_ERROR:
                 return "Runtime Error";
-            case WRONG_ANSWER:
-                return "Wrong Answer";
-            case RIGHT_ANSWER:
-                return "Right Answer";
+            case INCORRECT:
+                return "Incorrect";
+            case CORRECT:
+                return "Correct";
             case EMPTY_FILE:
                 return "Empty File";
             case EXCEEDED_TIME_LIMIT:
@@ -76,14 +75,9 @@ public class FRQSubmission {
     }
 
     public boolean noPenalty() {
-        return !takePenalty() && result != Result.RIGHT_ANSWER;
+        return !takePenalty() && result != Result.CORRECT;
     }
 
-    public String getCondensedResult() {
-        if(takePenalty()) return "Incorrect";
-        else if(result == Result.RIGHT_ANSWER) return "Correct";
-        else return "No Penalty";
-    }
 
     /**
      * The json is in the following format:

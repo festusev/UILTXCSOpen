@@ -2,7 +2,6 @@ package Outlet.uil;
 
 import Outlet.*;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import javax.servlet.ServletException;
@@ -280,7 +279,7 @@ public class Competition {
                         JsonObject compJ = new JsonObject();
                         compJ.addProperty("name", StringEscapeUtils.escapeHtml4(template.frqTest.PROBLEM_MAP[submission.problemNumber - 1].name));
                         compJ.addProperty("team", StringEscapeUtils.escapeHtml4(submission.entry.tname));
-                        compJ.addProperty("result", submission.getCondensedResult());
+                        compJ.addProperty("result", submission.getResultString());
 
                         if (submission.showInput())
                             compJ.addProperty("input", StringEscapeUtils.escapeHtml4(submission.input).replaceAll("\n","<br>"));
@@ -301,44 +300,61 @@ public class Competition {
                         FRQSubmission.Result oldResult = submission.result;
                         switch (newResultId) {
                             case 0:
-                                submission.result = FRQSubmission.Result.WRONG_ANSWER;
+                                submission.result = FRQSubmission.Result.CORRECT;
                                 break;
                             case 1:
-                                submission.result = FRQSubmission.Result.RIGHT_ANSWER;
+                                submission.result = FRQSubmission.Result.INCORRECT;
                                 break;
                             case 2:
                                 submission.result = FRQSubmission.Result.SERVER_ERROR;
                                 break;
+                            case 3:
+                                submission.result = FRQSubmission.Result.COMPILETIME_ERROR;
+                                break;
+                            case 4:
+                                submission.result = FRQSubmission.Result.RUNTIME_ERROR;
+                                break;
+                            case 5:
+                                submission.result = FRQSubmission.Result.EMPTY_FILE;
+                                break;
+                            case 6:
+                                submission.result = FRQSubmission.Result.EXCEEDED_TIME_LIMIT;
+                                break;
+                            case 7:
+                                submission.result = FRQSubmission.Result.UNCLEAR_FILE_TYPE;
+                                break;
+                            /*case 2:
+                                submission.result = FRQSubmission.Result.SERVER_ERROR;
+                                break;*/
                         }
-                        if(oldTakePenalty != submission.takePenalty() || oldTakeNoPenalty != submission.noPenalty()) {    // The result has changed
-                            submission.overrideShowOutput = true;   // Don't let them circumvent the show output rule
-                            submission.overriddenShowOutput = oldShowOutput;
+                        //if(oldTakePenalty != submission.takePenalty() || oldTakeNoPenalty != submission.noPenalty()) {    // The result has changed
+                        submission.overrideShowOutput = true;   // Don't let them circumvent the show output rule
+                        submission.overriddenShowOutput = oldShowOutput;
 
-                            Pair<Short, ArrayList<FRQSubmission>> problem = submission.entry.frqResponses[submission.problemNumber - 1];
+                        submission.entry.recalculateFRQScore(submission.problemNumber-1);
+                            /*Pair<Short, ArrayList<FRQSubmission>> problem = submission.entry.frqResponses[submission.problemNumber - 1];
                             short currentValue = problem.key;
-                            if(submission.result == FRQSubmission.Result.SERVER_ERROR) {    // We switched it to not giving a penalty, so reduce the extreme
-                                problem.key = (short)((Math.abs(currentValue) - 1) * (currentValue % Math.abs(currentValue)));
-                            } else {
-                                if(oldTakeNoPenalty && currentValue != 0) {  // We are now taking a penalty or gaining the points, so add the extreme
-                                    problem.key = (short)((Math.abs(currentValue) + 1) * (currentValue % Math.abs(currentValue)));
-                                    currentValue = problem.key;
-                                } else if(oldTakeNoPenalty) {
-
-                                }
-
-                                if (submission.result == FRQSubmission.Result.RIGHT_ANSWER) {    // They switched it to right answer
-                                    currentValue = (short) Math.abs(currentValue);
-                                    problem.key = currentValue;
-                                    submission.entry.frqScore += template.frqTest.calcScore(currentValue);
-                                } else if (oldResult == FRQSubmission.Result.RIGHT_ANSWER) {     // They switched it from right answer
-                                    submission.entry.frqScore -= template.frqTest.calcScore(currentValue);
-                                    problem.key = (short) (-1 * Math.abs(currentValue));
-                                } else return;
+                            //if(submission.result == FRQSubmission.Result.SERVER_ERROR) {    // We switched it to not giving a penalty, so reduce the extreme
+                            //    problem.key = (short)((Math.abs(currentValue) - 1) * (currentValue % Math.abs(currentValue)));
+                            //} else {
+                            if(oldTakeNoPenalty && currentValue != 0) {  // We are now taking a penalty or gaining the points, so add the extreme
+                                problem.key = (short)((Math.abs(currentValue) + 1) * (currentValue % Math.abs(currentValue)));
+                                currentValue = problem.key;
                             }
 
-                            submission.entry.update();
-                            template.updateScoreboard();
-                        }
+                            if (submission.result == FRQSubmission.Result.CORRECT) {    // They switched it to right answer
+                                currentValue = (short) Math.abs(currentValue);
+                                problem.key = currentValue;
+                                submission.entry.frqScore += template.frqTest.calcScore(currentValue);
+                            } else if (oldResult == FRQSubmission.Result.CORRECT) {     // They switched it from right answer
+                                submission.entry.frqScore -= template.frqTest.calcScore(currentValue);
+                                problem.key = (short) (-1 * Math.abs(currentValue));
+                            } else return;
+                            //}*/
+
+                        submission.entry.update();
+                        template.updateScoreboard();
+                        //}
                     }
                 } else if(action.equals("showMCSubmission")) {
                     short tid = Short.parseShort(request.getParameter("tid"));
@@ -457,7 +473,7 @@ public class Competition {
                     submission.entry = temp;
                     temp.addFRQRun(submission, probNum);
                     frqSubmissions.add(submission);
-                    if (submission.result == FRQSubmission.Result.RIGHT_ANSWER) {
+                    if (submission.result == FRQSubmission.Result.CORRECT) {
                         writer.write("{\"status\":\"success\",\"scored\":\"You gained points!\"}");
                         template.updateScoreboard();
                     } else if (submission.result == FRQSubmission.Result.COMPILETIME_ERROR) {
@@ -469,7 +485,7 @@ public class Competition {
                     } else if (submission.result == FRQSubmission.Result.EXCEEDED_TIME_LIMIT) {
                         writer.write("{\"status\":\"error\",\"error\":\"Time limit exceeded.\"}");
                         template.updateScoreboard();
-                    } else if (submission.result == FRQSubmission.Result.WRONG_ANSWER) {
+                    } else if (submission.result == FRQSubmission.Result.INCORRECT) {
                         writer.write("{\"status\":\"error\",\"error\":\"Wrong answer.\"}");
                         template.updateScoreboard();
                     } else if (submission.result == FRQSubmission.Result.SERVER_ERROR) {

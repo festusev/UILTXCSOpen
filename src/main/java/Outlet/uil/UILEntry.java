@@ -288,13 +288,38 @@ public class UILEntry {
         problem.value.add(result);
 
         if(result.takePenalty()) problem.key--;
-        else if(result.result == FRQSubmission.Result.RIGHT_ANSWER) {
+        else if(result.result == FRQSubmission.Result.CORRECT) {
             //System.out.println("--ADDING SUCCESSFUL FRQ RUN, # tries = " +frqResponses[probNum] + " score = "+java.lang.Math.max(CS.template.frqTest.calcScore(frqResponses[probNum]), competition.frqTest.MIN_POINTS));
             problem.key = (short)(java.lang.Math.abs(problem.key) + 1);
             frqScore += java.lang.Math.max(competition.template.frqTest.calcScore(problem.key), competition.template.frqTest.MIN_POINTS);
         } else update = false;
 
         if(update) update();
+    }
+
+    // Recalculates the score from a single FRQProblem. Looks for the first correct FRQProblem, and ignores every submission
+    // after it.
+    public void recalculateFRQScore(int probNum) {
+        Pair<Short, ArrayList<FRQSubmission>> problem = frqResponses[probNum];
+
+        // The old number of points that this problem contributed to the total frq score
+        int oldScore = 0;
+        if(problem.key > 0 ) oldScore = java.lang.Math.max(competition.template.frqTest.calcScore(problem.key), competition.template.frqTest.MIN_POINTS);
+
+        int numTries = 0;   // The new number of tries. If positive, the problem is solved
+        for(int i=0;i<problem.value.size();i++) {
+            FRQSubmission submission = problem.value.get(i);
+            if(submission.takePenalty()) numTries--;
+            else if(submission.result == FRQSubmission.Result.CORRECT) {
+                numTries = -numTries + 1;
+                break;
+            }
+        }
+        problem.key = (short) numTries;
+
+        frqScore = (short)(frqScore - oldScore);
+        if(numTries > 0)    // It has been solved
+            frqScore = (short)(frqScore + java.lang.Math.max(competition.template.frqTest.calcScore(problem.key), competition.template.frqTest.MIN_POINTS));
     }
 
     public boolean finishedMC(short uid) {

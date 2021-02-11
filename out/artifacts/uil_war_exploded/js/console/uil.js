@@ -28,13 +28,15 @@ var config = {
         signUpBox: "signUpBox",
         teamCode: "teamCode",
         toggleCreateTeam: "toggleCreateTeam",
-        clarification_input: "clarification_input"
+        clarification_input: "clarification_input",
+        bottomRank: "bottomRank",
+        bottomOutOf: "bottomOutOf"
     },
     CLASSES: {
         columns: "column",
         secondNavItem: 'secondNavItem'
     },
-    RESULTS: ["Incorrect", "Correct", "No Penalty"],
+    RESULTS: ["Correct", "Incorrect", "Server Error", "Compile time Error", "Runtime Error", "Empty File", "Time Limit Exceeded", "Unclear File Type"],
     SOCKET_FUNCTIONS: {
         "addSmallMC": function (response) {
             var html = response["html"];
@@ -61,6 +63,10 @@ var config = {
             var display = dom.scoreboard.style.display;
             dom.scoreboard.replaceWith(template.content.firstChild);
             dom.cached[config.IDs.scoreboard] = null;
+            if (response["rank"]) {
+                dom.bottomRank.innerText = response["rank"];
+                dom.bottomOutOf.innerText = response["numTeams"];
+            }
             showColumn();
         }, "reScoreMC": function (response) {
             // TODO: Write this
@@ -113,6 +119,8 @@ var dom = {
     get clarificationColumn() { return this.getHelper(config.IDs.clarificationColumn); },
     get clarificationNav() { return this.getHelper(config.IDs.clarificationNav); },
     get clarification_input() { return this.getHelper(config.IDs.clarification_input); },
+    get bottomRank() { return this.getHelper(config.IDs.bottomRank); },
+    get bottomOutOf() { return this.getHelper(config.IDs.bottomOutOf); },
     classes: {
         cached: {},
         getHelper: function (className) {
@@ -594,10 +602,11 @@ function codeEntered(code) {
     }
 }
 function changeMCJudgement(element, tid, uid, probNum) {
+    var newJudgement = element.value; // "Correct" or "Incorrect"
     var xhr = new XMLHttpRequest();
     xhr.open('POST', "/console/competitions", true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.send("cid=" + cid + "&action=changeMCJudgement&uid=" + uid + "&tid=" + tid + "&judgement=" + element.value + "&probNum=" + probNum);
+    xhr.send("cid=" + cid + "&action=changeMCJudgement&uid=" + uid + "&tid=" + tid + "&judgement=" + newJudgement + "&probNum=" + probNum);
     // document.getElementById("showFRQSubmission"+submissionId).innerText = result_cnt_changeJudgement.options[result_cnt_changeJudgement.selectedIndex].text;
 }
 /**
@@ -651,15 +660,26 @@ function showFRQSubmission(submissionId) {
                     xhr.send("cid=" + cid + "&action=changeFRQJudgement&id=" + submissionId + "&judgeId=" + result_cnt_changeJudgement_1.value);
                     document.getElementById("showFRQSubmission" + submissionId).innerText = result_cnt_changeJudgement_1.options[result_cnt_changeJudgement_1.selectedIndex].text;
                 };
+                var standardResult = false; // If the result is just "Correct" or "Incorrect"
                 for (var i = 0, j = config.RESULTS.length; i < j; i++) {
                     var text = config.RESULTS[i];
                     var option = document.createElement("option");
                     option.value = "" + i;
                     option.innerText = text;
-                    if (text == result)
+                    if (text == result) {
                         option.selected = true;
+                        standardResult = true;
+                    }
                     result_cnt_changeJudgement_1.appendChild(option);
                 }
+                /*if(!standardResult) {
+                    let option = document.createElement("option");
+                    option.value = "3";
+                    option.innerText = result;
+                    option.selected = true;
+                    option.disabled = true;
+                    result_cnt_changeJudgement.appendChild(option);
+                }*/
                 result_cnt.appendChild(result_cnt_changeJudgement_1);
                 var input = response["input"];
                 if (input) {

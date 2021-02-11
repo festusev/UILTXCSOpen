@@ -296,6 +296,10 @@
     transform: translateX(-50%) translateY(-100%);
     width:30rem;
     display:block;
+    background-color: white;
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    border-radius: var(--radius);
 }
 #signUpBox h1{
     display:block;
@@ -490,8 +494,8 @@
 #signUpClose {
     width: 1.5rem;
     position: absolute;
-    top: 0.5rem;
-    right: 0.2rem;
+    top: 3.5rem;
+    right: 2.2rem;
     cursor: pointer;
 }
 #clarificationsColumn textarea {

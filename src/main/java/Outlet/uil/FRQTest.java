@@ -375,9 +375,9 @@ public class FRQTest {
         System.out.println("Execution time: " + c + " ms");
         close(stdout, stderr);
 
-        if (judge_code.result == FRQSubmission.Result.RIGHT_ANSWER) {
+        if (judge_code.result == FRQSubmission.Result.CORRECT) {
             System.out.println("Correct answer");
-        } else if (judge_code.result == FRQSubmission.Result.WRONG_ANSWER) {
+        } else if (judge_code.result == FRQSubmission.Result.INCORRECT) {
             System.out.println("Token mismatch");
         }
 
@@ -393,9 +393,9 @@ public class FRQTest {
 
         // System.out.println("ANSWER KEY:\n" + ans_key);
         ans_key = ans_key.replaceAll("\\s+", "");
-        output = output.replaceAll("\\s+", "");
+        String noWhitespaceOutput = output.replaceAll("\\s+", "");
 
-        return new FRQSubmission((short)0, ans_key.equals(output)?FRQSubmission.Result.RIGHT_ANSWER:FRQSubmission.Result.WRONG_ANSWER, "", output, System.currentTimeMillis());
+        return new FRQSubmission((short)0, ans_key.equals(noWhitespaceOutput)?FRQSubmission.Result.CORRECT :FRQSubmission.Result.INCORRECT, "", output, System.currentTimeMillis());
     }
 
     /***

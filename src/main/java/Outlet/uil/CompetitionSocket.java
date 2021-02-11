@@ -22,7 +22,7 @@ import java.util.HashMap;
         encoders = MessageEncoder.class)
 public class CompetitionSocket {
     private Session session;
-    private User user;
+    public User user;
     private Competition competition;    // The competition they are viewing
 
     public static HashMap<Short, CompetitionSocket> connected = new HashMap<>();    // Maps uid to socket

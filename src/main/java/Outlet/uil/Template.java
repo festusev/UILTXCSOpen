@@ -769,6 +769,15 @@ public class Template {
                         obj.addProperty("action", "updateScoreboard");
                         obj.addProperty("html", getScoreboardHTML());
 
+                        if(!socket.user.teacher) {  // They are a signed-up student
+                            Student student = ((Student)socket.user);
+                            if(student.cids.containsKey(cid)) {
+                                UILEntry entry = student.cids.get(cid);
+                                obj.addProperty("rank", ordinal(sortedTeams.indexOf(entry.tid) + 1));
+                                obj.addProperty("numTeams", competition.entries.allEntries.size());
+                            }
+                        }
+
                         try {
                             socket.send(gson.toJson(obj));
                         } catch (IOException e) {
@@ -782,19 +791,25 @@ public class Template {
             }, 1000);
         }
 
-        competition.entries.allEntries.sort(sorter);
 
         // The table row list of teams in order of points
         String teamList = "";
         int rank = 1;
+
+
+        competition.entries.allEntries.sort(sorter);
         sortedTeams.clear();
-        for(UILEntry entry: competition.entries.allEntries) {
+        for (UILEntry entry : competition.entries.allEntries) {
             sortedTeams.add(entry.tid);
-            entry.getMCScore();
+            // entry.getMCScore();
+
             teamList += "<tr><td>" + rank + "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td>";
-            if(competition.isPublic) teamList += "<td>" + StringEscapeUtils.escapeHtml4(entry.school) + "</td>";
-            teamList += "<td class='right'>"+((frqTest.exists&&mcTest.exists)?entry.getMCScore():"")+"</td><td class='right'>"+
-                        (frqTest.exists?entry.frqScore:entry.getMCScore())+"</td></tr>";
+            if (competition.isPublic) teamList += "<td>" + StringEscapeUtils.escapeHtml4(entry.school) + "</td>";
+            int mcScore = entry.getMCScore();
+            teamList += "<td class='right'>" + ((frqTest.exists && mcTest.exists) ? mcScore : "") + "</td><td class='right'>" +
+                    (frqTest.exists ? entry.frqScore : mcScore) + "</td>";
+            if(frqTest.exists && mcTest.exists) teamList += "<td class='right'>" + (entry.frqScore + mcScore) + "</td></tr>";
+
             rank++;
         }
 
@@ -803,8 +818,8 @@ public class Template {
                 "<table id='teamList'><tr><th>#</th><th>Team</th>";
         if(competition.isPublic) scoreboardHTML += "<th>School</th>";
         scoreboardHTML += "<th class='right'>"+((frqTest.exists&&mcTest.exists)?"Written":"")+"</th><th class='right'>"+
-                (frqTest.exists?"Hands-On":"Written")+"</th>" +
-                "</tr>" + teamList + "</table></div>";
+                (frqTest.exists?"Hands-On":"Written")+"</th>";
+        if(frqTest.exists&&mcTest.exists) scoreboardHTML += "<th class='right'>Total</th></tr>" + teamList + "</table></div>";
     }
 
     /***

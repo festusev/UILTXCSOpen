@@ -146,7 +146,6 @@ function editCompFromMini(cid) {
     }
 }
 function addPreventDefault(element) {
-    console.log("Preventing default");
     element.onclick = function (event) {
         event.preventDefault();
     };
@@ -223,6 +222,7 @@ var Competition = /** @class */ (function () {
             compName: null,
             compPublic: null,
             // viewCompetition : null,
+            errorSuccessBox: null,
             controls: null,
             controlsEdit: null,
             controlsOpen: null,
@@ -457,20 +457,20 @@ var Competition = /** @class */ (function () {
                             problem.dom.input.value = "";
                             problem.dom.output.value = "";
                         }
-                        addSuccessBox(thisComp.dom.comp_edit, response["success"]);
+                        thisComp.dom.errorSuccessBox = addSuccessBox(thisComp.dom.comp_edit, response["success"], thisComp.dom.errorSuccessBox);
                         if (thisComp.cid.length === 0 && response["cid"] != null)
                             thisComp.cid = response["cid"];
                         // thisComp.dom.viewCompetition.onclick = function(){window.location.href = "/console/competitions?cid="+thisComp.cid;};
                     }
                     else if (response["error"] != null) { // An error occurred
-                        addErrorBox(thisComp.dom.comp_edit, response["error"]);
+                        thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, response["error"], thisComp.dom.errorSuccessBox);
                     }
                     else {
-                        addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error);
+                        thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error, thisComp.dom.errorSuccessBox);
                     }
                 }
                 else {
-                    addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error);
+                    thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error, thisComp.dom.errorSuccessBox);
                 }
             }
         };
@@ -494,11 +494,11 @@ var Competition = /** @class */ (function () {
                 if (xhr.status === 200) {
                     var response = JSON.parse(xhr.responseText);
                     if (response["success"] != null) {
-                        addSuccessBox(thisComp.dom.comp_edit, response["success"]);
+                        thisComp.dom.errorSuccessBox = addSuccessBox(thisComp.dom.comp_edit, response["success"], thisComp.dom.errorSuccessBox);
                         callback();
                     }
                     else {
-                        addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error);
+                        thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error, thisComp.dom.errorSuccessBox);
                     }
                 }
             }
@@ -527,28 +527,33 @@ var Competition = /** @class */ (function () {
                             problem.dom.input.value = "";
                             problem.dom.output.value = "";
                         }
-                        addSuccessBox(thisComp.dom.comp_edit, response["success"]);
+                        thisComp.dom.errorSuccessBox = addSuccessBox(thisComp.dom.comp_edit, response["success"], thisComp.dom.errorSuccessBox);
                         if (thisComp.cid.length === 0 && response["cid"] != null)
                             thisComp.cid = response["cid"];
                         // thisComp.dom.comp_head.onclick = function(event){event.stopPropagation();window.location.href = "/console/competitions?cid="+thisComp.cid;};
+                        var openComp = thisComp.getOpenCompetition();
+                        // Hide the openComp control if the controls are currently closed
+                        if (visible_competition_edit_dom != thisComp.dom.comp_edit)
+                            openComp.style.display = "none";
                         thisComp.dom.controls.insertBefore(thisComp.getOpenCompetition(), thisComp.dom.controlsSave);
                         thisComp.published = true;
-                        console.log("temp");
                         callback();
                     }
                     else if (response["error"] != null) { // An error occurred
-                        addErrorBox(thisComp.dom.comp_edit, response["error"]);
+                        if (errorCallback)
+                            errorCallback();
+                        thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, response["error"], thisComp.dom.errorSuccessBox);
                     }
                     else {
                         if (errorCallback)
                             errorCallback();
-                        addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error);
+                        thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error, thisComp.dom.errorSuccessBox);
                     }
                 }
                 else {
                     if (errorCallback)
                         errorCallback();
-                    addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error);
+                    thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error, thisComp.dom.errorSuccessBox);
                 }
             }
         };
@@ -1204,12 +1209,11 @@ list_handsOn_changeproblems.appendChild(li);
             publishCompetition.innerText = "Publish";
             var blockPublication_1 = false; // Whether or not this is currently publishing, so block the publication
             publishCompetition.onclick = function (event) {
+                event.stopPropagation();
                 if (blockPublication_1)
                     return;
                 blockPublication_1 = true;
-                event.stopPropagation();
                 thisComp.publishCompetition(function () {
-                    console.log("published competition");
                     publishCompetition.onclick = null;
                     publishCompetition.innerHTML = "Published";
                     publishCompetition.style.backgroundColor = "unset";
@@ -1446,6 +1450,8 @@ function toggleEditCompetition(competition) {
                 element.style.display = "none";
             }
         }
+        if (competition.dom.errorSuccessBox != null)
+            competition.dom.errorSuccessBox.style.display = "none";
     }
     if (visible_competition_edit_dom != newCompEdit) {
         visible_competition_edit_dom = newCompEdit;
@@ -1472,24 +1478,34 @@ function createNewCompetition() {
     toggleEditCompetition(competition);
     showClassComps(document.getElementById("showClassComps"));
 }
-function addErrorBox(box, error) {
-    var errorBox = document.getElementById(box.id + "ERROR");
+function addErrorBox(parentBox, error, errorBox) {
     if (!errorBox) {
-        box.insertAdjacentHTML('afterbegin', "<div class='error' id='" + box.id + "ERROR'>" + error + "</div>");
+        errorBox = document.createElement("div");
+        errorBox.classList.add("error");
+        errorBox.innerText = error;
+        parentBox.insertAdjacentElement('afterbegin', errorBox);
+        return errorBox;
     }
     else {
-        errorBox.innerHTML = "" + error;
+        errorBox.style.display = "unset";
+        errorBox.innerHTML = error;
         errorBox.className = "error";
+        return errorBox;
     }
 }
-function addSuccessBox(box, success) {
-    var errorBox = document.getElementById(box.id + "ERROR");
-    if (!errorBox) {
-        box.insertAdjacentHTML('afterbegin', "<div class='success' id='" + box.id + "ERROR'>" + success + "</div>");
+function addSuccessBox(parentBox, success, successBox) {
+    if (!successBox) {
+        successBox = document.createElement("div");
+        successBox.classList.add("success");
+        successBox.innerText = success;
+        parentBox.insertAdjacentElement('afterbegin', successBox);
+        return successBox;
     }
     else {
-        errorBox.innerHTML = success;
-        errorBox.className = "success";
+        successBox.style.display = "unset";
+        successBox.innerHTML = success;
+        successBox.className = "success";
+        return successBox;
     }
 }
 document.addEventListener("DOMContentLoaded", function (event) {
