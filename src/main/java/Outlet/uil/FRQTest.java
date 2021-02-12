@@ -241,7 +241,7 @@ public class FRQTest {
             run_cmd = "cd " + sourceDir + " && /usr/bin/java " + exe_file;
         } else if (language == 1) {
             compile_cmd = "";
-            run_cmd = "cd " + sourceDir + " && /usr/lib/python3.7/python " + source_file;
+            run_cmd = "cd " + sourceDir + " && /usr/bin/python3 " + source_file;
         } else if (language == 2) {
             compile_cmd = "cd " + sourceDir + " && /usr/bin/g++ -std=c++17 " + source_file + " -o " + exe_file;
             run_cmd = "cd " + sourceDir + " && ./" + exe_file;

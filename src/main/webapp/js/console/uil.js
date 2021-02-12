@@ -616,15 +616,25 @@ function changeMCJudgement(element, tid, uid, probNum) {
  */
 var submissionMap = {};
 var showingFRQSubmission = null;
-function showFRQSubmission(submissionId) {
+var showingFRQSubmissionTR = null; // The table row element they clicked on to show this frq submission
+function showFRQSubmission(row, submissionId) {
     function add(element) {
         if (!showingFRQSubmission) {
             dom.frq.appendChild(element);
         }
         else {
-            showingFRQSubmission.replaceWith(element);
+            try {
+                showingFRQSubmission.replaceWith(element);
+            }
+            catch (e) {
+                dom.frq.appendChild(element);
+            }
         }
         showingFRQSubmission = element;
+        if (showingFRQSubmissionTR)
+            showingFRQSubmissionTR.classList.remove("selected");
+        showingFRQSubmissionTR = row;
+        showingFRQSubmissionTR.classList.add("selected");
     }
     if (submissionMap[submissionId] != null) {
         add(submissionMap[submissionId]);

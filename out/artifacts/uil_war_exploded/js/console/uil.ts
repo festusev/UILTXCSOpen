@@ -664,14 +664,23 @@ function changeMCJudgement(element: HTMLSelectElement, tid: number, uid: number,
  */
 let submissionMap : object = {};
 let showingFRQSubmission:HTMLElement = null;
-function showFRQSubmission(submissionId: number) {
+let showingFRQSubmissionTR:HTMLTableRowElement = null;  // The table row element they clicked on to show this frq submission
+function showFRQSubmission(row:HTMLTableRowElement, submissionId: number) {
     function add(element:HTMLElement) {
         if(!showingFRQSubmission) {
             dom.frq.appendChild(element);
         } else {
-            showingFRQSubmission.replaceWith(element);
+            try {
+                showingFRQSubmission.replaceWith(element);
+            } catch(e) {
+                dom.frq.appendChild(element);
+            }
         }
         showingFRQSubmission = element;
+
+        if(showingFRQSubmissionTR) showingFRQSubmissionTR.classList.remove("selected");
+        showingFRQSubmissionTR = row;
+        showingFRQSubmissionTR.classList.add("selected");
     }
 
     if(submissionMap[submissionId] != null) {

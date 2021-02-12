@@ -567,7 +567,7 @@ public class Template {
     }
 
     public String getSmallFRQ(int i, FRQSubmission submission) {
-        return "<tr onclick='showFRQSubmission("+i+")'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber-1].name) +
+        return "<tr onclick='showFRQSubmission(this,"+i+")'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber-1].name) +
                 "</td><td>" + StringEscapeUtils.escapeHtml4(submission.entry.tname) + "</td><td id='showFRQSubmission"+i+"'>" + submission.getResultString() +
                 "</td></tr>";
     }

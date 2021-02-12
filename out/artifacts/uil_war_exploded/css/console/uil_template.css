@@ -51,7 +51,7 @@
     padding-bottom:5px;
     font-size: 2rem;
     display: inline-block;
-    width: 50%;
+    width: 100%;
 }
 #aboutColumn {
     background-color: unset;
@@ -396,6 +396,9 @@
 #frqSubmissions tr{
     cursor: pointer;
 }
+#frqSubmissions tr.selected {
+    background-color: lightgray;
+}
 #frqSubmissions table tr *:last-child {
     text-align:right;
 }
@@ -407,6 +410,7 @@
     box-shadow: var(--shadow);
     padding: 3rem 4rem;
     margin-left: 1rem;
+    max-height: 88vh;
 }
 .frqSubmissionEditor .half{
     width:50%;
@@ -534,12 +538,27 @@
     #nav_compname {
         white-space: nowrap;
     }
+    #countdownCnt {
+        display: none !important;
+    }
 }
 @media only screen and (max-width: 1450px){
     .column{
-        margin:10px;
+        margin:0px;
+        padding: 1rem 2rem;
     }
     #aboutColumn, #mcColumn {
         padding: 10px;
+    }
+    .frqSubmissionEditor {
+        padding: 1rem 2rem;
+    }
+    #frqSubmissions {
+        padding: 1rem 2rem;
+    }
+    #mcColumn_submissionList {
+        margin: 0;
+        padding: 1rem 1rem;
+        width: 50%;
     }
 }
