@@ -824,7 +824,7 @@ async function requestLoadScoreboard() {
     while (ws == null || ws.readyState === 0) {
         await new Promise(r => setTimeout(r, 2000));
     }
-    
+
     ws.send("[\"loadScoreboard\"]");
 }
 
