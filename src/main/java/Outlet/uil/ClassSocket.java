@@ -1,14 +1,15 @@
 package Outlet.uil;
 
-import Outlet.Student;
-import Outlet.Teacher;
-import Outlet.User;
+import Outlet.*;
 import Outlet.Websocket.*;
+import com.google.gson.*;
 
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -24,6 +25,7 @@ public class ClassSocket {
 
     public static HashMap<Short, ClassSocket> connected = new HashMap<>();    // Maps uid to socket
     public static HashMap<Short, ArrayList<ClassSocket>> classes = new HashMap<>(); // Maps teacher uid to a list of ClassSockets
+    private static Gson gson = new Gson();
 
     @OnOpen
     public void onOpen(Session session) throws IOException {
@@ -57,6 +59,67 @@ public class ClassSocket {
     @OnMessage
     public void onMessage(Session session, String message)
             throws IOException {
+        System.out.println("Message="+message);
+
+        if(user.teacher) {
+            JsonObject jsonObject = JsonParser.parseString(message).getAsJsonObject();
+            String action = jsonObject.get("action").getAsString();
+            boolean save = action.equals("save");
+            boolean create = action.equals("create");
+            if (save || create) {   // They are saving or creating a team
+                System.out.println("Action: " + action);
+
+                String tname = jsonObject.get("name").getAsString();
+                JsonArray nonAltUIDsJson = jsonObject.get("nonAlts").getAsJsonArray();
+                ArrayList<Student> nonAltStudents = new ArrayList<>();
+                for (JsonElement uid : nonAltUIDsJson) {
+                    nonAltStudents.add(StudentMap.getByUID(uid.getAsShort()));
+                }
+
+                Student alt = null;
+                if (!jsonObject.get("alt").isJsonNull()) alt = StudentMap.getByUID(jsonObject.get("alt").getAsShort());
+
+                Team team;
+                if(save) {
+                    short tid = jsonObject.get("tid").getAsShort();
+                    team = Team.teams.get(user.uid).get(tid);
+                    team.name = tname;
+                    team.nonAltStudents = nonAltStudents;
+                    team.alternate = alt;
+                } else {
+                    team = new Team((Teacher)user, tname, nonAltStudents, alt);
+                }
+
+                try {
+                    team.update(create);
+                    if(create) {    // In this case, we must send back the team's tid
+                        team.setTID(team.tid);  // Add this team to the hashmap
+
+                        JsonObject response = new JsonObject();
+                        response.addProperty("action", "setTID");
+                        response.addProperty("tid", team.tid);
+                        response.addProperty("reference", jsonObject.get("reference").getAsShort());    //  Used so that the javascript can find the object again
+                        send(response.toString());
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            else if(action.equals("delete")) {
+                short tid = jsonObject.get("tid").getAsShort();
+                HashMap<Short, Team> teamMap = Team.teams.get(user.uid);
+                if(teamMap != null) {
+                    Team team = teamMap.get(tid);
+                    if(team.tid == tid) {   // We do this to make sure that the wrong team isn't deleted
+                        try {
+                            team.delete();
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @OnClose

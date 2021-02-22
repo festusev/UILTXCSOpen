@@ -25,6 +25,8 @@ public class Competition {
     public Teacher teacher;
     public boolean published;
     public boolean isPublic;
+    public boolean alternateExists; // If teams can have alternates
+    public short numNonAlts;    // The maximum number of non alternate competitors on each team
 
     public EntryMap entries;
     ArrayList<FRQSubmission> frqSubmissions = new ArrayList<>();
@@ -42,76 +44,92 @@ public class Competition {
         }
     }
 
-    public Competition(Teacher teacher, short cid, boolean published, boolean isPublic, String name, String description,
-                       MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications) {
-        frq.setDirectories(cid, teacher.uid);
-
-        this.teacher = teacher;
+    public Competition(short cid, boolean published, boolean isPublic, String name, String description,
+                       boolean alternateExists, short numNonAlts, MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications) {
+        this.teacher = null;
         this.published = published;
         this.isPublic = isPublic;
+        this.alternateExists = alternateExists;
+        this.numNonAlts = numNonAlts;
+
         entries = new EntryMap();
         setTemplate(published, mc, frq, name, description, cid);
 
-        /* Now, create the folder */
-        if(frq.exists) {
-            frq.setDirectories(cid, teacher.uid);
-            frq.createProblemDirectories();
-            frq.initializeFiles();
-        }
+
         this.clarifications = clarifications;
+    }
+
+    public Competition(Teacher teacher, short cid, boolean published, boolean isPublic, String name, String description,
+                       boolean alternateExists, short numNonAlts, MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications) {
+        this(cid, published, isPublic, name, description, alternateExists, numNonAlts, mc, frq,clarifications);
+        setTeacher(teacher);
+    }
+
+    public void setTeacher(Teacher teacher) {
+        this.teacher = teacher;
+
+        /* Now, create the folder */
+        if(template.frqTest.exists) {
+            template.frqTest.setDirectories(template.cid, teacher.uid);
+            template.frqTest.createProblemDirectories();
+            template.frqTest.initializeFiles();
+        }
     }
 
     /* Returns a new competition object that has been inserted into the database */
     public static Competition createCompetition(Teacher teacher, boolean published, boolean isPublic, String name,
-                                                String description, MCTest mcTest, FRQTest frqTest) throws SQLException {
-        Connection conn = Conn.getConnection();
+                                                String description, boolean alternateExists, short numNonAlts,
+                                                MCTest mcTest, FRQTest frqTest) throws SQLException {
+        Connection  conn = Conn.getConnection();
         PreparedStatement stmt = conn.prepareStatement("INSERT INTO competitions (uid, name, isPublic, description, " +
-                "mcKey, mcCorrectPoints, mcIncorrectPoints, mcInstructions, mcTestLink," +
+                "alternateExists, numNonAlts, mcKey, mcCorrectPoints, mcIncorrectPoints, mcInstructions, mcTestLink," +
                 "mcOpens, mcTime, frqMaxPoints, frqIncorrectPenalty, frqProblemMap, frqStudentPack," +
-                "frqJudgePacket, frqOpens, frqTime, type, published, clarifications) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]')",
+                "frqJudgePacket, frqOpens, frqTime, type, published, clarifications) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]')",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
         stmt.setBoolean(3, isPublic);
         stmt.setString(4, description);
+        stmt.setBoolean(5, alternateExists);
+        stmt.setShort(6, numNonAlts);
 
 
         if(mcTest.exists) {
-            stmt.setString(5, gson.toJson(mcTest.KEY));
-            stmt.setShort(6,mcTest.CORRECT_PTS);
-            stmt.setShort(7, mcTest.INCORRECT_PTS);
-            stmt.setString(8,mcTest.INSTRUCTIONS);
-            stmt.setString(9,mcTest.TEST_LINK);
+            stmt.setString(7, gson.toJson(mcTest.KEY));
+            stmt.setShort(8,mcTest.CORRECT_PTS);
+            stmt.setShort(9, mcTest.INCORRECT_PTS);
+            stmt.setString(10,mcTest.INSTRUCTIONS);
+            stmt.setString(11,mcTest.TEST_LINK);
             // stmt.setString(10,mcTest.ANSWERS);
-            stmt.setString(10,mcTest.opens.DATE_STRING);
-            stmt.setLong(11, mcTest.TIME);
+            stmt.setString(12,mcTest.opens.DATE_STRING);
+            stmt.setLong(13, mcTest.TIME);
         } else {
-            stmt.setString(5, null);
-            stmt.setShort(6, (short)0);
-            stmt.setShort(7, (short)0);
-            stmt.setString(8, null);
-            stmt.setString(9, null);
-            // stmt.setString(10, null);
+            stmt.setString(7, null);
+            stmt.setShort(8, (short)0);
+            stmt.setShort(9, (short)0);
             stmt.setString(10, null);
-            stmt.setLong(11, 0);
+            stmt.setString(11, null);
+            // stmt.setString(10, null);
+            stmt.setString(12, null);
+            stmt.setLong(13, 0);
         }
 
         if(frqTest.exists) {
-            stmt.setShort(12, frqTest.MAX_POINTS);
-            stmt.setShort(13, frqTest.INCORRECT_PENALTY);
-            stmt.setString(14, gson.toJson(frqTest.PROBLEM_MAP));
-            stmt.setString(15, frqTest.STUDENT_PACKET);
-            stmt.setString(16, frqTest.JUDGE_PACKET);
-            stmt.setString(17, frqTest.opens.DATE_STRING);
-            stmt.setLong(18, frqTest.TIME);
+            stmt.setShort(14, frqTest.MAX_POINTS);
+            stmt.setShort(15, frqTest.INCORRECT_PENALTY);
+            stmt.setString(16, gson.toJson(frqTest.PROBLEM_MAP));
+            stmt.setString(17, frqTest.STUDENT_PACKET);
+            stmt.setString(18, frqTest.JUDGE_PACKET);
+            stmt.setString(19, frqTest.opens.DATE_STRING);
+            stmt.setLong(20, frqTest.TIME);
         } else {
-            stmt.setShort(12, (short)0);
-            stmt.setShort(13, (short)0);
-            stmt.setString(14, null);
-            stmt.setString(15, null);
+            stmt.setShort(14, (short)0);
+            stmt.setShort(15, (short)0);
             stmt.setString(16, null);
             stmt.setString(17, null);
-            stmt.setLong(18, 0);
+            stmt.setString(18, null);
+            stmt.setString(19, null);
+            stmt.setLong(20, 0);
         }
 
         int type = 0;   // 0 if just MC, 1 if just FRQ, 2 if both
@@ -120,8 +138,8 @@ public class Competition {
         } else if(mcTest.exists && frqTest.exists){
             type = 2;
         }
-        stmt.setShort(19, (short) type);
-        stmt.setBoolean(20, published);
+        stmt.setShort(21, (short) type);
+        stmt.setBoolean(22, published);
 
         System.out.println(stmt);
         stmt.execute();
@@ -138,15 +156,17 @@ public class Competition {
                     "`tid` SMALLINT NOT NULL AUTO_INCREMENT UNIQUE," +
                     "`name` VARCHAR(25) NOT NULL UNIQUE," +
                     "`password` CHAR(153) NOT NULL," +
-                    "`uids` TINYTEXT NOT NULL,`mc` TEXT NOT NULL," +
+                    "`uids` TINYTEXT NOT NULL," +
+                    "`altUID` SMALLINT NOT NULL," +
+                    "`mc` TEXT NOT NULL," +
                     "`frqResponses` MEDIUMTEXT NOT NULL," +
                     "`frqScore` SMALLINT DEFAULT 0," +
                     "PRIMARY KEY (`tid`))");
             System.out.println(stmt);
             stmt.executeUpdate();
 
-            Competition competition = new Competition(teacher, cid, published, isPublic, name, description, mcTest, frqTest,
-                    new ArrayList<>());
+            Competition competition = new Competition(teacher, cid, published, isPublic, name, description,alternateExists,
+                    numNonAlts, mcTest, frqTest, new ArrayList<>());
             System.out.println("CID = " + cid + ", " + competition.template.cid);
             UIL.addCompetition(competition);
 
@@ -169,14 +189,11 @@ public class Competition {
         stmt.executeUpdate();
     }
 
-    public void update() throws SQLException {
-        updateDB(template.name, template.description, template.mcTest, template.frqTest);
-    }
-
-    public void updateDB(String name, String description, MCTest mcTest, FRQTest frqTest) throws SQLException {
+    public void updateDB(String name, String description, boolean alternateExists, short numNonAlts, MCTest mcTest,
+                         FRQTest frqTest) throws SQLException {
         Connection conn = Conn.getConnection();
         PreparedStatement stmt = conn.prepareStatement("UPDATE competitions SET uid=?, name=?, isPublic=?, description=?, " +
-                        "mcKey=?, mcCorrectPoints=?, mcIncorrectPoints=?, mcInstructions=?, mcTestLink=?," +
+                        "alternateExists=?, numNonAlts=?, mcKey=?, mcCorrectPoints=?, mcIncorrectPoints=?, mcInstructions=?, mcTestLink=?," +
                         "mcOpens=?, mcTime=?, frqMaxPoints=?, frqIncorrectPenalty=?, frqProblemMap=?, frqStudentPack=?," +
                         "frqJudgePacket=?, frqOpens=?, frqTime=?, type=?, published=?, clarifications=? WHERE cid=?",
                 Statement.RETURN_GENERATED_KEYS);
@@ -184,44 +201,46 @@ public class Competition {
         stmt.setString(2, name);
         stmt.setBoolean(3, isPublic);
         stmt.setString(4,description);
+        stmt.setBoolean(5, alternateExists);
+        stmt.setShort(6, numNonAlts);
 
 
         if(mcTest.exists) {
-            stmt.setString(5, gson.toJson(mcTest.KEY));
-            stmt.setShort(6,mcTest.CORRECT_PTS);
-            stmt.setShort(7, mcTest.INCORRECT_PTS);
-            stmt.setString(8,mcTest.INSTRUCTIONS);
-            stmt.setString(9,mcTest.TEST_LINK);
+            stmt.setString(7, gson.toJson(mcTest.KEY));
+            stmt.setShort(8,mcTest.CORRECT_PTS);
+            stmt.setShort(9, mcTest.INCORRECT_PTS);
+            stmt.setString(10,mcTest.INSTRUCTIONS);
+            stmt.setString(11,mcTest.TEST_LINK);
             // stmt.setString(10,mcTest.ANSWERS);
-            stmt.setString(10,mcTest.opens.DATE_STRING);
-            stmt.setLong(11, mcTest.TIME);
+            stmt.setString(12,mcTest.opens.DATE_STRING);
+            stmt.setLong(13, mcTest.TIME);
         } else {
-            stmt.setString(5, null);
-            stmt.setShort(6, (short)0);
-            stmt.setShort(7, (short)0);
-            stmt.setString(8, null);
-            stmt.setString(9, null);
-            // stmt.setString(10, null);
+            stmt.setString(7, null);
+            stmt.setShort(8, (short)0);
+            stmt.setShort(9, (short)0);
             stmt.setString(10, null);
-            stmt.setLong(11, 0);
+            stmt.setString(11, null);
+            // stmt.setString(10, null);
+            stmt.setString(12, null);
+            stmt.setLong(13, 0);
         }
 
         if(frqTest.exists) {
-            stmt.setShort(12, frqTest.MAX_POINTS);
-            stmt.setShort(13, frqTest.INCORRECT_PENALTY);
-            stmt.setString(14, gson.toJson(frqTest.PROBLEM_MAP));
-            stmt.setString(15, frqTest.STUDENT_PACKET);
-            stmt.setString(16, frqTest.JUDGE_PACKET);
-            stmt.setString(17, frqTest.opens.DATE_STRING);
-            stmt.setLong(18, frqTest.TIME);
+            stmt.setShort(14, frqTest.MAX_POINTS);
+            stmt.setShort(15, frqTest.INCORRECT_PENALTY);
+            stmt.setString(16, gson.toJson(frqTest.PROBLEM_MAP));
+            stmt.setString(17, frqTest.STUDENT_PACKET);
+            stmt.setString(18, frqTest.JUDGE_PACKET);
+            stmt.setString(19, frqTest.opens.DATE_STRING);
+            stmt.setLong(20, frqTest.TIME);
         } else {
-            stmt.setShort(12, (short)0);
-            stmt.setShort(13, (short)0);
-            stmt.setString(14, null);
-            stmt.setString(15, null);
+            stmt.setShort(14, (short)0);
+            stmt.setShort(15, (short)0);
             stmt.setString(16, null);
             stmt.setString(17, null);
-            stmt.setLong(18, 0);
+            stmt.setString(18, null);
+            stmt.setString(19, null);
+            stmt.setLong(20, 0);
         }
 
         int type = 0;   // 0 if just MC, 1 if just FRQ, 2 if both
@@ -230,21 +249,29 @@ public class Competition {
         } else if(mcTest.exists && frqTest.exists){
             type = 2;
         }
-        stmt.setShort(19, (short) type);
-        stmt.setBoolean(20, published);
-        stmt.setString(21, Clarification.toJson(this.clarifications).toString());
-        stmt.setShort(22, template.cid);
+        stmt.setShort(21, (short) type);
+        stmt.setBoolean(22, published);
+        stmt.setString(23, Clarification.toJson(this.clarifications).toString());
+        stmt.setShort(24, template.cid);
         stmt.executeUpdate();
     }
 
+    public void update() throws SQLException {
+        updateDB(template.name, template.description, alternateExists,numNonAlts, template.mcTest, template.frqTest);
+    }
+
     /* Updates the competition in the database and the template */
-    public void update(Teacher teacher, boolean published, boolean isPublic, String name, String description, MCTest mcTest, FRQTest frqTest) throws SQLException {
+    public void update(Teacher teacher, boolean published, boolean isPublic, boolean alternateExists, short numNonAlts,
+                       String name, String description, MCTest mcTest, FRQTest frqTest) throws SQLException {
         frqTest.setDirectories(template.cid, teacher.uid);
         frqTest.initializeFiles();
 
-        updateDB(name, description, mcTest, frqTest);
+        updateDB(name, description, alternateExists, numNonAlts, mcTest, frqTest);
 
         this.isPublic = isPublic;
+
+        this.alternateExists = alternateExists;
+        this.numNonAlts = numNonAlts;
         setTemplate(published, mcTest, frqTest, name, description, template.cid);
     }
 
@@ -410,6 +437,51 @@ public class Competition {
                             }
                         }
                     }
+                } else if(action.equals("createteam")) {
+                    String tname = request.getParameter("tname");
+                    if(tname == null || tname.isEmpty()) {
+                        writer.write("{\"status\":\"error\",\"error\":\"Team name is empty.\"}");
+                        return;
+                    }
+                    try {
+
+                        for(UILEntry entry: entries.allEntries) {
+                            if(entry.tname.equals(tname)) {
+                                writer.write("{\"status\":\"error\",\"error\":\"Team name is taken.\"}");
+                                return;
+                            }
+                        }
+
+                        int leftLimit = 48; // numeral '0'
+                        int rightLimit = 90; // letter 'Z'
+                        Random random = new Random();
+
+                        String code;
+                        do {
+                            code = random.ints(leftLimit, rightLimit + 1)
+                                    .filter(i -> (i <= 57 || i >= 65) && (i <= 90))
+                                    .limit(6)
+                                    .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                                    .toString();    // Get a 6-digit team code
+                        } while (entries.getByPassword(code) != null);
+
+                        UILEntry entry = new UILEntry(tname, code, this);
+                        entry.insert();
+                        entries.addEntry(entry);
+                        template.updateScoreboard();
+
+                        JsonObject data = new JsonObject();
+                        data.addProperty("status", "success");
+                        data.addProperty("tname", tname);
+                        data.addProperty("code", entry.password);
+                        data.addProperty("tid", entry.tid);
+                        writer.write(data.toString());
+                        return;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        writer.write("{\"status\":\"error\",\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
+                        return;
+                    }
                 }
             }
             return;
@@ -427,7 +499,8 @@ public class Competition {
 
                 }
             } else if(!competitionStatus.frqBefore && action.equals("grabFRQProblems")) {
-                writer.write("{\"frqProblemsHTML\":\""+template.getFRQProblems(temp)+"\"}");
+                if(temp.altUID == user.uid) writer.write("{\"frqProblemsHTML\":\"\"}");
+                else writer.write("{\"frqProblemsHTML\":\""+template.getFRQProblems(temp)+"\"}");
             } else if (action.equals("submitMC")) {
                 if(competitionStatus.mcDuring || competitionStatus.mcOverflow) {    // submissions are open
                     String[] answers = gson.fromJson(request.getParameter("answers"), String[].class);
@@ -449,7 +522,7 @@ public class Competition {
                 }
                 return;
             } else if(action.equals("submitFRQ")) {
-                if(competitionStatus.frqDuring || competitionStatus.frqOverflow) {
+                if(temp.altUID != user.uid && (competitionStatus.frqDuring || competitionStatus.frqOverflow)) {
                     Part filePart = request.getPart("textfile");
                     InputStream fileContent = filePart.getInputStream();
 
@@ -530,16 +603,22 @@ public class Competition {
                 writer.write("{\"status\":\"error\",\"error\":\"Team code must be 6 characters.\"}");
                 return;
             }
+            boolean isAlternate = request.getParameter("isAlternate").equals("true");
             try {
                 UILEntry entry = entries.getByPassword(code);
                 if(entry != null) {
-                    if(entry.uids.size() >= 3) {    // This team is full
+                    if(entry.uids.size() > (numNonAlts + (alternateExists?1:0))) {    // This team is full
                         writer.write("{\"status\":\"error\",\"error\":\"Team is full.\"}");
                         return;
+                    } else if(alternateExists && isAlternate && entry.altUID > 0) { // They are trying to sign up as the alternate and this team already has one
+                        writer.write("{\"status\":\"error\",\"error\":\"This team already has an alternate.\"}");
+                        return;
                     }
+
                     user.cids.put(this.template.cid, entry);
                     user.updateUser(false);
                     entry.uids.add(user.uid);
+                    if(alternateExists && isAlternate) entry.altUID = user.uid;
                     entry.updateUIDS();
                     template.updateScoreboard();
                     writer.write("{\"status\":\"success\",\"reload\":\"/uil\"}");
@@ -604,6 +683,11 @@ public class Competition {
                 user.cids.put(template.cid, entry);
                 user.updateUser(false);
                 template.updateScoreboard();
+
+                JsonObject data = new JsonObject();
+                data.addProperty("status", "success");
+                data.addProperty("tname", tname);
+                data.addProperty("tid", entry.tid);
                 writer.write("{\"status\":\"success\"}");
                 return;
             } catch (Exception e) {
@@ -636,6 +720,17 @@ public class Competition {
             return entry;
         }
         return null;
+    }
+
+    public void loadAllEntries() throws SQLException {
+        entries = new EntryMap();
+
+        Connection conn = Conn.getConnection();
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM `c"+template.cid+"`");
+        ResultSet rs = stmt.executeQuery();
+        while(rs.next()) {
+            entries.addEntry(new UILEntry(rs, this));
+        }
     }
 
     /***

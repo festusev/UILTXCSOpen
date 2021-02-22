@@ -30,8 +30,8 @@ public class UIL extends HttpServlet{
     //private static HashMap<Short, Competition> upcoming;    // Upcoming competitions
     //private static HashMap<Short, Competition> running;     // Running competitions
     //private static HashMap<Short, Competition> archived;    // Past competitions
-    private static HashMap<Short, Competition> published;
-    private static HashMap<Short, Competition> unpublished; // Unpublished competitions
+    public static HashMap<Short, Competition> published;
+    public static HashMap<Short, Competition> unpublished; // Unpublished competitions
     public static boolean initialized = false;
     public static void initialize() throws SQLException {
         if(initialized) return;
@@ -49,6 +49,9 @@ public class UIL extends HttpServlet{
         while(rs.next()) {
             boolean published = rs.getBoolean("published");
             short type = rs.getShort("type");   // If 0, there is only a mc test, if 1, only a frq test, if 2, both
+
+            boolean alternateExists = rs.getBoolean("alternateExists");
+            short numNonAlts = rs.getShort("numNonAlts");
 
             MCTest mcTest;
             FRQTest frqTest;
@@ -72,14 +75,16 @@ public class UIL extends HttpServlet{
                         rs.getLong("frqTime"));
             }
 
-            Competition comp = new Competition((Teacher) UserMap.getUserByUID(uid), cid, published,
+            Competition comp = new Competition(cid, published,
                     rs.getBoolean("isPublic"),rs.getString("name"),rs.getString("description"),
-                    mcTest, frqTest,Clarification.fromJsonToArray(rs.getString("clarifications")));
+                    alternateExists, numNonAlts,mcTest, frqTest,
+                    Clarification.fromJsonToArray(rs.getString("clarifications")));
 
             if(!comp.published) {
                 unpublished.put(comp.template.cid, comp);
             } else {
                 UIL.published.put(comp.template.cid, comp);
+                comp.loadAllEntries();
             }
             /*else if(!comp.template.opens.done()) {   // The competition is yet to open
                 upcoming.put(comp.template.cid, comp);
@@ -239,6 +244,7 @@ public class UIL extends HttpServlet{
         String description = request.getParameter("description");
         String name = request.getParameter("name");
         boolean isPublic = request.getParameter("isPublic").equals("true");
+        short numNonAlts = Short.parseShort(request.getParameter("numNonAlts"));
         boolean writtenExists = request.getParameter("writtenExists").equals("true");
         boolean handsOnExists = request.getParameter("handsOnExists").equals("true");
 
@@ -247,6 +253,9 @@ public class UIL extends HttpServlet{
             return false;
         } else if (description.length() > 32000) {
             writer.write("{\"error\":\"Description cannot exceed 32000 characters.\"}");
+            return false;
+        } else if(numNonAlts < 1 || numNonAlts > 127) {
+            writer.write("{\"error\":\"Number of non-alternates must be between 1 and 127.\"}");
             return false;
         }
 
@@ -353,9 +362,12 @@ public class UIL extends HttpServlet{
                     mcTime);
         }
 
+        boolean alternateExists = false;
         if(!handsOnExists) {   // No FRQ Test
             frqTest = new FRQTest();
         } else {
+             alternateExists = request.getParameter("alternateExists").equals("true");
+
             String frqOpensString;
             try {
                 SimpleDateFormat sdf = new SimpleDateFormat(Countdown.DATETIME_FORMAT, Locale.ENGLISH);  // Lets us make dates easily
@@ -465,7 +477,7 @@ public class UIL extends HttpServlet{
             // We are creating a competition and returning the cid
             try {
                 competition = Competition.createCompetition((Teacher)u, true, isPublic,
-                        name, description, mcTest, frqTest);
+                        name, description, alternateExists,numNonAlts, mcTest, frqTest);
                 // retCid = true;
             } catch (SQLException e) {
                 System.out.println("Error creating the competition");
@@ -479,6 +491,12 @@ public class UIL extends HttpServlet{
                 System.out.println("Competition not found");
                 writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
                 return false;
+            } else if(competition.alternateExists && !alternateExists && competition.entries.allEntries.size() > 0) {
+                writer.write("{\"error\":\"You can't delete alternates while teams are signed up.\"}");
+                return false;
+            } else if(competition.numNonAlts > numNonAlts && competition.entries.allEntries.size() > 0) {
+                writer.write("{\"error\":\"You can't reduce the team size while teams are signed up.\"}");
+                return false;
             }
 
             competition.published = true;
@@ -491,7 +509,7 @@ public class UIL extends HttpServlet{
                 frqTest.deleteTestcaseDir();
             }
             try {
-                competition.update((Teacher)u, true, isPublic, name, description, mcTest, frqTest);
+                competition.update((Teacher)u, true, isPublic, alternateExists, numNonAlts, name, description, mcTest, frqTest);
             } catch (SQLException e) {
                 e.printStackTrace();
                 writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
@@ -747,6 +765,8 @@ public class UIL extends HttpServlet{
                 String description = request.getParameter("description");
                 String name = request.getParameter("name");
                 boolean isPublic = request.getParameter("isPublic").equals("true");
+                boolean alternateExists = request.getParameter("alternateExists").equals("true");
+                short numNonAlts = Short.parseShort(request.getParameter("numNonAlts"));
                 boolean writtenExists = request.getParameter("writtenExists").equals("true");
                 boolean handsOnExists = request.getParameter("handsOnExists").equals("true");
 
@@ -755,6 +775,9 @@ public class UIL extends HttpServlet{
                     return;
                 } else if (description.length() > 32000) {
                     writer.write("{\"error\":\"Description cannot exceed 32000 characters.\"}");
+                    return;
+                } else if(numNonAlts < 1 || numNonAlts > 127) {
+                    writer.write("{\"error\":\"Number of non-alternates must be between 1 and 127.\"}");
                     return;
                 }
 
@@ -825,7 +848,7 @@ public class UIL extends HttpServlet{
                     // We are creating a competition and returning the cid
                     try {
                         competition = Competition.createCompetition((Teacher)u, false, isPublic,
-                                name, description, mcTest, frqTest);
+                                name, description,alternateExists,numNonAlts, mcTest, frqTest);
                     } catch (SQLException e) {
                         e.printStackTrace();
                         writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
@@ -838,6 +861,7 @@ public class UIL extends HttpServlet{
                         return;
                     }
 
+
                     competition.published = false;
                     frqTest.setDirectories(cid, u.uid);
 
@@ -848,7 +872,7 @@ public class UIL extends HttpServlet{
                         frqTest.deleteTestcaseDir();
                     }
                     try {
-                        competition.update((Teacher)u, competition.published, isPublic, name, description, mcTest, frqTest);
+                        competition.update((Teacher)u, competition.published, isPublic, alternateExists, numNonAlts, name, description, mcTest, frqTest);
                     } catch (SQLException e) {
                         e.printStackTrace();
                         writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");

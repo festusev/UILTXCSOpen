@@ -57,6 +57,7 @@ body{
     /**
     Document variables
      */
+    --sec-light: #f2c446;
     --sec-col: #edad3e;
     --sec-dark: #d18b11;
     --prim-light: #42A5F5;
@@ -386,27 +387,6 @@ a:focus{
     padding:5px 20px 5px 20px;
 }
 
-/* How a scoreboard is styled */
-#scoreboardColumn tr{
-    background-color: white;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-}
-#scoreboardColumn th{
-    padding:8px 2rem;
-    text-align: left;
-    font-weight:bold;
-}
-#scoreboardColumn td{
-    padding:13px 2rem;
-}
-#scoreboardColumn .right{
-    text-align:right;
-}
-
-#scoreboardColumn h2{
-    font-size:1rem;
-}
 .chngButton{
     border:none;
     background-color:var(--sec-col);
@@ -418,6 +398,7 @@ a:focus{
     cursor:pointer;
     font-size: 1rem;
     margin-top: 8px;
+    outline: none;
 }
 .chngButton:hover{
     background-color:var(--sec-dark);

@@ -1,3 +1,58 @@
+.trashcan {
+    height: 1.2rem;
+    float: right;
+    cursor: pointer;
+}
+#right.dragging .drop_area {
+    background-color: rgba(250,250,250);
+    cursor: pointer;
+}
+
+#newTeam, #teams h2{
+    display: inline-block;
+}
+#newTeam {
+    position: absolute;
+    right: 0;
+    top: 0;
+    margin: 0;
+}
+#teamList .team {
+    box-shadow: var(--shadow);
+    padding: 1rem;
+    background-color: white;
+    margin-bottom: 1rem;
+}
+#teamList .student {
+    background-color: rgba(0,0,0,0);
+}
+#teamList h3 {
+    font-weight: bold;
+    margin: 1rem 0;
+}
+#teamList input {
+    font-size: 1.2rem;
+    border: 0 0 1px 0 lightgrey;
+    outline: none;
+}
+#teamList, #teamList .student  {
+    cursor: default;
+}
+#teamList .kick {
+    background-color: red;
+    border: none;
+    color: white;
+    font-weight: bold;
+    font-size: 1rem;
+    float: right;
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 5px 10px;
+}
+.drop_area {
+    display: block;
+    min-height: 3rem;
+}
 #class_code {
     margin-bottom: 1rem;
 }
@@ -9,16 +64,21 @@ h2 {
     text-align: center;
     font-size: 2rem;
 }
-#class {
-    width: 40rem;
-    max-width: 100%;
-    box-sizing: border-box;
+.center {
     margin: auto;
+    width: 80rem;
+    max-width: 100%;
     margin-top: 10%;
-    background-color: white;
-    padding: 2rem 3rem;
-    box-shadow: var(--shadow);
+    margin-bottom: 10%;
+}
+#class, #teams {
+    width: 50%;
+    box-sizing: border-box;
+    border-radius: var(--radius);
     position: relative;
+}
+#class {
+    margin-right: 2rem;
 }
 #class.join {
     width: 20rem;
@@ -42,8 +102,24 @@ h2 {
     color: white;
     font-weight: bold;
 }
-#studentList li {
-    margin-bottom: 7px;
+#teams {
+    margin-left: 2rem;
+}
+#addTeam {
+    position: absolute;
+    top: 2rem;
+    right: 3rem;
+}
+.student {
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    padding: 5px 10px;
+    margin-bottom: 14px;
+    cursor: pointer;
+    background-color: white;
+}
+.student: hover{
+    background-color: black;
 }
 #studentList .kick, #class .leaveClass {
     float: right;
@@ -52,6 +128,7 @@ h2 {
     padding: 0px 8px;
     cursor: pointer;
     box-shadow: var(--shadow);
+    display: none;
 }
 #class .leaveClass {
     position: absolute;

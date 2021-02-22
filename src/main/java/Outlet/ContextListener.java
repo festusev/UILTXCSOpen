@@ -6,6 +6,7 @@ import Outlet.uil.Competition;
 import Outlet.uil.UIL;
 
 import java.io.*;
+import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -19,8 +20,16 @@ import javax.servlet.annotation.WebListener;
 public class ContextListener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent event) {
-        UserMap.initialize();
-        UIL.sortFRQResponses();
+        try {
+            UIL.initialize();
+            UserMap.initialize();
+            UIL.sortFRQResponses();
+            Team.initialize();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
 
         /*
         // Finally, schedule the VerificationFlusher class to be called every 15 minutes

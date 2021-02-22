@@ -1,6 +1,7 @@
 package Outlet.uil;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,26 +35,35 @@ public class MCSubmission{
         this.finished = finished;
     }
 
-    public String serialize() {
-        String responsesString = gson.toJson(answers);
-        System.out.println("RESPONSE STRING: " + responsesString);
-        String scoringReportString = gson.toJson(scoringReport);
-        String ret = "["+responsesString+","+scoringReportString+",'"+finished+"']";
-        return ret.replace("\"","'");
+    public JsonArray serialize() {
+        JsonArray ret = new JsonArray();
+
+        JsonArray responses = new JsonArray();
+        for(String answer: answers) responses.add(answer);
+        ret.add(responses);
+
+        JsonArray scoring = new JsonArray();
+        for(short s: scoringReport) scoring.add(s);
+        ret.add(scoring);
+
+        ret.add(finished);
+
+        return ret;
     }
 
-    public static MCSubmission deserialize(ArrayList data){
-        Object[] responsesTemp = ((ArrayList)data.get(0)).toArray();
-        String[] responses = new String[responsesTemp.length];
-        for(int i=0; i<responsesTemp.length;i++){
-            responses[i] = (String) responsesTemp[i];
-        }
-        Object[] scoringReportTemp =((ArrayList)data.get(1)).toArray();
-        short[] scoringReport = new short[4];
-        for(int i=0; i<scoringReportTemp.length; i++){
-            scoringReport[i] = (short)(double)(Double) scoringReportTemp[i];
+    public static MCSubmission deserialize(JsonArray data){
+        JsonArray responsesTemp = data.get(0).getAsJsonArray();
+        String[] responses = new String[responsesTemp.size()];
+        for(int i=0,j=responsesTemp.size(); i<j;i++){
+            responses[i] = responsesTemp.get(i).getAsString();
         }
 
-        return new MCSubmission(responses, scoringReport, Boolean.parseBoolean((String)data.get(2)));
+        JsonArray scoringReportTemp = data.get(1).getAsJsonArray();
+        short[] scoringReport = new short[4];
+        for(int i=0,j=scoringReportTemp.size(); i<j; i++){
+            scoringReport[i] = scoringReportTemp.get(i).getAsShort();
+        }
+
+        return new MCSubmission(responses, scoringReport, Boolean.parseBoolean(data.get(2).getAsString()));
     }
 }

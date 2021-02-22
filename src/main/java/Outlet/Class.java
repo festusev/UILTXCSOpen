@@ -3,6 +3,7 @@ import Outlet.uil.*;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.mysql.jdbc.StringUtils;
 
 import java.io.*;
 import java.security.NoSuchAlgorithmException;
@@ -24,35 +25,51 @@ public class Class extends HttpServlet {
     protected static Gson gson = new Gson();
 
     public static String getClassHTML(User u, Teacher teacher) {
-        String html = "<div id='class'>";
+        String html = "<div class='center'><div id='class'>";
 
+        // Add in the class html
         if(teacher != null) {
             if (u.teacher) {
                 html += "<p id='class_code'>Class Code: <b>" + ((Teacher) u).classCode + "</b></p>";
             } else {
-                html += "<h2>Teacher: <b>" + teacher.fname + " " + teacher.lname + "</b></h2><span onclick='leaveClass()' class='leaveClass'>Leave Class</span>";
+                html += "<h2>Teacher: <b>" + StringEscapeUtils.escapeHtml4(teacher.fname + " " + teacher.lname) + "</b></h2><span onclick='leaveClass()' class='leaveClass'>Leave Class</span>";
             }
-            html += "<h2>Students</h2>";
+            html += "<script>loadClass();</script><h2>Students</h2>";
 
             Collection<Student> students = StudentMap.getByTeacher(teacher.uid).values();    // All of the students in the class
             if (students.size() <= 0) {
                 html += "<div>No students.</div>";
             } else {
                 html += "<ul id='studentList'>";
-                for (Student s : students) {
-                    html += "<li>" + s.fname + " " + s.lname;
+                /*for (Student s : students) {
+                    html += "<li class='student'>" + StringEscapeUtils.escapeHtml4(s.fname + " " + s.lname);
                     if (u.teacher) html += "<span></span><span class='kick' onclick='kickStudent(this, "+s.uid+")'>Kick</span>";
                     html += "</li>";
-                }
+                }*/
                 html += "</ul>";
             }
         } else {    // They are not a teacher and do not belong to a class
             html += "<script>showJoinClass();</script>"; // I use an img tag here so that the script is executed when inserted using .innerHTML
         }
+        html += "</div>";
 
-        return html + "</div>";
+        // Add in the team html
+        if(teacher != null) {
+            html += "<div id='teams'><h2>Teams</h2>";
+            if(u.teacher) html += "<button id='newTeam' class='chngButton' onclick='newTeam()'>New</button>";
+
+            html += "<ul id='teamList'></ul></div>";
+        }
+
+        return html += "</div>";
     }
 
+    private JsonObject jsonifyStudent(Student student) {
+        JsonObject studentObj = new JsonObject();
+        studentObj.addProperty("name", StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname));
+        studentObj.addProperty("uid", student.uid);
+        return studentObj;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -149,8 +166,45 @@ public class Class extends HttpServlet {
             if(u.teacher) teacher = (Teacher) u;
             else teacher = TeacherMap.getByUID(((Student)u).teacherId);
             obj.addProperty("classHTML", getClassHTML(u, teacher));
-            writer.write(new Gson().toJson(obj));
+            writer.write(gson.toJson(obj));
             return;
+        } else if(action.equals("loadClass")) { // Returns a json object of the class
+            Teacher teacher;
+            if(u.teacher) teacher = (Teacher) u;
+            else teacher = TeacherMap.getByUID(((Student)u).teacherId);
+
+            JsonObject classData = new JsonObject();
+
+            classData.addProperty("teacher", u.teacher);
+            JsonArray studentList = new JsonArray();
+            Collection<Student> students = StudentMap.getByTeacher(teacher.uid).values();
+            for(Student student: students) {
+                studentList.add(jsonifyStudent(student));
+            }
+            classData.add("studentList", studentList);
+
+            JsonArray teamList = new JsonArray();
+            if(Team.teams.containsKey(teacher.uid)) {
+                Collection<Team> teams = Team.teams.get(teacher.uid).values();
+                for(Team team: teams) {
+                    JsonObject teamJson = new JsonObject();
+                    teamJson.addProperty("tid", team.tid);
+                    teamJson.addProperty("name", team.name);
+
+                    JsonArray nonAltJson = new JsonArray(); // The array of non-alt students
+                    for(Student student: team.nonAltStudents) {
+                        nonAltJson.add(jsonifyStudent(student));
+                    }
+                    teamJson.add("nonAlt", nonAltJson);
+                    if(team.alternate != null) {
+                        teamJson.add("alt", jsonifyStudent(team.alternate));
+                    }
+                    teamList.add(teamJson);
+                }
+            }
+            classData.add("teamList", teamList);
+
+            writer.write(classData.toString());
         }
     }
 

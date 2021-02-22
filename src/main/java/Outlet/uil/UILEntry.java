@@ -2,7 +2,9 @@ package Outlet.uil;
 
 import Outlet.*;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import java.io.IOException;
 import java.sql.*;
@@ -10,7 +12,8 @@ import java.util.*;
 
 public class UILEntry {
     public String tname;
-    public Set<Short> uids;
+    public Set<Short> uids; // The uids of all students, including the alternate
+    public short altUID;  // The uid of the alternate. -1 if there is no alternate
     public short tid;
     public String school = "";  // Specified by the students
     public String password;
@@ -40,6 +43,31 @@ public class UILEntry {
         this.competition = competition;
         uids = new HashSet<>();
         uids.add(student.uid);
+        altUID = -1;
+        mc = new HashMap<>();
+        frqResponses = new Pair[competition.template.frqTest.PROBLEM_MAP.length];
+        for(int i=0;i<competition.template.frqTest.PROBLEM_MAP.length;i++) {
+            frqResponses[i] = new Pair<>((short) 0, new ArrayList<>());
+        }
+        frqScore = 0;
+
+        // competition.entries.addEntry(this);
+    };
+
+    /***
+     * Used when a teacher creates a new team.
+     * @param name
+     * @param hashedPassword
+     * @param competition
+     */
+    public UILEntry(String name, String hashedPassword, Competition competition) {
+        this.tname =  name;
+        this.school = "No School";
+
+        this.password = hashedPassword;
+        this.competition = competition;
+        uids = new HashSet<>();
+        altUID = -1;
         mc = new HashMap<>();
         frqResponses = new Pair[competition.template.frqTest.PROBLEM_MAP.length];
         for(int i=0;i<competition.template.frqTest.PROBLEM_MAP.length;i++) {
@@ -57,18 +85,16 @@ public class UILEntry {
         password = rs.getString("password");
 
         setUids(rs.getString("uids"));
+        altUID = rs.getShort("altUID");
 
 
         mc = new HashMap<>();
 
         if(comp.template.mcTest.exists) {
-            String column = rs.getString("mc").replace("\\u0027", "\"");
-            column = column.substring(1, column.length() - 1);
-            HashMap<String, ArrayList<Object[]>> temp = gson.fromJson(column, HashMap.class);
-            temp = temp == null ? new HashMap<>() : temp;
-            Set<String> keys = temp.keySet();
+            JsonObject column = JsonParser.parseString(rs.getString("mc")).getAsJsonObject();
+            Set<String> keys = column.keySet();
             for (String key : keys) {
-                MCSubmission submission = MCSubmission.deserialize(temp.get(key));
+                MCSubmission submission = MCSubmission.deserialize(column.get(key).getAsJsonArray());
                 mc.put(Short.parseShort(key), submission);
             }
         }
@@ -84,23 +110,23 @@ public class UILEntry {
 
     public void setUids(short[] temp) {
         uids = new HashSet<>();
-        boolean schoolSet = false;
+        // boolean schoolSet = false;
         for(short uid: temp) {
             uids.add(uid);
 
-            Student student = StudentMap.getByUID(uid);
+            /*Student student = StudentMap.getByUID(uid);
             Teacher teacher = TeacherMap.getByUID(student.uid);
             if(teacher != null && !teacher.school.isEmpty() && !schoolSet) {
                 schoolSet = true;
                 this.school = teacher.school;
-            }
+            }*/
         }
-        if(!schoolSet) {
-            this.school = "No School";
-        }
+        //if(!schoolSet) {
+        this.school = "No School";
+        //}
     }
     public void setUids(String s) {
-        short[] temp = gson.fromJson(s, short[].class);
+        short[] temp = gson. fromJson(s, short[].class);
         setUids(temp);
     }
 
@@ -114,39 +140,35 @@ public class UILEntry {
         return true;
     }
 
-    public int leaveTeam(Student u) {
+    public int leaveTeam(Student u ) {
         // They don't belong to this team
         if(u.cids.get(competition.template.cid).tid != tid || !uids.contains(u.uid))
             return -2;
-        if(notStarted()) return -3;   // Cannot leave team unless before the competition has started
+        // if(notStarted()) return -3;   // Cannot leave team unless before the competition has started
 
         uids.remove(u.uid);
-        int status = update();
+        if(altUID == u.uid) altUID = -1;
+
+        int status = updateUIDS();
 
         u.cids.remove(competition.template.cid);
         if(u.updateUser(false) != 0) return -1;
-        if(uids.size()<=0) {   // If The team only has one user, delete the team.
-            delete();
-        }
 
         ArrayList<ClassSocket> list = ClassSocket.classes.get(tid);
-        for(ClassSocket socket: list) {
-            JsonObject obj = new JsonObject();
-            obj.addProperty("action", "updateTeam");
-            obj.addProperty("html", competition.template.getTeamMembers(StudentMap.getByUID(socket.user.uid), this));
-            try {
-                socket.send(gson.toJson(obj));
-            } catch (IOException e) {
-                e.printStackTrace();
+        if(list != null) {
+            for (ClassSocket socket : list) {
+                JsonObject obj = new JsonObject();
+                obj.addProperty("action", "updateTeam");
+                obj.addProperty("html", competition.template.getTeamMembers(StudentMap.getByUID(socket.user.uid), this));
+                try {
+                    socket.send(gson.toJson(obj));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
 
         return status;
-    }
-
-    public void delete() {
-        competition.template.deleteEntry(tid);
-        uids = new HashSet<>();
     }
 
     public static Template getTemplate(short cid) {
@@ -169,7 +191,7 @@ public class UILEntry {
             PreparedStatement stmt = conn.prepareStatement(statement);
 
             if(competition.template.mcTest.exists) {
-                stmt.setString(1, gson.toJson(stringifyMC()));
+                stmt.setString(1, stringifyMC());
             } else {
                 stmt.setString(1, "{}");
             }
@@ -192,10 +214,41 @@ public class UILEntry {
     public int updateUIDS() {
         Connection conn = Conn.getConnection();
         try {
-            PreparedStatement stmt = conn.prepareStatement("UPDATE `c"+competition.template.cid+"` SET uids=? WHERE tid=?");
+            PreparedStatement stmt = conn.prepareStatement("UPDATE `c"+competition.template.cid+"` SET uids=?, altUID = ? WHERE tid=?");
             stmt.setString(1, gson.toJson(uids));
-            stmt.setShort(2, tid);
+            stmt.setShort(2, altUID);
+            stmt.setShort(3, tid);
             stmt.executeUpdate();
+            return 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public int updateAll() {
+        Connection conn = Conn.getConnection();
+        try {
+            PreparedStatement stmt = conn.prepareStatement("UPDATE `c"+competition.template.cid+"` SET uids=?,altUID=?," +
+                    "mc=?,frqResponses=?,frqScore=? WHERE tid=?");
+
+            stmt.setString(1, gson.toJson(uids));
+            stmt.setShort(2, altUID);
+            if(competition.template.mcTest.exists) {
+                stmt.setString(3, stringifyMC());
+            } else {
+                stmt.setString(3, "{}");
+            }
+            if(competition.template.frqTest.exists) {
+                stmt.setString(4, FRQSubmission.stringifyList(frqResponses));
+                stmt.setShort(5, frqScore);
+            } else {
+                stmt.setString(4, "[]");
+                stmt.setShort(5, (short)0);
+            }
+            stmt.setShort(6, tid);
+            stmt.executeUpdate();
+
             return 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -210,24 +263,26 @@ public class UILEntry {
     public int insert(){
         Connection conn = Conn.getConnection();
         try {
-            String statement = "INSERT INTO `c"+competition.template.cid+"` (name, password, uids, mc, frqResponses, frqScore) VALUES (?,?,?,?,?,?)";
+            String statement = "INSERT INTO `c"+competition.template.cid+"` (name, password, uids, altUID, mc, frqResponses, " +
+                    "frqScore) VALUES (?,?,?,?,?,?,?)";
 
             PreparedStatement stmt = conn.prepareStatement(statement);
             stmt.setString(1, tname);
             stmt.setString(2, password);
             stmt.setString(3, gson.toJson(uids));
+            stmt.setShort(4, altUID);
 
             if(competition.template.mcTest.exists) {
-                stmt.setString(4, stringifyMC());
+                stmt.setString(5, stringifyMC());
             } else {
-                stmt.setString(4, "{}");
+                stmt.setString(6, "{}");
             }
             if(competition.template.frqTest.exists) {
-                stmt.setString(5, FRQSubmission.stringifyList(frqResponses));
-                stmt.setShort(6, frqScore);
+                stmt.setString(6, FRQSubmission.stringifyList(frqResponses));
+                stmt.setShort(7, frqScore);
             } else {
-                stmt.setString(5, "{}");
-                stmt.setShort(6, (short)0);
+                stmt.setString(6, "{}");
+                stmt.setShort(7, (short)0);
             }
             stmt.executeUpdate();
 
@@ -248,7 +303,15 @@ public class UILEntry {
     }
 
     public String stringifyMC() {
-        String mcStringified = "{";
+        JsonObject obj = new JsonObject();
+        Set<Short> keys = mc.keySet();
+        int i = 0;
+        for (short key : keys) {
+            obj.add(""+key, mc.get(key).serialize());
+        }
+        return obj.toString();
+
+        /*String mcStringified = "{";
         Set<Short> keys = mc.keySet();
         int i = 0;
         for (short key : keys) {
@@ -257,7 +320,7 @@ public class UILEntry {
             i++;
         }
         mcStringified += "}";
-        return mcStringified;
+        return mcStringified;*/
     }
 
     /**
@@ -341,6 +404,41 @@ public class UILEntry {
             score += mc.get(i).scoringReport[0];
         }
         return score;
+    }
+
+    // Returns a JSON list of objects formatted: {tid: tid, nonAlts: [["name", mcScore]], alt: ["name",mcScore]}. if there is no mcTest, there is no mcScore
+    public JsonObject getStudentJSON() {
+        JsonObject obj = new JsonObject();
+
+        JsonArray array = new JsonArray();
+        for(short uid: uids) {
+            if(uid == altUID) continue; // This is the alt
+
+            JsonArray student = new JsonArray();
+            student.add(StudentMap.getByUID(uid).fname + " " + StudentMap.getByUID(uid).lname);
+            student.add(uid);
+
+            if(competition.template.mcTest.exists && mc.containsKey(uid)) {
+                student.add(mc.get(uid).scoringReport[0]);
+            }
+            array.add(student);
+        }
+        obj.add("nonAlts", array);
+
+        if(altUID >= 0 && competition.template.frqTest.exists) {    // Alternates exist and this team has one
+            JsonArray alt = new JsonArray();
+
+            Student student = StudentMap.getByUID(altUID);
+            alt.add(student.fname + " " + student.lname);
+            alt.add(altUID);
+
+            if(competition.template.mcTest.exists && mc.containsKey(altUID)) {
+                alt.add(mc.get(altUID).scoringReport[0]);
+            }
+            obj.add("alt", alt);
+        }
+
+        return obj;
     }
 
     public int getScore() {

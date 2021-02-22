@@ -2,6 +2,7 @@ package Outlet.uil;
 
 import Outlet.*;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import javax.servlet.http.HttpServletRequest;
@@ -30,6 +31,8 @@ public class Template {
 
     public String navBarHTML;   // For the competition-specific nav bar that goes underneath the header nav bar
     private String scoreboardHTML;  // The scoreboard page html after the nav bars
+    public JsonArray scoreboardData;  // The list of teams sorted and with team members and scores for each test
+    public JsonArray teamCodeData;  // The list of team codes, with each index corresponding to the same index of the team in scoreboardData
 
     public Countdown opens;
     public Countdown closes;
@@ -322,6 +325,7 @@ public class Template {
         String actMessage = "<button id='signUp' onclick='showSignup()'>Sign Up</button><div id='signUpBox' style='display:none'><div class='center'><h1>Join Team</h1>" +
                 "<img src='/res/close.svg' id='signUpClose' onclick='hideSignup()'/>" +
                 "<p id='errorBoxERROR'></p><p class='instruction'>Enter team join code:</p><input name='teamCode' id='teamCode' oninput='codeEntered(this)' maxlength='6'>" +
+                "<div id='signUpIsAlternateCnt'>I am an alternate<input name='isAlternate' id='signUpIsAlternate' type='checkbox'></div>" +
                 "<p id='toggleCreateTeam' onclick='toggleCreateTeam(event)'>or create a new team.</p></div></div>";  // They haven't signed up yet
 
         if(closes.done()) {
@@ -612,7 +616,12 @@ public class Template {
             if (competitionStatus.frqFinished) {
                 return getFinishedFRQ(entry);
             } else if (competitionStatus.frqDuring) {
-                return getRunningFRQ(entry);
+                if(userStatus.alt) {
+                    return "<div id='frqColumn' class='column' style='display:none;'>" +
+                            "<h1 class='forbiddenPage'>Alternates cannot compete in the Hands-On.</h1>" +
+                            "</div>";
+                }
+                else return getRunningFRQ(entry);
             } else return "";   // This shouldn't happen
         }
     }
@@ -755,7 +764,7 @@ public class Template {
             return;
         }*/
 
-        if(!scoreboardSocketScheduled) {    // Schedule a timer to send the updated scoreboard to the connected sockets
+        /*if(!scoreboardSocketScheduled) {    // Schedule a timer to send the updated scoreboard to the connected sockets
             scoreboardSocketScheduled = true;
             Timer task = new Timer();
             task.schedule(new TimerTask() {
@@ -789,8 +798,11 @@ public class Template {
                     task.purge();
                 }
             }, 1000);
-        }
+        }*/
 
+        // This will store the json scoreboard information
+        scoreboardData = new JsonArray();
+        teamCodeData = new JsonArray();
 
         // The table row list of teams in order of points
         String teamList = "";
@@ -801,39 +813,92 @@ public class Template {
         sortedTeams.clear();
         for (UILEntry entry : competition.entries.allEntries) {
             sortedTeams.add(entry.tid);
+
+
             // entry.getMCScore();
 
-            teamList += "<tr><td>" + rank + "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td>";
+            /*teamList += "<tr><td>" + rank + "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td>";
             if (competition.isPublic) teamList += "<td>" + StringEscapeUtils.escapeHtml4(entry.school) + "</td>";
             int mcScore = entry.getMCScore();
             teamList += "<td class='right'>" + ((frqTest.exists && mcTest.exists) ? mcScore : "") + "</td><td class='right'>" +
                     (frqTest.exists ? entry.frqScore : mcScore) + "</td>";
-            if(frqTest.exists && mcTest.exists) teamList += "<td class='right'>" + (entry.frqScore + mcScore) + "</td></tr>";
+            if(frqTest.exists && mcTest.exists) teamList += "<td class='right'>" + (entry.frqScore + mcScore) + "</td></tr>";*/
 
-            rank++;
+            JsonObject entryJSON = new JsonObject();
+            entryJSON.addProperty("tname", entry.tname);
+            entryJSON.addProperty("school", entry.school);
+            entryJSON.addProperty("tid", entry.tid);
+            entryJSON.add("students", entry.getStudentJSON());
+            if(frqTest.exists) entryJSON.addProperty("frq", entry.frqScore);
+
+            scoreboardData.add(entryJSON);
+            teamCodeData.add(entry.password);
+
+            // rank++;
         }
 
         // create HTML
-        scoreboardHTML = "<div class='column' id='scoreboardColumn' style='display:none;'><h1>Scoreboard</h1>" +
-                "<table id='teamList'><tr><th>#</th><th>Team</th>";
-        if(competition.isPublic) scoreboardHTML += "<th>School</th>";
-        scoreboardHTML += "<th class='right'>"+((frqTest.exists&&mcTest.exists)?"Written":"")+"</th><th class='right'>"+
-                (frqTest.exists?"Hands-On":"Written")+"</th>";
-        if(frqTest.exists&&mcTest.exists) scoreboardHTML += "<th class='right'>Total</th></tr>" + teamList + "</table></div>";
+        scoreboardHTML = "<script>requestLoadScoreboard()</script>" +
+                "<div class='column' id='scoreboardColumn' style='display:none;'>" +
+                "<div id='signUpBox' style='display:none'><div class='center'><h1>Create Team</h1>" +
+                "<img src='/res/close.svg' id='signUpClose' onclick='hideSignup()'/>" +
+                "<p id='errorBoxERROR'></p><p class='instruction'>Team Name</p><input name='teamCode' id='teamCode' maxlength='25' class='creatingTeam'>" +
+                "<button class='chngButton' onclick='createTeam()'>Create</button></div></div>" +
+                "<div id='selectStudent'><div class='center'><h1>Select Student</h1>" +
+                "<img src='/res/close.svg' class='close' onclick='Team.closeSelectStudent()'/>" +
+                "<table id='selectStudentList'></table></div></div>" +
+
+                // Section for selecting an existing student
+                "<div id='selectGlobalTeam'><div class='center'><h1>Select Global Team</h1>" +
+                "<img src='/res/close.svg' class='close' onclick='closeAddExistingTeam()'/>" +
+                "<ul id='selectGlobalTeamList'></ul></div></div>" +
+
+                // Delete team/student
+                "<div id='deleteConfirmationCnt'><div class='center'><h1 id='deleteMessage'></h1><p id='deleteSubtitle'></p>" +
+                "<button id='deleteButton' onclick='deleteTeamOrStudent()'>Yes, Delete</button>" +
+                "<button onclick='closeDeleteConfirmation()'>Cancel</button>" +
+                "</div></div>" +
+
+                "<div id='teamListCnt'><h1>Scoreboard</h1>" +
+                "<button id='addExistingTeam' onclick='showAddExistingTeam()' class='creatorOnly chngButton'>Add Existing Team</button>" +
+                "<button id='createTeam' onclick='showSignup()' class='creatorOnly chngButton'>Create Team</button>" +
+                "<table id='teamList'></table></div><div id='teamCnt'><h1 id='openTeamName'></h1>" +
+                "<img class='creatorOnly editTeam' id='deleteTeam' onclick='Team.showDeleteConfirmation()' src='/res/console/delete.svg'>" +
+                "<img class='creatorOnly' id='editSaveTeam' onclick='Team.editSaveTeam()' src='/res/console/edit.svg'>" +
+                "<div id='openTeamFeedbackCnt'></div><p class='creatorOnly'><span class='label'>Code:</span><span id='openTeamCode'></span></p>";
+        if(mcTest.exists) scoreboardHTML += "<p><span class='label'>Written:</span><span id='openTeamWritten'></span></p>";
+        if(frqTest.exists) scoreboardHTML += "<p><span class='label'>Hands-On:</span><span id='openTeamHandsOn'></span>";
+        scoreboardHTML += "<h3>Primaries";
+        if(mcTest.exists) scoreboardHTML += "<span style='float:right'>Written</span>";
+        scoreboardHTML += "</h3><table id='openPrimariesList'></table><button id='addPrimaryCompetitor' " +
+                "class='addCompetitor' onclick='Team.addPrimaryCompetitor()'>+</button>";
+        if(competition.alternateExists) scoreboardHTML += "<h3>Alternate</h3><table id='openAlternateList'>" +
+                "</table><button id='addAlternateCompetitor' class='addCompetitor' onclick='Team.addAlternateCompetitor()'>+</button>";
+        scoreboardHTML += "</div></div>";
     }
 
     /***
      * Deletes a team's entry and updates the scoreboard.
-     * @param tid
+     * @param entry
      */
-    public void deleteEntry(short tid) {
+    public void deleteEntry(UILEntry entry) {
         System.out.println("Deleting entry");
+
         Connection conn = Conn.getConnection();
         PreparedStatement stmt;
         try {
             stmt = conn.prepareStatement("DELETE FROM `c"+this.cid+"` WHERE tid=?");
-            stmt.setShort(1,tid);
+            stmt.setShort(1,entry.tid);
             stmt.executeUpdate();
+
+            // Now, update all of the students who are signed up for this team
+            for(short uid: entry.uids) {
+                Student s = StudentMap.getByUID(uid);
+                s.cids.remove(cid);
+                s.updateUser(false);
+            }
+            entry.uids = new HashSet<>();
+            competition.entries.delEntry(entry);
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
@@ -851,12 +916,14 @@ class UpdateScoreboard extends TimerTask {
 
 class UserStatus {
     boolean signedUp;
+    boolean alt;    // if they are the alternate
     boolean teacher;
     boolean creator;
     boolean finishedMC; // Whether or not they finished the MC. If they aren't signed up, this is always false.
 
-    UserStatus(boolean signedUp, boolean teacher, boolean creator, boolean finishedMC) {
+    UserStatus(boolean signedUp, boolean alt, boolean teacher, boolean creator, boolean finishedMC) {
         this.signedUp = signedUp;
+        this.alt = alt;
         this.teacher = teacher;
         this.creator = creator;
         this.finishedMC = finishedMC;
@@ -864,6 +931,7 @@ class UserStatus {
 
     public static UserStatus getCompeteStatus(User u, short cid) {
         boolean signedUp = true;
+        boolean alt = false;
         boolean teacher = false;
         boolean creator = false;
         boolean finishedMC = false;
@@ -879,9 +947,13 @@ class UserStatus {
         } else {
             UILEntry entry = ((Student)u).cids.get(cid);
             finishedMC = entry.finishedMC(u.uid);
+
+            if(entry.altUID == u.uid) { // They are this team's alternate
+                alt = true;
+            }
         }
 
-        return new UserStatus(signedUp, teacher, creator, finishedMC);
+        return new UserStatus(signedUp, alt, teacher, creator, finishedMC);
     }
 }
 

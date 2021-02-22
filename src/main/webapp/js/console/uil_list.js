@@ -14,6 +14,8 @@ var config = {
         cs: {
             writtenExists: true,
             handsOnExists: true,
+            alternateExists: true,
+            numNonAlts: 3,
             written: {
                 numProblems: 40,
                 correctPoints: 6,
@@ -31,6 +33,8 @@ var config = {
         numbersense: {
             writtenExists: true,
             handsOnExists: false,
+            alternateExists: false,
+            numNonAlts: 3,
             written: {
                 numProblems: 80,
                 correctPoints: 1,
@@ -48,6 +52,8 @@ var config = {
         calculatorapplications: {
             writtenExists: true,
             handsOnExists: false,
+            alternateExists: false,
+            numNonAlts: 3,
             written: {
                 numProblems: 70,
                 correctPoints: 1,
@@ -65,6 +71,8 @@ var config = {
         mathematics: {
             writtenExists: true,
             handsOnExists: false,
+            alternateExists: false,
+            numNonAlts: 3,
             written: {
                 numProblems: 60,
                 correctPoints: 1,
@@ -230,6 +238,8 @@ var Competition = /** @class */ (function () {
             controlsDelete: null,
             description: null,
             rules: null,
+            altExists: null,
+            numNonAlts: null,
             writtenSection: null,
             writtenOpen: null,
             writtenTime: null,
@@ -239,6 +249,7 @@ var Competition = /** @class */ (function () {
             writtenTestLink: null,
             writtenPointsPerCorrect: null,
             writtenPointsPerIncorrect: null,
+            writtenCheckbox: null,
             handsOnSection: null,
             handsOnStart: null,
             handsOnTime: null,
@@ -246,6 +257,7 @@ var Competition = /** @class */ (function () {
             handsOnStudentPacket: null,
             handsOnMaxPoints: null,
             handsOnIncorrectPenalty: null,
+            handsOnCheckbox: null,
             list_handsOn_changeproblems: null
         };
         competitions.push(this);
@@ -345,6 +357,7 @@ var Competition = /** @class */ (function () {
         }
     };
     Competition.prototype.applyTemplate = function (template) {
+        this.dom.numNonAlts.value = "" + template.numNonAlts;
         if (template.handsOnExists != this.handsOnExists) {
             this.toggleHandsOnTest();
             this.dom.handsOnCheckbox.checked = this.handsOnExists;
@@ -353,6 +366,8 @@ var Competition = /** @class */ (function () {
             this.toggleWrittenTest();
             this.dom.writtenCheckbox.checked = this.writtenExists;
         }
+        if (template.handsOnExists)
+            this.dom.altExists.checked = template.alternateExists;
         this.handsOn.incorrectPenalty = template.handsOn.incorrectPenalty;
         this.dom.handsOnIncorrectPenalty.value = "" + template.handsOn.incorrectPenalty;
         this.handsOn.maxPoints = template.handsOn.maxPoints;
@@ -393,6 +408,7 @@ var Competition = /** @class */ (function () {
         formData.append("op_cid", this.cid); // The CID we are operating on
         formData.append("name", this.dom.compName.value);
         formData.append("isPublic", "" + this.dom.compPublic.checked);
+        formData.append("numNonAlts", "" + this.dom.numNonAlts.value);
         formData.append("description", this.dom.description.value);
         formData.append("writtenExists", "" + this.writtenExists);
         if (this.writtenExists) {
@@ -418,6 +434,7 @@ var Competition = /** @class */ (function () {
             formData.append("frqIncorrectPenalty", "" + this.dom.handsOnIncorrectPenalty.value);
             formData.append("frqStudentPacket", this.dom.handsOnStudentPacket.value);
             formData.append("frqJudgePacket", ""); // TODO: Add this
+            formData.append("alternateExists", "" + this.dom.altExists.checked);
             var problems = [];
             var problemIndices = []; /* A list like [1, 2, -1, 9, 5], corresponding to a name in the problems array */
             for (var i = 0, j = this.handsOn.problemMap.length; i < j; i++) {
@@ -775,7 +792,7 @@ list_handsOn_changeproblems.appendChild(li);
         this.dom.controlsOpen = controls_open;
         return controls_open;
     };
-    Competition.prototype.getDOM = function (handsOnProblemMap, whatItIsText, rulesText) {
+    Competition.prototype.getDOM = function (handsOnProblemMap, whatItIsText, rulesText, numNonAlts, alternateExists) {
         function makeHalf(element) {
             element.classList.add("profile_cmpnt");
             element.classList.add("half");
@@ -990,6 +1007,29 @@ list_handsOn_changeproblems.appendChild(li);
                 handsOn_section.style.display = "none";
             written_toggle.appendChild(handsOn_section);
             thisComp.dom.handsOnSection = handsOn_section;
+            /* OPEN */
+            var alternateExists_header = document.createElement("div");
+            makeHalf(alternateExists_header);
+            handsOn_section.appendChild(alternateExists_header);
+            var h2_alternateExists_header = document.createElement("h3");
+            h2_alternateExists_header.innerHTML = "Allow Alternates";
+            alternateExists_header.appendChild(h2_alternateExists_header);
+            /* CLOSE */
+            /* OPEN */
+            var alternateExists_toggle = document.createElement("div");
+            handsOn_section.appendChild(alternateExists_toggle);
+            var alternateExists_toggle_input = document.createElement("input");
+            alternateExists_toggle_input.classList.add("checkbox");
+            alternateExists_toggle_input.type = "checkbox";
+            alternateExists_toggle_input.name = "altExists";
+            alternateExists_toggle_input.onclick = function () {
+                thisComp.isPublic = alternateExists_toggle_input.checked;
+            };
+            if (alternateExists)
+                alternateExists_toggle_input.checked = true;
+            alternateExists_toggle.appendChild(alternateExists_toggle_input);
+            thisComp.dom.altExists = alternateExists_toggle_input;
+            /* CLOSE */
             /* OPEN */
             var handsOn_start = document.createElement("div");
             makeFull(handsOn_start);
@@ -1304,6 +1344,36 @@ list_handsOn_changeproblems.appendChild(li);
         this.dom.compPublic = isPublic_toggle_input;
         /* CLOSE */
         /* OPEN */
+        var numNonAlts_header = document.createElement("div");
+        makeHalf(numNonAlts_header);
+        body.appendChild(numNonAlts_header);
+        var h2_numNonAlts_header = document.createElement("h3");
+        h2_numNonAlts_header.innerHTML = "Team Size (excluding alts)";
+        numNonAlts_header.appendChild(h2_numNonAlts_header);
+        /* CLOSE */
+        /* OPEN */
+        var numNonAlts_header_input = document.createElement("div");
+        makeHalf(numNonAlts_header_input);
+        body.appendChild(numNonAlts_header_input);
+        var numNonAlts_input = document.createElement("input");
+        numNonAlts_input.name = "altExists";
+        numNonAlts_input.type = "number";
+        numNonAlts_input.value = "" + numNonAlts;
+        numNonAlts_input.min = "1";
+        numNonAlts_input.max = "127";
+        numNonAlts_input.onchange = function () {
+            var val = parseInt(numNonAlts_input.value);
+            if (val < 1) {
+                numNonAlts_input.value = "1";
+            }
+            else if (val > 127) {
+                numNonAlts_input.value = "127";
+            }
+        };
+        numNonAlts_header_input.appendChild(numNonAlts_input);
+        this.dom.numNonAlts = numNonAlts_input;
+        /* CLOSE */
+        /* OPEN */
         var template = document.createElement("div");
         makeFull(template);
         template.classList.add("template");
@@ -1424,7 +1494,7 @@ function loadCompetitions() {
                         var handsOnProblemsList = [];
                         if (competition["handsOn"] != null)
                             handsOnProblemsList = competition["handsOn"]["problems"];
-                        var compDom = obj.getDOM(handsOnProblemsList, competition["description"], competition["rules"]);
+                        var compDom = obj.getDOM(handsOnProblemsList, competition["description"], competition["rules"], competition["numNonAlts"], competition["alternateExists"]);
                         dom.class_competitions.appendChild(compDom);
                     }
                 }
@@ -1474,7 +1544,7 @@ function createNewCompetition() {
         dom.class_competitions.innerHTML = "";
     }
     var competition = new Competition("", false, false, "New Competition", false, false);
-    dom.class_competitions.insertBefore(competition.getDOM([], "", ""), dom.class_competitions.firstChild);
+    dom.class_competitions.insertBefore(competition.getDOM([], "", "", 3, false), dom.class_competitions.firstChild);
     toggleEditCompetition(competition);
     showClassComps(document.getElementById("showClassComps"));
 }

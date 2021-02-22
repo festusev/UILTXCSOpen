@@ -50,6 +50,8 @@ public class Profile extends HttpServlet{
                 compJ.addProperty("published", competition.published);
                 compJ.addProperty("isPublic", competition.isPublic);
                 compJ.addProperty("description", StringEscapeUtils.escapeHtml4(competition.template.description));
+                compJ.addProperty("numNonAlts", competition.numNonAlts);
+                compJ.addProperty("alternateExists", competition.alternateExists);
 
                 if(competition.template.mcTest.exists) {
                     JsonObject writtenJ = new JsonObject();

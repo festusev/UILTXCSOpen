@@ -6,7 +6,6 @@ function getWebSocket(url:string, socket_functions: {[k:string]:Function}):void 
     ws.onmessage = function(evt) {
         try {
             let msg: { action: string } = JSON.parse(evt.data);
-            // console.log(msg);
             // console.log(socket_functions);
             socket_functions[msg.action](msg);
         } catch (e) {}

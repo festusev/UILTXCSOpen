@@ -1,5 +1,6 @@
 package Outlet;
 
+import Outlet.uil.UIL;
 import com.google.gson.Gson;
 
 import javax.servlet.http.HttpServletRequest;
@@ -25,8 +26,6 @@ public class UserMap {
         StudentMap.reset(); // Initialize the StudentMap class
         TeacherMap.reset(); // Initialize the TeacherMap class
 
-        HashMap<Student, String> studentCIDMap = new HashMap<>(); // Maps a student object to their cid string. This is used b/c setCids() will load in new competitions, which requires all of the users to be loaded
-
         Connection conn = Conn.getConnection();
         try {
             PreparedStatement stmt = conn.prepareStatement("SELECT * FROM users");
@@ -51,15 +50,19 @@ public class UserMap {
                     token = null;
 
                 User u = loadUser(email, fname, lname, school, token, uid, isTeacher, cids, classString, password);
-                if(!isTeacher) studentCIDMap.put((Student)u, cids);
+                if(isTeacher) { // Add this teacher object to each of its competitions
+                    Teacher teacher = (Teacher) u;
+                    for(short cid: teacher.cids) {
+                        UIL.getCompetition(cid).setTeacher(teacher);
+                    }
+                }
+                if(!isTeacher) ((Student)u).setCids(cids);
             }
         } catch (SQLException e) {
             e.printStackTrace();
             return -1;
         }
-        for(Student s: studentCIDMap.keySet()) {
-            s.setCids(studentCIDMap.get(s));
-        }
+
         return 1;
     }
 
@@ -70,7 +73,10 @@ public class UserMap {
             user = new Teacher();
             short[] list = gson.fromJson(cids, short[].class);
             ArrayList<Short> obj = ((Teacher)user).cids;
-            for(short s: list) obj.add(s);
+            for(short s: list) {
+                obj.add(s);
+                UIL.getCompetition(s).setTeacher((Teacher)user);
+            }
 
             ((Teacher) user).classCode = classString;
             user.email = email;
