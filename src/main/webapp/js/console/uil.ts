@@ -54,6 +54,7 @@ const config = {
         clarification_input : "clarification_input",
         bottomRank : "bottomRank",
         bottomOutOf : "bottomOutOf",
+        errorBoxERROR : "errorBoxERROR",
 
         // Signup info
         signUpIsAlternateCnt : "signUpIsAlternateCnt",
@@ -152,7 +153,6 @@ const config = {
             teams: { tname: string, school: string, tid: number, students: { nonAlts: [string, number, number?][], alt?: [string, number, number?] }, frq?: number }[],
             teamCodes? : string[]
         }) {
-            console.log(response);
             teams.length = 0;
 
             pageState.isCreator = response.isCreator;
@@ -222,7 +222,6 @@ const config = {
                 teams:{tid: number,tname:string,nonAlts:[string, number][],alt:[string,number]}[]}[]}) {
             if(pageState.globalTeamsLoaded) return;
 
-            console.log(response);
             pageState.globalTeamsLoaded = true;
             let fragment = document.createDocumentFragment();
             for(let data of response.teachers) {
@@ -235,7 +234,7 @@ const config = {
             if(!pageState.isCreator) return;
 
             if(response.error) {
-                addSignupErrorBox(response.error);
+                addErrorBox(dom.errorBoxERROR, response.error);
                 return;
             } else if(response.reload) {
                 requestLoadScoreboard();
@@ -307,6 +306,7 @@ let dom = {
     get handsOnNav() {return this.getHelper(config.IDs.handsOnNav)},
     get signUpBox() {return this.getHelper(config.IDs.signUpBox)},
     get teamCode() {return this.getHelper(config.IDs.teamCode)},
+    get errorBoxERROR() {return this.getHelper(config.IDs.errorBoxERROR)},
     get toggleCreateTeam() {return this.getHelper(config.IDs.toggleCreateTeam)},
     get clarificationColumn() {return this.getHelper(config.IDs.clarificationColumn)},
     get clarificationNav() {return this.getHelper(config.IDs.clarificationNav)},
@@ -411,10 +411,7 @@ class GlobalTeacher {
             teamLI.appendChild(teamHeader);
 
             let studentUL = document.createElement("ul");
-
-            let primariesHeader = document.createElement("b");
-            primariesHeader.innerText = "Primaries";
-            studentUL.appendChild(primariesHeader);
+            studentUL.innerHTML = "<b>Primaries</b><br>";
 
             for(let student of team.nonAlts) {
                 let studentLI = document.createElement("li");
@@ -529,8 +526,6 @@ class Team {
             return {tid: team.tid, nonAlts: nonAltUIDs, alt: alt};
         }
 
-        console.log("save");    // Make sure that when this is implemented the  server checks that there are no duplicate students
-
         let data: [string, {tid:number, nonAlts:number[], alt:number}[]] = ["saveTeam", []];
         data[1].push(getTeamData(this));
 
@@ -566,7 +561,6 @@ class Team {
     }
 
     deleteStudent(student: [string, number, number?]) {
-        console.log("Deleting student");
         let studentDOM = dom.selectStudentList.getElementsByClassName("_"+student[1])[0]; // Remove this from the selectStudents list
         if(studentDOM != null) {
             dom.selectStudentList.removeChild(studentDOM);
@@ -603,16 +597,12 @@ class Team {
         if(!pageState.isCreator) return;
         pageState.addingAlt = false;
         dom.selectStudent.style.display = "block";
-
-        console.log("Add primary competitor");
     }
 
     static addAlternateCompetitor() {
         if(!pageState.isCreator) return;
         pageState.addingAlt = true;
         dom.selectStudent.style.display = "block";
-
-        console.log("Add alternate competitor");
     }
 
     static closeSelectStudent() {
@@ -737,8 +727,7 @@ class Team {
 
             Team.editSaveTeam();
         } else {
-            let errorBox = document.getElementById(dom.openTeamFeedbackCnt.id + "ERROR");
-            if(errorBox) dom.openTeamFeedbackCnt.removeChild(errorBox);
+            deleteErrorSuccessBox(dom.openTeamFeedbackCnt);
 
             if(pageState.openTeam) pageState.openTeam.dom.tr.classList.remove("selected");
             team.dom.tr.classList.add("selected");
@@ -835,7 +824,7 @@ async function requestLoadScoreboard() {
     while (ws == null || ws.readyState === 0) {
         await new Promise(r => setTimeout(r, 2000));
     }
-    console.log("sending");
+
     ws.send("[\"loadScoreboard\"]");
 }
 
@@ -941,7 +930,6 @@ function updateNav(){
 
 // Show the signup box
 function showSignup() {
-    document.getElementById("errorBoxERROR");
     dom.signUpBox.style.display = "block";
 }
 
@@ -1001,7 +989,7 @@ function toggleCreateTeam(event:Event) {
 }
 
 function createTeam(){
-    addSignupSuccessBox("Creating team...");
+    addSuccessBox(dom.errorBoxERROR, "Creating team...");
     let data;
     if(pageState.addingExistingTeam) {
         let data = ["addExistingTeam", dom.teamCode.value, pageState.existingGlobalTeacher.teacher.uid, pageState.existingTeam.tid];
@@ -1013,7 +1001,7 @@ function createTeam(){
             data: {"action": "createteam", "cid": cid, "tname": $("#teamCode").val()},
             success: function (result) {
                 if (result == null || result["status"] === "error")
-                    addSignupErrorBox(result["error"]);
+                    addErrorBox(dom.errorBoxERROR, result["error"]);
                 if (result["status"] === "success") {
                     if (pageState.isCreator) {   // If they are the creator, add in the new team
                         let newTeam: Team = new Team({
@@ -1037,8 +1025,7 @@ function showAddExistingTeam() {
     if(!pageState.isCreator) return;
     if(!pageState.globalTeamsLoaded) ws.send("[\"fetchGlobalTeams\"]");
 
-    let errorBox = document.getElementById(dom.selectGlobalTeam.id + "ERROR");
-    if(errorBox) dom.selectGlobalTeam.removeChild(errorBox);
+    deleteErrorSuccessBox(dom.errorBoxERROR);
 
     pageState.addingExistingTeam = true;
     pageState.existingTeam = null;
@@ -1193,6 +1180,10 @@ function addScoredBox(box, success) {
         errorBox.className = "success";
     }
 }
+function deleteErrorSuccessBox(box) {   // Deletes an error or success box
+    let errorBox = document.getElementById(box.id + "ERROR");
+    if(errorBox) box.removeChild(errorBox);
+}
 function addErrorBox(box, error){
     let errorBox = document.getElementById(box.id + "ERROR");
     if(!errorBox) {
@@ -1310,32 +1301,11 @@ function leaveTeam() {
     return false;
 }*/
 
-let errorBox;
-function addSignupErrorBox(error){
-    if(!errorBox) {
-        document.getElementById("errorBoxERROR").insertAdjacentHTML('afterbegin', "<div class='error' id='errorBox'>ERROR: " + error + "</div>");
-        errorBox = document.getElementsByClassName("error")[0];
-    }
-    else {
-        errorBox.innerHTML = "ERROR: " + error;
-        errorBox.className = "error";
-    }
-}
-function addSignupSuccessBox(success) {
-    if(!errorBox) {
-        document.getElementById("errorBoxERROR").insertAdjacentHTML('afterbegin', "<div class='success' id='errorBox'>" + success + "</div>");
-        errorBox = document.getElementsByClassName("success")[0];
-    }
-    else {
-        errorBox.innerHTML = success;
-        errorBox.className = "success";
-    }
-}
 
 function codeEntered(code) {
     if(code.value.length == 6) {   // If the code is fully entered
         // First, put a "verifying" box
-        addSignupSuccessBox("Joining...");
+        addSuccessBox(dom.errorBoxERROR, "Joining...");
 
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function(){
@@ -1346,10 +1316,10 @@ function codeEntered(code) {
                     if(Object.keys(response).includes("reload")) {
                         window.location.reload();
                     } else {
-                        addSignupErrorBox(response["error"]);
+                        addErrorBox(dom.errorBoxERROR, response["error"]);
                     }
                 } else {    // A server error occurred. Show an error message
-                    addSignupErrorBox("Whoops! A server error occurred. Contact an admin if the problem continues.");
+                    addErrorBox(dom.errorBoxERROR, "Whoops! A server error occurred. Contact an admin if the problem continues.");
                 }
             }
         };

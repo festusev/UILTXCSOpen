@@ -23,6 +23,8 @@ public class Competition {
     private static Gson gson = new Gson();
 
     public Teacher teacher;
+    // public Set<Short> judges;   // The list of judges this teacher has added. Judges can help grade competitions, but can't edit them
+
     public boolean published;
     public boolean isPublic;
     public boolean alternateExists; // If teams can have alternates
@@ -140,6 +142,7 @@ public class Competition {
         }
         stmt.setShort(21, (short) type);
         stmt.setBoolean(22, published);
+        // stmt.setString(23, gson.toJson(judges));
 
         System.out.println(stmt);
         stmt.execute();
@@ -252,6 +255,7 @@ public class Competition {
         stmt.setShort(21, (short) type);
         stmt.setBoolean(22, published);
         stmt.setString(23, Clarification.toJson(this.clarifications).toString());
+        // stmt.setString(24, gson.toJson(judges));
         stmt.setShort(24, template.cid);
         stmt.executeUpdate();
     }

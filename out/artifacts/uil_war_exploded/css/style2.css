@@ -53,6 +53,9 @@ p{
 textarea {
     resize: none;
 }
+button {
+    outline: none;
+}
 body{
     /**
     Document variables

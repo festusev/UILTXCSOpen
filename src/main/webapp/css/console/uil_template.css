@@ -135,6 +135,7 @@
     box-shadow: var(--shadow);
     width: 50rem;
     height: 40rem;
+    max-width: 100%;
     position: absolute;
     left: 50%;
     top: 50%;

@@ -3,10 +3,6 @@
     float: right;
     cursor: pointer;
 }
-#right.dragging .drop_area {
-    background-color: rgba(250,250,250);
-    cursor: pointer;
-}
 
 #newTeam, #teams h2{
     display: inline-block;
@@ -32,7 +28,7 @@
 }
 #teamList input {
     font-size: 1.2rem;
-    border: 0 0 1px 0 lightgrey;
+    border: 0px 0px 1px 0px lightgrey;
     outline: none;
 }
 #teamList, #teamList .student  {
@@ -52,6 +48,22 @@
 .drop_area {
     display: block;
     min-height: 3rem;
+}
+.addButton {
+    width: 100%;
+    cursor: pointer;
+    border: 1px solid lightgray;
+    border-radius: 0.2rem;
+    background-color: white;
+    font-weight: bold;
+    display: none;
+}
+.addButton:hover{
+    background-color: rgb(251,251,251);
+}
+#right.dragging .addButton {
+    display: block;
+    cursor: pointer;
 }
 #class_code {
     margin-bottom: 1rem;
@@ -82,6 +94,7 @@ h2 {
 }
 #class.join {
     width: 20rem;
+    margin: auto;
 }
 #class input {
     font-size: 2rem;
@@ -89,6 +102,8 @@ h2 {
     text-align: center;
     padding: 10px 0;
     text-transform: uppercase;
+    color: var(--prim-middle);
+    font-weight: bold;
 }
 #class.join button {
     width: 100%;
@@ -118,8 +133,8 @@ h2 {
     cursor: pointer;
     background-color: white;
 }
-.student: hover{
-    background-color: black;
+.student.selected {
+    background-color: rgb(251,251,251);
 }
 #studentList .kick, #class .leaveClass {
     float: right;
@@ -128,10 +143,9 @@ h2 {
     padding: 0px 8px;
     cursor: pointer;
     box-shadow: var(--shadow);
-    display: none;
 }
 #class .leaveClass {
     position: absolute;
     top: 2rem;
-    right: 3rem;
+    right: 0;
 }

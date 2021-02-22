@@ -28,9 +28,6 @@ public class ContextListener implements ServletContextListener {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
-
-
         /*
         // Finally, schedule the VerificationFlusher class to be called every 15 minutes
         VerificationFlusher vflush = new VerificationFlusher();

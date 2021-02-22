@@ -81,11 +81,14 @@ function joinClass(classCode_input) {
                     window.location.reload();
                 }
                 else {
+                    dom.right.innerHTML = "";
                     var template = document.createElement('template');
                     template.innerHTML = response["html"];
                     var child = template.content.firstChild;
-                    dom.class.replaceWith(child);
+                    dom.right.appendChild(child);
+                    dom.cached = {};
                     dom.cached.class = child;
+                    loadClass();
                 }
             }
         }
@@ -96,6 +99,7 @@ function joinClass(classCode_input) {
 }
 /***
  * Element is the actual "<span>Kick</span>" element.
+ * @param event
  * @param element
  * @param uid
  */
@@ -104,7 +108,29 @@ function kickStudent(element, uid) {
     xhr.open('POST', "/console/class", true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send("action=kickStudent&uid=" + uid);
-    document.getElementById("studentList").removeChild(element.parentNode);
+    dom.studentList.removeChild(element.parentNode);
+    var _loop_1 = function (team) {
+        if (uid == team.altUid) {
+            team.altUid = -1;
+            team.dom.alts.removeChild(team.dom.alts.lastChild);
+        }
+        else {
+            var nonAltChildNodes = team.dom.nonAlts.childNodes;
+            var i_1 = 0;
+            nonAltChildNodes.forEach(function (item) {
+                if (item.dataset.uid == "" + pageState.dragging.uid) {
+                    team.nonAltUIDs.slice(i_1, 1);
+                    team.dom.nonAlts.removeChild(item);
+                }
+                i_1++;
+            });
+        }
+    };
+    for (var _i = 0, teamList_1 = teamList; _i < teamList_1.length; _i++) {
+        var team = teamList_1[_i];
+        _loop_1(team);
+    }
+    return false;
 }
 function leaveClass() {
     var xhr = new XMLHttpRequest();
@@ -114,6 +140,14 @@ function leaveClass() {
     showJoinClass();
 }
 function showJoinClass() {
+    dom.right.innerHTML = "";
+    var center = document.createElement("div");
+    center.classList.add("center");
+    dom.right.appendChild(center);
+    var classDOM = document.createElement("class");
+    classDOM.id = "class";
+    center.appendChild(classDOM);
+    dom.cached.class = classDOM;
     dom.class.innerHTML = "<h2>Join a Class</h2>";
     dom.class.classList.add("join");
     var classCode = document.createElement("div");
@@ -175,8 +209,8 @@ var Team = /** @class */ (function () {
             ws.send(JSON.stringify(data));
         }
         var empty = true;
-        for (var _i = 0, teamList_1 = teamList; _i < teamList_1.length; _i++) { // Check if there are no teams left. If there aren't, add in the empty message
-            var team = teamList_1[_i];
+        for (var _i = 0, teamList_2 = teamList; _i < teamList_2.length; _i++) { // Check if there are no teams left. If there aren't, add in the empty message
+            var team = teamList_2[_i];
             if (team)
                 empty = false;
         }
@@ -225,9 +259,11 @@ var Team = /** @class */ (function () {
             nonAltLIs.push({ uid: student.uid, element: li });
         }
         nonAltSpan.appendChild(nonAltFragment);
-        nonAltSpan.onclick = function (event) {
-            dropStudent(nonAltSpan);
-        };
+        var addNonAltButton = document.createElement("button");
+        addNonAltButton.classList.add("addButton");
+        addNonAltButton.innerText = "+";
+        addNonAltButton.onclick = function (event) { dropStudent(nonAltSpan); };
+        ul.appendChild(addNonAltButton);
         /* Add in the alt student */
         var altSpan = document.createElement("span");
         altSpan.classList.add("drop_area");
@@ -249,9 +285,13 @@ var Team = /** @class */ (function () {
             var temp = document.createElement("p"); // Used temporarily
             altSpan.append(temp);
         }
-        altSpan.onclick = function (event) {
+        var addAltButton = document.createElement("button");
+        addAltButton.classList.add("addButton");
+        addAltButton.innerText = "+";
+        addAltButton.onclick = function (event) {
             dropStudent(altSpan);
         };
+        ul.appendChild(addAltButton);
         teamLi.appendChild(ul);
         var team = new Team(teamData.tid, nonAltUIDs, altUID);
         team.dom.name = teamNameInput;
@@ -263,7 +303,7 @@ var Team = /** @class */ (function () {
         altSpan.dataset.teamReference = "" + team.reference;
         altSpan.dataset.type = "alt";
         if (isTeacher) {
-            var _loop_1 = function (item) {
+            var _loop_2 = function (item) {
                 var deleteImg = document.createElement("img"); // This is the image of a trashcan on the student's name
                 deleteImg.src = "/res/recycle-bin-line.svg";
                 deleteImg.classList.add("trashcan");
@@ -282,7 +322,7 @@ var Team = /** @class */ (function () {
             };
             for (var _b = 0, nonAltLIs_1 = nonAltLIs; _b < nonAltLIs_1.length; _b++) {
                 var item = nonAltLIs_1[_b];
-                _loop_1(item);
+                _loop_2(item);
             }
             if (teamData.alt) {
                 var deleteImg = document.createElement("img"); // This is the image of a trashcan on the student's name
@@ -330,7 +370,7 @@ function beginDragStudent(event, element) {
     dom.right.classList.add("dragging");
     pageState.dragging.isDragging = true;
     pageState.dragging.origin = element;
-    pageState.dragging.name = element.innerText;
+    pageState.dragging.name = element.innerText.slice(0, -5);
     pageState.dragging.uid = parseInt(element.dataset.uid);
     event.preventDefault();
 }
@@ -438,38 +478,47 @@ function loadClass() {
                 Add in the student list.
                  */
                 var studentList = response["studentList"];
-                var studentListFragment = document.createDocumentFragment();
-                var _loop_2 = function (student) {
-                    var li = document.createElement("li");
-                    li.classList.add("student");
-                    var innerHTML = student["name"];
-                    if (isTeacher)
-                        innerHTML += "<span></span><span class='kick' onclick='kickStudent(this, " + student["uid"] + ")'>Kick</span>";
-                    li.innerHTML = innerHTML;
-                    li.dataset.uid = student["uid"];
-                    li.onclick = function (event) {
-                        beginDragStudent(event, li);
+                if (studentList.length > 0) {
+                    var studentListFragment = document.createDocumentFragment();
+                    var _loop_3 = function (student) {
+                        var li = document.createElement("li");
+                        li.classList.add("student");
+                        li.innerHTML = student["name"];
+                        li.dataset.uid = student["uid"];
+                        li.onclick = function (event) {
+                            beginDragStudent(event, li);
+                        };
+                        if (isTeacher) {
+                            var kick_1 = document.createElement("span");
+                            kick_1.classList.add("kick");
+                            kick_1.innerText = "Kick";
+                            kick_1.onclick = function (event) {
+                                event.stopPropagation();
+                                kickStudent(kick_1, student["uid"]);
+                            };
+                            li.appendChild(kick_1);
+                        }
+                        studentListFragment.appendChild(li);
                     };
-                    studentListFragment.appendChild(li);
-                };
-                for (var _i = 0, studentList_1 = studentList; _i < studentList_1.length; _i++) {
-                    var student = studentList_1[_i];
-                    _loop_2(student);
+                    for (var _i = 0, studentList_1 = studentList; _i < studentList_1.length; _i++) {
+                        var student = studentList_1[_i];
+                        _loop_3(student);
+                    }
+                    dom.studentList.appendChild(studentListFragment);
                 }
-                dom.studentList.appendChild(studentListFragment);
                 /*
                 Add in the team list
                  */
-                var teamList_3 = response["teamList"];
-                if (teamList_3.length == 0) {
-                    if (isTeacher)
-                        emptyMessage = "Click 'New' to add a team.";
+                if (isTeacher)
+                    emptyMessage = "Click 'New' to add a team.";
+                var teamList_4 = response["teamList"];
+                if (teamList_4.length == 0) {
                     dom.teamList.innerHTML = emptyMessage;
                 }
                 else {
                     var teamListFragment = document.createDocumentFragment();
-                    for (var _a = 0, teamList_2 = teamList_3; _a < teamList_2.length; _a++) {
-                        var teamData = teamList_2[_a];
+                    for (var _a = 0, teamList_3 = teamList_4; _a < teamList_3.length; _a++) {
+                        var teamData = teamList_3[_a];
                         var team = Team.initialize(teamData);
                         teamListFragment.appendChild(team.dom.li);
                         /*let teamLi = document.createElement("li");

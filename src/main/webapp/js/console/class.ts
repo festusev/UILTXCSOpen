@@ -84,11 +84,17 @@ function joinClass(classCode_input: HTMLInputElement) {
                 if(response["error"] != null) {
                     window.location.reload();
                 } else {
+                    dom.right.innerHTML = "";
                     let template = document.createElement('template');
                     template.innerHTML = response["html"];
                     let child = template.content.firstChild;
-                    dom.class.replaceWith(child);
+                    dom.right.appendChild(child);
+
+                    dom.cached = {};
+
                     dom.cached.class = child;
+
+                    loadClass();
                 }
             }
         }
@@ -100,6 +106,7 @@ function joinClass(classCode_input: HTMLInputElement) {
 
 /***
  * Element is the actual "<span>Kick</span>" element.
+ * @param event
  * @param element
  * @param uid
  */
@@ -109,7 +116,26 @@ function kickStudent(element:HTMLSpanElement, uid: number) {
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send("action=kickStudent&uid=" + uid);
 
-    document.getElementById("studentList").removeChild(element.parentNode);
+    dom.studentList.removeChild(element.parentNode);
+
+    for(let team of teamList) {
+        if(uid == team.altUid) {
+            team.altUid = -1;
+            team.dom.alts.removeChild(team.dom.alts.lastChild);
+        } else {
+            let nonAltChildNodes = team.dom.nonAlts.childNodes;
+            let i=0;
+            nonAltChildNodes.forEach(function(item) {
+                if((<HTMLElement>item).dataset.uid == "" + pageState.dragging.uid) {
+                    team.nonAltUIDs.slice(i,1);
+                    team.dom.nonAlts.removeChild(item);
+                }
+                i++;
+            });
+        }
+    }
+
+    return false;
 }
 
 function leaveClass() {
@@ -122,6 +148,17 @@ function leaveClass() {
 
 
 function showJoinClass() {
+    dom.right.innerHTML = "";
+
+    let center = document.createElement("div");
+    center.classList.add("center");
+    dom.right.appendChild(center);
+
+    let classDOM = document.createElement("class");
+    classDOM.id = "class";
+    center.appendChild(classDOM);
+    dom.cached.class = classDOM;
+
     dom.class.innerHTML = "<h2>Join a Class</h2>";
     dom.class.classList.add("join");
     let classCode = document.createElement("div");
@@ -259,10 +296,14 @@ class Team {
             nonAltUIDs.push(student.uid);
             nonAltLIs.push({uid: student.uid, element: li});
         }
+
         nonAltSpan.appendChild(nonAltFragment);
-        nonAltSpan.onclick = event => {
-            dropStudent(nonAltSpan);
-        };
+
+        let addNonAltButton = document.createElement("button");
+        addNonAltButton.classList.add("addButton");
+        addNonAltButton.innerText = "+";
+        addNonAltButton.onclick = event => {dropStudent(nonAltSpan)};
+        ul.appendChild(addNonAltButton);
 
         /* Add in the alt student */
         let altSpan = document.createElement("span");
@@ -287,9 +328,14 @@ class Team {
             let temp = document.createElement("p");     // Used temporarily
             altSpan.append(temp);
         }
-        altSpan.onclick = event => {
+
+        let addAltButton = document.createElement("button");
+        addAltButton.classList.add("addButton");
+        addAltButton.innerText = "+";
+        addAltButton.onclick = event => {
             dropStudent(altSpan);
         };
+        ul.appendChild(addAltButton);
 
         teamLi.appendChild(ul);
 
@@ -376,7 +422,7 @@ function beginDragStudent(event: MouseEvent, element: HTMLElement) {
     dom.right.classList.add("dragging");
     pageState.dragging.isDragging = true;
     pageState.dragging.origin = element;
-    pageState.dragging.name = element.innerText;
+    pageState.dragging.name = element.innerText.slice(0,-5);
     pageState.dragging.uid = parseInt(element.dataset.uid);
 
     event.preventDefault();
@@ -493,28 +539,40 @@ function loadClass() {
                 Add in the student list.
                  */
                 let studentList:[] = response["studentList"];
-                let studentListFragment = document.createDocumentFragment();
-                for(let student of studentList) {   // student: {name: string, uid: short}
-                    let li = document.createElement("li");
-                    li.classList.add("student");
-                    let innerHTML:string = student["name"];
-                    if(isTeacher) innerHTML += "<span></span><span class='kick' onclick='kickStudent(this, "+student["uid"]+")'>Kick</span>";
-                    li.innerHTML = innerHTML;
-                    li.dataset.uid = student["uid"];
-                    li.onclick = event => {
-                        beginDragStudent(<MouseEvent>event, li);
-                    };
+                if(studentList.length > 0) {
+                    let studentListFragment = document.createDocumentFragment();
+                    for (let student of studentList) {   // student: {name: string, uid: short}
+                        let li = document.createElement("li");
+                        li.classList.add("student");
+                        li.innerHTML = student["name"];
+                        li.dataset.uid = student["uid"];
+                        li.onclick = event => {
+                            beginDragStudent(<MouseEvent>event, li);
+                        };
 
-                    studentListFragment.appendChild(li);
+                        if (isTeacher) {
+                            let kick = document.createElement("span");
+                            kick.classList.add("kick");
+                            kick.innerText = "Kick";
+                            kick.onclick = event => {
+                                event.stopPropagation();
+                                kickStudent(kick, student["uid"]);
+                            };
+                            li.appendChild(kick);
+                        }
+
+                        studentListFragment.appendChild(li);
+                    }
+                    dom.studentList.appendChild(studentListFragment);
                 }
-                dom.studentList.appendChild(studentListFragment);
 
                 /*
                 Add in the team list
                  */
+                if(isTeacher) emptyMessage = "Click 'New' to add a team.";
+
                 let teamList:[] = response["teamList"];
                 if(teamList.length == 0) {
-                    if(isTeacher) emptyMessage = "Click 'New' to add a team.";
                     dom.teamList.innerHTML = emptyMessage;
                 } else {
                     let teamListFragment = document.createDocumentFragment();
