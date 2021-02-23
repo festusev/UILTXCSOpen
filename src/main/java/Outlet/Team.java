@@ -30,8 +30,8 @@ public class Team {
         Connection conn = Conn.getConnection();
         PreparedStatement stmt;
         if(insert) {
-            stmt = conn.prepareStatement("INSERT INTO teams (teacher, name, nonAltUids, alternate, tid) " +
-                    "VALUES (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+            stmt = conn.prepareStatement("INSERT INTO teams (teacher, name, nonAltUids, alternate) " +
+                    "VALUES (?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
         } else {
             stmt = conn.prepareStatement("UPDATE teams SET teacher = ?, name = ?, nonAltUids = ?, alternate = ? " +
                     "WHERE tid = ?");
@@ -46,7 +46,8 @@ public class Team {
         stmt.setString(3, nonAltUids.toString());
         if(alternate != null) stmt.setShort(4,  alternate.uid);
         else stmt.setShort(4,  (short)-1);
-        stmt.setShort(5, tid);
+
+        if(!insert) stmt.setShort(5, tid);
 
         System.out.println(stmt);
         stmt.execute();
