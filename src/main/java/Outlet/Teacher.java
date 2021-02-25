@@ -12,6 +12,7 @@ import java.util.Collection;
 
 public class Teacher extends User{
     public ArrayList<Short> cids = new ArrayList<>();
+    public ArrayList<Competition> judging = new ArrayList<>();  // The competitions this teacher is judging
     public String classCode;
     public Teacher() {
         this.teacher = true;

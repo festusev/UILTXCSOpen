@@ -1,15 +1,75 @@
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
 ///<reference path="../websocket.ts"/>
 var config = {
     TEXT: {
         server_error: "Whoops! A server error occurred. Contact an admin if the problem continues."
     },
     IDs: {
-        class_competitions: "class_competitions"
+        class_competitions: "class_competitions",
+        selectJudgeCnt: "selectJudgeCnt",
+        selectJudgeList: "selectJudgeList"
     },
     COMPETITION: {
         mcOptions: ["a", "b", "c", "d", "e"]
     },
-    SOCKET_FUNCTIONS: {},
+    SOCKET_FUNCTIONS: {
+        "loadJudges": function (response) {
+            var fragment = document.createDocumentFragment();
+            var _loop_1 = function (judgeUID) {
+                if (response.thisUID == parseInt(judgeUID))
+                    return "continue";
+                var li = document.createElement("li");
+                li.classList.add("judge");
+                li.innerText = response.judges[judgeUID];
+                li.onclick = function () {
+                    if (pageState.editingComp)
+                        pageState.editingComp.addJudge([parseInt(judgeUID), response.judges[judgeUID]]);
+                    closeSelectJudge();
+                };
+                fragment.appendChild(li);
+            };
+            for (var judgeUID in response.judges) {
+                _loop_1(judgeUID);
+            }
+            dom.selectJudgeList.innerHTML = "";
+            dom.selectJudgeList.appendChild(fragment);
+        }
+    },
     TEMPLATES: {
         cs: {
             writtenExists: true,
@@ -89,6 +149,9 @@ var config = {
         }
     }
 };
+var pageState = {
+    editingComp: null // The competition we are currently editing
+};
 /***
  * Helps interfacing with static elements (are not deleted *
  */
@@ -99,7 +162,9 @@ var dom = {
             this.cached[id] = document.getElementById(id);
         return this.cached[id];
     },
-    get class_competitions() { return this.getHelper(config.IDs.class_competitions); }
+    get class_competitions() { return this.getHelper(config.IDs.class_competitions); },
+    get selectJudgeCnt() { return this.getHelper(config.IDs.selectJudgeCnt); },
+    get selectJudgeList() { return this.getHelper(config.IDs.selectJudgeList); }
 };
 (function () {
     getWebSocket(window.location.host + "/console/sockets/uil_list", config.SOCKET_FUNCTIONS);
@@ -202,7 +267,7 @@ var HandsOnProblem = /** @class */ (function () {
 }());
 var competitions = [];
 var Competition = /** @class */ (function () {
-    function Competition(cid, published, isPublic, name, writtenObj, handsOnObj) {
+    function Competition(cid, published, isPublic, name, judges, writtenObj, handsOnObj) {
         this.written = {
             opens: "",
             key: [],
@@ -265,6 +330,7 @@ var Competition = /** @class */ (function () {
         this.published = published;
         this.isPublic = isPublic;
         this.name = name;
+        this.judges = judges;
         this.writtenExists = !!writtenObj;
         this.handsOnExists = !!handsOnObj;
         if (this.writtenExists) { /* written exists */
@@ -410,6 +476,12 @@ var Competition = /** @class */ (function () {
         formData.append("isPublic", "" + this.dom.compPublic.checked);
         formData.append("numNonAlts", "" + this.dom.numNonAlts.value);
         formData.append("description", this.dom.description.value);
+        var judgeUIDs = [];
+        for (var _i = 0, _a = this.judges; _i < _a.length; _i++) {
+            var judgeUID = _a[_i];
+            judgeUIDs.push(judgeUID[0]);
+        }
+        formData.append("judges", JSON.stringify(judgeUIDs));
         formData.append("writtenExists", "" + this.writtenExists);
         if (this.writtenExists) {
             formData.append("mcOpens", this.dom.writtenOpen.value);
@@ -420,8 +492,8 @@ var Competition = /** @class */ (function () {
             formData.append("mcTestLink", this.dom.writtenTestLink.value);
             formData.append("mcAnswersLink", ""); // TODO: Add this
             var answers = [];
-            for (var _i = 0, _a = this.written.key; _i < _a.length; _i++) {
-                var answer = _a[_i];
+            for (var _b = 0, _c = this.written.key; _b < _c.length; _b++) {
+                var answer = _c[_b];
                 answers.push([answer.answer, "" + answer.type]);
             }
             formData.append("mcAnswers", JSON.stringify(answers));
@@ -791,6 +863,38 @@ list_handsOn_changeproblems.appendChild(li);
         };
         this.dom.controlsOpen = controls_open;
         return controls_open;
+    };
+    Competition.prototype.deleteJudge = function (judge, li) {
+        for (var i = 0, j = this.judges.length; i < j; i++) {
+            if (this.judges[i][0] == judge[0]) {
+                this.judges.splice(i, 1);
+                this.dom.judges_list.removeChild(li);
+                return;
+            }
+        }
+    };
+    Competition.prototype.addJudge = function (judge) {
+        for (var _i = 0, _a = this.judges; _i < _a.length; _i++) {
+            var existingJudge = _a[_i];
+            if (existingJudge[0] == judge[0])
+                return; // Don't add in a judge if they are already assigned to this competition
+        }
+        // console.log(this.judges);
+        this.judges.push(judge);
+        this.dom.judges_list.appendChild(this.getJudgeDOM(judge));
+    };
+    Competition.prototype.getJudgeDOM = function (judge) {
+        var thisComp = this;
+        var li = document.createElement("li");
+        li.classList.add("judge");
+        li.innerText = judge[1];
+        var del = document.createElement("img");
+        del.src = "/res/console/delete.svg";
+        del.onclick = function () {
+            thisComp.deleteJudge(judge, li);
+        };
+        li.appendChild(del);
+        return li;
     };
     Competition.prototype.getDOM = function (handsOnProblemMap, whatItIsText, rulesText, numNonAlts, alternateExists) {
         function makeHalf(element) {
@@ -1414,6 +1518,26 @@ list_handsOn_changeproblems.appendChild(li);
         whatItIs.appendChild(whatItIs_textarea);
         this.dom.description = whatItIs_textarea;
         /* CLOSE */
+        /* OPEN */
+        var judgesDIV = document.createElement("div");
+        judgesDIV.innerHTML = "Judges";
+        makeFull(judgesDIV);
+        body.appendChild(judgesDIV);
+        var judges_list = document.createElement("ul");
+        var judges_fragment = document.createDocumentFragment();
+        for (var _i = 0, _a = this.judges; _i < _a.length; _i++) {
+            var judge = _a[_i];
+            judges_fragment.appendChild(this.getJudgeDOM(judge));
+        }
+        judges_list.appendChild(judges_fragment);
+        judgesDIV.appendChild(judges_list);
+        this.dom.judges_list = judges_list;
+        var addJudgeButton = document.createElement("button");
+        addJudgeButton.classList.add("addJudge");
+        addJudgeButton.innerText = "+";
+        addJudgeButton.onclick = showSelectJudge;
+        judgesDIV.appendChild(addJudgeButton);
+        /* CLOSE */
         /* OPEN
         let rules = document.createElement("div");
         rules.innerHTML = "Rules";
@@ -1478,6 +1602,29 @@ list_handsOn_changeproblems.appendChild(li);
     };
     return Competition;
 }());
+function showSelectJudge() {
+    dom.selectJudgeCnt.style.display = "block";
+}
+function closeSelectJudge() {
+    dom.selectJudgeCnt.style.display = "none";
+}
+function requestLoadJudges() {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (!(ws == null || ws.readyState === 0)) return [3 /*break*/, 2];
+                    return [4 /*yield*/, new Promise(function (r) { return setTimeout(r, 100); })];
+                case 1:
+                    _a.sent();
+                    return [3 /*break*/, 0];
+                case 2:
+                    ws.send("[\"loadJudges\"]");
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
 /***
  * Loads in the competitions from the database.
  * */
@@ -1490,7 +1637,7 @@ function loadCompetitions() {
                 if (responses.length > 0) {
                     for (var _i = 0, responses_1 = responses; _i < responses_1.length; _i++) {
                         var competition = responses_1[_i];
-                        var obj = new Competition(competition["cid"], competition["published"], competition["isPublic"], competition["name"], competition["written"], competition["handsOn"]);
+                        var obj = new Competition(competition["cid"], competition["published"], competition["isPublic"], competition["name"], competition["judges"], competition["written"], competition["handsOn"]);
                         var handsOnProblemsList = [];
                         if (competition["handsOn"] != null)
                             handsOnProblemsList = competition["handsOn"]["problems"];
@@ -1510,6 +1657,7 @@ function loadCompetitions() {
  */
 var visible_competition_edit_dom;
 function toggleEditCompetition(competition) {
+    pageState.editingComp = competition;
     var newCompEdit = competition.dom.comp_edit;
     if (visible_competition_edit_dom != null) {
         visible_competition_edit_dom.style.display = "none";
@@ -1543,7 +1691,7 @@ function createNewCompetition() {
     if (competitions.length <= 0) {
         dom.class_competitions.innerHTML = "";
     }
-    var competition = new Competition("", false, false, "New Competition", false, false);
+    var competition = new Competition("", false, false, "New Competition", [], false, false);
     dom.class_competitions.insertBefore(competition.getDOM([], "", "", 3, false), dom.class_competitions.firstChild);
     toggleEditCompetition(competition);
     showClassComps(document.getElementById("showClassComps"));
@@ -1580,7 +1728,7 @@ function addSuccessBox(parentBox, success, successBox) {
 }
 document.addEventListener("DOMContentLoaded", function (event) {
     var controls = document.getElementsByClassName("mini_comp_controls");
-    var _loop_1 = function (i, j) {
+    var _loop_2 = function (i, j) {
         var element = controls.item(i);
         element.onclick = function (event) {
             event.preventDefault();
@@ -1597,6 +1745,6 @@ document.addEventListener("DOMContentLoaded", function (event) {
         };
     };
     for (var i = 0, j = controls.length; i < j; i++) {
-        _loop_1(i, j);
+        _loop_2(i, j);
     }
 });

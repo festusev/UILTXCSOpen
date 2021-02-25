@@ -23,6 +23,7 @@ public class ContextListener implements ServletContextListener {
         try {
             UIL.initialize();
             UserMap.initialize();
+            UIL.initializeJudges();
             UIL.sortFRQResponses();
             Team.initialize();
         } catch (SQLException e) {

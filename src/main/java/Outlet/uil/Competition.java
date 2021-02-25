@@ -23,7 +23,7 @@ public class Competition {
     private static Gson gson = new Gson();
 
     public Teacher teacher;
-    // public Set<Short> judges;   // The list of judges this teacher has added. Judges can help grade competitions, but can't edit them
+    private short[] judges;   // The list of judges this teacher has added. Judges can help grade competitions, but can't edit them
 
     public boolean published;
     public boolean isPublic;
@@ -47,12 +47,14 @@ public class Competition {
     }
 
     public Competition(short cid, boolean published, boolean isPublic, String name, String description,
-                       boolean alternateExists, short numNonAlts, MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications) {
+                       boolean alternateExists, short numNonAlts, MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications,
+                       short[] judges) {
         this.teacher = null;
         this.published = published;
         this.isPublic = isPublic;
         this.alternateExists = alternateExists;
         this.numNonAlts = numNonAlts;
+        this.judges = judges;
 
         entries = new EntryMap();
         setTemplate(published, mc, frq, name, description, cid);
@@ -62,8 +64,8 @@ public class Competition {
     }
 
     public Competition(Teacher teacher, short cid, boolean published, boolean isPublic, String name, String description,
-                       boolean alternateExists, short numNonAlts, MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications) {
-        this(cid, published, isPublic, name, description, alternateExists, numNonAlts, mc, frq,clarifications);
+                       boolean alternateExists, short numNonAlts, MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications, short[] judges) {
+        this(cid, published, isPublic, name, description, alternateExists, numNonAlts, mc, frq,clarifications, judges);
         setTeacher(teacher);
     }
 
@@ -81,12 +83,12 @@ public class Competition {
     /* Returns a new competition object that has been inserted into the database */
     public static Competition createCompetition(Teacher teacher, boolean published, boolean isPublic, String name,
                                                 String description, boolean alternateExists, short numNonAlts,
-                                                MCTest mcTest, FRQTest frqTest) throws SQLException {
+                                                MCTest mcTest, FRQTest frqTest, short[] judges) throws SQLException {
         Connection  conn = Conn.getConnection();
         PreparedStatement stmt = conn.prepareStatement("INSERT INTO competitions (uid, name, isPublic, description, " +
                 "alternateExists, numNonAlts, mcKey, mcCorrectPoints, mcIncorrectPoints, mcInstructions, mcTestLink," +
                 "mcOpens, mcTime, frqMaxPoints, frqIncorrectPenalty, frqProblemMap, frqStudentPack," +
-                "frqJudgePacket, frqOpens, frqTime, type, published, clarifications) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]')",
+                "frqJudgePacket, frqOpens, frqTime, type, published, clarifications,judges) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]',?)",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -142,7 +144,7 @@ public class Competition {
         }
         stmt.setShort(21, (short) type);
         stmt.setBoolean(22, published);
-        // stmt.setString(23, gson.toJson(judges));
+        stmt.setString(23, gson.toJson(judges));
 
         System.out.println(stmt);
         stmt.execute();
@@ -169,7 +171,7 @@ public class Competition {
             stmt.executeUpdate();
 
             Competition competition = new Competition(teacher, cid, published, isPublic, name, description,alternateExists,
-                    numNonAlts, mcTest, frqTest, new ArrayList<>());
+                    numNonAlts, mcTest, frqTest, new ArrayList<>(), judges);
             System.out.println("CID = " + cid + ", " + competition.template.cid);
             UIL.addCompetition(competition);
 
@@ -193,12 +195,12 @@ public class Competition {
     }
 
     public void updateDB(String name, String description, boolean alternateExists, short numNonAlts, MCTest mcTest,
-                         FRQTest frqTest) throws SQLException {
+                         FRQTest frqTest, short[] judges) throws SQLException {
         Connection conn = Conn.getConnection();
         PreparedStatement stmt = conn.prepareStatement("UPDATE competitions SET uid=?, name=?, isPublic=?, description=?, " +
                         "alternateExists=?, numNonAlts=?, mcKey=?, mcCorrectPoints=?, mcIncorrectPoints=?, mcInstructions=?, mcTestLink=?," +
                         "mcOpens=?, mcTime=?, frqMaxPoints=?, frqIncorrectPenalty=?, frqProblemMap=?, frqStudentPack=?," +
-                        "frqJudgePacket=?, frqOpens=?, frqTime=?, type=?, published=?, clarifications=? WHERE cid=?",
+                        "frqJudgePacket=?, frqOpens=?, frqTime=?, type=?, published=?, clarifications=?, judges=? WHERE cid=?",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -206,7 +208,6 @@ public class Competition {
         stmt.setString(4,description);
         stmt.setBoolean(5, alternateExists);
         stmt.setShort(6, numNonAlts);
-
 
         if(mcTest.exists) {
             stmt.setString(7, gson.toJson(mcTest.KEY));
@@ -255,28 +256,46 @@ public class Competition {
         stmt.setShort(21, (short) type);
         stmt.setBoolean(22, published);
         stmt.setString(23, Clarification.toJson(this.clarifications).toString());
-        // stmt.setString(24, gson.toJson(judges));
-        stmt.setShort(24, template.cid);
+        stmt.setString(24, gson.toJson(judges));
+        stmt.setShort(25, template.cid);
         stmt.executeUpdate();
     }
 
     public void update() throws SQLException {
-        updateDB(template.name, template.description, alternateExists,numNonAlts, template.mcTest, template.frqTest);
+        updateDB(template.name, template.description, alternateExists,numNonAlts, template.mcTest, template.frqTest, judges);
     }
 
     /* Updates the competition in the database and the template */
     public void update(Teacher teacher, boolean published, boolean isPublic, boolean alternateExists, short numNonAlts,
-                       String name, String description, MCTest mcTest, FRQTest frqTest) throws SQLException {
+                       String name, String description, MCTest mcTest, FRQTest frqTest, short[] judges) throws SQLException {
         frqTest.setDirectories(template.cid, teacher.uid);
         frqTest.initializeFiles();
 
-        updateDB(name, description, alternateExists, numNonAlts, mcTest, frqTest);
+        updateDB(name, description, alternateExists, numNonAlts, mcTest, frqTest, judges);
 
         this.isPublic = isPublic;
 
         this.alternateExists = alternateExists;
         this.numNonAlts = numNonAlts;
+        this.setJudges(judges);
         setTemplate(published, mcTest, frqTest, name, description, template.cid);
+    }
+
+    public void setJudges(short[] judges) {
+        for(short uid: this.judges) {
+            Teacher teacher = TeacherMap.getByUID(uid);
+            teacher.judging.remove(this);
+        }
+
+        this.judges = judges;
+        for(short uid: this.judges) {
+            Teacher teacher = TeacherMap.getByUID(uid);
+            teacher.judging.add(this);
+        }
+    }
+
+    public short[] getJudges() {
+        return judges;
     }
 
     public void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -295,14 +314,15 @@ public class Competition {
         response.setCharacterEncoding("UTF-8");
         PrintWriter writer = response.getWriter();
 
+        UserStatus userStatus = UserStatus.getCompeteStatus(userBefore, this);
         CompetitionStatus competitionStatus = new CompetitionStatus(template.mcTest, template.frqTest);
         if (action.equals("updatePage")) {  // Reloads the columns portion of the page
             writer.write("{\"updatedHTML\":\""+StringEscapeUtils.escapeHtml4(template.getColumnsHTML(userBefore,
-                    UserStatus.getCompeteStatus(userBefore, template.cid), competitionStatus))+"\"}");
+                    UserStatus.getCompeteStatus(userBefore, this), competitionStatus))+"\"}");
             return;
         }
-        if(userBefore.teacher) {
-            if(((Teacher)userBefore).cids.contains(template.cid)) {
+        if(userStatus.teacher) {
+            if(userStatus.admin) {
                 if(action.equals("showFRQSubmission")) {
                     int id = Integer.parseInt(request.getParameter("id"));
                     if (frqSubmissions.size() > id) {
@@ -492,7 +512,7 @@ public class Competition {
         }
 
         Student user = (Student) userBefore;
-        if(user.cids.containsKey(template.cid)) { // If their team is already signed up for this competition
+        if(userStatus.signedUp) { // If their team is already signed up for this competition
             UILEntry temp = user.cids.get(template.cid);
             if(action.equals("leaveTeam")) {
                 int status = temp.leaveTeam(user);
@@ -513,7 +533,7 @@ public class Competition {
                     temp.update();
                     template.updateScoreboard();
 
-                    // Send it to the teacher
+                    // Send it to the teacher and judges
                     CompetitionSocket socket = CompetitionSocket.connected.get(((Student) user).teacherId);
                     if (socket != null) {
                         JsonObject obj = new JsonObject();
@@ -521,8 +541,18 @@ public class Competition {
                         obj.addProperty("html", template.getSmallMC(user, temp, submission));
                         socket.send(gson.toJson(obj));
                     }
+
+                    for(short judgeUID: judges) {
+                        socket = CompetitionSocket.connected.get(judgeUID);
+                        if (socket != null) {
+                            JsonObject obj = new JsonObject();
+                            obj.addProperty("action", "addSmallMC");
+                            obj.addProperty("html", template.getSmallMC(user, temp, submission));
+                            socket.send(gson.toJson(obj));
+                        }
+                    }
                 } else {    // Submissions are closed
-                    writer.write("{\"mcHTML\":\"" + template.getMCHTML(user,UserStatus.getCompeteStatus(user, template.cid), competitionStatus) + "\"}");
+                    writer.write("{\"mcHTML\":\"" + template.getMCHTML(user,UserStatus.getCompeteStatus(user, this), competitionStatus) + "\"}");
                 }
                 return;
             } else if(action.equals("submitFRQ")) {
@@ -573,13 +603,23 @@ public class Competition {
                         writer.write("{\"status\":\"error\",\"error\":\"Unclear file type. Files must end in .java, .py, or .cpp.\"}");
                     }
 
-                    // Send it to the teacher
+                    // Send it to the teacher and the judges
                     CompetitionSocket socket = CompetitionSocket.connected.get(user.teacherId);
                     if (socket != null) {
                         JsonObject obj = new JsonObject();
                         obj.addProperty("action", "addSmallFRQ");
                         obj.addProperty("html", template.getSmallFRQ(frqSubmissions.indexOf(submission), submission));
                         socket.send(gson.toJson(obj));
+                    }
+
+                    for(short judgeUID: judges) {
+                        socket = CompetitionSocket.connected.get(judgeUID);
+                        if (socket != null) {
+                            JsonObject obj = new JsonObject();
+                            obj.addProperty("action", "addSmallFRQ");
+                            obj.addProperty("html", template.getSmallFRQ(frqSubmissions.indexOf(submission), submission));
+                            socket.send(gson.toJson(obj));
+                        }
                     }
 
                     // Update all of their team member's frqProblems
@@ -733,28 +773,22 @@ public class Competition {
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM `c"+template.cid+"`");
         ResultSet rs = stmt.executeQuery();
         while(rs.next()) {
-            entries.addEntry(new UILEntry(rs, this));
+            UILEntry entry = new UILEntry(rs, this);
+            entries.addEntry(entry);
+            for(Pair<Short, ArrayList<FRQSubmission>> pair: entry.frqResponses) {
+                this.frqSubmissions.addAll(pair.value);
+            }
         }
-    }
-
-    /***
-     * Loads in entirely NEW UILEntries, so even if one is already in the UILEntry hashmap it will be a different object.
-     * @return
-     */
-    public ArrayList<UILEntry> getAllEntries() throws SQLException {
-        Connection conn = Conn.getConnection();
-        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM `c"+template.cid+"`");
-        ResultSet rs = stmt.executeQuery();
-        ArrayList<UILEntry> entries = new ArrayList<>();
-        while(rs.next()) {
-            entries.add(new UILEntry(rs, this));
-        }
-        return entries;
     }
 
     // Deletes this competition. Does NOT update the teacher, but does update the students. Deletes the Hands-On testcases as well
     public void delete() {
         System.out.println("DELETING !!!");
+        for(short uid: judges) {
+            Teacher teacher = TeacherMap.getByUID(uid);
+            teacher.judging.remove(this);
+        }
+
         Collection<UILEntry> values = entries.tidMap.values();
         for(UILEntry entry: values) {
             for(short uid: entry.uids) {

@@ -86,6 +86,14 @@ const config = {
         // Scoreboard select student IDs
         selectStudent : "selectStudent",
         selectStudentList : "selectStudentList",
+
+        // Right info bar IDs, for admins only
+        writtenSubmissionCount : "writtenSubmissionCount",
+        writtenAverage : "writtenAverage",
+        handsOnSubmissionCount : "handsOnSubmissionCount",
+        handsOnSubmissionAverage : "handsOnSubmissionAverage",
+        numTeams : "numTeams",
+        numUsers : "numUsers"
     },
     CLASSES: {
         columns : "column",
@@ -137,7 +145,7 @@ const config = {
                 clarification_list.innerHTML = "";
             }
 
-            clarification_list.innerHTML = "<div class='clarification'><h3>Question - " + response["name"] + "</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
+            clarification_list.innerHTML = "<div class='clarification' id='clarification_"+response["index"]+"'><h3>Question - " + response["name"] + "</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
                 "<textarea placeholder='Send a response.'></textarea><button class='chngButton' onclick='answerClarification(this, " +
                 response["id"] + ")'>Send</button></span></div>" + clarification_list.innerHTML;
         }, "ac": function (response: { [k: string]: any }) { // Add in a new clarification with a response
@@ -146,12 +154,17 @@ const config = {
                 clarification_list.innerHTML = "";
             }
 
-            clarification_list.innerHTML = "<div class='clarification'><h3>Question</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
+            if(pageState.isCreator) {   // They are a creator, so check if the clarification already has a dom
+                let clarificationDOM = document.getElementById("clarification_"+response["index"]);
+                if(clarificationDOM != null) clarification_list.removeChild(clarificationDOM);
+            }
+
+            clarification_list.innerHTML = "<div class='clarification' id='clarification_"+response["index"]+"'><h3>Question</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
                 response["answer"] + "</span></div>" + clarification_list.innerHTML;
         }, "loadScoreboard": function (response: {
             isCreator: boolean, mcExists: boolean, frqExists: boolean, alternateExists: boolean, numNonAlts: number,
             teams: { tname: string, school: string, tid: number, students: { nonAlts: [string, number, number?][], alt?: [string, number, number?] }, frq?: number }[],
-            teamCodes? : string[]
+            numHandsOnSubmitted?: number, teamCodes? : string[]
         }) {
             teams.length = 0;
 
@@ -180,6 +193,13 @@ const config = {
             headerDOM.innerHTML = headers;
             fragment.appendChild(headerDOM);
 
+            // These datapoints are displayed on the right bar if the user is an admin
+            let numWrittenSubmitted: number = 0;
+            let writtenSum: number = 0; // Sum of written scores
+
+            let handsOnSum: number = 0; // Sum of hands on scores
+            let numStudents: number = 0;
+
             let selectStudentFragment = document.createDocumentFragment();  // The list of students that goes into the select student window
             for (let i=0,j=response.teams.length;i<j;i++) {
                 let teamData = response.teams[i];
@@ -196,6 +216,12 @@ const config = {
                     };
                     tr.innerHTML = "<td>" + student[0] + "</td>";
                     selectStudentFragment.appendChild(tr);
+
+                    if(student[2]) {
+                        numWrittenSubmitted++;
+                        writtenSum += student[2];
+                    }
+                    numStudents++;
                 }
 
                 if (pageState.alternateExists && teamData.students.alt) {
@@ -207,7 +233,34 @@ const config = {
                     };
                     tr.innerHTML = "<td>" + teamData.students.alt[0] + "</td>";
                     selectStudentFragment.appendChild(tr);
+
+                    if(teamData.students.alt[2]) {
+                        numWrittenSubmitted++;
+                        writtenSum += teamData.students.alt[2];
+                    }
+                    numStudents++;
                 }
+
+                handsOnSum += team.frqScore;
+            }
+
+            if(response.isCreator) {
+                if(pageState.mcExists) {
+                    dom.writtenSubmissionCount.innerText = numWrittenSubmitted + " submitted";
+                    if(numWrittenSubmitted == 0)
+                        dom.writtenAverage.innerText = "0 average";
+                    else
+                        dom.writtenAverage.innerText = Math.round(writtenSum / numWrittenSubmitted) + " average";
+                }
+                if(pageState.frqExists) {
+                    dom.handsOnSubmissionCount.innerText = "" + response.numHandsOnSubmitted;
+                    if(response.teams.length == 0)
+                        dom.handsOnSubmissionAverage.innerText = "0";
+                    else
+                        dom.handsOnSubmissionAverage.innerText = "" + Math.round(handsOnSum/response.teams.length);
+                }
+                dom.numTeams.innerText = "" + response.teams.length;
+                dom.numUsers.innerText = "" + numStudents;
             }
 
             dom.teamList.innerHTML = "";
@@ -336,6 +389,12 @@ let dom = {
     get deleteTeam() {return this.getHelper(config.IDs.deleteTeam)},
     get signUpIsAlternateCnt() {return this.getHelper(config.IDs.signUpIsAlternateCnt)},
     get signUpIsAlternate() {return this.getHelper(config.IDs.signUpIsAlternate)},
+    get writtenSubmissionCount() {return this.getHelper(config.IDs.writtenSubmissionCount)},
+    get writtenAverage(){return this.getHelper(config.IDs.writtenAverage)},
+    get handsOnSubmissionCount() {return this.getHelper(config.IDs.handsOnSubmissionCount)},
+    get handsOnSubmissionAverage() {return this.getHelper(config.IDs.handsOnSubmissionAverage)},
+    get numTeams() {return this.getHelper(config.IDs.numTeams)},
+    get numUsers() {return this.getHelper(config.IDs.numUsers)},
 
     classes : {
         cached: {},    // DOM objects that have already been accessed
@@ -820,9 +879,10 @@ $(document).ready(function(){
     getWebSocket(window.location.host + "/console/sockets/c/" + cid, config.SOCKET_FUNCTIONS);
 })();
 
+// Starts the load scoreboard
 async function requestLoadScoreboard() {
     while (ws == null || ws.readyState === 0) {
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 100));
     }
 
     ws.send("[\"loadScoreboard\"]");
@@ -949,9 +1009,8 @@ function toggleCreateTeam(event:Event) {
         dom.teamCode.oninput = null;
         dom.teamCode.classList.add("creatingTeam");
 
-        if(pageState.alternateExists || pageState.alternateExists == null) {    // If alternates exist or the scoreboard hasn't loaded
-            dom.signUpIsAlternateCnt.style.display = "block";
-        }
+
+        dom.signUpIsAlternateCnt.style.display = "none";
 
         let button = document.createElement("button");
         button.onclick = createTeam;
@@ -972,7 +1031,9 @@ function toggleCreateTeam(event:Event) {
         dom.signUpBox.querySelector(".instruction").innerHTML = "Enter team join code:";
         dom.signUpBox.querySelector("input").value = "";
 
-        dom.signUpIsAlternateCnt.style.display = "none";
+        if(pageState.alternateExists || pageState.alternateExists == null) {    // If alternates exist or the scoreboard hasn't loaded
+            dom.signUpIsAlternateCnt.style.display = "block";
+        }
 
         dom.teamCode.maxLength = "6";
         dom.teamCode.oninput = function() {

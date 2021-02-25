@@ -25,8 +25,29 @@ public class CompetitionSocket {
 
     private static Gson gson = new Gson();
 
+    public void sendLoadScoreboardData(UserStatus status) {
+        JsonObject response = new JsonObject();
+        response.addProperty("action", "loadScoreboard");
+        response.addProperty("isCreator", status.admin);
+        response.addProperty("mcExists", competition.template.mcTest.exists);
+        response.addProperty("frqExists", competition.template.frqTest.exists);
+        response.addProperty("alternateExists", competition.alternateExists);
+        response.addProperty("numNonAlts", competition.numNonAlts);
+        response.add("teams", competition.template.scoreboardData);
+        if(status.admin) {
+            response.addProperty("numHandsOnSubmitted", competition.frqSubmissions.size());
+            response.add("teamCodes", competition.template.teamCodeData);
+        }
+
+        try {
+            send(response.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @OnOpen
-    public void onOpen(Session session, @PathParam("cid") String cidS) throws IOException {
+    public void onOpen(Session session, @PathParam("cid") String cidS) {
         System.out.println("OPEN!!! cid="+cidS);
         try{
             short cid = Short.parseShort(cidS);
@@ -52,11 +73,13 @@ public class CompetitionSocket {
             throws IOException {
         System.out.println("Message="+message);
 
+        UserStatus status = UserStatus.getCompeteStatus(user, competition);
+
         // String[] data = gson.fromJson(message, String[].class);
         JsonArray data = JsonParser.parseString(message).getAsJsonArray();
         String action = data.get(0).getAsString();
         if(action.equals("nc")) {
-            if (!user.teacher && ((Student)user).cids.containsKey(competition.template.cid)) {   // They are asking a new clarification
+            if (!user.teacher && status.signedUp) {   // They are asking a new clarification
                 System.out.println("New Clarification");
                 Clarification clarification = new Clarification(user.uid, data.get(1).getAsString(), "", false);
 
@@ -67,27 +90,45 @@ public class CompetitionSocket {
                 if(teacherSocket != null) {
                     JsonObject object = new JsonObject();
                     object.addProperty("action", "nc");
+                    object.addProperty("index", clarification.index);
                     object.addProperty("name", user.fname + " " + user.lname);
                     object.addProperty("question", clarification.question);
                     object.addProperty("id", index);
 
                     teacherSocket.send(object.toString());
-                } else {
-                    System.out.println("Teacher socket is null");
+                }
+
+                // Update the judges as well
+                short[] judges = competition.getJudges();
+                for(short judgeUID: judges) {
+                    CompetitionSocket competitionSocket = connected.get(judgeUID);
+                    if(competitionSocket != null) {
+                        JsonObject object = new JsonObject();
+                        object.addProperty("action", "nc");
+                        object.addProperty("index", clarification.index);
+                        object.addProperty("name", user.fname + " " + user.lname);
+                        object.addProperty("question", clarification.question);
+                        object.addProperty("id", index);
+
+                        competitionSocket.send(object.toString());
+                    }
                 }
 
                 try {competition.update();} catch(Exception ignored) {}
             }
         } else if(action.equals("rc")) {
-            if(user.teacher && user.uid == competition.teacher.uid) {   // They are responding to a clarification
+            if(status.admin || status.judging) {   // They are responding to a clarification
                 System.out.println("Responding to a Clarification");
                 Clarification clarification = competition.clarifications.get(data.get(1).getAsInt());
+
+                if(clarification.responded) return; // Don't change a clarification that is already been responded to
 
                 clarification.responded = true;
                 clarification.response = data.get(2).getAsString();
 
                 JsonObject object = new JsonObject();
                 object.addProperty("action","ac");
+                object.addProperty("index", clarification.index);
                 object.addProperty("question", clarification.question);
                 object.addProperty("answer", clarification.response);
                 String stringified = object.toString();
@@ -95,9 +136,9 @@ public class CompetitionSocket {
                 // Relay the clarification to all of the people who are connected to this competition and signed up
                 ArrayList<CompetitionSocket> sockets = competitions.get(competition.template.cid);
                 for(CompetitionSocket socket: sockets) {
-                    UserStatus status = UserStatus.getCompeteStatus(socket.user, competition.template.cid);
+                    UserStatus socketStatus = UserStatus.getCompeteStatus(socket.user, competition);
 
-                    if(status.signedUp) socket.send(stringified);
+                    if(socketStatus.signedUp || socketStatus.admin) socket.send(stringified);
                 }
 
                 try {competition.update();} catch(Exception ignored) {}
@@ -105,21 +146,9 @@ public class CompetitionSocket {
         } else if(action.equals("loadScoreboard")) {
             System.out.println("loading scoreboard");
 
-            boolean creator = competition.teacher.uid == user.uid;  // If this teacher is the creator of this competition
-            JsonObject response = new JsonObject();
-            response.addProperty("action", "loadScoreboard");
-            response.addProperty("isCreator", creator);
-            response.addProperty("mcExists", competition.template.mcTest.exists);
-            response.addProperty("frqExists", competition.template.frqTest.exists);
-            response.addProperty("alternateExists", competition.alternateExists);
-            response.addProperty("numNonAlts", competition.numNonAlts);
-            response.add("teams", competition.template.scoreboardData);
-            if(creator) response.add("teamCodes", competition.template.teamCodeData);
-
-            send(response.toString());
+            sendLoadScoreboardData(status);
         } else if(action.equals("saveTeam")) {
-            boolean creator = competition.teacher.uid == user.uid;
-            if(creator) {
+            if(status.admin) {
                 System.out.println("Saving team");
                 JsonArray teamArray = data.get(1).getAsJsonArray(); // A list of teams of the format: {tid: number, nonAlts:number[], alt:number}
 
@@ -196,8 +225,7 @@ public class CompetitionSocket {
                 send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":false,\"msg\":\"Team saved successfully\"}");
             }
         } else if(action.equals("fetchGlobalTeams")) {  // Return a list of the global teams
-            boolean creator = competition.teacher.uid == user.uid;
-            if(creator) {
+            if(status.admin) {
                 JsonArray array = new JsonArray();
 
                 Set<Short> maps = Team.teams.keySet(); // Collection of uids
@@ -250,8 +278,7 @@ public class CompetitionSocket {
                 send(ret.toString());
             }
         } else if(action.equals("addExistingTeam")) {   // Adds a global team to the competition
-            boolean creator = competition.teacher.uid == user.uid;
-            if(creator) {
+            if(status.admin) {
                 String tname = data.get(1).getAsString();
                 short uid = data.get(2).getAsShort();
                 short tid = data.get(3).getAsShort();
@@ -297,7 +324,7 @@ public class CompetitionSocket {
                                 if(entry.uids.size() > competition.numNonAlts) break;   // Only add as many students as this competition can take
 
                                 MCSubmission storedMCSubmission = null;
-                                if(student.cids.containsKey(competition.template.cid)) {    // This student is already signed up for this competition
+                                if(status.signedUp) {    // This student is already signed up for this competition
                                     reloadScoreboard = true;
                                     UILEntry oldTeam = student.cids.get(competition.template.cid);
 

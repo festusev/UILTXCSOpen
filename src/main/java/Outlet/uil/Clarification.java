@@ -2,28 +2,46 @@ package Outlet.uil;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
+import jdk.nashorn.internal.parser.JSONParser;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 
 public class Clarification {
+    static int nextGlobalIndex = 0;
+
+    int index;
     short uid;
     String question;
     String response;
     boolean responded;
-    private static Gson gson = new GsonBuilder()
-                .registerTypeAdapter(Clarification.class, new ClarificationDeserializer())
-                .create();
+
     public Clarification(short uid, String question, String response, boolean responded) {
+        index = nextGlobalIndex;
+        nextGlobalIndex++;
+
         this.uid = uid;
         this.question = question;
         this.response = response;
         this.responded = responded;
     }
 
+    public Clarification(int index, short uid, String question, String response, boolean responded) {
+        this.index = index;
+        this.uid = uid;
+        this.question = question;
+        this.response = response;
+        this.responded = responded;
+
+        if(index >= nextGlobalIndex) {
+            nextGlobalIndex = index + 1;
+        }
+    }
+
     public JsonArray toJson() {
         JsonArray array = new JsonArray();
+        array.add(index);
         array.add(uid);
         array.add(question);
         array.add(response);
@@ -41,23 +59,24 @@ public class Clarification {
     }
 
     public static Clarification fromJson(String json) {
-        return gson.fromJson(json, Clarification.class);
+        JsonArray jsonArray = JsonParser.parseString(json).getAsJsonArray();
+        return new Clarification(jsonArray.get(0).getAsInt(), jsonArray.get(1).getAsShort(), jsonArray.get(2).getAsString(),
+                jsonArray.get(3).getAsString(), jsonArray.get(4).getAsBoolean());
+
+        // return gson.fromJson(json, Clarification.class);
         // Type collectionType = new TypeToken<Collection<Clarification>>(){}.getType();
         // Collection<Clarification> myCustomClasses = gson.fromJson(json, collectionType);
     }
     public static ArrayList<Clarification> fromJsonToArray(String json) {
         System.out.println("from json to array='"+json+"'");
-        Type collectionType = new TypeToken<ArrayList<Clarification>>(){}.getType();
+        JsonArray jsonArray = JsonParser.parseString(json).getAsJsonArray();
 
-        return gson.fromJson(json, collectionType);
-    }
-}
-
-class ClarificationDeserializer implements JsonDeserializer<Clarification> {
-    @Override
-    public Clarification deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
-        JsonArray array = json.getAsJsonArray();
-        return new Clarification(array.get(0).getAsShort(), array.get(1).getAsString(),
-                array.get(2).getAsString(), array.get(3).getAsBoolean());
+        ArrayList<Clarification> list = new ArrayList<>();
+        for(JsonElement element: jsonArray) {
+            JsonArray clarification = element.getAsJsonArray();
+            list.add(new Clarification(clarification.get(0).getAsInt(), clarification.get(1).getAsShort(), clarification.get(2).getAsString(),
+                    clarification.get(3).getAsString(), clarification.get(4).getAsBoolean()));
+        }
+        return list;
     }
 }

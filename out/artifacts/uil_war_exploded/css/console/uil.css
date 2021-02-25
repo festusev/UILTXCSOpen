@@ -76,6 +76,7 @@
 #nav {
     margin-bottom: 1rem;
     padding:4rem 1rem 0 0.5rem;
+    white-space: nowrap;
 }
 #comp-list {
     flex-grow: 1;
@@ -92,6 +93,8 @@
 }
 #class_competitions {
     margin-bottom: 10rem;
+    z-index: 1;
+    position: relative;
 }
 #competitions {
     display: flex;
@@ -360,6 +363,67 @@ button {
 }
 .template_option:hover {
     background-color: var(--light-gray);
+}
+#selectJudgeCnt {
+    position: fixed;
+    left: 0;
+    top: 0;
+    background-color: rgba(255,255,255,0.9);
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+    display: none;
+}
+#selectJudgeCnt .center {
+    background-color: white;
+    box-shadow: var(--shadow);
+    width: 50rem;
+    height: 40rem;
+    max-width: 100%;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    padding: 1rem 2rem;
+    box-sizing: border-box;
+    display: block;
+    border-radius: var(--radius);
+}
+#selectJudgeCnt .close {
+    width: 1.5rem;
+    cursor: pointer;
+    position: absolute;
+    top: 1rem;
+    right: 2rem;
+}
+.judge {
+    padding: 0.5rem 1rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1rem;
+    border-radius: var(--radius);
+}
+#selectJudgeList .judge {
+    cursor: pointer;
+}
+#selectJudgeList .judge:hover{
+    background-color: var(--prim-light);
+    color: white;
+}
+.judge img{
+    height: 1.5rem;
+    float: right;
+    cursor: pointer;
+}
+.addJudge {
+    width: 100%;
+    cursor: pointer;
+    border: 1px solid lightgray;
+    border-radius: 0.2rem;
+    background-color: white;
+    font-weight: bold;
+}
+.addJudge:hover{
+    background-color: rgb(251,251,251);
 }
 @media only screen and (max-width: 860px){
     #competitions {

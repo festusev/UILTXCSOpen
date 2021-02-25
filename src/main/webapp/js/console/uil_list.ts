@@ -4,12 +4,33 @@ const config = {
         server_error: "Whoops! A server error occurred. Contact an admin if the problem continues."
     },
     IDs: {
-        class_competitions : "class_competitions"
+        class_competitions : "class_competitions",
+        selectJudgeCnt : "selectJudgeCnt",
+        selectJudgeList : "selectJudgeList"
     },
     COMPETITION: {
         mcOptions : ["a","b","c","d","e"]
     },
-    SOCKET_FUNCTIONS: {},
+    SOCKET_FUNCTIONS: {
+        "loadJudges" : function(response: {thisUID: number, judges: {[uid: string]: string}}) {
+            let fragment = document.createDocumentFragment();
+            for(let judgeUID in response.judges) {
+                if(response.thisUID == parseInt(judgeUID)) continue;
+
+                let li = document.createElement("li");
+                li.classList.add("judge");
+                li.innerText = response.judges[judgeUID];
+                li.onclick = function() {
+                    if(pageState.editingComp) pageState.editingComp.addJudge([parseInt(judgeUID), response.judges[judgeUID]]);
+                    closeSelectJudge();
+                };
+                fragment.appendChild(li);
+            }
+
+            dom.selectJudgeList.innerHTML = "";
+            dom.selectJudgeList.appendChild(fragment);
+        }
+    },
     TEMPLATES: {
         cs : {
             writtenExists: true,
@@ -102,6 +123,12 @@ const config = {
     }
 };
 
+
+let pageState = {
+    editingComp : null  // The competition we are currently editing
+};
+
+
 /***
  * Helps interfacing with static elements (are not deleted *
  */
@@ -111,7 +138,9 @@ let dom = {
         if(this.cached[id] == null) this.cached[id] = document.getElementById(id);
         return this.cached[id];
     },
-    get class_competitions(){return this.getHelper(config.IDs.class_competitions)}
+    get class_competitions(){return this.getHelper(config.IDs.class_competitions)},
+    get selectJudgeCnt(){return this.getHelper(config.IDs.selectJudgeCnt);},
+    get selectJudgeList(){return this.getHelper(config.IDs.selectJudgeList)}
 };
 
 (function() {
@@ -249,6 +278,8 @@ class Competition {
     writtenExists: boolean;
     handsOnExists: boolean;
 
+    judges: [number, string][]; // The first element is the uid of the teacher, the second is the name of the teacher
+
     written: {
         opens: string,
         key: WrittenProblem[],
@@ -296,6 +327,8 @@ class Competition {
         compPublic : HTMLInputElement,
         // viewCompetition : HTMLElement,
         errorSuccessBox: HTMLElement,   // The box for errors and successes
+
+        judges_list : HTMLElement,
 
         controls: HTMLElement,
         controlsEdit: HTMLDivElement,
@@ -373,13 +406,14 @@ class Competition {
         list_handsOn_changeproblems : null
     };
 
-    constructor(cid: string, published: boolean, isPublic: boolean, name:string, writtenObj:any, handsOnObj:any) {
+    constructor(cid: string, published: boolean, isPublic: boolean, name:string, judges:[number, string][], writtenObj:any, handsOnObj:any) {
         competitions.push(this);
 
         this.cid = cid;
         this.published = published;
         this.isPublic = isPublic;
         this.name = name;
+        this.judges = judges;
         this.writtenExists = !!writtenObj;
         this.handsOnExists = !!handsOnObj;
 
@@ -545,7 +579,14 @@ class Competition {
         formData.append("numNonAlts", ""+this.dom.numNonAlts.value);
 
         formData.append("description", this.dom.description.value);
+
+        let judgeUIDs: number[] = [];
+        for(let judgeUID of this.judges) {
+            judgeUIDs.push(judgeUID[0]);
+        }
+        formData.append("judges", JSON.stringify(judgeUIDs))
         formData.append("writtenExists", ""+this.writtenExists);
+
         if(this.writtenExists) {
             formData.append("mcOpens", this.dom.writtenOpen.value);
             formData.append("mcTime", ""+this.dom.writtenTime.value);
@@ -940,7 +981,43 @@ list_handsOn_changeproblems.appendChild(li);
         return controls_open;
     }
 
-    getDOM(handsOnProblemMap:[[string, boolean, boolean]], whatItIsText:string, rulesText:string,numNonAlts: number,alternateExists:boolean):HTMLElement {
+    deleteJudge(judge: [number, string], li: HTMLLIElement) {
+        for(let i=0,j=this.judges.length;i<j;i++) {
+            if(this.judges[i][0] == judge[0]) {
+                this.judges.splice(i, 1);
+                this.dom.judges_list.removeChild(li);
+                return;
+            }
+        }
+    }
+
+    addJudge(judge: [number, string]) {
+        for(let existingJudge of this.judges) {
+            if(existingJudge[0] == judge[0]) return;    // Don't add in a judge if they are already assigned to this competition
+        }
+        // console.log(this.judges);
+
+        this.judges.push(judge);
+        this.dom.judges_list.appendChild(this.getJudgeDOM(judge));
+    }
+
+    getJudgeDOM(judge: [number, string]): HTMLLIElement {    // First element is the uid, second is the username
+        let thisComp: Competition = this;
+
+        let li = document.createElement("li");
+        li.classList.add("judge");
+        li.innerText = judge[1];
+
+        let del = document.createElement("img");
+        del.src = "/res/console/delete.svg";
+        del.onclick = function() {
+            thisComp.deleteJudge(judge, li);
+        };
+        li.appendChild(del);
+        return li;
+    }
+
+    getDOM(handsOnProblemMap:[string, boolean, boolean][], whatItIsText:string, rulesText:string,numNonAlts: number,alternateExists:boolean):HTMLElement {
         function makeHalf(element:HTMLElement) {
             element.classList.add("profile_cmpnt");
             element.classList.add("half");
@@ -1632,6 +1709,28 @@ list_handsOn_changeproblems.appendChild(li);
         this.dom.description = whatItIs_textarea;
         /* CLOSE */
 
+        /* OPEN */
+        let judgesDIV = document.createElement("div");
+        judgesDIV.innerHTML = "Judges";
+        makeFull(judgesDIV);
+        body.appendChild(judgesDIV);
+
+        let judges_list = document.createElement("ul");
+        let judges_fragment = document.createDocumentFragment();
+        for(let judge of this.judges) {
+            judges_fragment.appendChild(this.getJudgeDOM(judge));
+        }
+        judges_list.appendChild(judges_fragment);
+        judgesDIV.appendChild(judges_list);
+        this.dom.judges_list = judges_list;
+
+        let addJudgeButton = document.createElement("button");
+        addJudgeButton.classList.add("addJudge");
+        addJudgeButton.innerText = "+";
+        addJudgeButton.onclick = showSelectJudge;
+        judgesDIV.appendChild(addJudgeButton);
+        /* CLOSE */
+
         /* OPEN
         let rules = document.createElement("div");
         rules.innerHTML = "Rules";
@@ -1704,6 +1803,22 @@ list_handsOn_changeproblems.appendChild(li);
     }
 }
 
+function showSelectJudge() {
+    dom.selectJudgeCnt.style.display = "block";
+}
+
+function closeSelectJudge() {
+    dom.selectJudgeCnt.style.display = "none";
+}
+
+async function requestLoadJudges() {
+    while (ws == null || ws.readyState === 0) {
+        await new Promise(r => setTimeout(r, 100));
+    }
+
+    ws.send("[\"loadJudges\"]");
+}
+
 /***
  * Loads in the competitions from the database.
  * */
@@ -1717,7 +1832,7 @@ function loadCompetitions():boolean {
                 if(responses.length>0) {
                     for(let competition of responses) {
                         let obj:Competition = new Competition(competition["cid"], competition["published"],competition["isPublic"],
-                            competition["name"], competition["written"], competition["handsOn"]);
+                            competition["name"], competition["judges"], competition["written"], competition["handsOn"]);
                         let handsOnProblemsList = [];
                         if(competition["handsOn"] != null) handsOnProblemsList = competition["handsOn"]["problems"];
                         let compDom:HTMLElement = obj.getDOM(handsOnProblemsList, competition["description"], competition["rules"],
@@ -1739,6 +1854,7 @@ function loadCompetitions():boolean {
  */
 let visible_competition_edit_dom: HTMLElement;
 function toggleEditCompetition(competition:Competition) {
+    pageState.editingComp = competition;
     let newCompEdit:HTMLElement = competition.dom.comp_edit;
     if(visible_competition_edit_dom != null) {
         visible_competition_edit_dom.style.display = "none";
@@ -1774,7 +1890,7 @@ function createNewCompetition():void {
         dom.class_competitions.innerHTML = "";
     }
 
-    let competition:Competition = new Competition("", false,false, "New Competition", false, false);
+    let competition:Competition = new Competition("", false,false, "New Competition",[], false, false);
 
     dom.class_competitions.insertBefore(competition.getDOM([], "", "", 3, false), dom.class_competitions.firstChild);
     toggleEditCompetition(competition);

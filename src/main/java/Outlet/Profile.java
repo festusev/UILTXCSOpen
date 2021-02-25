@@ -23,6 +23,73 @@ import javax.servlet.http.Part;
 public class Profile extends HttpServlet{
     protected static Gson gson = new Gson();
 
+    public JsonObject getCompetitionJSON(short cid) {
+        Competition competition = UIL.getCompetition(cid);
+        JsonObject compJ = new JsonObject();
+        compJ.addProperty("cid", cid);
+        compJ.addProperty("name", competition.template.name);
+        compJ.addProperty("published", competition.published);
+        compJ.addProperty("isPublic", competition.isPublic);
+        compJ.addProperty("description", StringEscapeUtils.escapeHtml4(competition.template.description));
+
+        JsonArray judges = new JsonArray();
+        short[] curJudges = competition.getJudges();
+        for(short uid: curJudges) {
+            Teacher judgeTeacher = TeacherMap.getByUID(uid);
+            if(judgeTeacher != null) {
+                JsonArray judge = new JsonArray();
+                judge.add(uid);
+                judge.add(judgeTeacher.fname + " " + judgeTeacher.lname);
+                judges.add(judge);
+            }
+        }
+
+        compJ.add("judges", judges);
+        compJ.addProperty("numNonAlts", competition.numNonAlts);
+        compJ.addProperty("alternateExists", competition.alternateExists);
+
+        if(competition.template.mcTest.exists) {
+            JsonObject writtenJ = new JsonObject();
+            writtenJ.addProperty("opens", competition.template.mcTest.opens.DATE_STRING);
+            writtenJ.addProperty("time", (competition.template.mcTest.TIME / (1000 * 60)));
+
+            JsonArray writtenAnswersJ = new JsonArray();
+            for (int i = 0, j = competition.template.mcTest.KEY.length; i < j; i++) {
+                JsonArray answerJ = new JsonArray();
+                answerJ.add(StringEscapeUtils.escapeHtml4(competition.template.mcTest.KEY[i][0]));
+                answerJ.add(competition.template.mcTest.KEY[i][1]);
+                writtenAnswersJ.add(answerJ);
+            }
+            writtenJ.add("answers", writtenAnswersJ);
+            writtenJ.addProperty("instructions", StringEscapeUtils.escapeHtml4(competition.template.mcTest.INSTRUCTIONS));
+            writtenJ.addProperty("testLink", StringEscapeUtils.escapeHtml4(competition.template.mcTest.TEST_LINK));
+            writtenJ.addProperty("correctPoints", competition.template.mcTest.CORRECT_PTS);
+            writtenJ.addProperty("incorrectPoints", competition.template.mcTest.INCORRECT_PTS);
+            compJ.add("written", writtenJ);
+        }
+        if(competition.template.frqTest.exists) {
+            JsonObject handsOnJ = new JsonObject();
+            handsOnJ.addProperty("opens", competition.template.frqTest.opens.DATE_STRING);
+            handsOnJ.addProperty("time", competition.template.frqTest.TIME / (1000 * 60));
+
+            JsonArray problemsJ = new JsonArray();
+            for (int i = 0, j = competition.template.frqTest.PROBLEM_MAP.length; i < j; i++) {
+                JsonArray problemJ = new JsonArray();
+                FRQProblem problem = competition.template.frqTest.PROBLEM_MAP[i];
+                problemJ.add(StringEscapeUtils.escapeHtml4(problem.name));
+                problemJ.add(problem.input);
+                problemJ.add(problem.output);
+                problemsJ.add(problemJ);
+            }
+            handsOnJ.add("problems", problemsJ);
+            handsOnJ.addProperty("studentPacketLink", StringEscapeUtils.escapeHtml4(competition.template.frqTest.STUDENT_PACKET));
+            handsOnJ.addProperty("maxPoints",competition.template.frqTest.MAX_POINTS);
+            handsOnJ.addProperty("incorrectPenalty", competition.template.frqTest.INCORRECT_PENALTY);
+            compJ.add("handsOn", handsOnJ);
+        }
+
+        return compJ;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -38,63 +105,26 @@ public class Profile extends HttpServlet{
         if(action != null && action.equals("getCompetitions") && u.teacher) {
             JsonArray listJ = new JsonArray();
             // String json = "[";
-            SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd");
+            // SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd");
 
-            int c = 0;
-            int length = ((Teacher)u).cids.size();
+            // int c = 0;
+            // int length = ((Teacher)u).cids.size();
             for(short cid: ((Teacher)u).cids) {
-                Competition competition = UIL.getCompetition(cid);
-                JsonObject compJ = new JsonObject();
-                compJ.addProperty("cid", cid);
-                compJ.addProperty("name", competition.template.name);
-                compJ.addProperty("published", competition.published);
-                compJ.addProperty("isPublic", competition.isPublic);
-                compJ.addProperty("description", StringEscapeUtils.escapeHtml4(competition.template.description));
-                compJ.addProperty("numNonAlts", competition.numNonAlts);
-                compJ.addProperty("alternateExists", competition.alternateExists);
-
-                if(competition.template.mcTest.exists) {
-                    JsonObject writtenJ = new JsonObject();
-                    writtenJ.addProperty("opens", competition.template.mcTest.opens.DATE_STRING);
-                    writtenJ.addProperty("time", (competition.template.mcTest.TIME / (1000 * 60)));
-
-                    JsonArray writtenAnswersJ = new JsonArray();
-                    for (int i = 0, j = competition.template.mcTest.KEY.length; i < j; i++) {
-                        JsonArray answerJ = new JsonArray();
-                        answerJ.add(StringEscapeUtils.escapeHtml4(competition.template.mcTest.KEY[i][0]));
-                        answerJ.add(competition.template.mcTest.KEY[i][1]);
-                        writtenAnswersJ.add(answerJ);
-                    }
-                    writtenJ.add("answers", writtenAnswersJ);
-                    writtenJ.addProperty("instructions", StringEscapeUtils.escapeHtml4(competition.template.mcTest.INSTRUCTIONS));
-                    writtenJ.addProperty("testLink", StringEscapeUtils.escapeHtml4(competition.template.mcTest.TEST_LINK));
-                    writtenJ.addProperty("correctPoints", competition.template.mcTest.CORRECT_PTS);
-                    writtenJ.addProperty("incorrectPoints", competition.template.mcTest.INCORRECT_PTS);
-                    compJ.add("written", writtenJ);
-                }
-                if(competition.template.frqTest.exists) {
-                    JsonObject handsOnJ = new JsonObject();
-                    handsOnJ.addProperty("opens", competition.template.frqTest.opens.DATE_STRING);
-                    handsOnJ.addProperty("time", competition.template.frqTest.TIME / (1000 * 60));
-
-                    JsonArray problemsJ = new JsonArray();
-                    for (int i = 0, j = competition.template.frqTest.PROBLEM_MAP.length; i < j; i++) {
-                        JsonArray problemJ = new JsonArray();
-                        FRQProblem problem = competition.template.frqTest.PROBLEM_MAP[i];
-                        problemJ.add(StringEscapeUtils.escapeHtml4(problem.name));
-                        problemJ.add(problem.input);
-                        problemJ.add(problem.output);
-                        problemsJ.add(problemJ);
-                    }
-                    handsOnJ.add("problems", problemsJ);
-                    handsOnJ.addProperty("studentPacketLink", StringEscapeUtils.escapeHtml4(competition.template.frqTest.STUDENT_PACKET));
-                    handsOnJ.addProperty("maxPoints",competition.template.frqTest.MAX_POINTS);
-                    handsOnJ.addProperty("incorrectPenalty", competition.template.frqTest.INCORRECT_PENALTY);
-                    compJ.add("handsOn", handsOnJ);
-                }
-                listJ.add(compJ);
-                c++;
+                listJ.add(getCompetitionJSON(cid));
             }
+
+            // Get all of the competitions this teacher is the judge of
+            /* Collection<Competition> comps = UIL.published.values();
+            for(Competition competition: comps) {
+                short[] curJudges = competition.getJudges();
+                for(short uid: curJudges) {
+                    if(uid == u.uid) {  // They are a judge
+                        listJ.add(getCompetitionJSON(competition.template.cid));
+                        break;
+                    }
+                }
+            }*/
+
             response.setCharacterEncoding("UTF-8");
             response.setContentType("application/json");
 

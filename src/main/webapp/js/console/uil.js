@@ -114,6 +114,13 @@ var config = {
         // Scoreboard select student IDs
         selectStudent: "selectStudent",
         selectStudentList: "selectStudentList",
+        // Right info bar IDs, for admins only
+        writtenSubmissionCount: "writtenSubmissionCount",
+        writtenAverage: "writtenAverage",
+        handsOnSubmissionCount: "handsOnSubmissionCount",
+        handsOnSubmissionAverage: "handsOnSubmissionAverage",
+        numTeams: "numTeams",
+        numUsers: "numUsers"
     },
     CLASSES: {
         columns: "column",
@@ -158,7 +165,7 @@ var config = {
             if (clarification_list.innerHTML == "There are no clarifications.") {
                 clarification_list.innerHTML = "";
             }
-            clarification_list.innerHTML = "<div class='clarification'><h3>Question - " + response["name"] + "</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
+            clarification_list.innerHTML = "<div class='clarification' id='clarification_" + response["index"] + "'><h3>Question - " + response["name"] + "</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
                 "<textarea placeholder='Send a response.'></textarea><button class='chngButton' onclick='answerClarification(this, " +
                 response["id"] + ")'>Send</button></span></div>" + clarification_list.innerHTML;
         }, "ac": function (response) {
@@ -166,7 +173,12 @@ var config = {
             if (clarification_list.innerHTML == "There are no clarifications.") {
                 clarification_list.innerHTML = "";
             }
-            clarification_list.innerHTML = "<div class='clarification'><h3>Question</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
+            if (pageState.isCreator) { // They are a creator, so check if the clarification already has a dom
+                var clarificationDOM = document.getElementById("clarification_" + response["index"]);
+                if (clarificationDOM != null)
+                    clarification_list.removeChild(clarificationDOM);
+            }
+            clarification_list.innerHTML = "<div class='clarification' id='clarification_" + response["index"] + "'><h3>Question</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
                 response["answer"] + "</span></div>" + clarification_list.innerHTML;
         }, "loadScoreboard": function (response) {
             teams.length = 0;
@@ -191,6 +203,11 @@ var config = {
             var headerDOM = document.createElement("tr");
             headerDOM.innerHTML = headers;
             fragment.appendChild(headerDOM);
+            // These datapoints are displayed on the right bar if the user is an admin
+            var numWrittenSubmitted = 0;
+            var writtenSum = 0; // Sum of written scores
+            var handsOnSum = 0; // Sum of hands on scores
+            var numStudents = 0;
             var selectStudentFragment = document.createDocumentFragment(); // The list of students that goes into the select student window
             var _loop_1 = function (i, j) {
                 var teamData = response.teams[i];
@@ -207,6 +224,11 @@ var config = {
                     };
                     tr.innerHTML = "<td>" + student[0] + "</td>";
                     selectStudentFragment.appendChild(tr);
+                    if (student[2]) {
+                        numWrittenSubmitted++;
+                        writtenSum += student[2];
+                    }
+                    numStudents++;
                 };
                 for (var _i = 0, _a = teamData.students.nonAlts; _i < _a.length; _i++) {
                     var student = _a[_i];
@@ -221,10 +243,34 @@ var config = {
                     };
                     tr.innerHTML = "<td>" + teamData.students.alt[0] + "</td>";
                     selectStudentFragment.appendChild(tr);
+                    if (teamData.students.alt[2]) {
+                        numWrittenSubmitted++;
+                        writtenSum += teamData.students.alt[2];
+                    }
+                    numStudents++;
                 }
+                handsOnSum += team.frqScore;
             };
             for (var i = 0, j = response.teams.length; i < j; i++) {
                 _loop_1(i, j);
+            }
+            if (response.isCreator) {
+                if (pageState.mcExists) {
+                    dom.writtenSubmissionCount.innerText = numWrittenSubmitted + " submitted";
+                    if (numWrittenSubmitted == 0)
+                        dom.writtenAverage.innerText = "0 average";
+                    else
+                        dom.writtenAverage.innerText = Math.round(writtenSum / numWrittenSubmitted) + " average";
+                }
+                if (pageState.frqExists) {
+                    dom.handsOnSubmissionCount.innerText = "" + response.numHandsOnSubmitted;
+                    if (response.teams.length == 0)
+                        dom.handsOnSubmissionAverage.innerText = "0";
+                    else
+                        dom.handsOnSubmissionAverage.innerText = "" + Math.round(handsOnSum / response.teams.length);
+                }
+                dom.numTeams.innerText = "" + response.teams.length;
+                dom.numUsers.innerText = "" + numStudents;
             }
             dom.teamList.innerHTML = "";
             dom.selectStudentList.innerHTML = "";
@@ -352,6 +398,12 @@ var dom = {
     get deleteTeam() { return this.getHelper(config.IDs.deleteTeam); },
     get signUpIsAlternateCnt() { return this.getHelper(config.IDs.signUpIsAlternateCnt); },
     get signUpIsAlternate() { return this.getHelper(config.IDs.signUpIsAlternate); },
+    get writtenSubmissionCount() { return this.getHelper(config.IDs.writtenSubmissionCount); },
+    get writtenAverage() { return this.getHelper(config.IDs.writtenAverage); },
+    get handsOnSubmissionCount() { return this.getHelper(config.IDs.handsOnSubmissionCount); },
+    get handsOnSubmissionAverage() { return this.getHelper(config.IDs.handsOnSubmissionAverage); },
+    get numTeams() { return this.getHelper(config.IDs.numTeams); },
+    get numUsers() { return this.getHelper(config.IDs.numUsers); },
     classes: {
         cached: {},
         getHelper: function (className) {
@@ -776,13 +828,14 @@ $(document).ready(function () {
     }
     getWebSocket(window.location.host + "/console/sockets/c/" + cid, config.SOCKET_FUNCTIONS);
 })();
+// Starts the load scoreboard
 function requestLoadScoreboard() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     if (!(ws == null || ws.readyState === 0)) return [3 /*break*/, 2];
-                    return [4 /*yield*/, new Promise(function (r) { return setTimeout(r, 2000); })];
+                    return [4 /*yield*/, new Promise(function (r) { return setTimeout(r, 100); })];
                 case 1:
                     _a.sent();
                     return [3 /*break*/, 0];
@@ -903,9 +956,7 @@ function toggleCreateTeam(event) {
         dom.teamCode.maxLength = "25";
         dom.teamCode.oninput = null;
         dom.teamCode.classList.add("creatingTeam");
-        if (pageState.alternateExists || pageState.alternateExists == null) { // If alternates exist or the scoreboard hasn't loaded
-            dom.signUpIsAlternateCnt.style.display = "block";
-        }
+        dom.signUpIsAlternateCnt.style.display = "none";
         var button = document.createElement("button");
         button.onclick = createTeam;
         button.classList.add("chngButton");
@@ -924,7 +975,9 @@ function toggleCreateTeam(event) {
         dom.signUpBox.querySelector("h1").innerText = "Join Team";
         dom.signUpBox.querySelector(".instruction").innerHTML = "Enter team join code:";
         dom.signUpBox.querySelector("input").value = "";
-        dom.signUpIsAlternateCnt.style.display = "none";
+        if (pageState.alternateExists || pageState.alternateExists == null) { // If alternates exist or the scoreboard hasn't loaded
+            dom.signUpIsAlternateCnt.style.display = "block";
+        }
         dom.teamCode.maxLength = "6";
         dom.teamCode.oninput = function () {
             codeEntered(dom.teamCode);

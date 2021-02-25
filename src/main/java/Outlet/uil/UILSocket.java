@@ -2,8 +2,12 @@ package Outlet.uil;
 
 import Outlet.Student;
 import Outlet.Teacher;
+import Outlet.TeacherMap;
 import Outlet.User;
 import Outlet.Websocket.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
@@ -57,6 +61,19 @@ public class UILSocket {
     @OnMessage
     public void onMessage(Session session, String message)
             throws IOException {
+        if(user.teacher) {
+            JsonArray jsonArray = JsonParser.parseString(message).getAsJsonArray();
+            String action = jsonArray.get(0).getAsString();
+
+            if(action.equals("loadJudges")) {
+                JsonObject data = new JsonObject();
+                data.addProperty("action", "loadJudges");
+                data.addProperty("thisUID", user.uid);
+                data.add("judges", TeacherMap.json);
+                send(data.toString());
+            }
+
+        }
     }
 
     @OnClose

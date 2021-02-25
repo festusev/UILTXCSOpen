@@ -173,7 +173,7 @@ public class Template {
 
         PrintWriter writer = response.getWriter();
         CompetitionStatus competitionStatus = new CompetitionStatus(mcTest, frqTest);
-        UserStatus userStatus = UserStatus.getCompeteStatus(uData, cid);
+        UserStatus userStatus = UserStatus.getCompeteStatus(uData, competition);
         writer.write(HEADERS+
                         // Dynamic.loadNav(request) +
                 Dynamic.get_consoleHTML(1,getNavBarHTML(userStatus, competitionStatus) + "<div id='content'>" +
@@ -209,6 +209,12 @@ public class Template {
         if(competition.teacher.uid == u.uid) {
             html += "<div class='competition_controls mini_comp_controls' data-id='"+cid+"'><div class='tooltip-cnt competition_edit' style='display: block;'>" +
                     "<img src='/res/console/edit.svg'><p class='tooltip'>Edit</p></div></div>";
+        } else if(u.teacher) {    // Check if the teacher is a judge of this competition
+            Teacher teacher = (Teacher) u;
+            if(teacher.judging.contains(competition)) {  // They are a judge
+                    html += "<div class='competition_controls mini_comp_controls'><div class='tooltip-cnt competition_edit' style='display: block;'>" +
+                            "<img src='/res/console/judge.svg'><p class='tooltip'>Judging</p></div></div>";
+            }
         }
 
         return html + "</a>";
@@ -216,10 +222,10 @@ public class Template {
 
     public String getRightBarHTML(User uData, UserStatus userStatus, CompetitionStatus competitionStatus) {
         String string = "<div id='leftBar'>";
-        if(userStatus.creator || userStatus.signedUp) {
+        if(userStatus.admin || userStatus.signedUp) {
             if(mcTest.exists) {
                 String written = "<div id='leftBarWritten'>";
-                if(userStatus.creator) {
+                if(userStatus.admin) {
                     written += "<h2>Written</h2>";
                     int submissionCount = 0;
                     int submissionTotal = 0;    // All of the scores added up
@@ -257,20 +263,8 @@ public class Template {
 
             if(frqTest.exists) {
                 String handsOn = "<div id='leftBarHandsOn'><h2>Hands-On</h2>";
-                if(userStatus.creator) {
-                    int submissionCount = 0;
-                    int submissionTotal = 0;
-                    for(UILEntry entry: competition.entries.tidMap.values()) {
-                        for(Pair<Short, ArrayList<FRQSubmission>> problem: entry.frqResponses) {
-                            if(problem.key != 0) submissionCount ++;
-                        }
-                        submissionTotal += entry.frqScore;
-                    }
-
-                    handsOn += "<p><span id='handsOnSubmissionCount'>" + submissionCount + "</span> submissions</p>";
-                    int average = competition.entries.tidMap.values().size();
-                    if(average > 0) average = Math.round(submissionTotal/average);
-                    handsOn += "<p><span id='handsOnSubmissionAverage'>" + average + "</span> average</p>";
+                if(userStatus.admin) {
+                    handsOn += "<p><span id='handsOnSubmissionCount'></span> submissions</p><p><span id='handsOnSubmissionAverage'></span> average</p>";
                 } else {
                     int solved = 0;
                     int wrong = 0;
@@ -292,13 +286,9 @@ public class Template {
                 string += handsOn;
             }
 
-            if(userStatus.creator) {
-                int numStudents = 0;
-                for(UILEntry entry: competition.entries.tidMap.values()) {
-                    numStudents += entry.uids.size();
-                }
-                string += "<div id='leftBarBottom'><p><span id='numTeams'>"+competition.entries.tidMap.values().size()+"</span> teams</p>" +
-                                                  "<p><span id='numUsers'>"+numStudents+"</span> students</p></div>";
+            if(userStatus.admin) {
+                string += "<div id='leftBarBottom'><p><span id='numTeams'></span> teams</p>" +
+                                                  "<p><span id='numUsers'></span> students</p></div>";
             } else if(userStatus.signedUp) {
                 UILEntry entry = ((Student)uData).cids.get(cid);
                 int rank = sortedTeams.indexOf(entry.tid) + 1;
@@ -429,7 +419,7 @@ public class Template {
                         "<div id='mcColumn_submissionList'><div class='row head-row'>" +
                         "<h1>Written</h1></div><div class='row'><p>The written section has closed.</p></div></div></div>";
             }
-        } else if(userStatus.teacher && userStatus.creator) {  // This is the teacher who made this competition
+        } else if(userStatus.teacher && userStatus.admin) {  // This is the teacher who made this competition
             String html =  "<div id='mcColumn' class='column mcSubmissionList' style='display:none;'>" +
                     "<div id='mcColumn_submissionList'><div class='row head-row'>" +
                     "<h1>Written</h1>" +
@@ -580,7 +570,7 @@ public class Template {
         if(!frqTest.exists || competitionStatus.frqBefore) return "";
 
         if(userStatus.teacher) {
-            if(userStatus.creator) {   // This is the teacher who created this competition
+            if(userStatus.admin) {   // This is the teacher who created this competition
                 String html =  "<div id='frqColumn' class='column frqSubmissionList' style='display:none;'>" +
                         "<div style='flex-grow:1' id='frqSubmissions'><div class='row head-row'>" +
                         "<h1>Hands-On</h1>" +
@@ -656,7 +646,7 @@ public class Template {
     public String getClarificationHTML(User user, UserStatus userStatus, CompetitionStatus competitionStatus) {
         // System.out.println("SignedUp="+userStatus.signedUp+", Creator="+userStatus.creator+", FRQDuring="+competitionStatus.frqDuring+
         //        ", FRQFinished="+competitionStatus.frqFinished+", MCDuring="+competitionStatus.mcDuring+", MCFinished="+competitionStatus.mcFinished);
-        if ((userStatus.signedUp || userStatus.creator) && (competitionStatus.frqDuring || competitionStatus.frqFinished) &&
+        if ((userStatus.signedUp || userStatus.admin) && (competitionStatus.frqDuring || competitionStatus.frqFinished) &&
                 (competitionStatus.mcDuring || competitionStatus.mcFinished)) {
             String html = "<div id='clarificationsColumn' class='column' style='display:none;'><h1>Clarifications</h1>";
 
@@ -671,20 +661,20 @@ public class Template {
                 Clarification clarification = competition.clarifications.get(i);
                 if(clarification.responded) {  // Only show responded clarifications to non creators
                     String askerName = "";
-                    if(userStatus.creator) {
+                    if(userStatus.admin) {
                         Student asker = StudentMap.getByUID(clarification.uid);
                         if (asker != null) askerName = " - " + asker.fname + " " + asker.lname;
                     }
 
-                    html += "<div class='clarification'><h3>Question"+askerName+"</h3><span>" + clarification.question +
+                    html += "<div class='clarification' id='clarification_"+clarification.index+"'><h3>Question"+askerName+"</h3><span>" + clarification.question +
                             "</span><h3>Answer</h3><span>" + clarification.response + "</span></div>";
                     noClarifications = false;
-                } else if (userStatus.creator) {    // Not yet responded, so add in the response textarea
+                } else if (userStatus.admin) {    // Not yet responded, so add in the response textarea
                     String askerName = "";
                     Student asker = StudentMap.getByUID(clarification.uid);
                     if (asker != null) askerName = " - " + asker.fname + " " + asker.lname;
 
-                    html += "<div class='clarification'><h3>Question"+askerName+"</h3><span>" + clarification.question +
+                    html += "<div class='clarification' id='clarification_"+clarification.index+"'><h3>Question"+askerName+"</h3><span>" + clarification.question +
                             "</span><h3>Answer</h3><span><textarea placeholder='Send a response.'></textarea><button " +
                             "onclick='answerClarification(this, "+i+")' class='chngButton'>Send</button></span></div>";
 
@@ -710,7 +700,7 @@ public class Template {
             if(mcFirst) return nav + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
             else return nav + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
         } else {
-            if(userStatus.signedUp || userStatus.creator) {
+            if(userStatus.signedUp || userStatus.admin) {
                 if (mcTest.exists) nav += MC_HEADER;
                 if (frqTest.exists) nav += FRQ_HEADER;
                 if((competitionStatus.frqDuring || competitionStatus.frqFinished) && (competitionStatus.mcDuring || competitionStatus.mcFinished))
@@ -764,7 +754,7 @@ public class Template {
             return;
         }*/
 
-        /*if(!scoreboardSocketScheduled) {    // Schedule a timer to send the updated scoreboard to the connected sockets
+        if(!scoreboardSocketScheduled) {    // Schedule a timer to send the updated scoreboard to the connected sockets
             scoreboardSocketScheduled = true;
             Timer task = new Timer();
             task.schedule(new TimerTask() {
@@ -774,40 +764,19 @@ public class Template {
                     if(sockets == null) return;
 
                     for(CompetitionSocket socket: sockets) {
-                        JsonObject obj = new JsonObject();
-                        obj.addProperty("action", "updateScoreboard");
-                        obj.addProperty("html", getScoreboardHTML());
-
-                        if(!socket.user.teacher) {  // They are a signed-up student
-                            Student student = ((Student)socket.user);
-                            if(student.cids.containsKey(cid)) {
-                                UILEntry entry = student.cids.get(cid);
-                                obj.addProperty("rank", ordinal(sortedTeams.indexOf(entry.tid) + 1));
-                                obj.addProperty("numTeams", competition.entries.allEntries.size());
-                            }
-                        }
-
-                        try {
-                            socket.send(gson.toJson(obj));
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                        UserStatus status = UserStatus.getCompeteStatus(socket.user, competition);
+                        socket.sendLoadScoreboardData(status);
                     }
                     scoreboardSocketScheduled = false;
                     task.cancel();
                     task.purge();
                 }
             }, 1000);
-        }*/
+        }
 
         // This will store the json scoreboard information
         scoreboardData = new JsonArray();
         teamCodeData = new JsonArray();
-
-        // The table row list of teams in order of points
-        String teamList = "";
-        int rank = 1;
-
 
         competition.entries.allEntries.sort(sorter);
         sortedTeams.clear();
@@ -918,34 +887,41 @@ class UserStatus {
     boolean signedUp;
     boolean alt;    // if they are the alternate
     boolean teacher;
+    boolean admin;  // If they administrate this competition
     boolean creator;
+    boolean judging;
     boolean finishedMC; // Whether or not they finished the MC. If they aren't signed up, this is always false.
 
-    UserStatus(boolean signedUp, boolean alt, boolean teacher, boolean creator, boolean finishedMC) {
+    UserStatus(boolean signedUp, boolean alt, boolean teacher, boolean creator, boolean judging, boolean finishedMC) {
         this.signedUp = signedUp;
         this.alt = alt;
         this.teacher = teacher;
+        this.admin = creator || judging;
         this.creator = creator;
+        this.judging = judging;
         this.finishedMC = finishedMC;
     }
 
-    public static UserStatus getCompeteStatus(User u, short cid) {
+    public static UserStatus getCompeteStatus(User u, Competition competition) {
         boolean signedUp = true;
         boolean alt = false;
         boolean teacher = false;
         boolean creator = false;
+        boolean judge = false;
         boolean finishedMC = false;
 
         if(u.teacher) {
             signedUp = false;
             teacher = true;
-            if(((Teacher)u).cids.contains(cid)){
+            if(((Teacher)u).cids.contains(competition.template.cid)){
                 creator = true;
+            } else if(((Teacher) u).judging.contains(competition)) {
+                judge = true;
             }
-        } else if(!((Student)u).cids.containsKey(cid)) {
+        } else if(!((Student)u).cids.containsKey(competition.template.cid)) {
             signedUp = false;
         } else {
-            UILEntry entry = ((Student)u).cids.get(cid);
+            UILEntry entry = ((Student)u).cids.get(competition.template.cid);
             finishedMC = entry.finishedMC(u.uid);
 
             if(entry.altUID == u.uid) { // They are this team's alternate
@@ -953,7 +929,7 @@ class UserStatus {
             }
         }
 
-        return new UserStatus(signedUp, alt, teacher, creator, finishedMC);
+        return new UserStatus(signedUp, alt, teacher, creator, judge, finishedMC);
     }
 }
 

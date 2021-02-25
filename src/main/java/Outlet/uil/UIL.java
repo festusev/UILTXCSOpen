@@ -78,7 +78,7 @@ public class UIL extends HttpServlet{
             Competition comp = new Competition(cid, published,
                     rs.getBoolean("isPublic"),rs.getString("name"),rs.getString("description"),
                     alternateExists, numNonAlts,mcTest, frqTest,
-                    Clarification.fromJsonToArray(rs.getString("clarifications")));
+                    Clarification.fromJsonToArray(rs.getString("clarifications")),gson.fromJson(rs.getString("judges"),short[].class));
 
             if(!comp.published) {
                 unpublished.put(comp.template.cid, comp);
@@ -96,6 +96,28 @@ public class UIL extends HttpServlet{
             }*/
         }
         initialized = true;
+    }
+
+    // Adds the competition objects to the teachers who are judging them.
+    // Must be called after all of the teachers and competitions are loaded.
+    public static void initializeJudges() {
+        Collection<Competition> publishedValues = published.values();
+        for(Competition competition: publishedValues) {
+            short[] judges = competition.getJudges();
+            for(short uid: judges) {
+                Teacher teacher = TeacherMap.getByUID(uid);
+                teacher.judging.add(competition);
+            }
+        }
+
+        Collection<Competition> unpublishedValues = unpublished.values();
+        for(Competition competition: unpublishedValues) {
+            short[] judges = competition.getJudges();
+            for(short uid: judges) {
+                Teacher teacher = TeacherMap.getByUID(uid);
+                teacher.judging.add(competition);
+            }
+        }
     }
 
     public static void sortFRQResponses() {
@@ -247,6 +269,7 @@ public class UIL extends HttpServlet{
         short numNonAlts = Short.parseShort(request.getParameter("numNonAlts"));
         boolean writtenExists = request.getParameter("writtenExists").equals("true");
         boolean handsOnExists = request.getParameter("handsOnExists").equals("true");
+        short[] judges = gson.fromJson(request.getParameter("judges"), short[].class);
 
         if(name.isEmpty()) {
             writer.write("{\"error\":\"Competition name is empty.\"}");
@@ -276,7 +299,8 @@ public class UIL extends HttpServlet{
                 /* if(difference <= 0) {   // The given datetime is in the past
                     writer.write("{\"error\":\"Written cannot end in the past.\"}");
                     return false;
-                } else*/ if(difference > (long)1000*60*60*24*365*10) {   // The given datetime is more than 10 years in the future
+                } else*/
+                if(difference > (long)1000*60*60*24*365*10) {   // The given datetime is more than 10 years in the future
                     writer.write("{\"error\":\"Written cannot start more than 10 years in the future.\"}");
                     return false;
                 }
@@ -477,7 +501,7 @@ public class UIL extends HttpServlet{
             // We are creating a competition and returning the cid
             try {
                 competition = Competition.createCompetition((Teacher)u, true, isPublic,
-                        name, description, alternateExists,numNonAlts, mcTest, frqTest);
+                        name, description, alternateExists,numNonAlts, mcTest, frqTest, judges);
                 // retCid = true;
             } catch (SQLException e) {
                 System.out.println("Error creating the competition");
@@ -500,6 +524,7 @@ public class UIL extends HttpServlet{
             }
 
             competition.published = true;
+            competition.setJudges(judges);
             frqTest.setDirectories(cid, u.uid);
 
             if(frqTest.exists) {
@@ -509,7 +534,7 @@ public class UIL extends HttpServlet{
                 frqTest.deleteTestcaseDir();
             }
             try {
-                competition.update((Teacher)u, true, isPublic, alternateExists, numNonAlts, name, description, mcTest, frqTest);
+                competition.update((Teacher)u, true, isPublic, alternateExists, numNonAlts, name, description, mcTest, frqTest,judges);
             } catch (SQLException e) {
                 e.printStackTrace();
                 writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
@@ -596,9 +621,11 @@ public class UIL extends HttpServlet{
             StringBuilder right = new StringBuilder("<div id='competitions'><div id='nav'><p onclick='showPublic(this)' class='selected'>Public</p>");
 
             boolean showClassHTML = user.teacher || TeacherMap.getByUID(((Student)user).teacherId) != null;
-            if(showClassHTML) right.append("<p onclick='showClassComps(this)' id='showClassComps'>Class</p>");
-            if(user.teacher) right.append("<p id='createNewCompetition' onclick='createNewCompetition()'>New</p>");
-            else right.append("<p id='showUpcomingComps' onclick='showUpcomingComps(this)'>Upcoming</p>");
+            if(user.teacher) right.append("<p onclick='showClassComps(this)' id='showClassComps'>My Competitions</p>" +
+                    "<p onclick='showUpcomingComps(this)' id='showUpcomingComps'>Judging</p>" +
+                    "<p id='createNewCompetition' onclick='createNewCompetition()'>New</p>");
+            else if(TeacherMap.getByUID(((Student)user).teacherId) != null)
+                right.append("<p onclick='showClassComps(this)' id='showClassComps'>Class</p><p id='showUpcomingComps' onclick='showUpcomingComps(this)'>Upcoming</p>");
 
             right.append("</div><div id='comp-list'><h1 id='title'>Competitions</h1><div id='public_competitions' class='column'>");
 
@@ -609,15 +636,15 @@ public class UIL extends HttpServlet{
                 Collections.sort(ordered, new SortCompByDate());
 
                 boolean foundPublic = false;
-                String upcoming = "";
-                String running = "";
-                String archived = "";
+                StringBuilder upcoming = new StringBuilder();
+                StringBuilder running = new StringBuilder();
+                StringBuilder archived = new StringBuilder();
                 for(Competition comp: ordered) {
                     if(comp.isPublic) {
                         String html = comp.template.getMiniHTML(user);
-                        if(!comp.template.opens.done()) upcoming += html;
-                        else if(!comp.template.closes.done()) running += html;
-                        else archived += html;
+                        if(!comp.template.opens.done()) upcoming.append(html);
+                        else if(!comp.template.closes.done()) running.append(html);
+                        else archived.append(html);
                         foundPublic = true;
                     }
                 }
@@ -625,19 +652,19 @@ public class UIL extends HttpServlet{
                     right.append("<p class='emptyWarning'>There are no public competitions.</p>");
                 } else {
                     right.append("<h3>Upcoming</h3>");
-                    if(upcoming.isEmpty()) {
+                    if(upcoming.length() == 0) {
                         right.append("<p class='emptyWarning'>There are no upcoming public competitions</p>");
                     } else {
                         right.append(upcoming);
                     }
                     right.append("<h3>Running</h3>");
-                    if(running.isEmpty()) {
+                    if(running.length() == 0) {
                         right.append("<p class='emptyWarning'>There are no running competitions.</p>");
                     } else {
                         right.append(running);
                     }
                     right.append("<h3>Archived</h3>");
-                    if(archived.isEmpty()) {
+                    if(archived.length() == 0) {
                         right.append("<p class='emptyWarning'>There are no archived competitions.</p>");
                     } else {
                         right.append(archived);
@@ -674,7 +701,22 @@ public class UIL extends HttpServlet{
                 right.append("</div>");
             }
 
-            if (!user.teacher) {
+            if(user.teacher) {  // They are a teacher, so add in the template for the list of other teachers
+                right.append("<script>requestLoadJudges()</script><div id='selectJudgeCnt'><div class='center'><h1>Select Judge</h1>" +
+                             "<img src='/res/close.svg' class='close' onclick='closeSelectJudge()'/>" +
+                             "<ul id='selectJudgeList'></ul></div></div>" +
+                             "<div id='upcoming_competitions' style='display:none' class='column'>");
+                Teacher teacher = (Teacher) user;
+                boolean empty = true;
+                for(Competition comp: teacher.judging) {
+                    if(comp.published) {
+                        right.append(comp.template.getMiniHTML(teacher));
+                        empty = false;
+                    }
+                }
+                if(empty) right.append("<p class='emptyWarning'>No teachers have added you as a judge to their competition.</p>");
+                right.append("</div>");
+            } else {
                 Collection<UILEntry> myCompetitions = ((Student) user).cids.values();
                 right.append("<div id='upcoming_competitions' style='display:none' class='column'>");
                 if(myCompetitions.size() <= 0) right.append("<p class='emptyWarning'>You haven't signed up for any competitions.</p>");
@@ -769,6 +811,7 @@ public class UIL extends HttpServlet{
                 short numNonAlts = Short.parseShort(request.getParameter("numNonAlts"));
                 boolean writtenExists = request.getParameter("writtenExists").equals("true");
                 boolean handsOnExists = request.getParameter("handsOnExists").equals("true");
+                short[] judges = gson.fromJson(request.getParameter("judges"), short[].class);
 
                 if(name.isEmpty()) {
                     writer.write("{\"error\":\"Competition name is empty.\"}");
@@ -848,7 +891,7 @@ public class UIL extends HttpServlet{
                     // We are creating a competition and returning the cid
                     try {
                         competition = Competition.createCompetition((Teacher)u, false, isPublic,
-                                name, description,alternateExists,numNonAlts, mcTest, frqTest);
+                                name, description,alternateExists,numNonAlts, mcTest, frqTest, judges);
                     } catch (SQLException e) {
                         e.printStackTrace();
                         writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
@@ -872,7 +915,7 @@ public class UIL extends HttpServlet{
                         frqTest.deleteTestcaseDir();
                     }
                     try {
-                        competition.update((Teacher)u, competition.published, isPublic, alternateExists, numNonAlts, name, description, mcTest, frqTest);
+                        competition.update((Teacher)u, competition.published, isPublic, alternateExists, numNonAlts, name, description, mcTest, frqTest, judges);
                     } catch (SQLException e) {
                         e.printStackTrace();
                         writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
@@ -914,7 +957,7 @@ public class UIL extends HttpServlet{
                 writer.write("{\"success\":\"Competition saved.\",\"cid\":\""+competition.template.cid+"\"}");
             } else if(action.equals("publishCompetition") && u.teacher) {
                 savePublished(request, writer, (Teacher)u);
-            } else if(action.equals("unPublishCompetition")) {
+            } /*else if(action.equals("unPublishCompetition")) {
                 short cid = Short.parseShort(request.getParameter("op_cid"));
                 competition = UIL.getCompetition(cid);
 
@@ -928,7 +971,7 @@ public class UIL extends HttpServlet{
                     }
                 }
                 writer.write("{\"success\":\"Competition unpublished.\"}");
-            } else if(action.equals("deleteCompetition") && u.teacher) {
+            } */else if(action.equals("deleteCompetition") && u.teacher) {
                 short deleteCid = Short.parseShort(request.getParameter("op_cid"));
                 competition = UIL.getCompetition(deleteCid);
 
