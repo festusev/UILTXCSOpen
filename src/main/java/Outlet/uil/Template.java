@@ -144,11 +144,11 @@ public class Template {
 
         HEADERS = "<html><head><title>" + name + " - TXCSOpen</title>" +
                 Dynamic.loadHeaders() +
-                "<link rel='stylesheet' href='/css/console/console1.css'>" +
+                "<link rel='stylesheet' href='/css/console/console.css'>" +
                 "<link rel='stylesheet' href='/css/console/uil_template.css'>" +
                 //"<script src='/js/diff/base.js'></script>" +
                 //"<script src='/js/diff/line.js'></script>" +
-                "<script src='/js/console/uil1.js'></script>" +
+                "<script src='/js/console/uil.js'></script>" +
                 "</head><body>";
 
         // Cre a timer to update the scoreboard every SCOREBOARD_UPDATE_INTERVAL seconds

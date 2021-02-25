@@ -161,7 +161,7 @@ public class Profile extends HttpServlet{
             writer.append("<html>\n" +
                     "<head>\n" +
                     "    <title>Profile - TXCSOpen</title>\n" + Dynamic.loadHeaders() +
-                    "    <link rel=\"stylesheet\" href=\"/css/console/console1.css\">\n" +
+                    "    <link rel=\"stylesheet\" href=\"/css/console/console.css\">\n" +
                     "    <link rel=\"stylesheet\" href=\"/css/console/profile.css\">\n" +
                     "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
                     "    <script src=\"/js/console/profile.js\"></script>\n" +

@@ -90,7 +90,7 @@ public class Help extends HttpServlet{
         writer.append("<html>\n" +
                 "<head>\n" +
                 "    <title>Help - TXCSOpen</title>\n" + Dynamic.loadHeaders() +
-                "    <link rel=\"stylesheet\" href=\"/css/console/console1.css\">\n" +
+                "    <link rel=\"stylesheet\" href=\"/css/console/console.css\">\n" +
                 "    <link rel=\"stylesheet\" href=\"/css/console/help.css\">\n" +
                 "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
                 "    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css\">\n" +
