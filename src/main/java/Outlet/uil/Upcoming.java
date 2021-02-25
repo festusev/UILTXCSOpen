@@ -63,10 +63,10 @@ public class Upcoming extends HttpServlet{
         writer.write("<html>\n" +
                 "<head>\n" +
                 "    <title>UIL - TXCSOpen</title>\n" + Dynamic.loadHeaders() +
-                "    <link rel=\"stylesheet\" href=\"/css/console/console.css\">\n" +
+                "    <link rel=\"stylesheet\" href=\"/css/console/console1.css\">\n" +
                 "    <link rel=\"stylesheet\" href=\"/css/console/upcoming.css\">\n" +
                 "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
-                "    <script src=\"/js/console/uil.js\"></script>" +
+                "    <script src=\"/js/console/uil1.js\"></script>" +
                 "</head>\n" +
                 "<body>\n" + // Dynamic.loadNav(request) +
                 Dynamic.get_consoleHTML(0, right + "</div>") +

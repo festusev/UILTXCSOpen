@@ -94,10 +94,10 @@ public class Class extends HttpServlet {
         writer.append("<html>\n" +
                 "<head>\n" +
                 "    <title>Class - TXCSOpen</title>\n" + Dynamic.loadHeaders() +
-                "    <link rel=\"stylesheet\" href=\"/css/console/console.css\">\n" +
+                "    <link rel=\"stylesheet\" href=\"/css/console/console1.css\">\n" +
                 "    <link rel=\"stylesheet\" href=\"/css/console/class.css\">\n" +
                 "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
-                "    <script src=\"/js/console/class.js\"></script>\n" +
+                "    <script src=\"/js/console/class1.js\"></script>\n" +
                 "    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css\">\n" +
                 "    <script src=\"https://cdn.jsdelivr.net/npm/flatpickr\"></script>" +
                 "</head>\n" +

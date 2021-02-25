@@ -740,10 +740,10 @@ public class UIL extends HttpServlet{
             writer.write("<html>\n" +
                     "<head>\n" +
                     "    <title>Competitions - TXCSOpen</title>\n" + Dynamic.loadHeaders() +
-                    "    <link rel=\"stylesheet\" href=\"/css/console/console.css\">\n" +
-                    "    <link rel=\"stylesheet\" href=\"/css/console/uil.css\">\n" +
+                    "    <link rel=\"stylesheet\" href=\"/css/console/console1.css\">\n" +
+                    "    <link rel=\"stylesheet\" href=\"/css/console/uil1.css\">\n" +
                     "    <link href=\"https://fonts.googleapis.com/css2?family=Open+Sans&family=Oswald&family=Work+Sans&display=swap\" rel=\"stylesheet\">" +
-                    "    <script src=\"/js/console/uil_list.js\"></script>" +
+                    "    <script src=\"/js/console/uil_list1.js\"></script>" +
                     "    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css\">\n" +
                     "    <script src=\"https://cdn.jsdelivr.net/npm/flatpickr\"></script>" +
                     "</head>\n" +
