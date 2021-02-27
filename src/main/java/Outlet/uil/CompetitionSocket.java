@@ -37,6 +37,11 @@ public class CompetitionSocket {
         if(status.admin) {
             response.addProperty("numHandsOnSubmitted", competition.frqSubmissions.size());
             response.add("teamCodes", competition.template.teamCodeData);
+
+            JsonArray studentsInClass = StudentMap.getJSONByTeacher(user.uid);
+            if(studentsInClass == null) studentsInClass = new JsonArray();
+
+            response.add("studentsInClass", studentsInClass);
         }
 
         try {
@@ -150,76 +155,93 @@ public class CompetitionSocket {
         } else if(action.equals("saveTeam")) {
             if(status.admin) {
                 System.out.println("Saving team");
-                JsonArray teamArray = data.get(1).getAsJsonArray(); // A list of teams of the format: {tid: number, nonAlts:number[], alt:number}
 
-                // First, check that no team has more than the maximum allowed non alts, and, if alts aren't allowed, no team has an alt.
-                // Also, load the storedSubmissionMap
-                HashMap<Short, MCSubmission> storedSubmissionMap = new HashMap<>(); // So that when we are swapping around users, we store their MCSubmission
-                JsonObject[] teams = new JsonObject[teamArray.size()];
-                for (int i=0,j=teamArray.size();i<j;i++) {
-                    JsonObject team = teamArray.get(i).getAsJsonObject();
-                    teams[i] = team;
+                JsonObject team = data.get(1).getAsJsonObject(); // A team of the format: {tid: number, nonAlts:number[], alt:number}
 
-                    JsonArray nonAlts = team.get("nonAlts").getAsJsonArray();
-                    JsonElement alt = team.get("alt");
-                    if(nonAlts.size() > competition.numNonAlts || (!alt.isJsonNull() && alt.getAsShort() >= 0 && !competition.alternateExists)) {
-                        send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":true,\"msg\":\"Error while saving team\"}");
-                        return;
-                    };
+                JsonArray nonAlts = team.get("nonAlts").getAsJsonArray();
+                JsonElement alt = team.get("alt");
+                if(nonAlts.size() > competition.numNonAlts || (!alt.isJsonNull() && alt.getAsShort() >= 0 && !competition.alternateExists)) {
+                    send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":true,\"msg\":\"Error while saving team\"}");
+                    return;
+                };
 
-                    if(competition.template.mcTest.exists) {
-                        short tid = team.get("tid").getAsShort();
-                        UILEntry entry = competition.entries.getByTid((tid));
+                short tid = team.get("tid").getAsShort();
+                UILEntry entry = competition.entries.getByTid((tid));
 
-                        for (short uid : entry.uids) {
-                            storedSubmissionMap.put(uid, entry.mc.get(uid));
+                HashMap<Short, MCSubmission> newMC = new HashMap<>();;
+
+                Set<Short> newUIDs = new HashSet<>();
+                for(JsonElement uidE: nonAlts) {    // Loop through the new non alt students
+                    Student student = StudentMap.getByUID(uidE.getAsShort());
+                    newUIDs.add(student.uid);
+
+                    UserStatus studentStatus = UserStatus.getCompeteStatus(student, competition);
+                    if(studentStatus.signedUp) {    // They are already signed up, so remove them from any previous team
+                        UILEntry oldEntry = student.cids.get(competition.template.cid);
+                        if(studentStatus.alt) {
+                            oldEntry.altUID = -1;
+                        }
+                        oldEntry.uids.remove(student.uid);  // The old uids list should only store students that are being removed from the competition
+
+                        if(oldEntry.tid != entry.tid) { // They were on a different team, so update that team now
+                            if(competition.template.mcTest.exists) {
+                                MCSubmission oldSubmission = oldEntry.mc.get(student.uid);
+                                oldEntry.mc.remove(student.uid);
+                                if(oldSubmission != null) newMC.put(student.uid, oldSubmission);
+                            }
+                            student.cids.put(competition.template.cid,entry);
+                            oldEntry.updateAll();
+                        }
+                    } else if(student.teacherId == user.uid) {    // They were not already signed up, so check if they are in this teachers class and add them to the team
+                        student.cids.put(competition.template.cid, entry);
+                    }
+                }
+
+                if(competition.alternateExists && !alt.isJsonNull()) {
+                    short altUID = alt.getAsShort();
+                    entry.altUID = altUID;
+
+                    if(altUID >= 0) {
+                        Student student = StudentMap.getByUID(altUID);
+                        newUIDs.add(student.uid);
+
+                        UserStatus studentStatus = UserStatus.getCompeteStatus(student, competition);
+                        if (studentStatus.signedUp) {    // They are already signed up, so remove them from any previous team
+                            UILEntry oldEntry = student.cids.get(competition.template.cid);
+                            oldEntry.uids.remove(student.uid);
+
+                            if (oldEntry.tid != entry.tid) { // They were on a different team, so update that team now
+                                if(competition.template.mcTest.exists) {
+                                    MCSubmission oldSubmission = oldEntry.mc.get(student.uid);
+                                    oldEntry.mc.remove(student.uid);
+                                    if(oldSubmission != null) newMC.put(student.uid, oldSubmission);
+                                }
+
+                                if (studentStatus.alt) {
+                                    oldEntry.altUID = -1;
+                                }
+
+                                student.cids.put(competition.template.cid, entry);
+                                oldEntry.updateAll();
+                            }
+                        } else if (student.teacherId == user.uid) {    // They were not already signed up, so check if they are in this teachers class and add them to the team
+                            student.cids.put(competition.template.cid, entry);
                         }
                     }
                 }
 
-                // Now update the teams
-                for (JsonObject team: teams) {
-                    short tid = team.get("tid").getAsShort();
-                    JsonArray nonAlts = team.get("nonAlts").getAsJsonArray();
-                    short alt = team.get("alt").getAsShort();
 
-                    UILEntry entry = competition.entries.getByTid(tid);
-
-                    Set<Short> newUIDs = new HashSet<>();
-                    HashMap<Short, MCSubmission> newMCSubmissions = new HashMap<>();
-
-                    // Set the non alternates
-                    for(JsonElement uidE: nonAlts) {
-                        short uid = uidE.getAsShort();
-                        newUIDs.add(uid);
-
-                        if(competition.template.mcTest.exists) {
-                            MCSubmission submission = storedSubmissionMap.get(uid);
-                            if(submission != null) newMCSubmissions.put(uid, submission);
-                        }
-                    }
-
-                    // Set the alternate
-                    if(competition.alternateExists) {
-                        if(competition.template.mcTest.exists) {
-                            MCSubmission submission = storedSubmissionMap.get(alt);
-                            if(submission != null) newMCSubmissions.put(alt, submission);
-                        }
-                        if(alt>=0) newUIDs.add(alt);
-                        entry.altUID = alt;
-                    }
-
-                    entry.uids = newUIDs;
-                    entry.mc = newMCSubmissions;
-
-                    for(short uid: entry.uids) {
-                        Student student = StudentMap.getByUID(uid);
-                        student.cids.put(competition.template.cid,entry);
-                        student.updateUser(false);
-                    }
-
-                    entry.updateAll();
+                // If any students are left in the old uids list, remove them from the competition.
+                for(short uid: entry.uids) {
+                    Student delMe = StudentMap.getByUID(uid);
+                    entry.leaveTeam(delMe);
                 }
+
+                entry.mc = newMC;
+                entry.uids = newUIDs;
+
+                entry.updateAll();
+
                 competition.template.updateScoreboard();;
 
                 send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":false,\"msg\":\"Team saved successfully\"}");
@@ -316,16 +338,15 @@ public class CompetitionSocket {
                             } while (competition.entries.getByPassword(code) != null);
 
                             UILEntry entry = new UILEntry(tname, code, competition);
-                            boolean reloadScoreboard = false;   // If any of the students have been moved from other teams, just reload the scoreboard
-
-                            ArrayList<Student> updateStudents = new ArrayList<>();  // We store students for updating after the team has been inserted. This way, we have the tid to update
+                            //boolean reloadScoreboard = false;   // If any of the students have been moved from other teams, just reload the scoreboard
 
                             for(Student student: team.nonAltStudents) {
                                 if(entry.uids.size() > competition.numNonAlts) break;   // Only add as many students as this competition can take
 
                                 MCSubmission storedMCSubmission = null;
-                                if(status.signedUp) {    // This student is already signed up for this competition
-                                    reloadScoreboard = true;
+                                UserStatus studentStatus = UserStatus.getCompeteStatus(student, competition);
+                                if(studentStatus.signedUp) {    // This student is already signed up for this competition
+                                    //reloadScoreboard = true;
                                     UILEntry oldTeam = student.cids.get(competition.template.cid);
 
                                     if(competition.template.mcTest.exists) {
@@ -337,7 +358,6 @@ public class CompetitionSocket {
                                 }
 
                                 student.cids.put(competition.template.cid, entry);
-                                updateStudents.add(student);
                                 entry.uids.add(student.uid);
 
                                 if(competition.template.mcTest.exists && storedMCSubmission != null) {
@@ -346,8 +366,9 @@ public class CompetitionSocket {
                             }
                             if(team.alternate != null && competition.alternateExists) {
                                 MCSubmission storedMCSubmission = null;
-                                if(team.alternate.cids.containsKey(competition.template.cid)) {    // This student is already signed up for this competition
-                                    reloadScoreboard = true;
+                                UserStatus studentStatus = UserStatus.getCompeteStatus(team.alternate, competition);
+                                if(studentStatus.signedUp) {    // This student is already signed up for this competition
+                                    //reloadScoreboard = true;
                                     UILEntry oldTeam = team.alternate.cids.get(competition.template.cid);
 
                                     if(competition.template.mcTest.exists) {
@@ -359,8 +380,7 @@ public class CompetitionSocket {
                                 }
 
                                 team.alternate.cids.put(competition.template.cid, entry);
-                                team.alternate.updateUser(false);
-                                updateStudents.add(team.alternate);
+
                                 entry.uids.add(team.alternate.uid);
                                 entry.altUID = team.alternate.uid;
 
@@ -371,19 +391,15 @@ public class CompetitionSocket {
 
                             entry.insert();
                             competition.entries.addEntry(entry);
-
-                            for(Student update: updateStudents) {   // Now update all of the students
-                                update.updateUser(false);
-                            }
-
                             competition.template.updateScoreboard();
 
                             JsonObject entryJSON = new JsonObject();
                             entryJSON.addProperty("action", "addExistingTeam");
 
-                            if(reloadScoreboard) {
-                                entryJSON.addProperty("reload", "scoreboard");
-                            } else {
+                            // if(reloadScoreboard) {
+                            entryJSON.addProperty("reload", "scoreboard");
+                            entryJSON.addProperty("tid", entry.tid);
+                            /*} else {
                                 entryJSON.addProperty("tname", entry.tname);
                                 entryJSON.addProperty("school", entry.school);
                                 entryJSON.addProperty("tid", entry.tid);
@@ -391,7 +407,7 @@ public class CompetitionSocket {
                                 entryJSON.add("students", entry.getStudentJSON());
 
                                 if(competition.template.frqTest.exists) entryJSON.addProperty("frq", entry.frqScore);
-                            }
+                            }*/
 
                             send(entryJSON.toString());
                             return;

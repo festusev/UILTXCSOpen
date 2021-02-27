@@ -1,5 +1,6 @@
 package Outlet;
 
+import Outlet.uil.Competition;
 import Outlet.uil.UIL;
 import Outlet.uil.UILEntry;
 
@@ -53,10 +54,11 @@ public class DeleteUser extends HttpServlet {
             Conn.delToken(request, response, uData);
 
             if(uData.teacher) { // They are a teacher, so delete their class and all of their competitions
-                ArrayList<Short> cids = ((Teacher)uData).cids;
-                for(short cid: cids) {
-                    UIL.deleteCompetition(UIL.getCompetition(cid));
+                for(Competition competition: ((Teacher)uData).competitions) {
+                    UIL.deleteCompetition(competition);
                 }
+
+                Team.teams.remove(uData.uid);
             } else {
                 Collection<UILEntry> entries = ((Student)uData).cids.values();
                 for(UILEntry entry: entries) {

@@ -46,28 +46,21 @@ public class User implements Comparable<User>{
             if(con==null) return -1; // If an error occurred making the connection
             PreparedStatement stmt;
             if(insert)  {
-                stmt = con.prepareStatement("INSERT INTO users(email, fname, lname, school, token, cids, class) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                stmt = con.prepareStatement("INSERT INTO users(email, fname, lname, school, token, class) VALUES (?, ?, ?, ?, ?, ?)");
             } else {
-                stmt = con.prepareStatement("UPDATE users SET email=?, fname=?, lname=?, school=?, token=?, cids=?, class=? WHERE uid=?");
-                stmt.setShort(8, uid);
+                stmt = con.prepareStatement("UPDATE users SET email=?, fname=?, lname=?, school=?, token=?, class=? WHERE uid=?");
+                stmt.setShort(7, uid);
+
+                if(teacher) {   // Update the teacher name in the json of TeacherMap
+                    TeacherMap.json.remove(""+uid);
+                    TeacherMap.json.addProperty(""+uid,fname + " " + lname);
+                }
             }
 
-            String cidsString = "";
             String classString = "";
             if(teacher) {
-                cidsString = gson.toJson(((Teacher) this).cids);
                 classString = ((Teacher)this).classCode;
             } else {
-                HashMap<Short, UILEntry> cids = ((Student) this).cids;
-                cidsString = "{";
-                Set<Short> temp = cids.keySet();
-                for(short cid: temp) {
-                    cidsString += cid+":"+cids.get(cid).tid+",";
-                }
-                if(temp.size() > 0) {   // If we added in an entry, remove the final comma
-                    cidsString = cidsString.substring(0, cidsString.length()-1);
-                }
-                cidsString += "}";
                 classString = ""+((Student)this).teacherId;
             }
 
@@ -79,8 +72,7 @@ public class User implements Comparable<User>{
             if(token != null) stmt.setString(5, token.toString(Character.MAX_RADIX));
             else stmt.setString(5, null);
 
-            stmt.setString(6, cidsString);
-            stmt.setString(7, classString);
+            stmt.setString(6, classString);
             //LOGGER.info(stmt.toString());
 
             System.out.println(stmt.toString());

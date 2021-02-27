@@ -1261,7 +1261,7 @@ list_handsOn_changeproblems.appendChild(li);
             handsOn_section.appendChild(alternateExists_header);
 
             let h2_alternateExists_header = document.createElement("h3");
-            h2_alternateExists_header.innerHTML = "Allow Alternates";
+            h2_alternateExists_header.innerHTML = "Allow Written Specialist";
             alternateExists_header.appendChild(h2_alternateExists_header);
             /* CLOSE */
 

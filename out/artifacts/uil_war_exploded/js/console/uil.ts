@@ -12,7 +12,7 @@ let pageState = {
     openTeam : null, // The team object that is currently open in "#teamCnt"
     editingTeam : false,   // Whether or not we are editing the currently open team
     addingAlt: false,    // If the user has clicked the "+" button for alternates on a team. If false, they are adding a primary
-    saveTeamList: [],    // The list of teams that also need to be saved when the openTeam is saved
+    // saveTeamList: [],    // The list of teams that also need to be saved when the openTeam is saved
     globalTeams: [],     // A list of the global teams
     globalTeamsLoaded: false,    // If the global teams have been loaded
     addingExistingTeam : false,
@@ -86,6 +86,8 @@ const config = {
         // Scoreboard select student IDs
         selectStudent : "selectStudent",
         selectStudentList : "selectStudentList",
+        selectStudentFromClass : "selectStudentFromClass",
+        selectSignedUpStudent : "selectSignedUpStudent",
 
         // Right info bar IDs, for admins only
         writtenSubmissionCount : "writtenSubmissionCount",
@@ -164,8 +166,12 @@ const config = {
         }, "loadScoreboard": function (response: {
             isCreator: boolean, mcExists: boolean, frqExists: boolean, alternateExists: boolean, numNonAlts: number,
             teams: { tname: string, school: string, tid: number, students: { nonAlts: [string, number, number?][], alt?: [string, number, number?] }, frq?: number }[],
-            numHandsOnSubmitted?: number, teamCodes? : string[]
+            numHandsOnSubmitted?: number, teamCodes? : string[], studentsInClass? : [string,number][]
         }) {
+            let newToggleTeam: Team = null;  // The new team object that we are toggling open
+            let oldOpenTeamTID = -1;    // The tid of the old open team
+            if(pageState.openTeam) oldOpenTeamTID = (<Team>pageState.openTeam).tid; // The old team that was open. May be null
+
             teams.length = 0;
 
             pageState.isCreator = response.isCreator;
@@ -204,6 +210,8 @@ const config = {
             for (let i=0,j=response.teams.length;i<j;i++) {
                 let teamData = response.teams[i];
                 let team: Team = new Team(teamData);
+                if(team.tid == oldOpenTeamTID) newToggleTeam = team;
+
                 if(pageState.isCreator) team.code = response.teamCodes[i];
                 fragment.appendChild(team.dom.tr);
 
@@ -264,10 +272,33 @@ const config = {
             }
 
             dom.teamList.innerHTML = "";
-            dom.selectStudentList.innerHTML = "";
-
             dom.teamList.appendChild(fragment);
-            dom.selectStudentList.appendChild(selectStudentFragment);
+
+            if(pageState.isCreator) {
+                let selectStudentFromClassFragment = document.createDocumentFragment(); // Add in the students from their class
+
+                for(let classStudent of response.studentsInClass) {
+                    let tr = document.createElement("tr");
+                    tr.classList.add("_"+classStudent[1]);
+                    tr.onclick = function () {
+                        Team.selectStudent(classStudent, null)
+                    };
+                    tr.innerHTML = "<td>" + classStudent[0] + "</td>";
+                    selectStudentFromClassFragment.appendChild(tr);
+                }
+
+                dom.selectStudentFromClass.innerHTML = "";
+                dom.selectStudentFromClass.appendChild(selectStudentFromClassFragment);
+
+                dom.selectSignedUpStudent.innerHTML = "";
+                dom.selectSignedUpStudent.appendChild(selectStudentFragment);
+            }
+
+            if(!newToggleTeam) Team.toggleTeam(newToggleTeam);  // New toggle team is null, so close the dom.
+            else {
+                Team.renderOpenTeam(newToggleTeam);
+                newToggleTeam.dom.tr.classList.add("selected");
+            }
         }, "scoreboardOpenTeamFeedback": function (response: { isError: boolean, msg: string }) { // When there is an error or a success that has to do with editing a team
             if (response.isError) addErrorBox(dom.openTeamFeedbackCnt, response.msg);
             else addSuccessBox(dom.openTeamFeedbackCnt, response.msg);
@@ -283,18 +314,23 @@ const config = {
             }
 
             dom.selectGlobalTeamList.appendChild(fragment);
-        }, "addExistingTeam" : function(response: {error?:string, reload?: string, tname: string, school: string, code: string,tid: number, students: { nonAlts: [string, number, number?][], alt?: [string, number, number?] }, frq?: number }) { // The response to adding an existing team
+        }, "addExistingTeam" : function(response: {error?:string, reload?: string, tid?:number
+            /*tname: string, school: string, code: string,tid: number, students: { nonAlts: [string, number, number?][],
+                alt?: [string, number, number?] }, frq?: number */}) { // The response to adding an existing team
             if(!pageState.isCreator) return;
 
             if(response.error) {
                 addErrorBox(dom.errorBoxERROR, response.error);
                 return;
             } else if(response.reload) {
+                // let team: Team = new Team(response);
+                // Team.toggleTeam(team);
+                pageState.openTeam = {tid: response.tid};   // So that the toggle team works correctly when we reload the scoreboard
                 requestLoadScoreboard();
                 hideSignup();
                 closeAddExistingTeam();
                 return;
-            } else {
+            } /* else {
                 let team: Team = new Team(response);
                 if(pageState.isCreator) team.code = response.code;
 
@@ -326,7 +362,7 @@ const config = {
                 closeAddExistingTeam();
 
                 Team.toggleTeam(team);
-            }
+            }*/
         }
     }
 };
@@ -395,6 +431,8 @@ let dom = {
     get handsOnSubmissionAverage() {return this.getHelper(config.IDs.handsOnSubmissionAverage)},
     get numTeams() {return this.getHelper(config.IDs.numTeams)},
     get numUsers() {return this.getHelper(config.IDs.numUsers)},
+    get selectStudentFromClass() {return this.getHelper(config.IDs.selectStudentFromClass)},
+    get selectSignedUpStudent() {return this.getHelper(config.IDs.selectSignedUpStudent)},
 
     classes : {
         cached: {},    // DOM objects that have already been accessed
@@ -480,7 +518,7 @@ class GlobalTeacher {
             }
 
             let altHeader = document.createElement("b");
-            altHeader.innerText = "Alternates";
+            altHeader.innerText = "Written Specialist";
             studentUL.appendChild(altHeader);
 
             if(team.alt) {
@@ -527,10 +565,36 @@ class Team {
         else this.frqScore = 0;
         this.mcScore = 0;
 
+        this.mcScore = 0;
+
         if(pageState.mcExists) {
-            for (let student of this.students) {
-                if(student[2])  // If this student has competed
-                    this.mcScore += student[2];
+            let indexOfLowest = 0;
+            let numSubmittedMCs = 0;    // The number of mc tests that this team has submitted
+            let lowest = Number.MAX_VALUE;
+            for(let i=0;i<this.students.length;i++) {
+                let thisScore = this.students[i][2];
+                if(thisScore) {
+                    if (thisScore < lowest) {
+                        indexOfLowest = i;
+                        lowest = thisScore;
+                    }
+                    numSubmittedMCs++;
+                    this.mcScore += thisScore;
+                }
+            }
+
+            if(pageState.alternateExists && this.alt && this.alt[2]) {  // This team has an alt that has submitted an mc test
+                let thisScore = this.alt[2];
+                numSubmittedMCs++;
+
+                if(thisScore >= lowest || numSubmittedMCs <= pageState.numNonAlts) {    // The alternate is not the lowest score or we are adding all of the scores
+                    this.mcScore += thisScore;
+                } else
+                    numSubmittedMCs --;
+            }
+
+            if(numSubmittedMCs > pageState.numNonAlts) {   // In this case, remove the lowest score
+                this.mcScore -= this.students[indexOfLowest][2];
             }
         }
 
@@ -585,14 +649,13 @@ class Team {
             return {tid: team.tid, nonAlts: nonAltUIDs, alt: alt};
         }
 
-        let data: [string, {tid:number, nonAlts:number[], alt:number}[]] = ["saveTeam", []];
-        data[1].push(getTeamData(this));
+        let data: [string, {tid:number, nonAlts:number[], alt:number}] = ["saveTeam", getTeamData(this)];
 
-        for(let team of pageState.saveTeamList) {
+        /*for(let team of pageState.saveTeamList) {
             data[1].push(getTeamData(team));
-        }
+        }*/
 
-        pageState.saveTeamList.length = 0;
+        // pageState.saveTeamList.length = 0;
         ws.send(JSON.stringify(data));
 
         addSuccessBox(dom.openTeamFeedbackCnt, "Saving team...");
@@ -604,9 +667,9 @@ class Team {
         }
 
         for(let student of this.students) { // Remove this from the selectStudents list
-            let studentDOMs = dom.selectStudentList.querySelector("._"+student[1]);
+            let studentDOMs = dom.selectSignedUpStudent.querySelector("._"+student[1]);
             for(let studentDOM of studentDOMs) {
-                dom.selectStudentList.removeChild(studentDOM);
+                dom.selectSignedUpStudent.removeChild(studentDOM);
             }
         }
 
@@ -620,9 +683,9 @@ class Team {
     }
 
     deleteStudent(student: [string, number, number?]) {
-        let studentDOM = dom.selectStudentList.getElementsByClassName("_"+student[1])[0]; // Remove this from the selectStudents list
+        let studentDOM = dom.selectSignedUpStudent.getElementsByClassName("_"+student[1])[0]; // Remove this from the selectStudents list
         if(studentDOM != null) {
-            dom.selectStudentList.removeChild(studentDOM);
+            dom.selectSignedUpStudent.removeChild(studentDOM);
         }
 
         if(pageState.mcExists && student[2]) {
@@ -675,7 +738,9 @@ class Team {
         let openTeam: Team = pageState.openTeam;
         let selectedSuccessfully: boolean = (pageState.alternateExists && pageState.addingAlt && !openTeam.alt) ||
             (!pageState.addingAlt && openTeam.students.length < pageState.numNonAlts);  // If we are changing which team this student is on
-        if(selectedSuccessfully) {  // This must come first, so that if the student is already in this team, this works
+        // This must come first, so that if the student is already in this team, this works
+        // If teamData is null, they are adding a student from their class.
+        if(selectedSuccessfully && teamData != null) {
             if(teamData.isAlt) teamData.team.alt = null;
             else {
                 let newStudentsList:[string, number, number?][] = [];
@@ -684,7 +749,7 @@ class Team {
                 }
                 teamData.team.students = newStudentsList;
             }
-            pageState.saveTeamList.push(teamData.team);
+            // pageState.saveTeamList.push(teamData.team);
             teamData.isAlt = pageState.addingAlt;
             teamData.team = openTeam;
         }
@@ -990,6 +1055,7 @@ function updateNav(){
 
 // Show the signup box
 function showSignup() {
+    deleteErrorSuccessBox(dom.errorBoxERROR);
     dom.signUpBox.style.display = "block";
 }
 

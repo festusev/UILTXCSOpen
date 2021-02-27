@@ -315,7 +315,7 @@ public class Template {
         String actMessage = "<button id='signUp' onclick='showSignup()'>Sign Up</button><div id='signUpBox' style='display:none'><div class='center'><h1>Join Team</h1>" +
                 "<img src='/res/close.svg' id='signUpClose' onclick='hideSignup()'/>" +
                 "<p id='errorBoxERROR'></p><p class='instruction'>Enter team join code:</p><input name='teamCode' id='teamCode' oninput='codeEntered(this)' maxlength='6'>" +
-                "<div id='signUpIsAlternateCnt'>I am an alternate<input name='isAlternate' id='signUpIsAlternate' type='checkbox'></div>" +
+                "<div id='signUpIsAlternateCnt'>I am a written specialist<input name='isAlternate' id='signUpIsAlternate' type='checkbox'></div>" +
                 "<p id='toggleCreateTeam' onclick='toggleCreateTeam(event)'>or create a new team.</p></div></div>";  // They haven't signed up yet
 
         if(closes.done()) {
@@ -608,7 +608,7 @@ public class Template {
             } else if (competitionStatus.frqDuring) {
                 if(userStatus.alt) {
                     return "<div id='frqColumn' class='column' style='display:none;'>" +
-                            "<h1 class='forbiddenPage'>Alternates cannot compete in the Hands-On.</h1>" +
+                            "<h1 class='forbiddenPage'>Written specialists cannot compete in the Hands-On.</h1>" +
                             "</div>";
                 }
                 else return getRunningFRQ(entry);
@@ -815,7 +815,7 @@ public class Template {
                 "<button class='chngButton' onclick='createTeam()'>Create</button></div></div>" +
                 "<div id='selectStudent'><div class='center'><h1>Select Student</h1>" +
                 "<img src='/res/close.svg' class='close' onclick='Team.closeSelectStudent()'/>" +
-                "<table id='selectStudentList'></table></div></div>" +
+                "<b>From your class</b><table id='selectStudentFromClass'></table><b>From other teams</b><table id='selectSignedUpStudent'></table></table></div></div>" +
 
                 // Section for selecting an existing student
                 "<div id='selectGlobalTeam'><div class='center'><h1>Select Global Team</h1>" +
@@ -841,7 +841,7 @@ public class Template {
         if(mcTest.exists) scoreboardHTML += "<span style='float:right'>Written</span>";
         scoreboardHTML += "</h3><table id='openPrimariesList'></table><button id='addPrimaryCompetitor' " +
                 "class='addCompetitor' onclick='Team.addPrimaryCompetitor()'>+</button>";
-        if(competition.alternateExists) scoreboardHTML += "<h3>Alternate</h3><table id='openAlternateList'>" +
+        if(competition.alternateExists) scoreboardHTML += "<h3>Written Specialist</h3><table id='openAlternateList'>" +
                 "</table><button id='addAlternateCompetitor' class='addCompetitor' onclick='Team.addAlternateCompetitor()'>+</button>";
         scoreboardHTML += "</div></div>";
     }
@@ -864,7 +864,6 @@ public class Template {
             for(short uid: entry.uids) {
                 Student s = StudentMap.getByUID(uid);
                 s.cids.remove(cid);
-                s.updateUser(false);
             }
             entry.uids = new HashSet<>();
             competition.entries.delEntry(entry);
@@ -913,7 +912,7 @@ class UserStatus {
         if(u.teacher) {
             signedUp = false;
             teacher = true;
-            if(((Teacher)u).cids.contains(competition.template.cid)){
+            if(((Teacher)u).competitions.contains(competition)){
                 creator = true;
             } else if(((Teacher) u).judging.contains(competition)) {
                 judge = true;

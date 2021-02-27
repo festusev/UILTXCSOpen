@@ -171,12 +171,12 @@ public class Competition {
             stmt.executeUpdate();
 
             Competition competition = new Competition(teacher, cid, published, isPublic, name, description,alternateExists,
-                    numNonAlts, mcTest, frqTest, new ArrayList<>(), judges);
+                    numNonAlts, mcTest, frqTest, new ArrayList<>(), new short[0]);
+            competition.setJudges(judges);  // We do this so that the teacher objects are updated with this competition that they are judging
             System.out.println("CID = " + cid + ", " + competition.template.cid);
             UIL.addCompetition(competition);
 
-            teacher.cids.add(cid);
-            teacher.updateUser(false);
+            teacher.competitions.add(competition);
 
             return competition;
         }
@@ -660,7 +660,6 @@ public class Competition {
                     }
 
                     user.cids.put(this.template.cid, entry);
-                    user.updateUser(false);
                     entry.uids.add(user.uid);
                     if(alternateExists && isAlternate) entry.altUID = user.uid;
                     entry.updateUIDS();
@@ -725,7 +724,6 @@ public class Competition {
                 entry.insert();
                 entries.addEntry(entry);
                 user.cids.put(template.cid, entry);
-                user.updateUser(false);
                 template.updateScoreboard();
 
                 JsonObject data = new JsonObject();
@@ -774,6 +772,13 @@ public class Competition {
         ResultSet rs = stmt.executeQuery();
         while(rs.next()) {
             UILEntry entry = new UILEntry(rs, this);
+            try {
+                for(short uid: entry.uids) {
+                    StudentMap.getByUID(uid).cids.put(template.cid, entry);
+                }
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
             entries.addEntry(entry);
             for(Pair<Short, ArrayList<FRQSubmission>> pair: entry.frqResponses) {
                 this.frqSubmissions.addAll(pair.value);
@@ -794,7 +799,6 @@ public class Competition {
             for(short uid: entry.uids) {
                 Student s = StudentMap.getByUID(uid);
                 s.cids.remove(this.template.cid);
-                s.updateUser(false);
             }
         }
         entries.tidMap.clear();

@@ -86,6 +86,13 @@ public class UIL extends HttpServlet{
                 UIL.published.put(comp.template.cid, comp);
                 comp.loadAllEntries();
             }
+            try {
+                Teacher teacher = TeacherMap.getByUID(uid);
+                teacher.competitions.add(comp);
+                comp.setTeacher(teacher);
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
             /*else if(!comp.template.opens.done()) {   // The competition is yet to open
                 upcoming.put(comp.template.cid, comp);
             } else if(!comp.template.closes.done()) {   // The competition is yet to close
@@ -497,7 +504,20 @@ public class UIL extends HttpServlet{
         Competition competition = null;
         //boolean retCid = false; // If we should return the cid since we are creating the competition
         System.out.println("cidS="+cidS);
-        if(cidS == null || cidS.isEmpty() || !u.cids.contains(cid = Short.parseShort(cidS))) {
+        boolean creatingComp = cidS==null || cidS.isEmpty();
+        cid = 0;
+        if(!creatingComp) { // Check if this competition is one of this teacher's competitions
+            cid = Short.parseShort(cidS);
+            boolean temp = false;
+            for(Competition teacherComp: u.competitions) {
+                if(teacherComp.template.cid == cid) {
+                    temp = true;
+                    break;
+                }
+            }
+            if(!temp) creatingComp = true;
+        }
+        if(creatingComp) {
             // We are creating a competition and returning the cid
             try {
                 competition = Competition.createCompetition((Teacher)u, true, isPublic,
@@ -793,7 +813,7 @@ public class UIL extends HttpServlet{
                 cidS = request.getParameter("op_cid");
                 short cid;
                 try {
-                    cid = Short.parseShort(cidS);
+                    cid = Short.parseShort(cidS);   // If this is not a published competition, cidS will be empty so this will error
                     competition = UIL.getCompetition(cid);
 
                     Teacher teacher = (Teacher) u;
@@ -807,24 +827,27 @@ public class UIL extends HttpServlet{
                 String description = request.getParameter("description");
                 String name = request.getParameter("name");
                 boolean isPublic = request.getParameter("isPublic").equals("true");
-                boolean alternateExists = request.getParameter("alternateExists").equals("true");
-                short numNonAlts = Short.parseShort(request.getParameter("numNonAlts"));
                 boolean writtenExists = request.getParameter("writtenExists").equals("true");
                 boolean handsOnExists = request.getParameter("handsOnExists").equals("true");
                 short[] judges = gson.fromJson(request.getParameter("judges"), short[].class);
+                boolean alternateExists = false;
+                short numNonAlts = 1;
 
+                if(handsOnExists) {
+                    alternateExists = request.getParameter("alternateExists").equals("true");
+                    numNonAlts = Short.parseShort(request.getParameter("numNonAlts"));
+                }
                 if(name.isEmpty()) {
                     writer.write("{\"error\":\"Competition name is empty.\"}");
                     return;
                 } else if (description.length() > 32000) {
                     writer.write("{\"error\":\"Description cannot exceed 32000 characters.\"}");
                     return;
-                } else if(numNonAlts < 1 || numNonAlts > 127) {
+                } else if(handsOnExists && (numNonAlts < 1 || numNonAlts > 127)) {
                     writer.write("{\"error\":\"Number of non-alternates must be between 1 and 127.\"}");
                     return;
                 }
 
-                long now = (new Date()).getTime();
                 MCTest mcTest;
                 FRQTest frqTest;
                 if(!writtenExists) {   // No MC Test
@@ -886,8 +909,21 @@ public class UIL extends HttpServlet{
                     frqTest = new FRQTest(false, frqOpensString, frqMaxPoints, frqIncorrectPenalty, frqProblemMap,
                             request.getParameter("frqStudentPacket"), request.getParameter("frqJudgePacket"), frqTime);
                 }
-                competition = null;
-                if(cidS == null || cidS.isEmpty() || !((Teacher)u).cids.contains(cid = Short.parseShort(cidS))) {
+
+                boolean creatingComp = cidS==null || cidS.isEmpty();
+                cid = 0;
+                if(!creatingComp) { // Check if this competition is one of this teacher's competitions
+                    cid = Short.parseShort(cidS);
+                    boolean temp = false;
+                    for(Competition teacherComp: ((Teacher)u).competitions) {
+                        if(teacherComp.template.cid == cid) {
+                            temp = true;
+                            break;
+                        }
+                    }
+                    if(!temp) creatingComp = true;
+                }
+                if(creatingComp) {
                     // We are creating a competition and returning the cid
                     try {
                         competition = Competition.createCompetition((Teacher)u, false, isPublic,
@@ -979,8 +1015,7 @@ public class UIL extends HttpServlet{
                 System.out.println("Pre-delete, cid="+deleteCid+", competition!=null="+(competition!=null));
                 if(competition != null && competition.teacher.uid == teacher.uid) {
                     UIL.deleteCompetition(competition);
-                    teacher.cids.remove(teacher.cids.indexOf(competition.template.cid));
-                    teacher.updateUser(false);
+                    teacher.competitions.remove(competition);
                 }
             }
         } else {

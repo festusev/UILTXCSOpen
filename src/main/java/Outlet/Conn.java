@@ -32,7 +32,7 @@ public class Conn {
     private static final String USER = "admin";
     private static final String PASS = "1pcdEy31lxTSp6x$";	// TODO Possibly in the future have an admin type this in.
     // private static final String DB_NAME = "uil";
-    private static final String DB_NAME = "comptest";
+    private static final String DB_NAME = "uil";
 
     private static Gson gson = new Gson();
 
@@ -183,9 +183,7 @@ public class Conn {
             else if(e.getMessage().contains("for key 'uname'")) return BigInteger.valueOf(-3);  // If the error message is about the user having the same uname as another
             else return BigInteger.valueOf(-1);  // If an error occurred making the connection that is not one of the above
         }
-        String cidsString = "{}";   // Students's cidsString is a dictionary, whereas teachers's cidsString is an array
-        if(isTeacher) cidsString = "[]";
-        UserMap.loadUser(email, fname, lname, school,  token, uid, isTeacher, cidsString,classString, password);
+        UserMap.loadUser(email, fname, lname, school,  token, uid, isTeacher, classString, password);
         return token;
     }
 

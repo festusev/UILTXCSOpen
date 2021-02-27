@@ -152,7 +152,6 @@ public class UILEntry {
         int status = updateUIDS();
 
         u.cids.remove(competition.template.cid);
-        if(u.updateUser(false) != 0) return -1;
 
         ArrayList<ClassSocket> list = ClassSocket.classes.get(tid);
         if(list != null) {
@@ -307,7 +306,8 @@ public class UILEntry {
         Set<Short> keys = mc.keySet();
         int i = 0;
         for (short key : keys) {
-            obj.add(""+key, mc.get(key).serialize());
+            MCSubmission submission = mc.get(key);
+            if(submission != null) obj.add(""+key, submission.serialize());
         }
         return obj.toString();
 
@@ -400,8 +400,25 @@ public class UILEntry {
         if(!competition.template.mcTest.exists) return 0;
 
         int score = 0;
-        for(short i: mc.keySet()){
-            score += mc.get(i).scoringReport[0];
+
+        if(mc.size() <= competition.numNonAlts) {   // In this case, just add up everyone's scores.
+            for(short i: mc.keySet()){
+                score += mc.get(i).scoringReport[0];
+            }
+        } else {    // In this case, just drop the lowest score
+            int uidOfLowest = 0;
+            int lowest = Integer.MAX_VALUE;
+            for(short uid: mc.keySet()) {
+                short thisScore = mc.get(uid).scoringReport[0];
+                if(thisScore < lowest) {
+                    uidOfLowest = uid;
+                    lowest = thisScore;
+                }
+            }
+
+            for(short uid: mc.keySet()) {
+                if(uid != uidOfLowest) score += mc.get(uid).scoringReport[0];
+            }
         }
         return score;
     }

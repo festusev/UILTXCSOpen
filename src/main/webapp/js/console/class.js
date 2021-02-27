@@ -269,7 +269,7 @@ var Team = /** @class */ (function () {
         altSpan.classList.add("drop_area");
         ul.appendChild(altSpan);
         var altHeader = document.createElement("h3");
-        altHeader.innerText = "Alternate";
+        altHeader.innerText = "Written Specialist";
         altSpan.appendChild(altHeader);
         var altUID = -1;
         var altLI;
@@ -366,6 +366,8 @@ var Team = /** @class */ (function () {
 }*/
 // element is the student <li> element that is being dragged
 function beginDragStudent(event, element) {
+    if (pageState.dragging.origin)
+        pageState.dragging.origin.classList.remove("selected");
     element.classList.add("selected");
     dom.right.classList.add("dragging");
     pageState.dragging.isDragging = true;
@@ -485,10 +487,10 @@ function loadClass() {
                         li.classList.add("student");
                         li.innerHTML = student["name"];
                         li.dataset.uid = student["uid"];
-                        li.onclick = function (event) {
-                            beginDragStudent(event, li);
-                        };
                         if (isTeacher) {
+                            li.onclick = function (event) {
+                                beginDragStudent(event, li);
+                            };
                             var kick_1 = document.createElement("span");
                             kick_1.classList.add("kick");
                             kick_1.innerText = "Kick";

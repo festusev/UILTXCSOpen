@@ -6,10 +6,6 @@ import com.google.gson.JsonObject;
 
 import java.io.*;
 import java.security.NoSuchAlgorithmException;
-import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -23,10 +19,9 @@ import javax.servlet.http.Part;
 public class Profile extends HttpServlet{
     protected static Gson gson = new Gson();
 
-    public JsonObject getCompetitionJSON(short cid) {
-        Competition competition = UIL.getCompetition(cid);
+    public JsonObject getCompetitionJSON(Competition competition) {
         JsonObject compJ = new JsonObject();
-        compJ.addProperty("cid", cid);
+        compJ.addProperty("cid", competition.template.cid);
         compJ.addProperty("name", competition.template.name);
         compJ.addProperty("published", competition.published);
         compJ.addProperty("isPublic", competition.isPublic);
@@ -109,8 +104,8 @@ public class Profile extends HttpServlet{
 
             // int c = 0;
             // int length = ((Teacher)u).cids.size();
-            for(short cid: ((Teacher)u).cids) {
-                listJ.add(getCompetitionJSON(cid));
+            for(Competition competition: ((Teacher)u).competitions) {
+                listJ.add(getCompetitionJSON(competition));
             }
 
             // Get all of the competitions this teacher is the judge of

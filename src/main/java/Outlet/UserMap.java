@@ -1,6 +1,5 @@
 package Outlet;
 
-import Outlet.uil.UIL;
 import com.google.gson.Gson;
 
 import javax.servlet.http.HttpServletRequest;
@@ -10,7 +9,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 /***
  * Manages a lot of private hashmaps mapping token, uid, students, teachers, and more to User objects
@@ -38,7 +36,6 @@ public class UserMap {
                 String tokenS = rs.getString("token");
 
                 boolean isTeacher = rs.getBoolean("teacher");
-                String cids = rs.getString("cids");
                 String classString = rs.getString("class");
                 short uid = rs.getShort("uid");
                 String password = rs.getString("password");
@@ -49,14 +46,7 @@ public class UserMap {
                 else
                     token = null;
 
-                User u = loadUser(email, fname, lname, school, token, uid, isTeacher, cids, classString, password);
-                if(isTeacher) { // Add this teacher object to each of its competitions
-                    Teacher teacher = (Teacher) u;
-                    for(short cid: teacher.cids) {
-                        UIL.getCompetition(cid).setTeacher(teacher);
-                    }
-                }
-                if(!isTeacher) ((Student)u).setCids(cids);
+                User u = loadUser(email, fname, lname, school, token, uid, isTeacher, classString, password);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -66,17 +56,10 @@ public class UserMap {
         return 1;
     }
 
-    public static User loadUser(String email,String fname, String lname, String school, BigInteger token,short uid,boolean isTeacher,String cids, String classString, String password) {
+    public static User loadUser(String email,String fname, String lname, String school, BigInteger token,short uid,boolean isTeacher, String classString, String password) {
         User user;
-        System.out.println("CIDS = " + cids);
         if(isTeacher) {
             user = new Teacher();
-            short[] list = gson.fromJson(cids, short[].class);
-            ArrayList<Short> obj = ((Teacher)user).cids;
-            for(short s: list) {
-                obj.add(s);
-                UIL.getCompetition(s).setTeacher((Teacher)user);
-            }
 
             ((Teacher) user).classCode = classString;
             user.email = email;

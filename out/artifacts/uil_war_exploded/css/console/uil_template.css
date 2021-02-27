@@ -152,15 +152,15 @@
     top: 1rem;
     right: 2rem;
 }
-#selectStudentList {
+#selectStudent table {
     max-height: 80%;
     overflow: auto;
 }
-#selectStudentList tr {
+#selectStudent tr {
     box-shadow: var(--shadow);
     cursor: pointer;
 }
-#selectStudentList tr:hover{
+#selectStudent tr:hover{
     background-color: rgb(251,251,251) !important;
 }
 #selectGlobalTeamList .team {

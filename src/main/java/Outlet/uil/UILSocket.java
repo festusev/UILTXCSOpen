@@ -54,7 +54,11 @@ public class UILSocket {
             }
             else session.close();
         } else {
-            session.close();
+            try {
+                session.close();
+            } catch(Exception e) {
+
+            }
         }
     }
 

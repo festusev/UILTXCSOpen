@@ -311,7 +311,7 @@ class Team {
         ul.appendChild(altSpan);
 
         let altHeader = document.createElement("h3");
-        altHeader.innerText = "Alternate";
+        altHeader.innerText = "Written Specialist";
         altSpan.appendChild(altHeader);
 
         let altUID = -1;
@@ -417,6 +417,8 @@ class Team {
 
 // element is the student <li> element that is being dragged
 function beginDragStudent(event: MouseEvent, element: HTMLElement) {
+    if(pageState.dragging.origin) pageState.dragging.origin.classList.remove("selected");
+
     element.classList.add("selected");
 
     dom.right.classList.add("dragging");
@@ -546,11 +548,12 @@ function loadClass() {
                         li.classList.add("student");
                         li.innerHTML = student["name"];
                         li.dataset.uid = student["uid"];
-                        li.onclick = event => {
-                            beginDragStudent(<MouseEvent>event, li);
-                        };
 
                         if (isTeacher) {
+                            li.onclick = event => {
+                                beginDragStudent(<MouseEvent>event, li);
+                            };
+
                             let kick = document.createElement("span");
                             kick.classList.add("kick");
                             kick.innerText = "Kick";
