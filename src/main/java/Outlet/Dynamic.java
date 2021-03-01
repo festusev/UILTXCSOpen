@@ -71,9 +71,6 @@ public class Dynamic {
                 //"      <li class=\"drop-nav-item\">\n" +
                 //"        <a class=\"nav-link\" href=\"/scoreboard\">Scoreboard</a>\n" +
                 //"      </li>\n" +
-                "      <li class=\"drop-nav-item\">\n" +
-                "        <a class=\"nav-link\" href=\"/uil\">UIL</a>\n" +
-                "      </li>\n" +
                 //"      <li class=\"drop-nav-item\">\n" +
                 //"        <a class=\"nav-link\" href=\"/challenge\">Challenge</a>\n" +
                 //"      </li>\n" +

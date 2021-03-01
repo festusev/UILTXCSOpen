@@ -130,3 +130,8 @@ h1 {
     padding: 5px 10px;
     border-radius: 3px;
 }
+@media only screen and (max-width: 1200px) {
+    .tooltip-cnt:hover .tooltip {
+        display: none;
+    }
+}

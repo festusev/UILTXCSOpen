@@ -16,6 +16,7 @@
     background-color: white;
     border-left: var(--border);
     box-sizing: border-box;
+    z-index: 2;
 }
 #bottomRank {
     font-weight: bold;
@@ -37,12 +38,12 @@
     z-index: 1;
     flex-grow:1;
     max-width: calc(100% - 11rem);
-    overflow-y: auto;
 }
 .column{
     max-width:100%;
-    margin:4% 7% 4% 7%;
-    padding: 3rem 5rem;
+    padding:5% 8%;
+    height: 100%;
+    overflow: auto;
     /*! background-color: white; */
     /*! box-shadow: var(--shadow); */
     /*! border-radius: var(--radius); */
@@ -87,12 +88,14 @@
     margin:0;
     font-size:1em;
     border-bottom: var(--border);
+    z-index: 2;
 }
 #upperHalf li{
     display:inline-block;
     padding:0.5em 1em;
     cursor: pointer;
     border-right:2px solid var(--light-gray);
+    vertical-align: top;
 }
 #upperHalf li:hover{
     background-color:var(--light-gray);
@@ -100,6 +103,9 @@
 #upperHalf #nav_compname{
     cursor:default;
     width:15em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space:nowrap;
 }
 #upperHalf #nav_compname, #upperHalf #countdownCnt:hover{
     background-color:white;
@@ -108,6 +114,9 @@
     cursor:default;
     border:none;
 }
+#nav_compname {
+    max-width: 30%;
+}
 #scoreboardColumn {
     display: flex;
 }
@@ -115,6 +124,26 @@
     width:100%;
     border-spacing: 0 1rem;
     border-collapse: separate;
+    box-sizing: border-box;
+    table-layout: fixed;
+}
+#teamList {
+    table-layout: fixed;
+    margin-bottom: 5rem;
+}
+#teamList td{
+    white-space: nowrap;
+    text-overflow:ellipsis;
+    overflow:hidden;
+}
+#teamList td:first-child, #teamList th:first-child {
+    box-sizing: border-box;
+    min-width: 55%;
+    padding-right: 0;
+    vertical-align: top;
+}
+#teamList .right {
+    width: 14%;
 }
 #teamListCnt table tr:not(.team) {
     background-color: rgba(0,0,0,0);
@@ -179,7 +208,7 @@
 }
 #teamListCnt {
     flex-grow: 1;
-    margin-right: 2rem;
+    display: block;
 }
 #teamCnt {
     width: calc(50% - 2rem);
@@ -187,19 +216,36 @@
     box-shadow: var(--shadow);
     padding: 1rem 2rem;
     box-sizing: border-box;
-    height: 60vh;
+    min-height: 60vh;
     display: none;
     position: relative;
     border-radius: var(--radius);
+    margin-left: 2rem;
+    flex-shrink: 0;
+    overflow: auto;
 }
 #teamCnt .editTeam {
     display: none;
 }
-#teamCnt.editing .editTeam {
+#teamCnt.editing #teamControls .editTeam {
+    display: inline-block;
+}
+#teamCnt.editing .team .editTeam {
     display: block;
+    padding-left: 0;
+}
+
+#openTeamName {
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 50%;
+}
+#openPrimariesList {
+    max-width: 100%;
 }
 .deleteStudent {
-    height: 1rem;
+    height: 1.5rem;
     float: right;
     cursor: pointer;
 }
@@ -226,19 +272,22 @@
     color: white;
     font-weight: bold;
 }
+#teamControls {
+    display: inline-block;
+    width: 50%;
+    vertical-align: top;
+    height: 2.3rem;
+    text-align: right;
+}
 #deleteTeam {
+    display: none;
     cursor: pointer;
-    height: 2rem;
-    position: absolute;
-    top: 2rem;
-    right: 7rem;
+    height: 100%;
 }
 #editSaveTeam {
-    height: 2rem;
-    position: absolute;
+    margin-left: 2rem;
+    height: 100%;
     cursor: pointer;
-    top: 2rem;
-    right: 2rem;
 }
 #teamCnt p {
     font-weight: bold;
@@ -332,6 +381,7 @@
     width: 40rem;
     margin-right:2rem;
     border-radius: var(--radius);
+    overflow: auto;
 }
 #mcColumn h3{
     font-size:1.2rem;
@@ -527,6 +577,7 @@
 #mcSubmissions{
     width:100%;
     text-align:center;
+    margin-bottom: 3rem;
 }
 #mcSubmissions tr:nth-child(even) {background-color: #f2f2f2;}
 #mcSubmissions tr *:last-child{
@@ -669,6 +720,9 @@
     border-radius: var(--radius);
     box-shadow: var(--shadow);
 }
+.team td{
+    vertical-align: top;
+}
 #teamList .team {
     cursor: pointer;
 }
@@ -685,12 +739,16 @@
     padding:8px 2rem;
     text-align: left;
     font-weight:bold;
+    white-space: nowrap;
 }
 #scoreboardColumn td{
     padding:13px 2rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-#scoreboardColumn .right{
+#scoreboardColumn .right {
     text-align:right;
+    padding-left: 0;
 }
 
 #scoreboardColumn h2{
@@ -714,11 +772,30 @@
     padding: 0.6rem 0.7rem;
     display: block;
     min-width: 20rem;
-    width: 50%;
+    width: 100%;
     margin-bottom: 1rem;
 }
 #clarificationsColumn button {
     margin-bottom: 1rem;
+}
+#selectGlobalTeam h1 {
+    height: 10%;
+}
+#selectGlobalTeam h3 {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#selectGlobalTeamList {
+    height: 90%;
+    overflow: auto;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+#selectGlobalTeamList .student {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 @media only screen and (max-width: 720px){
     #countdownCnt {
@@ -726,6 +803,35 @@
     }
     #leftBar {
         display: none;
+    }
+    #columns {
+        max-width: 100%;
+    }
+}
+@media only screen and (max-width: 1000px) {
+    #teamList .right {
+        display: none;
+    }
+    #teamList .right:last-child {
+        display: block;
+        width: 50%;
+    }
+    #teamCnt .right {
+        display: none;
+    }
+    .mcBubble {
+        width: 10px;
+        height: 10px;
+    }
+    #upperHalf #nav_compname {
+        width: 10%;
+    }
+    #openTeamName {
+        width: 100%;
+    }
+    #teamControls {
+        width: 100%;
+        margin-bottom: 1rem;
     }
 }
 @media only screen and (max-width: 1300px){

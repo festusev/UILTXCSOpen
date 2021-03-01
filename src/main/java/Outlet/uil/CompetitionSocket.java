@@ -96,8 +96,8 @@ public class CompetitionSocket {
                     JsonObject object = new JsonObject();
                     object.addProperty("action", "nc");
                     object.addProperty("index", clarification.index);
-                    object.addProperty("name", user.fname + " " + user.lname);
-                    object.addProperty("question", clarification.question);
+                    object.addProperty("name", StringEscapeUtils.escapeHtml4(user.fname + " " + user.lname));
+                    object.addProperty("question", StringEscapeUtils.escapeHtml4(clarification.question));
                     object.addProperty("id", index);
 
                     teacherSocket.send(object.toString());
@@ -111,8 +111,8 @@ public class CompetitionSocket {
                         JsonObject object = new JsonObject();
                         object.addProperty("action", "nc");
                         object.addProperty("index", clarification.index);
-                        object.addProperty("name", user.fname + " " + user.lname);
-                        object.addProperty("question", clarification.question);
+                        object.addProperty("name", StringEscapeUtils.escapeHtml4(user.fname + " " + user.lname));
+                        object.addProperty("question", StringEscapeUtils.escapeHtml4(clarification.question));
                         object.addProperty("id", index);
 
                         competitionSocket.send(object.toString());
@@ -134,8 +134,8 @@ public class CompetitionSocket {
                 JsonObject object = new JsonObject();
                 object.addProperty("action","ac");
                 object.addProperty("index", clarification.index);
-                object.addProperty("question", clarification.question);
-                object.addProperty("answer", clarification.response);
+                object.addProperty("question", StringEscapeUtils.escapeHtml4(clarification.question));
+                object.addProperty("answer", StringEscapeUtils.escapeHtml4(clarification.response));
                 String stringified = object.toString();
 
                 // Relay the clarification to all of the people who are connected to this competition and signed up
@@ -191,6 +191,9 @@ public class CompetitionSocket {
                             }
                             student.cids.put(competition.template.cid,entry);
                             oldEntry.updateAll();
+                        } else {
+                            MCSubmission submission = oldEntry.mc.get(student.uid);
+                            if(submission != null) newMC.put(student.uid, submission);
                         }
                     } else if(student.teacherId == user.uid) {    // They were not already signed up, so check if they are in this teachers class and add them to the team
                         student.cids.put(competition.template.cid, entry);
@@ -223,6 +226,9 @@ public class CompetitionSocket {
 
                                 student.cids.put(competition.template.cid, entry);
                                 oldEntry.updateAll();
+                            } else {
+                                MCSubmission submission = oldEntry.mc.get(student.uid);
+                                if(submission != null) newMC.put(student.uid, submission);
                             }
                         } else if (student.teacherId == user.uid) {    // They were not already signed up, so check if they are in this teachers class and add them to the team
                             student.cids.put(competition.template.cid, entry);

@@ -27,15 +27,15 @@ public class Login extends HttpServlet{
         // set response headers
         Conn.setHTMLHeaders(response);
         String body =
-                    "    <div class=\"column\"><div id=\"center\" class=\"head-row row\">\n" +
+                    "    <div class=\"column\"><div id=\"center\" class=\"head-row row\">" +
                             "<h1>Login</h1>" +
-                    "        <form onsubmit=\"login(); return false;\" id=\"login-box\">\n" +
+                    "        <form onsubmit=\"login(); return false;\" id=\"login-box\">" +
                     "            <label for=\"email\">Email</label>\n" +
-                    "            <input type=\"text\" id=\"email\" name=\"email\" maxlength=\"255\">\n" +
-                    "            <label for=\"pass\">Password</label>\n" +
-                    "            <input type=\"password\" id=\"pass\" name=\"pass\">\n" +
-                    "            <button id=\"login\">Login</button>\n" +
-                    "            <p id=\"regWrapper\">Don't have an account? <a class='link' href=\"register\">Register.</a><br><a class='link' onclick=\"resetPassword()\">Reset password.</a></p>\n" +
+                    "            <input type=\"text\" id=\"email\" name=\"email\" maxlength=\"255\">" +
+                    "            <label for=\"pass\">Password</label>" +
+                    "            <input type=\"password\" id=\"pass\" name=\"pass\">" +
+                    "            <button id=\"login\">Login</button>" +
+                    "            <p id=\"regWrapper\">Don't have an account? <a class='link' href=\"register\">Register.</a><br><a class='link' onclick=\"resetPassword()\">Reset password.</a></p>" +
                     "        </form>\n" +
                     "    </div></div>\n";
 
@@ -87,7 +87,7 @@ public class Login extends HttpServlet{
 
             // Perform the reset update. If the user doesn't already exist and no errors occurred, then we tell the page to show the "input code" box for verification
             if (status >= 0) {    // The page will wait for a code to be entered. The user can also follow the link
-                writer.write("{\"success\":\"<style>#codeTitle span span{ font-size:1em; display:inline-block; font-weight:bold; }#code{text-transform:uppercase;font-family:var(--mono);}.link2{ color:var(--sec-col); font-weight:bold; } .link2:hover{ color:var(--sec-dark); }#lowerHalf{display:none;}#codeCnt{ display:block; width:100%; background-color:white; box-shadow:0 0px 6px 1px rgba(0,0,0,.12); margin:auto; padding:2em; margin-top:6em; } #codeTitle{ font-size:2em; font-weight:bold; color:var(--prim-middle); } #codeTitle span{ font-size:0.45em; display:block; font-weight:normal; color:var(--head-col); } #code{ width:100%; font-size:5em; height:1em; padding:0; text-align:center; color:var(--prim-light); } #bottomText{ margin-top:1em; } #upperHalf{ box-shadow:none; } #copyright_notice{ display:none; }</style><div id='codeCnt'><p id='codeTitle'>Verify your email<span>A verification code was sent to <span>EMAIL_REPLACE</span>. It will expire in 15 minutes.</p><div id='codeErrorBox'></div><input id='code' type='text' maxlength='6' oninput='codeEntered()'><p id='bottomText'>Didn't get the email? <a class='link2' style='color:var(--sec-col);cursor:pointer;font-weight:bold;' onclick='resend();'>Resend</a> the verification code.</div>\"}");
+                writer.write("{\"success\":\"<style>#codeTitle span span{ font-size:1em; display:inline-block; font-weight:bold; }#code{text-transform:uppercase;font-family:var(--mono);}.link2{ color:var(--sec-col); font-weight:bold; } .link2:hover{ color:var(--sec-dark); }#lowerHalf{display:none;}#codeCnt{ box-sizing:border-box;display:block; width:100%; background-color:white; box-shadow:0 0px 6px 1px rgba(0,0,0,.12); margin:auto; padding:2em; margin-top:10vh; } #codeTitle{ font-size:2em; font-weight:bold; color:var(--prim-middle); } #codeTitle span{ font-size:0.45em; display:block; font-weight:normal; color:var(--head-col); } #code{ width:100%; font-size:5em; height:1em; padding:0; text-align:center; color:var(--prim-light); } #bottomText{ margin-top:1em; } #upperHalf{ box-shadow:none; } #copyright_notice{ display:none; }</style><div id='codeCnt'><p id='codeTitle'>Verify your email<span>A verification code was sent to <span>EMAIL_REPLACE</span>. It will expire in 15 minutes.</p><div id='codeErrorBox'></div><input id='code' type='text' maxlength='6' oninput='codeEntered()'><p id='bottomText'>Didn't get the email? <a class='link2' style='color:var(--sec-col);cursor:pointer;font-weight:bold;' onclick='resend();'>Resend</a> the verification code.</div>\"}");
                 return;
             } else if (status == -2) { // The email doesn't exist
                 writer.write("{\"error\":\"No account with that email exists.\"}");

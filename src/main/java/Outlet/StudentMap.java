@@ -1,6 +1,7 @@
 package Outlet;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import java.math.BigInteger;
@@ -45,7 +46,14 @@ public class StudentMap {
             JsonArray data = new JsonArray();
             data.add(student.fname + " " + student.lname);
             data.add(student.uid);
-            array.add(data);
+
+            if(array != null) {
+                array.add(data);
+            } else {
+                array = new JsonArray();
+                array.add(data);
+                teacherJSONMap.put(student.teacherId, array);
+            }
         } else {
             HashMap<Short, Student> temp = new HashMap<>();
             temp.put(student.uid, student);
@@ -66,6 +74,15 @@ public class StudentMap {
         teacherMap.get(student.teacherId).remove(student.uid);
         tokenMap.remove(student.token);
         emailMap.remove(student.email);
-        teacherJSONMap.remove(student.teacherId);
+
+        JsonArray array = teacherJSONMap.get(student.teacherId);
+        for(int i=0,j=array.size();i<j;i++) {
+            JsonArray data = array.get(i).getAsJsonArray();
+
+            if(data.get(1).getAsShort() == student.uid) {
+                array.remove(i);
+                break;
+            }
+        }
     }
 }

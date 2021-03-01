@@ -1,8 +1,4 @@
-.trashcan {
-    height: 1.2rem;
-    float: right;
-    cursor: pointer;
-}
+
 
 #newTeam, #teams h2{
     display: inline-block;
@@ -28,8 +24,9 @@
 }
 #teamList input {
     font-size: 1.2rem;
-    border: 0px 0px 1px 0px lightgrey;
     outline: none;
+    display: inline-block;
+    max-width: 50%;
 }
 #teamList, #teamList .student  {
     cursor: default;
@@ -84,7 +81,7 @@ h2 {
     margin-bottom: 10%;
 }
 #class, #teams {
-    width: 50%;
+    width: calc(50% - 2rem);
     box-sizing: border-box;
     border-radius: var(--radius);
     position: relative;
@@ -132,12 +129,19 @@ h2 {
     margin-bottom: 14px;
     cursor: pointer;
     background-color: white;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    padding-right: 5rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 .student.selected {
     background-color: rgb(251,251,251);
 }
 #studentList .kick, #class .leaveClass {
-    float: right;
+    position: absolute;
+    right:1rem;
     color: white;
     background-color: var(--warn-col);
     padding: 0px 8px;
@@ -148,4 +152,10 @@ h2 {
     position: absolute;
     top: 2rem;
     right: 0;
+}
+.trashcan {
+    position: absolute;
+    right: 2rem;
+    height: 1.2rem;
+    cursor: pointer;
 }

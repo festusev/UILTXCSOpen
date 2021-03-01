@@ -1,6 +1,14 @@
+body{
+    overflow: auto;
+}
 #center{
     width:30em;
+    max-width: 100%;
     margin:auto;
+    margin-bottom: 2rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    box-sizing: border-box;
 }
 #center h1{
     font-weight:bold;
@@ -10,26 +18,31 @@
 #login-box *{
     display:inline-block;
 }
+#login-box div {
+    display: flex;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+#login-box label{
+    font-size: 1.2em;
+    color:var(--head-col);
+    font-weight:bold;
+    width: 100%;
+}
+#login-box input {
+    width: 100%;
+}
 #lowerHalf{
     background-color:white;
     width:100%;
     border:none;
-}
-#login-box{
-    margin:auto;
-    box-sizing: border-box;
-    width:33em;
 }
 #login-box input, #codeCnt div input{
     display: block;
     height:2.5em;
     width:100%;
 }
-#login-box label{
-    font-size: 1.2em;
-    color:var(--head-col);
-    font-weight:bold;
-}
+
 #login{
     background-color:var(--sec-col);
     color:white;

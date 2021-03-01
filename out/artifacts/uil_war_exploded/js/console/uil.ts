@@ -148,7 +148,7 @@ const config = {
             }
 
             clarification_list.innerHTML = "<div class='clarification' id='clarification_"+response["index"]+"'><h3>Question - " + response["name"] + "</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
-                "<textarea placeholder='Send a response.'></textarea><button class='chngButton' onclick='answerClarification(this, " +
+                "<textarea placeholder='Send a response.' maxlength='255' oninput='inputMaxLength(this,255)'></textarea><button class='chngButton' onclick='answerClarification(this, " +
                 response["id"] + ")'>Send</button></span></div>" + clarification_list.innerHTML;
         }, "ac": function (response: { [k: string]: any }) { // Add in a new clarification with a response
             let clarification_list: HTMLElement = dom.clarificationColumn.querySelector(".clarification_group");
@@ -206,6 +206,9 @@ const config = {
             let handsOnSum: number = 0; // Sum of hands on scores
             let numStudents: number = 0;
 
+            // Maps student uid to their stuTeam object. This lets the students in the class use the same stuTeam object.
+            let stuTeamObject: {[key: number]: {team: Team, isAlt: boolean}} = {};
+
             let selectStudentFragment = document.createDocumentFragment();  // The list of students that goes into the select student window
             for (let i=0,j=response.teams.length;i<j;i++) {
                 let teamData = response.teams[i];
@@ -223,6 +226,7 @@ const config = {
                         Team.selectStudent(student, stuTeam)
                     };
                     tr.innerHTML = "<td>" + student[0] + "</td>";
+                    stuTeamObject[student[1]] = stuTeam;
                     selectStudentFragment.appendChild(tr);
 
                     if(student[2]) {
@@ -240,6 +244,7 @@ const config = {
                         Team.selectStudent(teamData.students.alt, stuTeam)
                     };
                     tr.innerHTML = "<td>" + teamData.students.alt[0] + "</td>";
+                    stuTeamObject[teamData.students.alt[1]] = stuTeam;
                     selectStudentFragment.appendChild(tr);
 
                     if(teamData.students.alt[2]) {
@@ -281,7 +286,7 @@ const config = {
                     let tr = document.createElement("tr");
                     tr.classList.add("_"+classStudent[1]);
                     tr.onclick = function () {
-                        Team.selectStudent(classStudent, null)
+                        Team.selectStudent(classStudent, stuTeamObject[classStudent[1]]);
                     };
                     tr.innerHTML = "<td>" + classStudent[0] + "</td>";
                     selectStudentFromClassFragment.appendChild(tr);
@@ -849,11 +854,14 @@ class Team {
             pageState.openTeam.dom.tr.classList.remove("selected");
             pageState.openTeam = null;
 
-            Team.editSaveTeam();
+            requestLoadScoreboard();
         } else {
             deleteErrorSuccessBox(dom.openTeamFeedbackCnt);
 
-            if(pageState.openTeam) pageState.openTeam.dom.tr.classList.remove("selected");
+            if(pageState.openTeam) {
+                pageState.openTeam.dom.tr.classList.remove("selected");
+                requestLoadScoreboard();
+            }
             team.dom.tr.classList.add("selected");
             Team.renderOpenTeam(team);
         }
@@ -1168,10 +1176,11 @@ function closeAddExistingTeam() {
     dom.selectGlobalTeam.style.display = "none";
 }
 
-function toggle_clarify() {
-
+function inputMaxLength(element: HTMLTextAreaElement) {
+    if(element.value.length > element.maxLength) {
+        element.value = element.value.slice(0, length);
+    }
 }
-
 // Begin the multiple choice
 function beginMC(){
     $.ajax({
@@ -1591,7 +1600,7 @@ function showFRQSubmission(row:HTMLTableRowElement, submissionId: number) {
  */
 let mcSubmissionMap : object = {};
 let showingMCSubmission:HTMLElement = null;
-function showMCSubmission(tid: number, uid: number) {
+function showMCSubmission(uid: number) {
     function add(element:HTMLElement) {
         if(!showingMCSubmission) {
             dom.mc.appendChild(element);
@@ -1601,8 +1610,8 @@ function showMCSubmission(tid: number, uid: number) {
         showingMCSubmission = element;
     }
 
-    if(mcSubmissionMap[tid] != null && mcSubmissionMap[tid][uid] != null) {
-        add(mcSubmissionMap[tid][uid]);
+    if(mcSubmissionMap[uid] != null) {
+        add(mcSubmissionMap[uid]);
         return;
     }
 
@@ -1646,14 +1655,13 @@ function showMCSubmission(tid: number, uid: number) {
                 submission_cnt.innerHTML = test;
                 div.appendChild(submission_cnt);
                 add(div);
-                if(submissionMap[tid] == null) submissionMap[tid] = {};
-                submissionMap[tid][uid] = div;
+                submissionMap[uid] = div;
             }
         }
     };
     xhr.open('POST', "/console/competitions", true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.send("cid="+cid+"&action=showMCSubmission&tid="+tid+"&uid="+uid);
+    xhr.send("cid="+cid+"&action=showMCSubmission&uid="+uid);
 }
 
 

@@ -168,7 +168,7 @@ var config = {
                 clarification_list.innerHTML = "";
             }
             clarification_list.innerHTML = "<div class='clarification' id='clarification_" + response["index"] + "'><h3>Question - " + response["name"] + "</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
-                "<textarea placeholder='Send a response.'></textarea><button class='chngButton' onclick='answerClarification(this, " +
+                "<textarea placeholder='Send a response.' maxlength='255' oninput='inputMaxLength(this,255)'></textarea><button class='chngButton' onclick='answerClarification(this, " +
                 response["id"] + ")'>Send</button></span></div>" + clarification_list.innerHTML;
         }, "ac": function (response) {
             var clarification_list = dom.clarificationColumn.querySelector(".clarification_group");
@@ -214,6 +214,8 @@ var config = {
             var writtenSum = 0; // Sum of written scores
             var handsOnSum = 0; // Sum of hands on scores
             var numStudents = 0;
+            // Maps student uid to their stuTeam object. This lets the students in the class use the same stuTeam object.
+            var stuTeamObject = {};
             var selectStudentFragment = document.createDocumentFragment(); // The list of students that goes into the select student window
             var _loop_1 = function (i, j) {
                 var teamData = response.teams[i];
@@ -231,6 +233,7 @@ var config = {
                         Team.selectStudent(student, stuTeam);
                     };
                     tr.innerHTML = "<td>" + student[0] + "</td>";
+                    stuTeamObject[student[1]] = stuTeam;
                     selectStudentFragment.appendChild(tr);
                     if (student[2]) {
                         numWrittenSubmitted++;
@@ -250,6 +253,7 @@ var config = {
                         Team.selectStudent(teamData.students.alt, stuTeam_1);
                     };
                     tr.innerHTML = "<td>" + teamData.students.alt[0] + "</td>";
+                    stuTeamObject[teamData.students.alt[1]] = stuTeam_1;
                     selectStudentFragment.appendChild(tr);
                     if (teamData.students.alt[2]) {
                         numWrittenSubmitted++;
@@ -288,7 +292,7 @@ var config = {
                     var tr = document.createElement("tr");
                     tr.classList.add("_" + classStudent[1]);
                     tr.onclick = function () {
-                        Team.selectStudent(classStudent, null);
+                        Team.selectStudent(classStudent, stuTeamObject[classStudent[1]]);
                     };
                     tr.innerHTML = "<td>" + classStudent[0] + "</td>";
                     selectStudentFromClassFragment.appendChild(tr);
@@ -802,12 +806,14 @@ var Team = /** @class */ (function () {
             dom.teamCnt.style.display = "none";
             pageState.openTeam.dom.tr.classList.remove("selected");
             pageState.openTeam = null;
-            Team.editSaveTeam();
+            requestLoadScoreboard();
         }
         else {
             deleteErrorSuccessBox(dom.openTeamFeedbackCnt);
-            if (pageState.openTeam)
+            if (pageState.openTeam) {
                 pageState.openTeam.dom.tr.classList.remove("selected");
+                requestLoadScoreboard();
+            }
             team.dom.tr.classList.add("selected");
             Team.renderOpenTeam(team);
         }
@@ -1102,7 +1108,10 @@ function closeAddExistingTeam() {
     pageState.existingGlobalTeacher = null;
     dom.selectGlobalTeam.style.display = "none";
 }
-function toggle_clarify() {
+function inputMaxLength(element) {
+    if (element.value.length > element.maxLength) {
+        element.value = element.value.slice(0, length);
+    }
 }
 // Begin the multiple choice
 function beginMC() {
@@ -1498,7 +1507,7 @@ function showFRQSubmission(row, submissionId) {
  */
 var mcSubmissionMap = {};
 var showingMCSubmission = null;
-function showMCSubmission(tid, uid) {
+function showMCSubmission(uid) {
     function add(element) {
         if (!showingMCSubmission) {
             dom.mc.appendChild(element);
@@ -1508,8 +1517,8 @@ function showMCSubmission(tid, uid) {
         }
         showingMCSubmission = element;
     }
-    if (mcSubmissionMap[tid] != null && mcSubmissionMap[tid][uid] != null) {
-        add(mcSubmissionMap[tid][uid]);
+    if (mcSubmissionMap[uid] != null) {
+        add(mcSubmissionMap[uid]);
         return;
     }
     var xhr = new XMLHttpRequest();
@@ -1546,15 +1555,13 @@ function showMCSubmission(tid, uid) {
                 submission_cnt.innerHTML = test;
                 div.appendChild(submission_cnt);
                 add(div);
-                if (submissionMap[tid] == null)
-                    submissionMap[tid] = {};
-                submissionMap[tid][uid] = div;
+                submissionMap[uid] = div;
             }
         }
     };
     xhr.open('POST', "/console/competitions", true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.send("cid=" + cid + "&action=showMCSubmission&tid=" + tid + "&uid=" + uid);
+    xhr.send("cid=" + cid + "&action=showMCSubmission&uid=" + uid);
 }
 /***
  * Lets a teacher answer a clarification.

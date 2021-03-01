@@ -408,23 +408,20 @@ public class Competition {
                         //}
                     }
                 } else if(action.equals("showMCSubmission")) {
-                    short tid = Short.parseShort(request.getParameter("tid"));
                     short uid = Short.parseShort(request.getParameter("uid"));
-                    UILEntry entry = null;
                     Student student = StudentMap.getByUID(uid);
-                    try {
-                        entry = getEntry(tid);
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                    if (entry != null && student != null) {
+                    if(student == null) return;
+
+                    UILEntry entry = student.cids.get(template.cid);
+
+                    if (entry != null) {
                         JsonObject compJ = new JsonObject();
                         MCSubmission submission = entry.mc.get(uid);
-                        if(!submission.finished) return;
+                        if(submission == null || !submission.finished) return;
 
                         compJ.addProperty("user", StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname));
                         compJ.addProperty("team", StringEscapeUtils.escapeHtml4(entry.tname));
-                        compJ.addProperty("answers", template.getFinishedMCHelper(submission, tid, uid, true, competitionStatus));
+                        compJ.addProperty("answers", template.getFinishedMCHelper(submission, uid, true, competitionStatus));
                         compJ.addProperty("scoringReport", gson.toJson(submission.scoringReport));
 
                         writer.write(new Gson().toJson(compJ));
@@ -440,7 +437,7 @@ public class Competition {
                     if(entry != null && entry.mc.containsKey(uid)) {
                         System.out.println("User in mc");
                         MCSubmission submission = entry.mc.get(uid);
-                        if(submission.finished) {
+                        if(submission != null && submission.finished) {
                             System.out.println("Finished");
                             if(judgement.equals("Correct")) {
                                 submission.answers[probNum] = template.mcTest.KEY[probNum][0];

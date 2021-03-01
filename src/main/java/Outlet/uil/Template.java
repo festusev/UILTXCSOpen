@@ -393,7 +393,7 @@ public class Template {
         return html+"</div>";
     }
     public String getSmallMC(Student student, UILEntry entry, MCSubmission submission) {
-        return "<tr onclick='showMCSubmission("+entry.tid+","+student.uid+");'><td>" + StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname) +
+        return "<tr onclick='showMCSubmission("+student.uid+");'><td>" + StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname) +
                 "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td><td>" + submission.scoringReport[0] +
                 "</td></tr>";
     }
@@ -498,7 +498,7 @@ public class Template {
     public String getRunningMC() {
         return mcHTML[0]+mcTest.getTimer().toString()+mcHTML[1];
     }
-    public String getFinishedMCHelper(MCSubmission submission, short tid, short uid, boolean isTeacher, CompetitionStatus status) {
+    public String getFinishedMCHelper(MCSubmission submission, short uid, boolean isTeacher, CompetitionStatus status) {
         if(status.mcDuring && !isTeacher) return "";    // If they aren't a teacher, don't let them see the finished mc.
 
         String html = "<table id='mcQuestions'><tr><th>#</th>";
@@ -527,7 +527,7 @@ public class Template {
                 html += "<td colspan='5'><input type='text' class='mcText' value='"+tempAnswer+"' disabled>"+correctAnswer+"</td>";
             }
             String mcResult = "";
-            if(isTeacher) mcResult = "onchange='changeMCJudgement(this,"+tid+","+uid+","+i+")'";
+            if(isTeacher) mcResult = "onchange='changeMCJudgement(this,"+uid+","+i+")'";
             else mcResult = "disabled";
              // Add in a "correct"/"incorrect"/"skipped" dropdown
             html += "<td><select class='changeMCResult' "+mcResult+">";
@@ -557,7 +557,7 @@ public class Template {
                         "<p>Skipped: "+submission.scoringReport[2]+"</p><br>" +
                         "<p>Scoring Report</p>";
 
-        return html + getFinishedMCHelper(submission, tid, uid,false, status) + "</div></div>";
+        return html + getFinishedMCHelper(submission, uid,false, status) + "</div></div>";
     }
 
     public String getSmallFRQ(int i, FRQSubmission submission) {
@@ -651,7 +651,7 @@ public class Template {
             String html = "<div id='clarificationsColumn' class='column' style='display:none;'><h1>Clarifications</h1>";
 
             if (!user.teacher) {
-                html += "<textarea maxlength='255' id='clarification_input' placeholder='Ask a question.'></textarea><button onclick='sendClarification()' class='chngButton'>Send Clarification</button>";
+                html += "<textarea maxlength='255' oninput='inputMaxLength(this)' id='clarification_input' placeholder='Ask a question.'></textarea><button onclick='sendClarification()' class='chngButton'>Send Clarification</button>";
             }
 
             html += "<div class='clarification_group'>";
@@ -666,16 +666,19 @@ public class Template {
                         if (asker != null) askerName = " - " + asker.fname + " " + asker.lname;
                     }
 
-                    html += "<div class='clarification' id='clarification_"+clarification.index+"'><h3>Question"+askerName+"</h3><span>" + clarification.question +
-                            "</span><h3>Answer</h3><span>" + clarification.response + "</span></div>";
+                    html += "<div class='clarification' id='clarification_"+clarification.index+"'><h3>Question"+
+                            StringEscapeUtils.escapeHtml4(askerName)+"</h3><span>" +
+                            StringEscapeUtils.escapeHtml4(clarification.question) +
+                            "</span><h3>Answer</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.response) + "</span></div>";
                     noClarifications = false;
                 } else if (userStatus.admin) {    // Not yet responded, so add in the response textarea
                     String askerName = "";
                     Student asker = StudentMap.getByUID(clarification.uid);
                     if (asker != null) askerName = " - " + asker.fname + " " + asker.lname;
 
-                    html += "<div class='clarification' id='clarification_"+clarification.index+"'><h3>Question"+askerName+"</h3><span>" + clarification.question +
-                            "</span><h3>Answer</h3><span><textarea placeholder='Send a response.'></textarea><button " +
+                    html += "<div class='clarification' id='clarification_"+clarification.index+"'><h3>Question"+
+                            StringEscapeUtils.escapeHtml4(askerName)+"</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.question) +
+                            "</span><h3>Answer</h3><span><textarea maxlength='255' oninput='inputMaxLength(this)' placeholder='Send a response.'></textarea><button " +
                             "onclick='answerClarification(this, "+i+")' class='chngButton'>Send</button></span></div>";
 
                     noClarifications = false;
@@ -832,8 +835,8 @@ public class Template {
                 "<button id='addExistingTeam' onclick='showAddExistingTeam()' class='creatorOnly chngButton'>Add Existing Team</button>" +
                 "<button id='createTeam' onclick='showSignup()' class='creatorOnly chngButton'>Create Team</button>" +
                 "<table id='teamList'></table></div><div id='teamCnt'><h1 id='openTeamName'></h1>" +
-                "<img class='creatorOnly editTeam' id='deleteTeam' onclick='Team.showDeleteConfirmation()' src='/res/console/delete.svg'>" +
-                "<img class='creatorOnly' id='editSaveTeam' onclick='Team.editSaveTeam()' src='/res/console/edit.svg'>" +
+                "<div id='teamControls'><img class='creatorOnly editTeam' id='deleteTeam' onclick='Team.showDeleteConfirmation()' src='/res/console/delete.svg'>" +
+                "<img class='creatorOnly' id='editSaveTeam' onclick='Team.editSaveTeam()' src='/res/console/edit.svg'></div>" +
                 "<div id='openTeamFeedbackCnt'></div><p class='creatorOnly'><span class='label'>Code:</span><span id='openTeamCode'></span></p>";
         if(mcTest.exists) scoreboardHTML += "<p><span class='label'>Written:</span><span id='openTeamWritten'></span></p>";
         if(frqTest.exists) scoreboardHTML += "<p><span class='label'>Hands-On:</span><span id='openTeamHandsOn'></span>";

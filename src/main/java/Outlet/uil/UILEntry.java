@@ -390,7 +390,8 @@ public class UILEntry {
 
         if(mc.containsKey(uid)) {
             MCSubmission submission = mc.get(uid);
-            return submission.finished;
+            if(submission != null) return submission.finished;
+            else return false;
         } else {
             return false;
         }
@@ -403,13 +404,17 @@ public class UILEntry {
 
         if(mc.size() <= competition.numNonAlts) {   // In this case, just add up everyone's scores.
             for(short i: mc.keySet()){
-                score += mc.get(i).scoringReport[0];
+                MCSubmission submission = mc.get(i);
+                if(submission != null) score += submission.scoringReport[0];
             }
         } else {    // In this case, just drop the lowest score
             int uidOfLowest = 0;
             int lowest = Integer.MAX_VALUE;
             for(short uid: mc.keySet()) {
-                short thisScore = mc.get(uid).scoringReport[0];
+                MCSubmission submission = mc.get(uid);
+                if(submission == null) continue;
+
+                short thisScore = submission.scoringReport[0];
                 if(thisScore < lowest) {
                     uidOfLowest = uid;
                     lowest = thisScore;
@@ -417,7 +422,10 @@ public class UILEntry {
             }
 
             for(short uid: mc.keySet()) {
-                if(uid != uidOfLowest) score += mc.get(uid).scoringReport[0];
+                MCSubmission submission = mc.get(uid);
+                if(submission == null) continue;
+
+                if(uid != uidOfLowest) score += submission.scoringReport[0];
             }
         }
         return score;
@@ -436,7 +444,8 @@ public class UILEntry {
             student.add(uid);
 
             if(competition.template.mcTest.exists && mc.containsKey(uid)) {
-                student.add(mc.get(uid).scoringReport[0]);
+                MCSubmission submission = mc.get(uid);
+                if(submission != null) student.add(submission.scoringReport[0]);
             }
             array.add(student);
         }
@@ -450,7 +459,8 @@ public class UILEntry {
             alt.add(altUID);
 
             if(competition.template.mcTest.exists && mc.containsKey(altUID)) {
-                alt.add(mc.get(altUID).scoringReport[0]);
+                MCSubmission submission = mc.get(altUID);
+                if(submission != null) alt.add(submission.scoringReport[0]);
             }
             obj.add("alt", alt);
         }

@@ -100,7 +100,7 @@
     display: flex;
     flex-flow: row;
     width: 50rem;
-    max-width: calc(100% - 10rem);
+    max-width: calc(100% - 7rem);
     box-sizing: border-box;
     margin: auto;
     margin-top: 5rem;
@@ -383,7 +383,7 @@ button {
     position: absolute;
     left: 50%;
     top: 50%;
-    transform: translateX(-50%) translateY(-50%);
+    transform: translateX(-45%) translateY(-50%);
     padding: 1rem 2rem;
     box-sizing: border-box;
     display: block;
@@ -428,5 +428,8 @@ button {
 @media only screen and (max-width: 860px){
     #competitions {
         margin: 10px 0 0 0;
+    }
+    .template_option {
+        margin: 5px;
     }
 }
