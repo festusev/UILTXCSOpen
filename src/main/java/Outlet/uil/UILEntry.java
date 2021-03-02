@@ -440,7 +440,7 @@ public class UILEntry {
             if(uid == altUID) continue; // This is the alt
 
             JsonArray student = new JsonArray();
-            student.add(StudentMap.getByUID(uid).fname + " " + StudentMap.getByUID(uid).lname);
+            student.add(StudentMap.getByUID(uid).getName());
             student.add(uid);
 
             if(competition.template.mcTest.exists && mc.containsKey(uid)) {
@@ -455,7 +455,7 @@ public class UILEntry {
             JsonArray alt = new JsonArray();
 
             Student student = StudentMap.getByUID(altUID);
-            alt.add(student.fname + " " + student.lname);
+            alt.add(student.getName());
             alt.add(altUID);
 
             if(competition.template.mcTest.exists && mc.containsKey(altUID)) {

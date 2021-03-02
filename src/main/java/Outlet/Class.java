@@ -32,7 +32,7 @@ public class Class extends HttpServlet {
             if (u.teacher) {
                 html += "<p id='class_code'>Class Code: <b>" + ((Teacher) u).classCode + "</b></p>";
             } else {
-                html += "<h2>Teacher: <b>" + StringEscapeUtils.escapeHtml4(teacher.fname + " " + teacher.lname) + "</b></h2><span onclick='leaveClass()' class='leaveClass'>Leave Class</span>";
+                html += "<h2>Teacher: <b>" + StringEscapeUtils.escapeHtml4(teacher.getName()) + "</b></h2><span onclick='leaveClass()' class='leaveClass'>Leave Class</span>";
             }
             html += "<script>loadClass();</script><h2>Students</h2>";
 
@@ -66,7 +66,7 @@ public class Class extends HttpServlet {
 
     private JsonObject jsonifyStudent(Student student) {
         JsonObject studentObj = new JsonObject();
-        studentObj.addProperty("name", StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname));
+        studentObj.addProperty("name", StringEscapeUtils.escapeHtml4(student.getName()));
         studentObj.addProperty("uid", student.uid);
         return studentObj;
     }

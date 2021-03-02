@@ -34,7 +34,7 @@ public class Profile extends HttpServlet{
             if(judgeTeacher != null) {
                 JsonArray judge = new JsonArray();
                 judge.add(uid);
-                judge.add(judgeTeacher.fname + " " + judgeTeacher.lname);
+                judge.add(judgeTeacher.getName());
                 judges.add(judge);
             }
         }
@@ -131,8 +131,10 @@ public class Profile extends HttpServlet{
 
             String right = //"<div id='profile_cnt'>" +
                     "<div id='Profile'>" +
-                    "<h1>Profile</h1><div class='profile_cmpnt half'><h2>First Name</h2><input type='text' name='fname' id='fname' value='" + StringEscapeUtils.escapeHtml4(u.fname) + "'/></div>" +
-                    "<div class='profile_cmpnt half'><h2>Last Name</h2><input type='text' name='lname' id='lname' value='" + StringEscapeUtils.escapeHtml4(u.lname) + "'></div>";
+                    "<h1>Profile</h1><div class='profile_cmpnt half'><h2>First Name</h2><input type='text' name='fname' id='fname' value='" +
+                            StringEscapeUtils.escapeHtml4(u.fname!=null?u.fname:"") + "'/></div>" +
+                    "<div class='profile_cmpnt half'><h2>Last Name</h2><input type='text' name='lname' id='lname' value='" +
+                            StringEscapeUtils.escapeHtml4(u.lname!=null?u.lname:"") + "'></div>";
             String delUserPassText = "Your information cannot be recovered.";    // The warning text that we display when the user tries to delete their account.
             if (u.teacher) {
                 String school = "";

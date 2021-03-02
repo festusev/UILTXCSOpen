@@ -419,7 +419,7 @@ public class Competition {
                         MCSubmission submission = entry.mc.get(uid);
                         if(submission == null || !submission.finished) return;
 
-                        compJ.addProperty("user", StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname));
+                        compJ.addProperty("user", StringEscapeUtils.escapeHtml4(student.getName()));
                         compJ.addProperty("team", StringEscapeUtils.escapeHtml4(entry.tname));
                         compJ.addProperty("answers", template.getFinishedMCHelper(submission, uid, true, competitionStatus));
                         compJ.addProperty("scoringReport", gson.toJson(submission.scoringReport));

@@ -22,6 +22,9 @@ let pageState = {
     deletingObject : null   // The object we are deleting
 };
 
+// Maps student uid to their stuTeam object. This lets the students in the class use the same stuTeam object.
+let stuTeamObject: {[key: number]: {team: Team, isAlt: boolean}} = {};
+
 const config = {
     TEXT: {
         server_error: "Whoops! A server error occurred. Contact an admin if the problem continues."
@@ -78,12 +81,14 @@ const config = {
         deleteConfirmationCnt : "deleteConfirmationCnt",
         deleteSubtitle : "deleteSubtitle",
         deleteTeam : "deleteTeam",  // The trashcan button
+        studentSearchTable : "studentSearchTable",
 
         // Select global team IDs
         selectGlobalTeam : "selectGlobalTeam",
         selectGlobalTeamList : "selectGlobalTeamList",
 
         // Scoreboard select student IDs
+        studentSearch : "studentSearch",
         selectStudent : "selectStudent",
         selectStudentList : "selectStudentList",
         selectStudentFromClass : "selectStudentFromClass",
@@ -170,6 +175,7 @@ const config = {
         }) {
             let newToggleTeam: Team = null;  // The new team object that we are toggling open
             let oldOpenTeamTID = -1;    // The tid of the old open team
+            stuTeamObject = {};
             if(pageState.openTeam) oldOpenTeamTID = (<Team>pageState.openTeam).tid; // The old team that was open. May be null
 
             teams.length = 0;
@@ -205,9 +211,6 @@ const config = {
 
             let handsOnSum: number = 0; // Sum of hands on scores
             let numStudents: number = 0;
-
-            // Maps student uid to their stuTeam object. This lets the students in the class use the same stuTeam object.
-            let stuTeamObject: {[key: number]: {team: Team, isAlt: boolean}} = {};
 
             let selectStudentFragment = document.createDocumentFragment();  // The list of students that goes into the select student window
             for (let i=0,j=response.teams.length;i<j;i++) {
@@ -307,6 +310,22 @@ const config = {
         }, "scoreboardOpenTeamFeedback": function (response: { isError: boolean, msg: string }) { // When there is an error or a success that has to do with editing a team
             if (response.isError) addErrorBox(dom.openTeamFeedbackCnt, response.msg);
             else addSuccessBox(dom.openTeamFeedbackCnt, response.msg);
+        },
+        // Add in the results for the student search. The student objects are in the form [name, uid, mcScore, affiliation]
+        "ssearch" : function (response: {students: [string, number, number?][]}) {
+            let fragment = document.createDocumentFragment();
+            for(let student of response.students) {
+                let tr = document.createElement("tr");
+                tr.classList.add("_"+student[1]);
+                tr.onclick = function () {
+                    Team.selectStudent(student, stuTeamObject[student[1]]);
+                };
+                tr.innerHTML = "<td>" + student[0] + "</td>";
+                fragment.appendChild(tr);
+            }
+
+            dom.studentSearchTable.innerHTML = "";
+            dom.studentSearchTable.appendChild(fragment);
         }, "loadGlobalTeams" : function(response: {action: string,teachers:{uid: number,uname:string,school:string,
                 teams:{tid: number,tname:string,nonAlts:[string, number][],alt:[string,number]}[]}[]}) {
             if(pageState.globalTeamsLoaded) return;
@@ -438,6 +457,8 @@ let dom = {
     get numUsers() {return this.getHelper(config.IDs.numUsers)},
     get selectStudentFromClass() {return this.getHelper(config.IDs.selectStudentFromClass)},
     get selectSignedUpStudent() {return this.getHelper(config.IDs.selectSignedUpStudent)},
+    get studentSearch() {return this.getHelper(config.IDs.studentSearch)},
+    get studentSearchTable() {return this.getHelper(config.IDs.studentSearchTable)},
 
     classes : {
         cached: {},    // DOM objects that have already been accessed
@@ -1695,4 +1716,10 @@ function inputMaxLength(element: {value: string, maxLength: number}) {
     if(element.value.length > element.maxLength) {
         element.value = element.value.slice(0, element.maxLength);
     }
+}
+
+// Send the student name search to the socket
+function searchForStudent(input: HTMLInputElement) {
+    let data:string[] = ["ssearch", input.value];
+    ws.send(JSON.stringify(data));
 }

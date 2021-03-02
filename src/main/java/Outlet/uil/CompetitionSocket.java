@@ -3,6 +3,7 @@ package Outlet.uil;
 import Outlet.*;
 import Outlet.Websocket.*;
 import com.google.gson.*;
+import com.sun.org.apache.xerces.internal.xs.ItemPSVI;
 
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
@@ -96,7 +97,7 @@ public class CompetitionSocket {
                     JsonObject object = new JsonObject();
                     object.addProperty("action", "nc");
                     object.addProperty("index", clarification.index);
-                    object.addProperty("name", StringEscapeUtils.escapeHtml4(user.fname + " " + user.lname));
+                    object.addProperty("name", StringEscapeUtils.escapeHtml4(user.getName()));
                     object.addProperty("question", StringEscapeUtils.escapeHtml4(clarification.question));
                     object.addProperty("id", index);
 
@@ -111,7 +112,7 @@ public class CompetitionSocket {
                         JsonObject object = new JsonObject();
                         object.addProperty("action", "nc");
                         object.addProperty("index", clarification.index);
-                        object.addProperty("name", StringEscapeUtils.escapeHtml4(user.fname + " " + user.lname));
+                        object.addProperty("name", StringEscapeUtils.escapeHtml4(user.getName()));
                         object.addProperty("question", StringEscapeUtils.escapeHtml4(clarification.question));
                         object.addProperty("id", index);
 
@@ -195,7 +196,7 @@ public class CompetitionSocket {
                             MCSubmission submission = oldEntry.mc.get(student.uid);
                             if(submission != null) newMC.put(student.uid, submission);
                         }
-                    } else if(student.teacherId == user.uid) {    // They were not already signed up, so check if they are in this teachers class and add them to the team
+                    } else {    // They were not already signed up, so add them to the team
                         student.cids.put(competition.template.cid, entry);
                     }
                 }
@@ -230,7 +231,7 @@ public class CompetitionSocket {
                                 MCSubmission submission = oldEntry.mc.get(student.uid);
                                 if(submission != null) newMC.put(student.uid, submission);
                             }
-                        } else if (student.teacherId == user.uid) {    // They were not already signed up, so check if they are in this teachers class and add them to the team
+                        } else {    // They were not already signed up, so add them to the team
                             student.cids.put(competition.template.cid, entry);
                         }
                     }
@@ -265,7 +266,7 @@ public class CompetitionSocket {
 
                         JsonObject teacherJSON = new JsonObject();
                         teacherJSON.addProperty("uid", uid);
-                        teacherJSON.addProperty("uname", teacher.fname + " " + teacher.lname);
+                        teacherJSON.addProperty("uname", teacher.getName());
                         teacherJSON.addProperty("school", teacher.school);
 
                         JsonArray teamsArray = new JsonArray();
@@ -277,7 +278,7 @@ public class CompetitionSocket {
                             JsonArray nonAltStudents = new JsonArray();
                             for(Student student: team.nonAltStudents) {
                                 JsonArray studentJSON = new JsonArray();
-                                studentJSON.add(student.fname + " " + student.lname);
+                                studentJSON.add(student.getName());
                                 studentJSON.add(student.uid);
 
                                 nonAltStudents.add(studentJSON);
@@ -286,7 +287,7 @@ public class CompetitionSocket {
 
                             if(team.alternate != null) {
                                 JsonArray studentJSON = new JsonArray();
-                                studentJSON.add(team.alternate.fname + " " + team.alternate.lname);
+                                studentJSON.add(team.alternate.getName());
                                 studentJSON.add(team.alternate.uid);
 
                                 teamJSON.add("alt", studentJSON);
@@ -436,6 +437,40 @@ public class CompetitionSocket {
             UILEntry entry = competition.entries.getByTid(tid);
             Student student = StudentMap.getByUID(uid);
             entry.leaveTeam(student);
+        }
+        // Return a list of students who match the given name. Max of 10 students.
+        // Each student is an object of [name, uid, mc score,
+        else if (action.equals("ssearch")) {
+            String prefix = data.get(1).getAsString();  // The prefix of the name we are searching
+            HashMap<Short, Student> map = StudentMap.getByPrefix(prefix);
+
+            JsonArray array = new JsonArray(); // Array of [uname, uid, mcScore (if available), school]
+            if(map != null) {
+                Collection<Student> searches = map.values();
+                int i = 0;
+                for (Student student : searches) {
+                    if (i >= 10) break;    // Only show 10 students
+
+                    JsonArray studentData = new JsonArray();
+                    studentData.add(student.getName());
+                    studentData.add(student.uid);
+
+                    if (competition.template.mcTest.exists) {
+                        UILEntry entry = student.cids.get(competition.template.cid);    // If they are already signed up for this competition
+                        if (entry != null && entry.mc.containsKey(student.uid)) {
+                            studentData.add(entry.mc.get(student.uid).scoringReport[0]);
+                        }
+                    }
+
+                    array.add(studentData);
+                    i++;
+                }
+            }
+
+            JsonObject ret = new JsonObject();
+            ret.addProperty("action","ssearch");
+            ret.add("students", array);
+            send(ret.toString());
         }
     }
 

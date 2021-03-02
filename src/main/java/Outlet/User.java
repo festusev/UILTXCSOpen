@@ -53,7 +53,7 @@ public class User implements Comparable<User>{
 
                 if(teacher) {   // Update the teacher name in the json of TeacherMap
                     TeacherMap.json.remove(""+uid);
-                    TeacherMap.json.addProperty(""+uid,fname + " " + lname);
+                    TeacherMap.json.addProperty(""+uid,getName());
                 }
             }
 
@@ -116,5 +116,13 @@ public class User implements Comparable<User>{
         }
         if(givenHashed.equals(storedHashed)) return true;
         return false;
+    }
+    // Returns fname + " " + lname. If fname or lname is null, replaces them with empty strings
+    public String getName() {
+        String name = "";
+        if(fname != null) name += fname;
+        if(lname != null && fname != null) name += " ";
+        if(lname != null) name += lname;
+        return name;
     }
 }

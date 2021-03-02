@@ -54,6 +54,8 @@ var pageState = {
     isDeletingTeam: false,
     deletingObject: null // The object we are deleting
 };
+// Maps student uid to their stuTeam object. This lets the students in the class use the same stuTeam object.
+var stuTeamObject = {};
 var config = {
     TEXT: {
         server_error: "Whoops! A server error occurred. Contact an admin if the problem continues."
@@ -108,10 +110,12 @@ var config = {
         deleteConfirmationCnt: "deleteConfirmationCnt",
         deleteSubtitle: "deleteSubtitle",
         deleteTeam: "deleteTeam",
+        studentSearchTable: "studentSearchTable",
         // Select global team IDs
         selectGlobalTeam: "selectGlobalTeam",
         selectGlobalTeamList: "selectGlobalTeamList",
         // Scoreboard select student IDs
+        studentSearch: "studentSearch",
         selectStudent: "selectStudent",
         selectStudentList: "selectStudentList",
         selectStudentFromClass: "selectStudentFromClass",
@@ -185,6 +189,7 @@ var config = {
         }, "loadScoreboard": function (response) {
             var newToggleTeam = null; // The new team object that we are toggling open
             var oldOpenTeamTID = -1; // The tid of the old open team
+            stuTeamObject = {};
             if (pageState.openTeam)
                 oldOpenTeamTID = pageState.openTeam.tid; // The old team that was open. May be null
             teams.length = 0;
@@ -214,8 +219,6 @@ var config = {
             var writtenSum = 0; // Sum of written scores
             var handsOnSum = 0; // Sum of hands on scores
             var numStudents = 0;
-            // Maps student uid to their stuTeam object. This lets the students in the class use the same stuTeam object.
-            var stuTeamObject = {};
             var selectStudentFragment = document.createDocumentFragment(); // The list of students that goes into the select student window
             var _loop_1 = function (i, j) {
                 var teamData = response.teams[i];
@@ -317,6 +320,25 @@ var config = {
                 addErrorBox(dom.openTeamFeedbackCnt, response.msg);
             else
                 addSuccessBox(dom.openTeamFeedbackCnt, response.msg);
+        },
+        // Add in the results for the student search. The student objects are in the form [name, uid, mcScore, affiliation]
+        "ssearch": function (response) {
+            var fragment = document.createDocumentFragment();
+            var _loop_4 = function (student) {
+                var tr = document.createElement("tr");
+                tr.classList.add("_" + student[1]);
+                tr.onclick = function () {
+                    Team.selectStudent(student, stuTeamObject[student[1]]);
+                };
+                tr.innerHTML = "<td>" + student[0] + "</td>";
+                fragment.appendChild(tr);
+            };
+            for (var _i = 0, _a = response.students; _i < _a.length; _i++) {
+                var student = _a[_i];
+                _loop_4(student);
+            }
+            dom.studentSearchTable.innerHTML = "";
+            dom.studentSearchTable.appendChild(fragment);
         }, "loadGlobalTeams": function (response) {
             if (pageState.globalTeamsLoaded)
                 return;
@@ -444,6 +466,8 @@ var dom = {
     get numUsers() { return this.getHelper(config.IDs.numUsers); },
     get selectStudentFromClass() { return this.getHelper(config.IDs.selectStudentFromClass); },
     get selectSignedUpStudent() { return this.getHelper(config.IDs.selectSignedUpStudent); },
+    get studentSearch() { return this.getHelper(config.IDs.studentSearch); },
+    get studentSearchTable() { return this.getHelper(config.IDs.studentSearchTable); },
     classes: {
         cached: {},
         getHelper: function (className) {
@@ -490,7 +514,7 @@ var GlobalTeacher = /** @class */ (function () {
         var teamList = document.createElement("ul");
         li.appendChild(teamList);
         var thisGlobalTeacher = this;
-        var _loop_4 = function (team) {
+        var _loop_5 = function (team) {
             var teamLI = document.createElement("li");
             teamLI.classList.add("team");
             teamLI.onclick = function () {
@@ -526,7 +550,7 @@ var GlobalTeacher = /** @class */ (function () {
         };
         for (var _i = 0, _a = this.teams; _i < _a.length; _i++) {
             var team = _a[_i];
-            _loop_4(team);
+            _loop_5(team);
         }
         return li;
     };
@@ -1586,4 +1610,9 @@ function inputMaxLength(element) {
     if (element.value.length > element.maxLength) {
         element.value = element.value.slice(0, element.maxLength);
     }
+}
+// Send the student name search to the socket
+function searchForStudent(input) {
+    var data = ["ssearch", input.value];
+    ws.send(JSON.stringify(data));
 }

@@ -204,7 +204,7 @@ public class Template {
 
         String html =  "<a class='competition mini_competition' href='/console/competitions?cid="+cid+"'>" +
                 "<div class='row1'>"+StringEscapeUtils.escapeHtml4(name)+"<p class='right' style='color:"+signupColor+"'>"+signupText+"</p></div>" +
-                "<div class='row2'>"+StringEscapeUtils.escapeHtml4(competition.teacher.fname) + " " + StringEscapeUtils.escapeHtml4(competition.teacher.lname) +
+                "<div class='row2'>"+StringEscapeUtils.escapeHtml4(competition.teacher.getName()) +
                 "<p class='right'>"+month+"/"+day+"</p></div>";
         if(competition.teacher.uid == u.uid) {
             html += "<div class='competition_controls mini_comp_controls' data-id='"+cid+"'><div class='tooltip-cnt competition_edit' style='display: block;'>" +
@@ -253,7 +253,8 @@ public class Template {
                             MCSubmission submission = entry.mc.get(uid);
                             if(submission!=null) score = submission.scoringReport[0];
                         }
-                        written += "<p>" + StringEscapeUtils.escapeHtml4(student.fname) + " <span id='"+student.uid+"writtenScore'>" +
+                        written += "<p>" + StringEscapeUtils.escapeHtml4(student.fname!=null?student.fname:"") +
+                                " <span id='"+student.uid+"writtenScore'>" +
                                 score + "</span>pts</p>";
                     }
                 }
@@ -335,8 +336,7 @@ public class Template {
                 "<div id='aboutHead'><h1>" + StringEscapeUtils.escapeHtml4(name) + "</h1>" + actMessage + "</div>" +
                 //"<div class='row' id='aboutDescriptionRow'>" +
                 "<p>" + escapedDescription + "</p></div>" +
-                "<div id='aboutInfo'><h2>Author</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.fname)+" "+
-                StringEscapeUtils.escapeHtml4(teacher.lname)+"</p>"+school;
+                "<div id='aboutInfo'><h2>Author</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.getName())+"</p>"+school;
         if(mcTest.exists) {
             about += "<h2>Written</h2><p>"+mcTest.opens.DATE_STRING+"<br>"+(mcTest.TIME/(1000*60))+" min<br>"+mcTest.KEY.length+" questions</p>";
         }
@@ -370,7 +370,7 @@ public class Template {
         String html = "";
         for(short uid: team.uids) {
             Student student = StudentMap.getByUID(uid);
-            html += "<li style='list-style-type:none;'>" + StringEscapeUtils.escapeHtml4(student.fname) + " " + StringEscapeUtils.escapeHtml4(student.lname);
+            html += "<li style='list-style-type:none;'>" + StringEscapeUtils.escapeHtml4(student.getName());
             if (uid == u.uid && team.notStarted()) html += "<span onclick='leaveTeam()' id='leaveTeam'>Leave</span>";
             html+="</li>";
         }
@@ -393,7 +393,7 @@ public class Template {
         return html+"</div>";
     }
     public String getSmallMC(Student student, UILEntry entry, MCSubmission submission) {
-        return "<tr onclick='showMCSubmission("+student.uid+");'><td>" + StringEscapeUtils.escapeHtml4(student.fname + " " + student.lname) +
+        return "<tr onclick='showMCSubmission("+student.uid+");'><td>" + StringEscapeUtils.escapeHtml4(student.getName()) +
                 "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td><td>" + submission.scoringReport[0] +
                 "</td></tr>";
     }
@@ -663,7 +663,7 @@ public class Template {
                     String askerName = "";
                     if(userStatus.admin) {
                         Student asker = StudentMap.getByUID(clarification.uid);
-                        if (asker != null) askerName = " - " + asker.fname + " " + asker.lname;
+                        if (asker != null) askerName = " - " + asker.getName();
                     }
 
                     html += "<div class='clarification' id='clarification_"+clarification.index+"'><h3>Question"+
@@ -674,7 +674,7 @@ public class Template {
                 } else if (userStatus.admin) {    // Not yet responded, so add in the response textarea
                     String askerName = "";
                     Student asker = StudentMap.getByUID(clarification.uid);
-                    if (asker != null) askerName = " - " + asker.fname + " " + asker.lname;
+                    if (asker != null) askerName = " - " + asker.getName();
 
                     html += "<div class='clarification' id='clarification_"+clarification.index+"'><h3>Question"+
                             StringEscapeUtils.escapeHtml4(askerName)+"</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.question) +
@@ -816,9 +816,16 @@ public class Template {
                 "<img src='/res/close.svg' id='signUpClose' onclick='hideSignup()'/>" +
                 "<p id='errorBoxERROR'></p><p class='instruction'>Team Name</p><input name='teamCode' id='teamCode' maxlength='25' class='creatingTeam'>" +
                 "<button class='chngButton' onclick='createTeam()'>Create</button></div></div>" +
-                "<div id='selectStudent'><div class='center'><h1>Select Student</h1>" +
+                "<div id='selectStudent'><div class='center'><div class='leftBlock'>" +
+                "<h1>Select Student</h1>" +
+                "<div id='studentSearch'><input oninput='searchForStudent(this)'></input>" +
+                "<div class='tableCnt'>" +
+                "<table id='studentSearchTable'></table></div>" +
+                "</div></div>" +
+                "<div class='rightBlock'>" +
                 "<img src='/res/close.svg' class='close' onclick='Team.closeSelectStudent()'/>" +
-                "<b>From your class</b><table id='selectStudentFromClass'></table><b>From other teams</b><table id='selectSignedUpStudent'></table></table></div></div>" +
+                "<b>From your class</b><div class='tableCnt'><table id='selectStudentFromClass'></table></div>" +
+                "<b>From other teams</b><div class='tableCnt'><table id='selectSignedUpStudent'></table></div></div></div></div>" +
 
                 // Section for selecting an existing student
                 "<div id='selectGlobalTeam'><div class='center'><h1>Select Global Team</h1>" +

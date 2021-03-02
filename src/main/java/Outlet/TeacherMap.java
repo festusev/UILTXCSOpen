@@ -37,7 +37,7 @@ public class TeacherMap {
         emailMap.put(teacher.email, teacher);
         classCodeMap.put(teacher.classCode, teacher);
 
-        json.addProperty("" + teacher.uid, teacher.fname + " " + teacher.lname);
+        json.addProperty("" + teacher.uid, teacher.getName());
     }
     public static void deleteTeacher(Teacher teacher) {
         uidMap.remove(teacher.uid);
