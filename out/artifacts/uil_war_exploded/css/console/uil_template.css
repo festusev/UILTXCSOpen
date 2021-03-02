@@ -703,8 +703,17 @@
 #aboutDescription {
     box-sizing: border-box;
     padding: 1rem 2rem;
-    flex-grow: 1;
+    display: flex;
+    width: 80%;
     position: relative;
+    flex-flow: column;
+}
+#aboutDescription p{
+    max-width: 100%;
+    white-space:normal;
+    overflow-wrap: break-word;
+    overflow-y: auto;
+    flex-grow: 1;
 }
 #aboutHead {
     display: flex;

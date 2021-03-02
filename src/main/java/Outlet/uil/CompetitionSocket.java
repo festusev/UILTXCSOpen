@@ -348,7 +348,7 @@ public class CompetitionSocket {
                             //boolean reloadScoreboard = false;   // If any of the students have been moved from other teams, just reload the scoreboard
 
                             for(Student student: team.nonAltStudents) {
-                                if(entry.uids.size() > competition.numNonAlts) break;   // Only add as many students as this competition can take
+                                if(entry.uids.size() >= competition.numNonAlts) break;   // Only add as many students as this competition can take
 
                                 MCSubmission storedMCSubmission = null;
                                 UserStatus studentStatus = UserStatus.getCompeteStatus(student, competition);

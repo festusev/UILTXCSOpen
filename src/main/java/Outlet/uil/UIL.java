@@ -321,8 +321,8 @@ public class UIL extends HttpServlet{
         if(name.isEmpty()) {
             writer.write("{\"error\":\"Competition name is empty.\"}");
             return false;
-        } else if (description.length() > 32000) {
-            writer.write("{\"error\":\"Description cannot exceed 32000 characters.\"}");
+        } else if (description.length() > 65535) {
+            writer.write("{\"error\":\"Description cannot exceed 65535 characters.\"}");
             return false;
         } else if(numNonAlts < 1 || numNonAlts > 127) {
             writer.write("{\"error\":\"Number of non-alternates must be between 1 and 127.\"}");
