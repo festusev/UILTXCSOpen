@@ -82,11 +82,13 @@ public class UILSocket {
 
     @OnClose
     public void onClose(Session session) throws IOException {
-        if(this.user != null) connected.remove(this.user.uid);
-        short tid;
-        if(user.teacher) tid = user.uid;
-        else tid = ((Student)user).teacherId;
-        if(tid >= 0) classes.get(tid).remove(this);
+        if(this.user != null) {
+            connected.remove(this.user.uid);
+            short tid;
+            if (user.teacher) tid = user.uid;
+            else tid = ((Student) user).teacherId;
+            if (tid >= 0) classes.get(tid).remove(this);
+        }
     }
 
     @OnError

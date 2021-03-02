@@ -400,6 +400,7 @@ button {
 #selectJudgeList {
     max-height: 90%;
     overflow: auto;
+    padding: 1rem;
 }
 .judge {
     padding: 0.5rem 1rem;

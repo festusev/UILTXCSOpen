@@ -1176,11 +1176,6 @@ function closeAddExistingTeam() {
     dom.selectGlobalTeam.style.display = "none";
 }
 
-function inputMaxLength(element: HTMLTextAreaElement) {
-    if(element.value.length > element.maxLength) {
-        element.value = element.value.slice(0, length);
-    }
-}
 // Begin the multiple choice
 function beginMC(){
     $.ajax({
@@ -1696,3 +1691,8 @@ function sendClarification(): void {
     dom.clarification_input.value = "";
 }
 
+function inputMaxLength(element: {value: string, maxLength: number}) {
+    if(element.value.length > element.maxLength) {
+        element.value = element.value.slice(0, element.maxLength);
+    }
+}

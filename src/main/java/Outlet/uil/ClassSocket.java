@@ -70,6 +70,8 @@ public class ClassSocket {
                 System.out.println("Action: " + action);
 
                 String tname = jsonObject.get("name").getAsString();
+                if(tname.length() > 25) return;
+
                 JsonArray nonAltUIDsJson = jsonObject.get("nonAlts").getAsJsonArray();
                 ArrayList<Student> nonAltStudents = new ArrayList<>();
                 for (JsonElement uid : nonAltUIDsJson) {

@@ -267,6 +267,46 @@ public class UIL extends HttpServlet{
         unpublished.remove(comp.template.cid);
         addCompetition(comp);
     }
+
+    private void writeFilesToDisk(HttpServletRequest request, FRQTest frqTest) throws IOException, ServletException {
+        /* Now, write all of the files they updated to the disk */
+        System.out.println("Writing files to disk");
+
+        Collection<Part> parts = request.getParts();
+        int numParts = 0;   // We can only have a certain number of handsOn problems
+        for (Part part : parts) {
+            numParts++;
+
+            if(numParts > 24) {
+                break;
+            }
+
+            String partName = part.getName();
+            System.out.println("Looping, partName=" + partName);
+            String prefix = partName.substring(0, 3);  // Either 'fi:' or 'fo:'
+            if (prefix.equals("fi:")) {  // File in
+                int probNum = Integer.parseInt(partName.substring(3));
+
+                InputStream fileContent = part.getInputStream();
+                byte[] bytes = new byte[fileContent.available()];
+
+                System.out.println("probNum=" + probNum);
+                frqTest.setTestcaseFile(probNum, bytes, true);
+            } else if (prefix.equals("fo:")) {   // File out
+                int probNum = Integer.parseInt(partName.substring(3));
+
+                InputStream fileContent = part.getInputStream();
+                byte[] bytes = new byte[fileContent.available()];
+
+                System.out.println("probNum=" + probNum);
+                frqTest.setTestcaseFile(probNum, bytes, false);
+            } else {
+                System.out.println("ERROR: file part prefix is " + prefix);
+            }
+        }
+        frqTest.initializeFiles();
+    }
+
     private boolean savePublished(HttpServletRequest request, PrintWriter writer, Teacher u) throws IOException, ServletException {
         System.out.println("Saving published");
         String cidS = request.getParameter("op_cid");
@@ -375,7 +415,7 @@ public class UIL extends HttpServlet{
             }
             long mcTime;
             try {
-                mcTime = Long.parseLong(request.getParameter("mcTime"))*1000*60;
+                mcTime = Long.parseLong(request.getParameter("mcTime"))*60*1000;
                 if(mcTime <= 0) {
                     writer.write("{\"error\":\"Written Test Length must be greater than zero.\"}");
                     return false;
@@ -410,7 +450,8 @@ public class UIL extends HttpServlet{
                 /*if(difference <= 0) {   // The given datetime is in the past
                     writer.write("{\"error\":\"Hands-On cannot start in the past.\"}");
                     return false;
-                } else */if(difference > (long)1000*60*60*24*365*10) {   // The given datetime is more than 10 years in the future
+                } else */
+                if(difference > (long)1000*60*60*24*365*10) {   // The given datetime is more than 10 years in the future
                     writer.write("{\"error\":\"Hands-On cannot start more than 10 years in the future.\"}");
                     return false;
                 }
@@ -426,8 +467,8 @@ public class UIL extends HttpServlet{
             if(frqProblemMap.length <= 0) {
                 writer.write("{\"error\":\"Hands-On Test is empty.\"}");
                 return false;
-            } else if(frqProblemMap.length > 50) {
-                writer.write("{\"error\":\"Hands-On Test cannot have more than 50 problems.\"}");
+            } else if(frqProblemMap.length > 24) {
+                writer.write("{\"error\":\"Hands-On Test cannot have more than 24 problems.\"}");
                 return false;
             }
 
@@ -563,56 +604,10 @@ public class UIL extends HttpServlet{
             UIL.publish(competition);
         }
 
-        /* Now, write all of the files they updated to the disk */
-        System.out.println("Writing files to disk, handsOnExists="+handsOnExists);
-        if(handsOnExists) {
-            Collection<Part> parts = request.getParts();
-            for (Part part : parts) {
-                String partName = part.getName();
-                System.out.println("Looping, partName=" + partName);
-                String prefix = partName.substring(0, 3);  // Either 'fi:' or 'fo:'
-                if (prefix.equals("fi:")) {  // File in
-                    int probNum = Integer.parseInt(partName.substring(3));
-                    InputStream fileContent = part.getInputStream();
+        if(handsOnExists) writeFilesToDisk(request, frqTest);
 
-                    byte[] bytes = new byte[fileContent.available()];
-                    fileContent.read(bytes);
-
-                    System.out.println("probNum=" + probNum);
-                    frqTest.setTestcaseFile(probNum, bytes, true);
-                } else if (prefix.equals("fo:")) {   // File out
-                    int probNum = Integer.parseInt(partName.substring(3));
-
-                    InputStream fileContent = part.getInputStream();
-
-                    byte[] bytes = new byte[fileContent.available()];
-                    fileContent.read(bytes);
-
-                    System.out.println("probNum=" + probNum);
-                    frqTest.setTestcaseFile(probNum, bytes, false);
-                } else {
-                    System.out.println("ERROR: file part prefix is " + prefix);
-                }
-            }
-            frqTest.initializeFiles();
-        }
-
-        /*ArrayList<UILSocket> sockets = UILSocket.classes.get(u.uid);
-        for(UILSocket socket: sockets) {
-            if(socket.user.uid != u.uid) {
-                JsonArray array = new JsonArray();
-                array.add("addCompetition");
-                array.add("")
-                array.add(competition.template.getMiniHTML(socket.user));
-                socket.send("[\"addCompetition\",\""+uid+"\",\""+submission.scoringReport[0]+"\"]");
-            }
-        }*/
-
-        //if(!retCid) return true;
-        //else {
         writer.write("{\"success\":\"Competition published.\",\"cid\":\""+competition.template.cid+"\"}");
-        //    return false;
-        //}
+
         return true;
     }
 
@@ -644,8 +639,11 @@ public class UIL extends HttpServlet{
             if(user.teacher) right.append("<p onclick='showClassComps(this)' id='showClassComps'>My Competitions</p>" +
                     "<p onclick='showUpcomingComps(this)' id='showUpcomingComps'>Judging</p>" +
                     "<p id='createNewCompetition' onclick='createNewCompetition()'>New</p>");
-            else if(TeacherMap.getByUID(((Student)user).teacherId) != null)
-                right.append("<p onclick='showClassComps(this)' id='showClassComps'>Class</p><p id='showUpcomingComps' onclick='showUpcomingComps(this)'>Upcoming</p>");
+            else {
+                if(TeacherMap.getByUID(((Student)user).teacherId) != null) right.append("<p onclick='showClassComps(this)' id='showClassComps'>Class</p>");
+
+                right.append("<p id='showUpcomingComps' onclick='showUpcomingComps(this)'>Upcoming</p>");
+            }
 
             right.append("</div><div id='comp-list'><h1 id='title'>Competitions</h1><div id='public_competitions' class='column'>");
 
@@ -840,8 +838,8 @@ public class UIL extends HttpServlet{
                 if(name.isEmpty()) {
                     writer.write("{\"error\":\"Competition name is empty.\"}");
                     return;
-                } else if (description.length() > 32000) {
-                    writer.write("{\"error\":\"Description cannot exceed 32000 characters.\"}");
+                } else if (description.length() > 65535) {
+                    writer.write("{\"error\":\"Description cannot exceed 65535 characters.\"}");
                     return;
                 } else if(handsOnExists && (numNonAlts < 1 || numNonAlts > 127)) {
                     writer.write("{\"error\":\"Number of non-alternates must be between 1 and 127.\"}");
@@ -895,7 +893,10 @@ public class UIL extends HttpServlet{
 
                     FRQProblem[] frqProblemMap;
                     frqProblemMap = FRQProblem.fromJsonArray(request.getParameter("frqProblemMap"));
-
+                    if(frqProblemMap.length > 24) {
+                        writer.write("{\"error\":\"Hands-On Test cannot have more than 24 problems.\"}");
+                        return;
+                    }
 
                     short frqMaxPoints;
                     frqMaxPoints = Short.parseShort(request.getParameter("frqMaxPoints"));
@@ -960,36 +961,8 @@ public class UIL extends HttpServlet{
                 }
 
                 /* Now, write all of the files they updated to the disk */
-                System.out.println("Writing files to disk, handsOnExists="+handsOnExists);
-                if(frqTest.exists) {
-                    Collection<Part> parts = request.getParts();
-                    for (Part part : parts) {
-                        String partName = part.getName();
-                        System.out.println("Looping, partName=" + partName);
-                        String prefix = partName.substring(0, 3);  // Either 'fi:' or 'fo:'
-                        if (prefix.equals("fi:")) {  // File in
-                            int probNum = Integer.parseInt(partName.substring(3));
-                            InputStream fileContent = part.getInputStream();
+                if(frqTest.exists) writeFilesToDisk(request, frqTest);
 
-                            byte[] bytes = new byte[fileContent.available()];
-                            fileContent.read(bytes);
-
-                            System.out.println("probNum=" + probNum);
-                            frqTest.setTestcaseFile(probNum, bytes, true);
-                        } else if (prefix.equals("fo:")) {   // File out
-                            int probNum = Integer.parseInt(partName.substring(3));
-
-                            InputStream fileContent = part.getInputStream();
-
-                            byte[] bytes = new byte[fileContent.available()];
-                            fileContent.read(bytes);
-
-                            System.out.println("probNum=" + probNum);
-                            frqTest.setTestcaseFile(probNum, bytes, false);
-                        }
-                    }
-                    frqTest.initializeFiles();
-                }
                 writer.write("{\"success\":\"Competition saved.\",\"cid\":\""+competition.template.cid+"\"}");
             } else if(action.equals("publishCompetition") && u.teacher) {
                 savePublished(request, writer, (Teacher)u);

@@ -1108,11 +1108,6 @@ function closeAddExistingTeam() {
     pageState.existingGlobalTeacher = null;
     dom.selectGlobalTeam.style.display = "none";
 }
-function inputMaxLength(element) {
-    if (element.value.length > element.maxLength) {
-        element.value = element.value.slice(0, length);
-    }
-}
 // Begin the multiple choice
 function beginMC() {
     $.ajax({
@@ -1586,4 +1581,9 @@ function sendClarification() {
         ws.send(JSON.stringify(response));
     }
     dom.clarification_input.value = "";
+}
+function inputMaxLength(element) {
+    if (element.value.length > element.maxLength) {
+        element.value = element.value.slice(0, element.maxLength);
+    }
 }

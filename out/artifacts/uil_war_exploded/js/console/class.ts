@@ -257,6 +257,7 @@ class Team {
         let teamNameInput = document.createElement("input");
         teamNameInput.placeholder = "Team Name";
         teamNameInput.value = teamData.name;
+        teamNameInput.maxLength = 25;
         teamNameInput.classList.add("teamName");
         teamLi.appendChild(teamNameInput);
 

@@ -605,6 +605,7 @@
     box-shadow: var(--shadow);
     padding: 3rem 4rem;
     border-radius: var(--radius);
+    overflow: auto;
 }
 #frqSubmissions table{
     width:100%;

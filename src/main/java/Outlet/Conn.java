@@ -135,8 +135,8 @@ public class Conn {
             // Establishing Connection
             Connection conn = getConnection();
             if(conn==null) return BigInteger.valueOf(-1); // If an error occurred making the connection
-            PreparedStatement stmt = conn.prepareStatement("INSERT INTO users(email, password, fname, lname, school, token, teacher, cids, class) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            PreparedStatement stmt = conn.prepareStatement("INSERT INTO users(email, password, fname, lname, school, token, teacher, class) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             stmt.setString(1, email);
             stmt.setString(2, password);
             stmt.setString(3, fname);
@@ -145,7 +145,6 @@ public class Conn {
             stmt.setString(6, token.toString(Character.MAX_RADIX));
             stmt.setBoolean(7, isTeacher);
             if(isTeacher) { // Teachers' 'cids' string is a json list of the cids of the competitions they created
-                stmt.setString(8,"[]");
                 /**
                  * Generate the random 6 character code
                  */
@@ -161,11 +160,10 @@ public class Conn {
                             .toString();
                 } while(TeacherMap.getByClassCode(classString) != null);
             } else {    // Students' 'cids' string is a json dictionary mapping the cid of each competition they've signed up for to their tid in that competition
-                stmt.setString(8, "{}");
                 classString = "-1";
             }
 
-            stmt.setString(9, classString);    // This will be used to join their classes
+            stmt.setString(8, classString);    // This will be used to join their classes
 
             int success = stmt.executeUpdate();
             if(success<=0) return BigInteger.valueOf(-1);   // If an error occurs

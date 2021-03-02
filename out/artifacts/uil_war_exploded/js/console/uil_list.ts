@@ -748,7 +748,7 @@ class Competition {
     }
 
     addWrittenQuestion(writtenProblem:WrittenProblem) {
-        if(this.written.key.length >= 240) return;   // No more than 240 questions.
+        if(this.written.key.length >= 240) return;   // No more dthan 240 questions.
 
         if(writtenProblem == null) {    // This question doesn't exist
             writtenProblem =new WrittenProblem("a", WrittenType.MC);
@@ -765,7 +765,7 @@ class Competition {
         newInput.value = writtenProblem.answer;
         newInput.placeholder = "Answer";
         newInput.maxLength = 40;
-        newInput.onchange = function() {
+        newInput.oninput = function() {
             let newValue:string = newInput.value;
             writtenProblem.answer = newValue;
 
@@ -893,7 +893,7 @@ list_handsOn_changeproblems.appendChild(li);
     addHandsOnProblem(probIndex: number, name: string, hasInputFile: boolean, hasOutputFile: boolean): void {
         let thisComp:Competition = this;
 
-        if(this.handsOn.problemMap.length >= 50) return;
+        if(this.handsOn.problemMap.length >= 24) return;    // Don't let them have more than 24 hands on problems
         let index:number = this.handsOn.problemMap.length;
         let problem:HandsOnProblem = new HandsOnProblem();
         problem.oldIndex = probIndex;
@@ -1078,7 +1078,12 @@ list_handsOn_changeproblems.appendChild(li);
 
             let input_written_length = document.createElement("input");
             input_written_length.name = "mcTime";
-            input_written_length.type = "text";
+            input_written_length.min = "1";
+            input_written_length.max = "16777215";
+            /*input_written_length.oninput = function() {
+                numberInputCheckMaxValue(input_written_length, 1, 16777215);
+            };*/
+            input_written_length.type = "number";
             input_written_length.value = (""+thisComp.written.time?""+thisComp.written.time:"45");
             input_written_length.classList.add("length");
             written_length.appendChild(input_written_length);
@@ -1170,7 +1175,10 @@ list_handsOn_changeproblems.appendChild(li);
             textarea_written_instructions_change.classList.add("writtenSectionInstructions");
             makeFull(textarea_written_instructions_change);
             textarea_written_instructions_change.style.display = "none";
-            textarea_written_instructions_change.maxLength = 144;
+            textarea_written_instructions_change.maxLength = 255;
+            textarea_written_instructions_change.oninput = function() {
+                inputMaxLength(textarea_written_instructions_change);
+            };
             written_section.appendChild(textarea_written_instructions_change);
             textarea_written_instructions_change.value = thisComp.written.instructions;
             thisComp.dom.writtenInstructionCnt = textarea_written_instructions_change;
@@ -1190,6 +1198,10 @@ list_handsOn_changeproblems.appendChild(li);
             input_written_testLink.type = "url";
             input_written_testLink.placeholder = "https://what_the_student_sees.com";
             input_written_testLink.value = thisComp.written.testLink?thisComp.written.testLink:"";
+            input_written_testLink.maxLength = 255;
+            input_written_testLink.oninput = function() {
+                inputMaxLength(input_written_testLink);
+            };
             written_testlink.appendChild(input_written_testLink);
             thisComp.dom.writtenTestLink = input_written_testLink;
             /* CLOSE */
@@ -1208,13 +1220,11 @@ list_handsOn_changeproblems.appendChild(li);
             input_written_ppc.type = "number";
             input_written_ppc.placeholder = "6";
             input_written_ppc.min = "0";
-            input_written_ppc.max = "999";
+            input_written_ppc.max = "127";
             input_written_ppc.step = "1";
-            let input_written_ppc_old: string = "6";
-            input_written_ppc.onchange = function() {
-                if(!input_written_ppc.validity.valid) input_written_ppc.value = input_written_ppc_old;
-                else input_written_ppc_old = input_written_ppc.value;
-            };
+            /*input_written_ppc.oninput = function() {
+                numberInputCheckMaxValue(input_written_ppc, 0, 127);
+            };*/
             input_written_ppc.value = ""+thisComp.written.correctPoints?""+thisComp.written.correctPoints:"";
             written_ppc.appendChild(input_written_ppc);
             thisComp.dom.writtenPointsPerCorrect = input_written_ppc;
@@ -1234,13 +1244,11 @@ list_handsOn_changeproblems.appendChild(li);
             input_written_ppi.type = "number";
             input_written_ppi.placeholder = "-2";
             input_written_ppi.max = "0";
-            input_written_ppi.min = "-999";
+            input_written_ppi.min = "-128";
             input_written_ppi.step = "1";
-            let input_written_ppi_old: string = "-2";
-            input_written_ppi.onchange = function() {
-                if(!input_written_ppi.validity.valid) input_written_ppi.value = input_written_ppi_old;
-                else input_written_ppi_old = input_written_ppi.value;
-            };
+            /*input_written_ppi.oninput = function() {
+                numberInputCheckMaxValue(input_written_ppi, -128, 0);
+            };*/
             input_written_ppi.value = ""+thisComp.written.incorrectPoints?""+thisComp.written.incorrectPoints:"";
             written_ppi.appendChild(input_written_ppi);
             thisComp.dom.writtenPointsPerIncorrect = input_written_ppi;
@@ -1321,6 +1329,11 @@ list_handsOn_changeproblems.appendChild(li);
             input_handsOn_length.type = "number";
             input_handsOn_length.classList.add("length");
             input_handsOn_length.value = ""+thisComp.handsOn.time?""+thisComp.handsOn.time:"120";
+            input_handsOn_length.min = "1";
+            input_handsOn_length.max = "16777215";
+            /*input_handsOn_length.oninput = function() {
+                numberInputCheckMaxValue(input_handsOn_length, 1, 16777215);
+            };*/
             handsOn_length.appendChild(input_handsOn_length);
             thisComp.dom.handsOnTime = input_handsOn_length;
 
@@ -1379,6 +1392,10 @@ list_handsOn_changeproblems.appendChild(li);
             input_handsOn_studentlink.type = "url";
             input_handsOn_studentlink.placeholder = "https://what_the_student_sees.com";
             input_handsOn_studentlink.value = thisComp.handsOn.studentPacketLink?thisComp.handsOn.studentPacketLink:"";
+            input_handsOn_studentlink.maxLength = 255;
+            input_handsOn_studentlink.oninput = function() {
+                inputMaxLength(input_handsOn_studentlink);
+            };
             handsOn_studentlink.appendChild(input_handsOn_studentlink);
             thisComp.dom.handsOnStudentPacket = input_handsOn_studentlink;
             /* CLOSE */
@@ -1394,13 +1411,11 @@ list_handsOn_changeproblems.appendChild(li);
             input_handsOn_maxPoints.name = "frqMaxPoints";
             input_handsOn_maxPoints.value = ""+thisComp.handsOn.maxPoints?""+thisComp.handsOn.maxPoints:"60";
             input_handsOn_maxPoints.min = "0";
-            input_handsOn_maxPoints.max = "999";
+            input_handsOn_maxPoints.max = "127";
             input_handsOn_maxPoints.step = "1";
-            let input_handsOn_maxPoints_old: string = ""+thisComp.handsOn.maxPoints?""+thisComp.handsOn.maxPoints:"60";
-            input_handsOn_maxPoints.onchange = function() {
-                if(!input_handsOn_maxPoints.validity.valid) input_handsOn_maxPoints.value = input_handsOn_maxPoints_old;
-                else input_handsOn_maxPoints_old = input_handsOn_maxPoints.value;
-            };
+            /*input_handsOn_maxPoints.oninput = function() {
+                numberInputCheckMaxValue(input_handsOn_maxPoints, 0, 127);
+            };*/
             handsOn_maxPoints.appendChild(input_handsOn_maxPoints);
             thisComp.dom.handsOnMaxPoints = input_handsOn_maxPoints;
             /* CLOSE */
@@ -1415,15 +1430,14 @@ list_handsOn_changeproblems.appendChild(li);
             input_handsOn_incorrectPenalty.name = "frqIncorrectPenalty";
             input_handsOn_incorrectPenalty.type = "number";
             input_handsOn_incorrectPenalty.value = ""+thisComp.handsOn.incorrectPenalty?""+thisComp.handsOn.incorrectPenalty:"-5";
-            input_handsOn_incorrectPenalty.min = "-999";
+            input_handsOn_incorrectPenalty.min = "-128";
             input_handsOn_incorrectPenalty.max = "0";
             input_handsOn_incorrectPenalty.step = "1";
             input_handsOn_incorrectPenalty.placeholder = "-5";
-            let input_handsOn_incorrectPenalty_old: string = ""+thisComp.handsOn.incorrectPenalty?""+thisComp.handsOn.incorrectPenalty:"-5";
-            input_handsOn_incorrectPenalty.onchange = function() {
-                if(!input_handsOn_incorrectPenalty.validity.valid) input_handsOn_incorrectPenalty.value = input_handsOn_incorrectPenalty_old;
-                else input_handsOn_incorrectPenalty_old = input_handsOn_incorrectPenalty.value;
-            };
+            /*input_handsOn_incorrectPenalty.oninput = function() {
+                numberInputCheckMaxValue(input_handsOn_incorrectPenalty, -128, 0);
+            };*/
+
             handsOn_incorrectPenalty.appendChild(input_handsOn_incorrectPenalty);
             thisComp.dom.handsOnIncorrectPenalty = input_handsOn_incorrectPenalty;
             /* CLOSE */
@@ -1595,6 +1609,10 @@ list_handsOn_changeproblems.appendChild(li);
         input_name.value = this.name;
         input_name.placeholder = "New Competition";
         input_name.dataset.originalName = this.name;
+        input_name.maxLength = 50;
+        input_name.oninput = function() {
+            inputMaxLength(input_name);
+        };
         name_and_save.appendChild(input_name);
         this.dom.compName = input_name;
         /* CLOSE */
@@ -1642,19 +1660,14 @@ list_handsOn_changeproblems.appendChild(li);
         body.appendChild(numNonAlts_header_input);
 
         let numNonAlts_input = document.createElement("input");
-        numNonAlts_input.name = "altExists";
+        numNonAlts_input.name = "numNonAlts";
         numNonAlts_input.type = "number";
         numNonAlts_input.value = ""+numNonAlts;
         numNonAlts_input.min = "1";
         numNonAlts_input.max = "127";
-        numNonAlts_input.onchange = function() {
-            let val = parseInt(numNonAlts_input.value);
-            if(val < 1) {
-                numNonAlts_input.value = "1";
-            } else if (val > 127) {
-                numNonAlts_input.value = "127";
-            }
-        };
+        /*numNonAlts_input.oninput = function() {
+            numberInputCheckMaxValue(numNonAlts_input, 1, 127);
+        };*/
 
         numNonAlts_header_input.appendChild(numNonAlts_input);
         this.dom.numNonAlts = numNonAlts_input;
@@ -1704,7 +1717,10 @@ list_handsOn_changeproblems.appendChild(li);
         let whatItIs_textarea = document.createElement("textarea");
         whatItIs_textarea.value = whatItIsText;
         whatItIs_textarea.classList.add("pageTextTextarea");
-        whatItIs_textarea.maxLength = 3000;
+        whatItIs_textarea.maxLength = 65535;
+        whatItIs_textarea.oninput = function() {
+            inputMaxLength(whatItIs_textarea);
+        };
         whatItIs.appendChild(whatItIs_textarea);
         this.dom.description = whatItIs_textarea;
         /* CLOSE */
@@ -1926,6 +1942,30 @@ function addSuccessBox(parentBox:HTMLElement, success: string, successBox?:HTMLE
         return successBox;
     }
 }
+
+function inputMaxLength(element: {value: string, maxLength: number}) {
+    if(element.value.length > element.maxLength) {
+        element.value = element.value.slice(0, element.maxLength);
+    }
+}
+
+
+/*function numberInputCheckMaxValue(element: {value: string}, min: number, max:number) {
+    let valueS: string = element.value.replace(/\W/g,'');    // Remove whitespace
+    if(element.value == "") return; // Don't mess with it if the input box is empty
+
+    let value: number = parseInt(element.value);
+    if()
+    let updateValue: boolean = false;   // If we should update the value
+
+    if(value > max) {
+        value = max;
+    } else if(value < min) {
+        value = min;
+    }
+
+    element.value = ""+value;
+}*/
 
 document.addEventListener("DOMContentLoaded", function(event) {
     let controls = document.getElementsByClassName("mini_comp_controls");
