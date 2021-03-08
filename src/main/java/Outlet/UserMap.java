@@ -39,14 +39,14 @@ public class UserMap {
                 String classString = rs.getString("class");
                 short uid = rs.getShort("uid");
                 String password = rs.getString("password");
-
+                boolean isTemp = rs.getBoolean("temp");
                 BigInteger token;
                 if(tokenS != null)
                     token = new BigInteger(tokenS, Character.MAX_RADIX);
                 else
                     token = null;
 
-                User u = loadUser(email, fname, lname, school, token, uid, isTeacher, classString, password);
+                loadUser(email, fname, lname, school, token, uid, isTeacher, classString, password, isTemp);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -56,7 +56,7 @@ public class UserMap {
         return 1;
     }
 
-    public static User loadUser(String email,String fname, String lname, String school, BigInteger token,short uid,boolean isTeacher, String classString, String password) {
+    public static User loadUser(String email,String fname, String lname, String school, BigInteger token,short uid,boolean isTeacher, String classString, String password, boolean temp) {
         User user;
         if(isTeacher) {
             user = new Teacher();
@@ -69,6 +69,7 @@ public class UserMap {
             user.token = token;
             user.uid = uid;
             user.password = password;
+            user.temp = false;  // Teachers cannot be temp accounts
 
             TeacherMap.addTeacher((Teacher)user);
             System.out.println("Adding teacher with uid = " +user.uid);
@@ -83,6 +84,7 @@ public class UserMap {
             user.token = token;
             user.uid = uid;
             user.password = password;
+            user.temp = temp;
 
             StudentMap.addStudent((Student)user);
         }

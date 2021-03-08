@@ -18,7 +18,9 @@ public class FRQSubmission {
         CORRECT,
         EMPTY_FILE,
         EXCEEDED_TIME_LIMIT,
-        UNCLEAR_FILE_TYPE   // When their file name doesn't have a '.' in it
+        UNCLEAR_FILE_TYPE,   // When their file name doesn't have a '.' in it
+        PACKAGE_ERROR,  // When there is still a package statement in their code
+        FORMAT_ERROR    // When the output is formatted incorrectly
     }
 
     public Result result;
@@ -48,14 +50,14 @@ public class FRQSubmission {
 
     public boolean showOutput() {
         if(overrideShowOutput) return overriddenShowOutput;
-        if(result == Result.INCORRECT || result == Result.CORRECT) return true;
+        if(result == Result.INCORRECT || result == Result.CORRECT || result == Result.PACKAGE_ERROR || result == Result.FORMAT_ERROR) return true;
         return false;
     }
 
     public String getResultString() {
         switch (result) {
             case COMPILETIME_ERROR:
-                return "Compile time Error";
+                return "Compile-time Error";
             case RUNTIME_ERROR:
                 return "Runtime Error";
             case INCORRECT:
@@ -68,14 +70,14 @@ public class FRQSubmission {
                 return "Time Limit Exceeded";
             case UNCLEAR_FILE_TYPE:
                 return "Unclear File Type";
+            case FORMAT_ERROR:
+                return "Wrong Output Format";
+            case PACKAGE_ERROR:
+                return "Package Error";
             case SERVER_ERROR:
             default:
                 return "Server Error";
         }
-    }
-
-    public boolean noPenalty() {
-        return !takePenalty() && result != Result.CORRECT;
     }
 
 

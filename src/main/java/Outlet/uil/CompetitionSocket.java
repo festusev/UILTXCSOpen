@@ -3,12 +3,12 @@ package Outlet.uil;
 import Outlet.*;
 import Outlet.Websocket.*;
 import com.google.gson.*;
-import com.sun.org.apache.xerces.internal.xs.ItemPSVI;
 
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.*;
 
 
@@ -43,6 +43,7 @@ public class CompetitionSocket {
             if(studentsInClass == null) studentsInClass = new JsonArray();
 
             response.add("studentsInClass", studentsInClass);
+            response.add("tempUsers", competition.template.tempUserData);
         }
 
         try {
@@ -251,7 +252,7 @@ public class CompetitionSocket {
 
                 competition.template.updateScoreboard();;
 
-                send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":false,\"msg\":\"Team saved successfully\"}");
+                send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":false,\"msg\":\"Team saved successfully.\"}");
             }
         } else if(action.equals("fetchGlobalTeams")) {  // Return a list of the global teams
             if(status.admin) {
@@ -471,6 +472,71 @@ public class CompetitionSocket {
             ret.addProperty("action","ssearch");
             ret.add("students", array);
             send(ret.toString());
+        } else if(action.equals("createTempStudent")) { // Creates a temporary student account
+            String fname = data.get(1).getAsString();
+            String lname = data.get(2).getAsString();
+            String school = data.get(3).getAsString();
+            short tid = data.get(4).getAsShort();
+            boolean isAlt = data.get(5).getAsBoolean();
+
+            // First, check if the team has space for this user
+            UILEntry entry = null;
+            try {
+                entry = competition.getEntry(tid);
+                if(entry == null) return;
+
+                if(competition.alternateExists) {
+                    if (entry.uids.size() >= (competition.numNonAlts + 1))  { // the team is entirely full
+                        return;
+                    } else if(isAlt && entry.altUID >= 0) { // There is already an alternate for this team
+                        return;
+                    }
+                } else if(entry.uids.size() >= competition.numNonAlts) {
+                    return;
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return;
+            }
+
+            String unameBase = (fname + lname).toLowerCase();
+            String uname = unameBase;
+            int x = 2;
+            while(StudentMap.getByEmail(uname) != null) {
+                uname = unameBase + x;
+                x++;
+            }
+
+
+            int leftLimit = 48; // numeral '0'
+            int rightLimit = 90; // letter 'Z'
+            Random random = new Random();
+            String password = random.ints(leftLimit, rightLimit + 1)
+                        .filter(i -> (i <= 57 || i >= 65) && (i <= 90))
+                        .limit(8)
+                        .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                        .toString();
+            try {
+                Conn.finishRegistration(uname, password, fname, lname, school, false, true);
+                Student student = StudentMap.getByEmail(uname);
+                student.cids.put(competition.template.cid, entry);
+                entry.uids.add(student.uid);
+                entry.updateUIDS();
+                competition.template.updateScoreboard();
+
+                JsonObject ret = new JsonObject();
+                ret.addProperty("action", "addTempStudent");
+                ret.addProperty("name", student.getName());
+                ret.addProperty("uname", student.email);
+                ret.addProperty("password", student.password);
+                ret.addProperty("isAlt", isAlt);
+                ret.addProperty("uid", student.uid);
+                ret.addProperty("tid", tid);
+
+                send(ret.toString());
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
 

@@ -1,5 +1,7 @@
 package Outlet;
 
+import Outlet.uil.UILEntry;
+
 import javax.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -144,23 +146,29 @@ public class Dynamic {
      * @param content
      * @return
      */
-    public static String get_consoleHTML(int page, String content) {
+    public static String get_consoleHTML(int page, String content, User user) {
         String leftBar = "<div id='left-bar'>" +
-                            "<img src='/res/icon.png' id='tx'>" +
-                            //"<img onclick='window.location.href=\"/console/upcoming\"' src='/res/console/surveys.svg' "+(page==0?"class='selected'":"")+"/>" +
-                            "<div onclick='window.location.href=\"/console/competitions\"' class='tooltip-cnt'>" +
-                            "<img src='/res/console/champion-winner-trophy.svg' "+(page==1?"class='selected'":"")+"/>" +
-                            "<p class='tooltip'>Competitions</p></div>" +
-                            "<div onclick='window.location.href=\"/console/class\"' class='tooltip-cnt'>" +
+                            "<img src='/res/icon.png' id='tx'>";
+        if(!user.temp)      leftBar += "<div onclick='window.location.href=\"/console/competitions\"' class='tooltip-cnt'>";
+        else {  // Instead, have the competition trophy link to the competition this user is signed up for
+            Student student = (Student) user;
+            UILEntry entry = (UILEntry) student.cids.values().toArray()[0];
+            leftBar += "<div onclick='window.location.href=\"/console/competitions?cid="+entry.competition.template.cid+"\"' class='tooltip-cnt'>";
+        }
+        leftBar +=          "<img src='/res/console/champion-winner-trophy.svg' "+(page==1?"class='selected'":"")+"/>" +
+                            "<p class='tooltip'>Competitions</p></div>";
+        if(!user.temp)      leftBar+="<div onclick='window.location.href=\"/console/class\"' class='tooltip-cnt'>" +
                             "<img src='/res/console/graduation-cap.svg' "+(page==2?"class='selected'":"")+"/>" +
-                            "<p class='tooltip'>Class</p></div>" +
-                            "<div onclick='window.location.href=\"/console/help\"' class='tooltip-cnt' id='nav-help'>" +
+                            "<p class='tooltip'>Class</p></div>";
+        leftBar +=          "<div onclick='window.location.href=\"/console/help\"' class='tooltip-cnt' id='nav-help'>" +
                             "<img src='/res/console/question-mark-line.svg' "+(page==3?"class='selected'":"")+"/>" +
-                            "<p class='tooltip'>Help</p></div>" +
-                            "<div id='nav-profile-cnt'><a href='/console/profile'><img src='/res/console/profile.svg' id='nav-profile' "+(page==4?"class='selected'":"")+"/></a>" +
-                            "<div><a href='/console/profile' id='nav-my-settings'>My Settings</a><a href='/logout'>Logout</a></div></div>" +
-                         "</div>" +
-                         "<div id='right'>" + content + "</div>";
+                            "<p class='tooltip'>Help</p></div><div id='nav-profile-cnt'>";
+        if(user.temp)   leftBar+= "<a>";
+        else            leftBar+= "<a href='/console/profile'>";
+
+        leftBar += "<img src='/res/console/profile.svg' id='nav-profile' "+(page==4?"class='selected'":"")+"/></a><div>";
+        if(!user.temp)  leftBar += "<a href='/console/profile' id='nav-my-settings'>My Settings</a>";
+        leftBar += "<a href='/logout'>Logout</a></div></div></div><div id='right'>" + content + "</div>";
         return leftBar;
     }
 

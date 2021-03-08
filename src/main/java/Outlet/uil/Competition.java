@@ -8,11 +8,14 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.sql.*;
 import java.util.*;
+
+import static Outlet.Conn.getConnection;
 
 
 /***
@@ -165,7 +168,6 @@ public class Competition {
                     "`altUID` SMALLINT NOT NULL," +
                     "`mc` TEXT NOT NULL," +
                     "`frqResponses` MEDIUMTEXT NOT NULL," +
-                    "`frqScore` SMALLINT DEFAULT 0," +
                     "PRIMARY KEY (`tid`))");
             System.out.println(stmt);
             stmt.executeUpdate();
@@ -346,18 +348,15 @@ public class Competition {
                         FRQSubmission submission = frqSubmissions.get(id);
 
                         boolean oldShowOutput = submission.showOutput();
-                        boolean oldTakePenalty = submission.takePenalty();
-                        boolean oldTakeNoPenalty = submission.noPenalty();
-                        FRQSubmission.Result oldResult = submission.result;
+                        //boolean oldTakePenalty = submission.takePenalty();
+                        //boolean oldTakeNoPenalty = submission.noPenalty();
+                        //FRQSubmission.Result oldResult = submission.result;
                         switch (newResultId) {
                             case 0:
                                 submission.result = FRQSubmission.Result.CORRECT;
                                 break;
                             case 1:
                                 submission.result = FRQSubmission.Result.INCORRECT;
-                                break;
-                            case 2:
-                                submission.result = FRQSubmission.Result.SERVER_ERROR;
                                 break;
                             case 3:
                                 submission.result = FRQSubmission.Result.COMPILETIME_ERROR;
@@ -374,6 +373,15 @@ public class Competition {
                             case 7:
                                 submission.result = FRQSubmission.Result.UNCLEAR_FILE_TYPE;
                                 break;
+                            case 8:
+                                submission.result = FRQSubmission.Result.PACKAGE_ERROR;
+                                break;
+                            case 9:
+                                submission.result = FRQSubmission.Result.FORMAT_ERROR;
+                                break;
+                            case 2:
+                            default:
+                                submission.result = FRQSubmission.Result.SERVER_ERROR;
                             /*case 2:
                                 submission.result = FRQSubmission.Result.SERVER_ERROR;
                                 break;*/
@@ -428,12 +436,12 @@ public class Competition {
                     }
                 } else if(action.equals("changeMCJudgement")) {
                     short uid = Short.parseShort(request.getParameter("uid"));
-                    short tid = Short.parseShort(request.getParameter("tid"));
                     String judgement = request.getParameter("judgement");
                     int probNum = Short.parseShort(request.getParameter("probNum")) - 1;
 
-                    UILEntry entry = entries.getByTid(tid);
-                    System.out.println("Changing MC Judgement, uid="+uid+", tid="+tid+", judgement="+judgement+", probNum="+probNum);
+                    Student student = StudentMap.getByUID(uid);
+                    UILEntry entry = student.cids.get(this.template.cid);
+                    System.out.println("Changing MC Judgement, uid="+uid+", judgement="+judgement+", probNum="+probNum);
                     if(entry != null && entry.mc.containsKey(uid)) {
                         System.out.println("User in mc");
                         MCSubmission submission = entry.mc.get(uid);
@@ -531,7 +539,7 @@ public class Competition {
                     template.updateScoreboard();
 
                     // Send it to the teacher and judges
-                    CompetitionSocket socket = CompetitionSocket.connected.get(((Student) user).teacherId);
+                    CompetitionSocket socket = CompetitionSocket.connected.get(teacher.uid);
                     if (socket != null) {
                         JsonObject obj = new JsonObject();
                         obj.addProperty("action", "addSmallMC");
@@ -558,6 +566,11 @@ public class Competition {
                     InputStream fileContent = filePart.getInputStream();
 
                     byte[] bytes = new byte[fileContent.available()];
+                    if(bytes.length > UIL.MAX_FILE_SIZE) {
+                        writer.write("{\"status\":\"error\",\"error\":\"File size must be less than 1 MB.\"}");
+                        return;
+                    }
+
                     fileContent.read(bytes);
 
                     short probNum = Short.parseShort(request.getParameter("probNum"));
@@ -579,19 +592,14 @@ public class Competition {
                     frqSubmissions.add(submission);
                     if (submission.result == FRQSubmission.Result.CORRECT) {
                         writer.write("{\"status\":\"success\",\"scored\":\"You gained points!\"}");
-                        template.updateScoreboard();
                     } else if (submission.result == FRQSubmission.Result.COMPILETIME_ERROR) {
                         writer.write("{\"status\":\"error\",\"error\":\"Compile-time error.\"}");
-                        template.updateScoreboard();
                     } else if (submission.result == FRQSubmission.Result.RUNTIME_ERROR) {
                         writer.write("{\"status\":\"error\",\"error\":\"Runtime error\"}");
-                        template.updateScoreboard();
                     } else if (submission.result == FRQSubmission.Result.EXCEEDED_TIME_LIMIT) {
                         writer.write("{\"status\":\"error\",\"error\":\"Time limit exceeded.\"}");
-                        template.updateScoreboard();
                     } else if (submission.result == FRQSubmission.Result.INCORRECT) {
                         writer.write("{\"status\":\"error\",\"error\":\"Wrong answer.\"}");
-                        template.updateScoreboard();
                     } else if (submission.result == FRQSubmission.Result.SERVER_ERROR) {
                         writer.write("{\"status\":\"error\",\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
                     } else if (submission.result == FRQSubmission.Result.EMPTY_FILE) {
@@ -600,8 +608,10 @@ public class Competition {
                         writer.write("{\"status\":\"error\",\"error\":\"Unclear file type. Files must end in .java, .py, or .cpp.\"}");
                     }
 
+                    template.updateScoreboard();
+
                     // Send it to the teacher and the judges
-                    CompetitionSocket socket = CompetitionSocket.connected.get(user.teacherId);
+                    CompetitionSocket socket = CompetitionSocket.connected.get(teacher.uid);
                     if (socket != null) {
                         JsonObject obj = new JsonObject();
                         obj.addProperty("action", "addSmallFRQ");
@@ -796,6 +806,17 @@ public class Competition {
             for(short uid: entry.uids) {
                 Student s = StudentMap.getByUID(uid);
                 s.cids.remove(this.template.cid);
+                if(s.temp) {
+                    Connection conn = getConnection();
+                    PreparedStatement stmt = null;
+                    try {
+                        stmt = conn.prepareStatement("DELETE FROM users WHERE uid=?");
+                        stmt.setShort(1, s.uid);
+                        UserMap.delUser(s);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }
         entries.tidMap.clear();
@@ -814,7 +835,7 @@ public class Competition {
             e.printStackTrace();
         }
 
-        if(template.frqTest.exists) template.frqTest.deleteTestcaseDir();
+        if(template.frqTest.exists) template.frqTest.deleteDirectory(new File(template.frqTest.testcaseDirPath));
 
         // Finally, tell all of the people viewing this competition to stop viewing it
         ArrayList<CompetitionSocket> sockets = CompetitionSocket.competitions.get(template.cid);

@@ -59,7 +59,8 @@ public class FRQTest {
         exists = false;TIME_TEXT="";TIME=0;STUDENT_PACKET="";JUDGE_PACKET="";
         scoreDirPath = ""; testcaseDirPath = "";MAX_POINTS = 0; INCORRECT_PENALTY = 0; PROBLEM_MAP = new FRQProblem[0];
     }
-    public FRQTest(boolean published,String opensString, short mp, short ip, FRQProblem[] pm, String studentPacket, String judgePacket, long time) {
+    public FRQTest(boolean published,String opensString, short mp, short ip, FRQProblem[] pm, String studentPacket,
+                   String judgePacket, long time) {
         if(published) {
             opens = new Countdown(opensString, "countdown");MAX_POINTS = mp; INCORRECT_PENALTY = ip; PROBLEM_MAP = pm;
             exists = true;TIME_TEXT=(time/(1000*60)) + " minutes";TIME=time;STUDENT_PACKET=studentPacket;JUDGE_PACKET=judgePacket;
@@ -127,20 +128,51 @@ public class FRQTest {
      * the problem's old index. Deletes directories, renames them, and creates new ones.
      * First, we rename all of the directories that are being renamed to  have a 'tmp_' prefix. This prevents issues that
      * would arise if the user swapped the location of two problems.
-     *
+     * This also updates all UILEntrys' frqResponses that are signed up for this competition.
      * oldNumProblems is the number of problems that used to exist. The difference between this and the length of problemIndices
      * is used to delete problems.
      * @param problemIndices
      */
-    public void updateProblemDirectories(short[] problemIndices, int oldNumProblems) {
+    public void updateProblemDirectories(short[] problemIndices, int oldNumProblems, Competition competition) {
         boolean[] notDeleted = new boolean[oldNumProblems];  // Used to determine which problem directories should be deleted
         for(int i=0,j=problemIndices.length;i<j;i++) {
             if(problemIndices[i] >= 0) notDeleted[problemIndices[i]] = true; // If the index is less than zero, it is a new problem
         }
 
-        // Delete all of the directories for problems that have been removed
+        // Delete all of the directories for problems that have been removed. Also remove FRQSubmission lists
         for(int i=0;i<oldNumProblems;i++) {
-            if(!notDeleted[i]) deleteDirectory(new File(testcaseDirPath +(i+1)));
+            if(!notDeleted[i]) {
+                deleteDirectory(new File(testcaseDirPath +(i+1)));
+
+                // Remove the submission from the frq submission list.
+                int finalI = i + 1;
+                competition.frqSubmissions.removeIf(b -> b.problemNumber == finalI);
+            }
+        }
+
+        // Update each uilentry's frqResponses list
+        for(UILEntry entry: competition.entries.allEntries) {
+            Pair<Short, ArrayList<FRQSubmission>>[] newFRQSubmissions = new Pair[problemIndices.length]; // Will end up being the length of problemIndices
+
+            // Loop through each current problem and add a new entry for the problem in newFRQSubmissions.
+            // If the problem already existed, it's problemIndices[i] is >=0, and we retrieve the old submission list at
+            // problemIndices[i] and add it to the new submission list
+            for(int i=0,j=problemIndices.length;i<j;i++) {
+                Pair<Short, ArrayList<FRQSubmission>> problem;
+                if(problemIndices[i] >= 0) problem = entry.frqResponses[problemIndices[i]];
+                else problem = new Pair<>((short) 0, new ArrayList<>());
+
+                for(FRQSubmission submission: problem.value) {
+                    submission.problemNumber = (short)(i + 1);
+                }
+                newFRQSubmissions[i] = problem;
+            }
+            entry.frqResponses = newFRQSubmissions;
+            entry.frqScore = 0;
+            for(Pair<Short, ArrayList<FRQSubmission>> problem: entry.frqResponses) {
+                if(problem.key > 0) entry.frqScore += java.lang.Math.max(competition.template.frqTest.calcScore(problem.key), competition.template.frqTest.MIN_POINTS);
+            }
+            entry.update();
         }
 
         // Now, rename the problem directories to 'tmp_#' where # is the new problem #. This will also create new directories
@@ -177,9 +209,14 @@ public class FRQTest {
         return dir.delete();
     }
 
-    /* Deletes the testcase directory */
-    public void deleteTestcaseDir() {
+    /* Deletes the frqtest directory and removes all remnants from its competition */
+    public void delete(Competition competition) {
         deleteDirectory(new File(testcaseDirPath));
+        competition.frqSubmissions = new ArrayList<>();
+        for(UILEntry entry: competition.entries.allEntries) {
+            entry.frqResponses = new Pair[0];
+            entry.update();
+        }
     }
 
     public static Pair get_files(File dir) {

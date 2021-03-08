@@ -1,0 +1,161 @@
+
+
+#newTeam, #teams h2{
+    display: inline-block;
+}
+#newTeam {
+    position: absolute;
+    right: 0;
+    top: 0;
+    margin: 0;
+}
+#teamList .team {
+    box-shadow: var(--shadow);
+    padding: 1rem;
+    background-color: white;
+    margin-bottom: 1rem;
+}
+#teamList .student {
+    background-color: rgba(0,0,0,0);
+}
+#teamList h3 {
+    font-weight: bold;
+    margin: 1rem 0;
+}
+#teamList input {
+    font-size: 1.2rem;
+    outline: none;
+    display: inline-block;
+    max-width: 50%;
+}
+#teamList, #teamList .student  {
+    cursor: default;
+}
+#teamList .kick {
+    background-color: red;
+    border: none;
+    color: white;
+    font-weight: bold;
+    font-size: 1rem;
+    float: right;
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 5px 10px;
+}
+.drop_area {
+    display: block;
+    min-height: 3rem;
+}
+.addButton {
+    width: 100%;
+    cursor: pointer;
+    border: 1px solid lightgray;
+    border-radius: 0.2rem;
+    background-color: white;
+    font-weight: bold;
+    display: none;
+}
+.addButton:hover{
+    background-color: rgb(251,251,251);
+}
+#right.dragging .addButton {
+    display: block;
+    cursor: pointer;
+}
+#class_code {
+    margin-bottom: 1rem;
+}
+h2 {
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+#class.join h2 {
+    text-align: center;
+    font-size: 2rem;
+}
+.center {
+    margin: auto;
+    width: 80rem;
+    max-width: 100%;
+    margin-top: 10%;
+    margin-bottom: 10%;
+}
+#class, #teams {
+    width: calc(50% - 2rem);
+    box-sizing: border-box;
+    border-radius: var(--radius);
+    position: relative;
+}
+#class {
+    margin-right: 2rem;
+}
+#class.join {
+    width: 20rem;
+    margin: auto;
+}
+#class input {
+    font-size: 2rem;
+    max-width: 100%;
+    text-align: center;
+    padding: 10px 0;
+    text-transform: uppercase;
+    color: var(--prim-middle);
+    font-weight: bold;
+}
+#class.join button {
+    width: 100%;
+    margin-top: 20px;
+    border: none;
+    box-shadow: var(--shadow);
+    font-size: 1.2rem;
+    padding: 6px 0;
+    cursor: pointer;
+    background-color: var(--sec-col);
+    color: white;
+    font-weight: bold;
+}
+#teams {
+    margin-left: 2rem;
+}
+#addTeam {
+    position: absolute;
+    top: 2rem;
+    right: 3rem;
+}
+.student {
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    padding: 5px 10px;
+    margin-bottom: 14px;
+    cursor: pointer;
+    background-color: white;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    padding-right: 5rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+.student.selected {
+    background-color: rgb(251,251,251);
+}
+#studentList .kick, #class .leaveClass {
+    position: absolute;
+    right:1rem;
+    color: white;
+    background-color: var(--warn-col);
+    padding: 0px 8px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+}
+#class .leaveClass {
+    position: absolute;
+    top: 2rem;
+    right: 0;
+}
+.trashcan {
+    position: absolute;
+    right: 2rem;
+    height: 1.2rem;
+    cursor: pointer;
+}

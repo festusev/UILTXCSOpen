@@ -1,0 +1,471 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;900&display=swap');
+
+/***
+Setup document standards.
+ */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 1rem;
+    font: inherit;
+    vertical-align: baseline;
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+    display: block;
+}
+
+ul {
+    list-style: none;
+}
+ol {
+    list-style-position: inside;
+}
+blockquote, q {
+    quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+    content: '';
+    content: none;
+}
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+p{
+    font-size:1rem;
+}
+textarea {
+    resize: none;
+}
+button {
+    outline: none;
+}
+body{
+    /**
+    Document variables
+     */
+    --sec-light: #f2c446;
+    --sec-col: #edad3e;
+    --sec-dark: #d18b11;
+    --prim-light: #42A5F5;
+    --prim-middle:#2196F3;
+    --prim-dark:#1976D2;
+    --warn-col: #db4125;
+    --warn-dark: #b83018;
+    --success-col:#1ccf00;
+    --success-dark:#16a100;
+    --logo-col:#d18b11;
+    --light-gray:#f9f9f9;
+    --head-col: #404040;
+    --body-col: #333;
+    --radius: 5px;
+
+
+    --head-font: 'Noto Sans JP', sans-serif;
+    --body-font: 'Noto Sans JP', sans-serif;
+    --mono: 'Space Mono', monospace;
+
+
+    margin:0;
+    padding:0;
+    min-height: 100%;
+    overflow:hidden;
+    font-family: var(--body-font);
+    background-color:white;
+    color:var(--body-col);
+}
+html {
+    height: 100%;
+    margin:0;
+    padding:0;
+}
+textarea:focus, input:focus{
+    outline:none;
+}
+input{
+    border:1px solid #b5b5b5;
+    border-radius:3px;
+    padding-left:1em;
+}
+input:focus{
+    border:1px solid var(--prim-light);
+}
+
+
+/***
+Everything to do with the navigation bar
+ */
+#top-bar{
+    z-index: 5;
+    position: relative;
+    box-shadow: 0 0 7px 1px rgba(0,0,0,0.1);
+    list-style-type: none;
+    margin: 0;
+    display:none;
+    background-color: white;
+}
+#top-bar *{
+    box-sizing:border-box;
+}
+#top-bar li{
+    list-style: none;
+    margin: 0;
+    padding:0;
+    display: inline-block;
+    /*! float: left; */
+    vertical-align: top;
+}
+#top-bar li a, #top-bar li img{
+    display: block;
+    text-align: center;
+    padding: 10px 9px;
+    text-decoration: none;
+    cursor: pointer;
+}
+.nav-item{
+    display: none;
+}
+.nav-item a{
+    color:var(--head-col);
+}
+.nav-item a:hover{
+    color:var(--body-col);
+}
+#logoCnt{
+    display:block;
+    padding:4px;
+}
+#logo{
+    box-sizing:border-box;
+    height:44px;
+    cursor:pointer;
+}
+.link{
+    font-weight:bold;
+    cursor:pointer;
+}
+#uil_dropdown{
+    display: none;
+    position:absolute;
+    padding:0;
+    box-shadow:0 3px 5px 0 rgba(0,0,0,0.05);
+    z-index: 3;
+    background-color: white;
+}
+#uil_dropdown a{
+    border-top:none;
+    color:var(--body-col);
+    font-weight:normal;
+    font-size:1rem;
+}
+#uil_dropdown li{
+    float:unset;
+}
+#top-bar .rightNav{
+    float:right;
+}
+
+/*
+The navigation bar for mobile.
+ */
+#dropdownNav{
+    position: relative;
+    z-index: 2000;
+    width:100%;
+    display:block;
+}
+#dropdownNav .topBar{
+    display:flex;
+    flex-flow:row;
+    box-sizing:unset;
+    height:50px;
+    padding:10px;
+    box-shadow:0 0 10px 0 rgba(0,0,0,0.1);
+}
+#dropdownNav #hamburger{
+    width:50px;
+    cursor: pointer;
+    border-bottom-right-radius:20px;
+}
+#dropdownNav ul{
+    display:none;
+    width:100%;
+    list-style: none;
+    text-align:left;
+    padding:0.5em 0 0.5em 0;
+    background-color:rgba(0,0,0,0.04);
+}
+.drop-nav-item{
+    font-size:1.5em;
+    font-weight:bold;
+    padding: 0 1em;
+    text-align: center;
+    width:100%;
+}
+.drop-nav-item:hover{
+    background-color:rgba(0,0,0,0.03);
+}
+.drop-nav-item a{
+    color:var(--body-col);
+    text-decoration: none;
+    width:100%;
+    text-align: left !important;
+}
+.drop-nav-item:hover{
+    color:#e8e8e8;
+}
+
+/***
+Everything to do with the content css.
+ */
+.column{
+    padding-top:4rem;
+    box-sizing: border-box;
+}
+.row{
+    margin:1.5rem 0 0 0;
+}
+.head-row{
+    margin:0;
+}
+.center{
+    margin:auto;
+    display:flex;
+}
+.forbidden{
+    margin-top:20%;
+    text-align:center;
+    font-size:2em;
+    padding:0 1em 0 1em;
+    color:var(--head-col);
+    font-weight:bold;
+}
+.forbiddenRedirect{
+    font-weight:bold;
+    font-size:0.8em;
+}
+a:focus{
+    outline:0;
+}
+.flair{
+    display:none;
+}
+#lowerHalf{
+    width:100%;
+    border:none;
+    z-index:0;
+    position:relative;
+}
+.checkbox {
+    display: block;
+    position: relative;
+    margin-bottom: 12px;
+    cursor: pointer;
+    font-size: 22px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    width:100%;
+}
+
+.link{
+    color:var(--sec-col);
+    text-decoration: none;
+}
+.link:hover{
+    color:var(--sec-dark);
+}
+
+/* Hide the browser's default checkbox */
+.checkbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+/* Create a custom checkbox */
+.checkmark {
+    position: absolute;
+    top:2px;
+    right: 0;
+    height: 25px;
+    width: 25px;
+    background-color: #eee;
+}
+
+/* On mouse-over, add a grey background color */
+.checkbox:hover input ~ .checkmark {
+    background-color: #ccc;
+}
+
+/* When the checkbox is checked, add a blue background */
+.checkbox input:checked ~ .checkmark {
+    background-color: var(--prim-middle);
+}
+
+/* Create the checkmark/indicator (hidden when not checked) */
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+/* Show the checkmark when checked */
+.checkbox input:checked ~ .checkmark:after {
+    display: block;
+}
+
+/* Style the checkmark/indicator */
+.checkbox .checkmark:after {
+    left: 9px;
+    top: 5px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 3px 3px 0;
+    -webkit-transform: rotate(45deg);
+    -ms-transform: rotate(45deg);
+    transform: rotate(45deg);
+}
+.error{
+    display:block;
+    box-sizing:border-box;
+    width:100%;
+    margin-bottom:10px;
+    border:1px solid var(--warn-col);
+    padding:0.5em 1em;
+    border-radius:4px;
+    color:var(--warn-dark);
+}
+.success{
+    display:block;
+    box-sizing:border-box;
+    width:100%;
+    margin-bottom:10px;
+    border:1px solid var(--success-col);
+    padding:0.5em 1em;
+    border-radius:4px;
+    color:var(--success-dark);
+}
+.column h1{
+    display:block;
+    /*! font-weight:bold; */
+    color:var(--prim-light);
+    font-size:3rem;
+    font-family:var(--head-font);
+    padding-bottom:0.4em;
+}
+.column h2{
+    font-size:1.8rem;
+    padding-bottom:0.4rem;
+    font-weight:bold;
+    color:var(--prim-middle);
+}
+.subtitle{
+    font-size:1.2rem;
+}
+#announcement{
+    background-color:#ffef87;
+    font-size:18px;
+    text-align: center;
+    padding:5px 20px 5px 20px;
+}
+
+.chngButton{
+    border:none;
+    background-color:var(--sec-col);
+    color:white;
+    border-radius: 0.2em;
+    font-weight: bold;
+    padding:0.2em 0.5em;
+    display:block;
+    cursor:pointer;
+    font-size: 1rem;
+    margin-top: 8px;
+    outline: none;
+}
+.chngButton:hover{
+    background-color:var(--sec-dark);
+}
+
+
+/***
+Everything to do with the copyright.
+ */
+#copyright_notice{
+    width:100%;
+    font-size:0.6em;
+    color:var(--head-col);
+    text-align:center;
+    font-family:var(--body-font);
+    padding:5px;
+    position:relative;
+    bottom:0;
+    z-index: 100;
+}
+#copyright_notice a{
+    color:inherit;
+}
+#big_copyright{
+    text-align: center;
+    padding:2em 0 1em 0;
+}
+#copyright_contact {
+    display:inline-block;
+}
+#copyright_contact img{
+    height:30px;
+    margin: 0 1em;
+}
+#copyright_privacy a{
+    margin:0 1em;
+    color: rgb(255, 255, 255);
+    mix-blend-mode: difference;
+    text-decoration: none;
+}
+#copyright_notice{
+    color: rgb(255, 255, 255);
+    mix-blend-mode: difference;
+}
+
+
+
+/***
+Media queries
+*/
+@media only screen and (min-width: 900px){
+    #dropdownNav{
+        display:none;
+    }
+    #top-bar{
+        display:block;
+    }
+    .center{
+        margin:auto;
+        display:flex;
+    }
+    .forbidden{
+        margin-top:15%;
+        font-size:3em;
+        padding:0 32% 0 32%;
+    }
+}

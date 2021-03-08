@@ -1,0 +1,17 @@
+#Help {
+    width: 50rem;
+    margin: auto;
+    margin-top: 8%;
+    margin-bottom: 8rem;
+    max-width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+#Help h1 {
+    margin-bottom: 1rem;
+    font-size: 3rem;
+}
+#Help h2 {
+    font-weight: bold;
+    margin: 1rem 0;
+}

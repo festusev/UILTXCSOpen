@@ -2,6 +2,8 @@ package Outlet.uil;
 
 import Outlet.Countdown;
 
+import java.util.Collection;
+import java.util.Set;
 
 
 /**
@@ -114,6 +116,37 @@ public class MCTest {
         }
         report[0] = (short)(report[1]*Math.abs(CORRECT_PTS) + report[2]*SKIPPED_PTS + -1*report[3]*Math.abs(INCORRECT_PTS));
         return report;
+    }
+
+    /***
+     * Takes in a mcIndices from an old MCTest.mcIndices is an array of indices, where each member represents
+     * the problem's old index. Deletes mc problems from submissions or regrades them.
+     * This also updates all UILEntrys' mcSubmissions that are signed up for this competition.
+     * oldNumProblems is the number of problems that used to exist. The difference between this and the length of mcIndices
+     * is used to delete problems.
+     * @param mcIndices
+     * @param oldNumProblems
+     * @param competition
+     */
+    public void updateSubmissions(short[] mcIndices, int oldNumProblems, Competition competition) {
+        for(UILEntry entry: competition.entries.allEntries) {
+            Set<Short> uids = entry.mc.keySet();
+            for(short uid: uids) {
+                MCSubmission oldSubmission = entry.mc.get(uid);
+                if(oldSubmission == null) continue;
+
+                String[] newAnswers = new String[mcIndices.length];
+                for(int i=0;i<mcIndices.length;i++) {
+                    // If greater than or equal to 0, index is the old index of this problem. If it is new, it is -1.
+                    short index = mcIndices[i];
+                    if(index >= 0) newAnswers[i] = oldSubmission.answers[index];
+                    else newAnswers[i] = SKIP_CODE;
+                }
+                MCSubmission newSubmission = new MCSubmission(newAnswers, this.score(newAnswers), true);
+                entry.mc.put(uid, newSubmission);
+            }
+            entry.update();
+        }
     }
 
     public Countdown getTimer() {

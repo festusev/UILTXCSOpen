@@ -21,6 +21,7 @@ public class User implements Comparable<User>{
     public String password;
     public short uid;
     public boolean teacher;
+    public boolean temp;
 
     protected static Gson gson = new Gson();
     //private static final //Logger //LOGGER = LogManager.get//Logger(User.class);
@@ -34,10 +35,9 @@ public class User implements Comparable<User>{
     /**
      * Make the database entry referred to by the uid is equal to this user class.
      * WILL NOT UPDATE the uid.
-     * @param insert, if true insert, if false update
      * @return The status code.
      */
-    public int updateUser(boolean insert) {
+    public int updateUser() {
         // Make the actual update query
         try
         {
@@ -45,16 +45,12 @@ public class User implements Comparable<User>{
             Connection con = Conn.getConnection();
             if(con==null) return -1; // If an error occurred making the connection
             PreparedStatement stmt;
-            if(insert)  {
-                stmt = con.prepareStatement("INSERT INTO users(email, fname, lname, school, token, class) VALUES (?, ?, ?, ?, ?, ?)");
-            } else {
-                stmt = con.prepareStatement("UPDATE users SET email=?, fname=?, lname=?, school=?, token=?, class=? WHERE uid=?");
-                stmt.setShort(7, uid);
+            stmt = con.prepareStatement("UPDATE users SET email=?, fname=?, lname=?, school=?, token=?, class=?, temp=? WHERE uid=?");
+            stmt.setShort(8, uid);
 
-                if(teacher) {   // Update the teacher name in the json of TeacherMap
-                    TeacherMap.json.remove(""+uid);
-                    TeacherMap.json.addProperty(""+uid,getName());
-                }
+            if(teacher) {   // Update the teacher name in the json of TeacherMap
+                TeacherMap.json.remove(""+uid);
+                TeacherMap.json.addProperty(""+uid,getName());
             }
 
             String classString = "";
@@ -73,7 +69,7 @@ public class User implements Comparable<User>{
             else stmt.setString(5, null);
 
             stmt.setString(6, classString);
-            //LOGGER.info(stmt.toString());
+            stmt.setBoolean(7, temp);
 
             System.out.println(stmt.toString());
             stmt.executeUpdate();
@@ -104,17 +100,21 @@ public class User implements Comparable<User>{
         }
     }
     public boolean verifyPassword(String password) {
-        // Extract the salt from the storedFull Hash
-        String storedSalt = this.password.substring(0, this.password.indexOf("."));
-        String storedHashed = this.password.substring(this.password.indexOf(".")+1);
-        String givenHashed = null;  // The hash of the password supplied by the user
-        try {
-            givenHashed = Conn.hashPassword(password, Base64.getDecoder().decode(storedSalt));
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            return false;
+        if(temp) {  // They are a temporary user, so their password is not hashed
+            return password.equals(this.password);
+        } else {
+            // Extract the salt from the storedFull Hash
+            String storedSalt = this.password.substring(0, this.password.indexOf("."));
+            String storedHashed = this.password.substring(this.password.indexOf(".") + 1);
+            String givenHashed = null;  // The hash of the password supplied by the user
+            try {
+                givenHashed = Conn.hashPassword(password, Base64.getDecoder().decode(storedSalt));
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+                return false;
+            }
+            if (givenHashed.equals(storedHashed)) return true;
         }
-        if(givenHashed.equals(storedHashed)) return true;
         return false;
     }
     // Returns fname + " " + lname. If fname or lname is null, replaces them with empty strings

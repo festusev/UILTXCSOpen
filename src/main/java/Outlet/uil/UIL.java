@@ -33,6 +33,8 @@ public class UIL extends HttpServlet{
     public static HashMap<Short, Competition> published;
     public static HashMap<Short, Competition> unpublished; // Unpublished competitions
     public static boolean initialized = false;
+
+    public static final int MAX_FILE_SIZE = 1000000; // Maximum file size in bytes
     public static void initialize() throws SQLException {
         if(initialized) return;
         unpublished = new HashMap<>();
@@ -273,11 +275,9 @@ public class UIL extends HttpServlet{
         System.out.println("Writing files to disk");
 
         Collection<Part> parts = request.getParts();
-        int numParts = 0;   // We can only have a certain number of handsOn problems
+        int numFiles = 0;   // We can only have a certain number of handsOn problems
         for (Part part : parts) {
-            numParts++;
-
-            if(numParts > 24) {
+            if(numFiles > 48) { // They can only have at most 24 hands-on problems, so they can upload at most 48
                 break;
             }
 
@@ -289,22 +289,60 @@ public class UIL extends HttpServlet{
 
                 InputStream fileContent = part.getInputStream();
                 byte[] bytes = new byte[fileContent.available()];
+                fileContent.read(bytes);
 
                 System.out.println("probNum=" + probNum);
                 frqTest.setTestcaseFile(probNum, bytes, true);
+                numFiles++;
             } else if (prefix.equals("fo:")) {   // File out
                 int probNum = Integer.parseInt(partName.substring(3));
 
                 InputStream fileContent = part.getInputStream();
                 byte[] bytes = new byte[fileContent.available()];
+                fileContent.read(bytes);
 
                 System.out.println("probNum=" + probNum);
                 frqTest.setTestcaseFile(probNum, bytes, false);
-            } else {
-                System.out.println("ERROR: file part prefix is " + prefix);
+                numFiles++;
             }
         }
         frqTest.initializeFiles();
+    }
+
+    /*
+    Check that all of the files sent are of the right size.
+     */
+    private String checkFileSize(HttpServletRequest request) throws IOException, ServletException {
+        /* Now, write all of the files they updated to the disk */
+        System.out.println("Checking file size");
+
+        Collection<Part> parts = request.getParts();
+        int numFiles = 0;   // We can only have a certain number of handsOn problems
+        for (Part part : parts) {
+            if(numFiles > 48) { // They can only have at most 24 hands-on problems, so they can upload at most 48
+                break;
+            }
+
+            String partName = part.getName();
+            System.out.println("Looping, partName=" + partName);
+            String prefix = partName.substring(0, 3);  // Either 'fi:' or 'fo:'
+            if (prefix.equals("fi:")) {  // File in
+                int probNum = Integer.parseInt(partName.substring(3));
+
+                InputStream fileContent = part.getInputStream();
+                if(fileContent.available() > MAX_FILE_SIZE) return "Problem " + probNum + "'s input file is over 1 MB.";
+                numFiles++;
+            } else if (prefix.equals("fo:")) {   // File out
+                int probNum = Integer.parseInt(partName.substring(3));
+
+                InputStream fileContent = part.getInputStream();
+
+                if(fileContent.available() > MAX_FILE_SIZE) return "Problem " + probNum + "'s output file is over 1 MB.";
+                numFiles++;
+            }
+        }
+
+        return null;
     }
 
     private boolean savePublished(HttpServletRequest request, PrintWriter writer, Teacher u) throws IOException, ServletException {
@@ -542,26 +580,22 @@ public class UIL extends HttpServlet{
             return false;
         }
 
+        if(frqTest.exists) {
+            String error = checkFileSize(request);
+            if(error != null) { // An error occurred
+                writer.write("{\"error\":\""+error+"\"}");
+                return false;
+            }
+        }
+
         Competition competition = null;
         //boolean retCid = false; // If we should return the cid since we are creating the competition
         System.out.println("cidS="+cidS);
         boolean creatingComp = cidS==null || cidS.isEmpty();
-        cid = 0;
-        if(!creatingComp) { // Check if this competition is one of this teacher's competitions
-            cid = Short.parseShort(cidS);
-            boolean temp = false;
-            for(Competition teacherComp: u.competitions) {
-                if(teacherComp.template.cid == cid) {
-                    temp = true;
-                    break;
-                }
-            }
-            if(!temp) creatingComp = true;
-        }
         if(creatingComp) {
             // We are creating a competition and returning the cid
             try {
-                competition = Competition.createCompetition((Teacher)u, true, isPublic,
+                competition = Competition.createCompetition(u, true, isPublic,
                         name, description, alternateExists,numNonAlts, mcTest, frqTest, judges);
                 // retCid = true;
             } catch (SQLException e) {
@@ -571,10 +605,14 @@ public class UIL extends HttpServlet{
                 return false;
             }
         } else {    // We are modifying an existing competition
+            cid = Short.parseShort(cidS);
             competition = UIL.getCompetition(cid);
             if(competition == null) {
                 System.out.println("Competition not found");
                 writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
+                return false;
+            } else if (u.uid != competition.teacher.uid) {
+                writer.write("{\"error\":\"You cannot edit this competition.\"}");
                 return false;
             } else if(competition.alternateExists && !alternateExists && competition.entries.allEntries.size() > 0) {
                 writer.write("{\"error\":\"You can't delete alternates while teams are signed up.\"}");
@@ -590,12 +628,22 @@ public class UIL extends HttpServlet{
 
             if(frqTest.exists) {
                 frqTest.updateProblemDirectories(gson.fromJson(request.getParameter("frqIndices"), short[].class),
-                        competition.template.frqTest.PROBLEM_MAP.length);
+                        competition.template.frqTest.PROBLEM_MAP.length, competition);
             } else if(competition.template.frqTest.exists) {    // They have deleted the frq test, so remove the directory
-                frqTest.deleteTestcaseDir();
+                frqTest.delete(competition);
             }
+
+            if(mcTest.exists) {
+                mcTest.updateSubmissions(gson.fromJson(request.getParameter("mcIndices"),short[].class),
+                        competition.template.mcTest.NUM_PROBLEMS,competition);
+            }
+            /*else if(competition.template.mcTest.exists) {    // They have deleted the mc test, so remove all mc submissions
+
+            }*/
+
             try {
-                competition.update((Teacher)u, true, isPublic, alternateExists, numNonAlts, name, description, mcTest, frqTest,judges);
+                competition.update(u, true, isPublic, alternateExists, numNonAlts, name, description, mcTest, frqTest,judges);
+                competition.template.updateScoreboard();
             } catch (SQLException e) {
                 e.printStackTrace();
                 writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
@@ -631,6 +679,12 @@ public class UIL extends HttpServlet{
         System.out.println("Doing get for cid="+cidS);
 
         if(cidS == null || cidS.isEmpty() || getPublishedCompetition(Short.parseShort(cidS))==null) {    // In this case we are showing all of the available competitions
+            if(user.temp) { // They are a temporary user, so redirect them to their specific competition
+                Student student = (Student) user;
+                UILEntry entry = (UILEntry) student.cids.values().toArray()[0];
+                response.sendRedirect(request.getContextPath() + "/console/competitions?cid="+entry.competition.template.cid);
+                return;
+            }
             Conn.setHTMLHeaders(response);
             PrintWriter writer = response.getWriter();
             StringBuilder right = new StringBuilder("<div id='competitions'><div id='nav'><p onclick='showPublic(this)' class='selected'>Public</p>");
@@ -766,14 +820,22 @@ public class UIL extends HttpServlet{
                     "    <script src=\"https://cdn.jsdelivr.net/npm/flatpickr\"></script>" +
                     "</head>\n" +
                     "<body>\n" + // Dynamic.loadNav(request) +
-                    Dynamic.get_consoleHTML(1, right.toString()) +
+                    Dynamic.get_consoleHTML(1, right.toString(), user) +
 //                    "<div id='content'>" + left + "</div></div>"+right+"</div></div>" +
                     "</div></body></html>");
         } else {    // Render a specific competition. Users will be able to switch which competition they are viewing by clicking on the competition's name
             System.out.println("CID="+cidS);
             Competition competition = getPublishedCompetition(Short.parseShort(cidS));
-            if(competition != null) competition.doGet(request, response);
-            else System.out.println("Competition hasn't been published");
+            if(competition != null) {
+                if(user.temp) { // They are a temporary user, so check that this competition is the one they are signed up for
+                    Student student = (Student) user;
+                    UILEntry entry = (UILEntry) student.cids.values().toArray()[0];
+                    if(entry.competition.template.cid != competition.template.cid) {
+                        response.sendRedirect(request.getContextPath() + "/console/competitions?cid="+entry.competition.template.cid);
+                    }
+                }
+                competition.doGet(request, response);
+            } else System.out.println("Competition hasn't been published");
         }
     }
     @Override
@@ -807,16 +869,17 @@ public class UIL extends HttpServlet{
             }
 
             PrintWriter writer = response.getWriter();
-            if(action.equals("saveCompetition")) {
+            if(action.equals("saveCompetition") && u.teacher) {
                 cidS = request.getParameter("op_cid");
+                Teacher teacher = (Teacher) u;
+
                 short cid;
                 try {
                     cid = Short.parseShort(cidS);   // If this is not a published competition, cidS will be empty so this will error
                     competition = UIL.getCompetition(cid);
 
-                    Teacher teacher = (Teacher) u;
                     if (competition != null && competition.teacher.uid == teacher.uid) {
-                        savePublished(request, writer, (Teacher)u);
+                        savePublished(request, writer, teacher);
                     }
                     return;
                 } catch (Exception e) {}
@@ -924,6 +987,15 @@ public class UIL extends HttpServlet{
                     }
                     if(!temp) creatingComp = true;
                 }
+
+                if(frqTest.exists) {
+                    String error = checkFileSize(request);
+                    if(error != null) { // An error occurred
+                        writer.write("{\"error\":\""+error+"\"}");
+                        return;
+                    }
+                }
+
                 if(creatingComp) {
                     // We are creating a competition and returning the cid
                     try {
@@ -939,6 +1011,9 @@ public class UIL extends HttpServlet{
                     if(competition == null) {
                         writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
                         return;
+                    } else if(competition.teacher.uid != teacher.uid) {
+                        writer.write("{\"error\":\"You cannot edit this competition.\"}");
+                        return;
                     }
 
 
@@ -947,12 +1022,12 @@ public class UIL extends HttpServlet{
 
                     if(frqTest.exists) {
                         frqTest.updateProblemDirectories(gson.fromJson(request.getParameter("frqIndices"), short[].class),
-                                competition.template.frqTest.PROBLEM_MAP.length);
+                                competition.template.frqTest.PROBLEM_MAP.length, competition);
                     } else if(competition.template.frqTest.exists) {    // They have deleted the frq test, so remove the directory
-                        frqTest.deleteTestcaseDir();
+                        frqTest.delete(competition);
                     }
                     try {
-                        competition.update((Teacher)u, competition.published, isPublic, alternateExists, numNonAlts, name, description, mcTest, frqTest, judges);
+                        competition.update(teacher, competition.published, isPublic, alternateExists, numNonAlts, name, description, mcTest, frqTest, judges);
                     } catch (SQLException e) {
                         e.printStackTrace();
                         writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");

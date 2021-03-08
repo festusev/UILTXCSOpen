@@ -25,7 +25,6 @@ public class Configurator extends ServerEndpointConfig.Configurator {
         User u = null;
         if (cookieHeaders != null && cookieHeaders.size() > 0) {
             for (String cookieHeader : cookieHeaders) {
-                System.out.println("Cookie header="+cookieHeader);
                 int indexOfStart = cookieHeader.indexOf("token=");
                 int indexOfEnd = cookieHeader.indexOf(";", indexOfStart);
 

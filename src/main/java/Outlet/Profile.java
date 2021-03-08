@@ -25,7 +25,7 @@ public class Profile extends HttpServlet{
         compJ.addProperty("name", competition.template.name);
         compJ.addProperty("published", competition.published);
         compJ.addProperty("isPublic", competition.isPublic);
-        compJ.addProperty("description", StringEscapeUtils.escapeHtml4(competition.template.description));
+        compJ.addProperty("description", competition.template.description);
 
         JsonArray judges = new JsonArray();
         short[] curJudges = competition.getJudges();
@@ -51,13 +51,13 @@ public class Profile extends HttpServlet{
             JsonArray writtenAnswersJ = new JsonArray();
             for (int i = 0, j = competition.template.mcTest.KEY.length; i < j; i++) {
                 JsonArray answerJ = new JsonArray();
-                answerJ.add(StringEscapeUtils.escapeHtml4(competition.template.mcTest.KEY[i][0]));
+                answerJ.add(competition.template.mcTest.KEY[i][0]);
                 answerJ.add(competition.template.mcTest.KEY[i][1]);
                 writtenAnswersJ.add(answerJ);
             }
             writtenJ.add("answers", writtenAnswersJ);
-            writtenJ.addProperty("instructions", StringEscapeUtils.escapeHtml4(competition.template.mcTest.INSTRUCTIONS));
-            writtenJ.addProperty("testLink", StringEscapeUtils.escapeHtml4(competition.template.mcTest.TEST_LINK));
+            writtenJ.addProperty("instructions", competition.template.mcTest.INSTRUCTIONS);
+            writtenJ.addProperty("testLink",competition.template.mcTest.TEST_LINK);
             writtenJ.addProperty("correctPoints", competition.template.mcTest.CORRECT_PTS);
             writtenJ.addProperty("incorrectPoints", competition.template.mcTest.INCORRECT_PTS);
             compJ.add("written", writtenJ);
@@ -71,13 +71,13 @@ public class Profile extends HttpServlet{
             for (int i = 0, j = competition.template.frqTest.PROBLEM_MAP.length; i < j; i++) {
                 JsonArray problemJ = new JsonArray();
                 FRQProblem problem = competition.template.frqTest.PROBLEM_MAP[i];
-                problemJ.add(StringEscapeUtils.escapeHtml4(problem.name));
+                problemJ.add(problem.name);
                 problemJ.add(problem.input);
                 problemJ.add(problem.output);
                 problemsJ.add(problemJ);
             }
             handsOnJ.add("problems", problemsJ);
-            handsOnJ.addProperty("studentPacketLink", StringEscapeUtils.escapeHtml4(competition.template.frqTest.STUDENT_PACKET));
+            handsOnJ.addProperty("studentPacketLink", competition.template.frqTest.STUDENT_PACKET);
             handsOnJ.addProperty("maxPoints",competition.template.frqTest.MAX_POINTS);
             handsOnJ.addProperty("incorrectPenalty", competition.template.frqTest.INCORRECT_PENALTY);
             compJ.add("handsOn", handsOnJ);
@@ -93,6 +93,10 @@ public class Profile extends HttpServlet{
         if(u==null || u.token == null){
             response.sendRedirect(request.getContextPath() + "/");
             return;
+        } else if(u.temp) {
+            Student student = (Student) u;
+            UILEntry entry = (UILEntry) student.cids.values().toArray()[0];
+            response.sendRedirect(request.getContextPath() + "/console/competitions?cid="+entry.competition.template.cid);
         }
 
         String action = request.getParameter("action");
@@ -164,7 +168,7 @@ public class Profile extends HttpServlet{
                     "    <script src=\"/js/console/profile.js\"></script>\n" +
                     "</head>\n" +
                     "<body>\n" +
-                    Dynamic.get_consoleHTML(4, right) +
+                    Dynamic.get_consoleHTML(4, right, u) +
                     "</body>\n" +
                     "</html>");
         }
@@ -176,6 +180,7 @@ public class Profile extends HttpServlet{
             return;
         }
         User u = UserMap.getUserByRequest(request);
+        if(u.temp) return;
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
@@ -235,7 +240,7 @@ public class Profile extends HttpServlet{
             }
             u.school = school;  // School can be empty
 
-            if(u.updateUser(false) == 0) {
+            if(u.updateUser() == 0) {
                 writer.write("{\"success\":\"Changes saved.\"}");
                 return;
             } else {

@@ -55,17 +55,20 @@ public class StudentMap {
         return prefixes;
     }
     public static void addStudent(Student student) {
-        ArrayList<String> prefixes = getPrefixes((student.getName()).toLowerCase());
-        for(String prefix: prefixes) {
-            HashMap<Short, Student> storedPrefixes= prefixList.get(prefix);
-            if(storedPrefixes != null) {
-                storedPrefixes.put(student.uid, student);
-            } else {
-                storedPrefixes = new HashMap<>();
-                storedPrefixes.put(student.uid, student);
-                prefixList.put(prefix, storedPrefixes);
+        if(!student.temp) {
+            ArrayList<String> prefixes = getPrefixes((student.getName()).toLowerCase());
+            for (String prefix : prefixes) {
+                HashMap<Short, Student> storedPrefixes = prefixList.get(prefix);
+                if (storedPrefixes != null) {
+                    storedPrefixes.put(student.uid, student);
+                } else {
+                    storedPrefixes = new HashMap<>();
+                    storedPrefixes.put(student.uid, student);
+                    prefixList.put(prefix, storedPrefixes);
+                }
             }
         }
+
         uidMap.put(student.uid, student);
         if(teacherMap.containsKey(student.teacherId)) { // If other students are registered to this teacher
             teacherMap.get(student.teacherId).put(student.uid, student);
@@ -97,11 +100,13 @@ public class StudentMap {
         emailMap.put(student.email, student);
     }
     public static void deleteStudent(Student student) {
-        ArrayList<String> prefixes = getPrefixes((student.getName()).toLowerCase());
-        for(String prefix: prefixes) {
-            HashMap<Short, Student> storedPrefixes= prefixList.get(prefix);
-            if(storedPrefixes != null) {
-                storedPrefixes.remove(student.uid);
+        if(!student.temp) { // Only non-temp students are in the search list
+            ArrayList<String> prefixes = getPrefixes((student.getName()).toLowerCase());
+            for (String prefix : prefixes) {
+                HashMap<Short, Student> storedPrefixes = prefixList.get(prefix);
+                if (storedPrefixes != null) {
+                    storedPrefixes.remove(student.uid);
+                }
             }
         }
 

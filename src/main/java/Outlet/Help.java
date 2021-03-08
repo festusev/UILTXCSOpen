@@ -97,7 +97,7 @@ public class Help extends HttpServlet{
                 "    <script src=\"https://cdn.jsdelivr.net/npm/flatpickr\"></script>" +
                 "</head>\n" +
                 "<body>\n" +
-                Dynamic.get_consoleHTML(3, right) +
+                Dynamic.get_consoleHTML(3, right, u) +
                 "</body>\n" +
                 "</html>");
     }

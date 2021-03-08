@@ -78,6 +78,10 @@ public class Class extends HttpServlet {
         if(u==null || u.token == null){
             response.sendRedirect(request.getContextPath() + "/");
             return;
+        } else if(u.temp) { // They are a temp user, so redirect them to their competition
+            Student student = (Student) u;
+            UILEntry entry = (UILEntry) student.cids.values().toArray()[0];
+            response.sendRedirect(request.getContextPath() + "/console/competitions?cid=" + entry.competition.template.cid);
         }
 
         String action = request.getParameter("action");
@@ -102,7 +106,7 @@ public class Class extends HttpServlet {
                 "    <script src=\"https://cdn.jsdelivr.net/npm/flatpickr\"></script>" +
                 "</head>\n" +
                 "<body>\n" +
-                Dynamic.get_consoleHTML(2, getClassHTML(u, teacher)) +
+                Dynamic.get_consoleHTML(2, getClassHTML(u, teacher), u) +
                 // Dynamic.loadNav(request) +
                 // "<div id='changeInstructions' style='display:none;'></div>" +
                 // "<div id='content'>" + nav + right + "</div>" +
@@ -117,6 +121,7 @@ public class Class extends HttpServlet {
             return;
         }
         User u = UserMap.getUserByRequest(request);
+        if(u.temp) return;
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");

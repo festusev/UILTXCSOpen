@@ -2,6 +2,7 @@ package Outlet;
 
 import Outlet.uil.UIL;
 import Outlet.uil.UILEntry;
+import com.google.gson.JsonArray;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -19,7 +20,7 @@ public class Student extends User{
         StudentMap.deleteStudent(this);
         teacherId = teacher.uid;
         StudentMap.addStudent(this);
-        updateUser(false);
+        updateUser();
 
         teacher.updateClassHTML();
     }
@@ -57,7 +58,7 @@ public class Student extends User{
         teacherId = -1;
         StudentMap.addStudent(this);
 
-        updateUser(false);
+        updateUser();
 
         for(short cid:cids.keySet()) {
             if(teacher.competitions.contains(cid) && !UIL.getCompetition(cid).isPublic) {    // This competition is the teachers and is private
@@ -76,5 +77,13 @@ public class Student extends User{
                 e.printStackTrace();
             }
         }
+    }
+
+    public JsonArray getJSON() {
+        JsonArray student = new JsonArray();
+        student.add(getName());
+        student.add(uid);
+
+        return student;
     }
 }

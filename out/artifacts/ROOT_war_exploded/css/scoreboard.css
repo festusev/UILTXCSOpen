@@ -1,0 +1,46 @@
+body{
+    overflow-y:scroll;
+}
+#scoreboardColumn{
+    padding:5em 1em 10em 1em;
+}
+#teamList{
+    margin:auto;
+    text-align: left;
+}
+#teamList th:last-of-type{
+    width:10em;
+}
+@media only screen and (min-width:770px) {
+    td:last-child{
+        display:table-cell;
+    }
+    th:last-child{
+        display:table-cell;
+    }
+}
+@media only screen and (min-width:850px) {
+    #teamList{
+        width:100%;
+        min-width:30em;
+        margin:auto;
+    }
+}
+@media only screen and (min-width: 900px){
+    #column{
+        width:95%;
+        margin:auto;
+        z-index:0;
+        position:relative;
+    }
+}
+@media only screen and (min-width: 1050px) {
+    #column{
+        width:80%;
+    }
+}
+@media only screen and (min-width: 1420px){
+    #column{
+        width:70%;
+    }
+}

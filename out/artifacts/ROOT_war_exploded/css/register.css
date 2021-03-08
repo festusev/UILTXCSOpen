@@ -1,0 +1,99 @@
+body{
+    overflow: auto;
+}
+#center{
+    width:30em;
+    max-width: 100%;
+    margin:auto;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    margin-bottom: 2rem;
+}
+#center h1{
+    font-weight: bold;
+    font-family:var(--head-font);
+    color:var(--prim-light);
+}
+#reg-box *{
+    display:inline-block;
+}
+
+#reg-box{
+    margin:auto;
+    box-sizing: border-box;
+    max-width:100%;
+}
+#reg-box * {
+    max-width:100%;
+}
+#reg-box input{
+    display: block;
+    height:2.5em;
+    width:100%;
+    /* height: 2.5em; */
+}
+#reg-box label {
+    font-size: 1.2em;
+    color:var(--head-col);
+    font-weight:bold;
+}
+#reg{
+    display:block;
+    background-color:var(--sec-col);
+    color:white;
+    border:none;
+    font-weight:bold;
+    padding:4px 10px 4px 10px;
+    border-radius:5px;
+    cursor:pointer;
+    font-size:1.2em;
+
+    margin:auto;
+    margin-top:1em;
+}
+#reg:hover{
+    background-color:var(--sec-dark);
+}
+#isTeacher{
+    float:right;
+    cursor: pointer;
+    width:1rem !important;
+}
+#logWrapper{
+    display:block;
+    padding-top:1.2em;
+    text-align:center;
+}
+#logWrapper a{
+    color: var(--sec-col);
+}
+.rad{
+    display:inline-block;
+}
+#passWarning{
+    display:none;
+}
+.warning{
+    font-size: 0.8em;
+    color: #737373;
+    margin-left:1em;
+}
+.forbidden{
+    padding:0;
+}
+#errorBox{
+    display:block;
+    max-width:30em;
+}
+#copyright_notice{
+    position:fixed;
+    bottom:0;
+}
+@media only screen and (min-width: 900px){
+    body{
+        overflow-y:hidden;
+    }
+    #passWarning{
+        display:inline-block;
+    }
+}

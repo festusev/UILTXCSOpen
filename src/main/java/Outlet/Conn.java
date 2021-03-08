@@ -125,7 +125,7 @@ public class Conn {
         }
         return null;
     }
-    public static BigInteger finishRegistration(String email, String password, String fname, String lname, String school, boolean isTeacher) throws SQLException {
+    public static BigInteger finishRegistration(String email, String password, String fname, String lname, String school, boolean isTeacher, boolean temp) throws SQLException {
         BigInteger token = generateToken();
         short uid = -1;
         String classString;
@@ -135,8 +135,8 @@ public class Conn {
             // Establishing Connection
             Connection conn = getConnection();
             if(conn==null) return BigInteger.valueOf(-1); // If an error occurred making the connection
-            PreparedStatement stmt = conn.prepareStatement("INSERT INTO users(email, password, fname, lname, school, token, teacher, class) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            PreparedStatement stmt = conn.prepareStatement("INSERT INTO users(email, password, fname, lname, school, token, teacher, class, temp) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
             stmt.setString(1, email);
             stmt.setString(2, password);
             stmt.setString(3, fname);
@@ -164,6 +164,7 @@ public class Conn {
             }
 
             stmt.setString(8, classString);    // This will be used to join their classes
+            stmt.setBoolean(9, temp);
 
             int success = stmt.executeUpdate();
             if(success<=0) return BigInteger.valueOf(-1);   // If an error occurs
@@ -181,7 +182,7 @@ public class Conn {
             else if(e.getMessage().contains("for key 'uname'")) return BigInteger.valueOf(-3);  // If the error message is about the user having the same uname as another
             else return BigInteger.valueOf(-1);  // If an error occurred making the connection that is not one of the above
         }
-        UserMap.loadUser(email, fname, lname, school,  token, uid, isTeacher, classString, password);
+        UserMap.loadUser(email, fname, lname, school,  token, uid, isTeacher, classString, password, temp);
         return token;
     }
 
@@ -233,7 +234,7 @@ public class Conn {
                 stmt.setString(1, email);
                 stmt.executeUpdate();
 
-                return finishRegistration(email, password, fname, lname, school, isTeacher);    // Finally, return the browser token
+                return finishRegistration(email, password, fname, lname, school, isTeacher, false);    // Finally, return the browser token
             } else {    // no vToken matches this one in the database
                 return BigInteger.valueOf(-2);  // The token has expired. Should be already deleted, but stuff happens
             }
@@ -480,13 +481,7 @@ public class Conn {
         User user = UserMap.getUserByEmail(email);
         if(user == null) return BigInteger.valueOf(-2);
 
-        // Extract the salt from the storedFull Hash
-        String storedSalt = user.password.substring(0, user.password.indexOf("."));
-        String storedHashed = user.password.substring(user.password.indexOf(".")+1);
-        String givenHashed = hashPassword(password, Base64.getDecoder().decode(storedSalt));  // The hash of the password supplied by the user
-
-        // Compare the givenHashed and the storedHashed
-        if(!storedHashed.equals(givenHashed)) { // If the password is incorrect, return -3
+        if(!user.verifyPassword(password)) { // If the password is incorrect, return -3
             return BigInteger.valueOf(-3);
         }
 

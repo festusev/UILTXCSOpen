@@ -1,0 +1,137 @@
+body {
+    --border: 1px solid #eee;
+    --shadow: 0px 2px 5px 0 rgba(0,0,0,0.1);
+    overflow: hidden;
+    background-color: #fafbfcff;
+    display: flex;
+    flex-flow: row;
+}
+h1 {
+    font-size:2rem;
+    margin-bottom: 0.5rem;
+}
+#left-bar {
+    padding: 10px;
+    box-sizing: border-box;
+    border-right: var(--border);
+    height: 100vh;
+    min-height: 20rem;
+    background-color: white;
+    z-index: 1000;
+    position: relative;
+}
+#left-bar img{
+    width: 2.5rem;
+    height: 2.5rem;
+    display: block;
+    cursor: pointer;
+    padding: 8px;
+    box-sizing: border-box;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+}
+#left-bar .tooltip-cnt {
+    margin-bottom: 1rem;
+}
+#left-bar .tooltip-cnt img {
+    margin-bottom: 0;
+}
+#left-bar img:hover, #left-bar img.selected{
+    background-color: #eee;
+}
+#tx {
+    cursor: default !important;
+}
+#tx:hover {
+    background-color: unset !important;
+
+}
+#right {
+    flex-grow: 1;
+    overflow: auto;
+    height: 100vh;
+    position: relative;
+}
+#nav-profile-cnt {
+    position: absolute;
+    bottom: 0;
+    left:0;
+    width: 100%;
+    padding-left: 10px;
+}
+#nav-profile-cnt:hover div {
+    display: block;
+}
+#nav-profile-cnt div {
+    display: none;
+    position: absolute;
+    right: 0;
+    bottom: 16px;
+    transform: translateX(calc(100%));
+    background-color: white;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    min-width: 8rem;
+}
+#nav-profile-cnt a{
+    display: block;
+    color: var(--body-col);
+    text-decoration: none;
+}
+#nav-profile-cnt a:hover {
+    color: var(--prim-light);
+}
+#nav-help {
+    position: absolute;
+    bottom: 3.5rem;
+}
+.competition{
+    box-shadow: var(--shadow);
+    margin-bottom:1rem;
+    margin-top:0.5rem;
+    margin-right: 0.5rem;
+    display: block;
+    background-color: white;
+    z-index: 10;
+    position: relative;
+}
+
+.mini_competition {
+    padding: 0.7rem 1rem;
+    cursor: pointer;
+    color: var(--font-col);
+    text-decoration: none;
+}
+.mini_competition .row1 {
+    padding-bottom: 0.5rem;
+}
+.competition .row1 *, .competition .row2 *{
+    display:inline-block;
+}
+.competition .right {
+    float:right;
+}
+.tooltip-cnt {
+    position: relative;
+}
+.tooltip-cnt .tooltip {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+.tooltip-cnt:hover .tooltip {
+    display: block;
+}
+.tooltip {
+    transform: translateX(calc(100% + 20px)) translateY(0%);
+    background-color: var(--prim-middle);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
+}
+@media only screen and (max-width: 1200px) {
+    .tooltip-cnt:hover .tooltip {
+        display: none;
+    }
+}

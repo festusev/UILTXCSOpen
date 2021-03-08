@@ -1,12 +1,8 @@
 package Outlet.uil;
 
 import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
-import jdk.nashorn.internal.parser.JSONParser;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collection;
 
 public class Clarification {
     static int nextGlobalIndex = 0;

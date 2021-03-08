@@ -31,8 +31,10 @@ public class Template {
 
     public String navBarHTML;   // For the competition-specific nav bar that goes underneath the header nav bar
     private String scoreboardHTML;  // The scoreboard page html after the nav bars
+
     public JsonArray scoreboardData;  // The list of teams sorted and with team members and scores for each test
     public JsonArray teamCodeData;  // The list of team codes, with each index corresponding to the same index of the team in scoreboardData
+    public JsonObject tempUserData;  // A list of temporary users' usernames and passwords.
 
     public Countdown opens;
     public Countdown closes;
@@ -102,8 +104,8 @@ public class Template {
                     "</div>";*/
             mcHTML[0] = "<div id='mcColumn' class='column' style='display:none;'>" +
                     "<h1>"+mcTest.NAME+"</h1>" +
-                    "<p class='subtitle'><span>Instructions: </span>" + mcTest.INSTRUCTIONS + "<br><b>Test Packet: </b>" +
-                    "<a href='"+mcTest.TEST_LINK+"' class='link' target='_blank'>link</a></p><div id='mcTestTimer'>";
+                    "<p class='subtitle'><span>Instructions: </span>" + StringEscapeUtils.escapeHtml4(mcTest.INSTRUCTIONS).replaceAll("\n","<br>") +
+                    "<br><b>Test Packet: </b><a href='"+StringEscapeUtils.escapeHtml4(mcTest.TEST_LINK)+"' class='link' target='_blank'>link</a></p><div id='mcTestTimer'>";
 
             mcHTML[1] = "</div><button class='chngButton' onclick='submitMC();'>Submit</button><table id='mcQuestions'><tr><th>#</th>";
             for(char c: mcTest.options) {
@@ -127,11 +129,11 @@ public class Template {
         }
         frqHTML = "";
         if(fr.exists) {
-            frqHTML =  "<p id='frqInst'><b>Problem Packet: </b><a href='"+frqTest.STUDENT_PACKET+"' class='link' target='_blank'>link</a><br>Choose a problem to submit:</p>" +
+            frqHTML =  "<p id='frqInst'><b>Problem Packet: </b><a href='"+StringEscapeUtils.escapeHtml4(frqTest.STUDENT_PACKET)+"' class='link' target='_blank'>link</a><br>Choose a problem to submit:</p>" +
                         "<form id='submit' onsubmit='submitFRQ(); return false;' enctype='multipart/form-data'>" +
                         "<select id='frqProblem'>";
             for(int i=1; i<=frqTest.PROBLEM_MAP.length;i++){
-                frqHTML += "<option value='"+i+"' id='frqProblem"+i+"'>"+frqTest.PROBLEM_MAP[i-1].name+"</option>";
+                frqHTML += "<option value='"+i+"' id='frqProblem"+i+"'>"+StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[i-1].name)+"</option>";
             }
             frqHTML += "</select>" +
                     "<input type='file' accept='.java,.cpp,.py' id='frqTextfile'/>" +
@@ -178,7 +180,7 @@ public class Template {
                         // Dynamic.loadNav(request) +
                 Dynamic.get_consoleHTML(1,getNavBarHTML(userStatus, competitionStatus) + "<div id='content'>" +
                         "<span id='columns'>" + getColumnsHTML(uData, userStatus, competitionStatus) +
-                        "</span>"+ getRightBarHTML(uData, userStatus, competitionStatus)+"</div></body></html>")
+                        "</span>"+ getRightBarHTML(uData, userStatus, competitionStatus)+"</div></body></html>", uData)
         );
     }
 
@@ -245,7 +247,8 @@ public class Template {
                     written += "<p id='writtenAverage'>" + Math.round(submissionAverage) + " average</p>";
                 } else {
                     UILEntry entry = ((Student)uData).cids.get(cid);
-                    written += "<h2>Team</h2><p style='overflow:hidden'>"+entry.tname+"</p><h2>Team Code</h2><p>"+entry.password+"</p><h2>Test</h2>";
+                    written += "<h2>Team</h2><p style='overflow:hidden'>"+StringEscapeUtils.escapeHtml4(entry.tname)+
+                            "</p><h2>Team Code</h2><p>"+entry.password+"</p><h2>Test</h2>";
                     for(short uid: entry.uids) {
                         Student student = StudentMap.getByUID(uid);
                         short score = 0;
@@ -336,7 +339,7 @@ public class Template {
                 "<div id='aboutHead'><h1>" + StringEscapeUtils.escapeHtml4(name) + "</h1>" + actMessage + "</div>" +
                 //"<div class='row' id='aboutDescriptionRow'>" +
                 "<p>" + escapedDescription + "</p></div>" +
-                "<div id='aboutInfo'><h2>Author</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.getName())+"</p>"+school;
+                "<div id='aboutInfo'><h2>Author</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.getName())+"</p>"+StringEscapeUtils.escapeHtml4(school);
         if(mcTest.exists) {
             about += "<h2>Written</h2><p>"+mcTest.opens.DATE_STRING+"<br>"+(mcTest.TIME/(1000*60))+" min<br>"+mcTest.KEY.length+" questions</p>";
         }
@@ -425,7 +428,7 @@ public class Template {
                     "<h1>Written</h1>" +
                     "</div>" +
                     "<div class='row'>" +
-                    "<p>Test Packet: <a class='link' target='_blank' href='" + mcTest.TEST_LINK + "'>link</a></p>" +
+                    "<p>Test Packet: <a class='link' target='_blank' href='" + StringEscapeUtils.escapeHtml4(mcTest.TEST_LINK) + "'>link</a></p>" +
                     "<p><b>Submissions:</b></p>";
 
             html += "<table id='mcSubmissions'><tr id='mcSubmissionsTr'><th>Name</th><th>Team</th><th>Score</th></tr>";
@@ -449,7 +452,7 @@ public class Template {
                     "<h1>Written</h1>" +
                     "</div>" +
                     "<div class='row'>" +
-                    "<p>Test Packet: <a class='link' target='_blank' href='" + mcTest.TEST_LINK + "'>link</a></p>" +
+                    "<p>Test Packet: <a class='link' target='_blank' href='" + StringEscapeUtils.escapeHtml4(mcTest.TEST_LINK) + "'>link</a></p>" +
                     "<p>Answer Key</p>";
 
             html += "<table id='mcQuestions'><tr><th>#</th>";
@@ -468,7 +471,7 @@ public class Template {
                     }
                 } else {    // This is an SAQ problem
                     html += "<td colspan='5'><input type='text' class='mcText' disabled><p class='mcTextCorrectAnswer'>"+
-                            mcTest.KEY[i-1][0]+"</p></td>";
+                            StringEscapeUtils.escapeHtml4(mcTest.KEY[i-1][0])+"</p></td>";
                 }
             }
             html += "</table></div></div>";
@@ -520,11 +523,12 @@ public class Template {
             } else {    // This is an SAQ problem
                 String correctAnswer = "";
                 if(!answer.equals(mcTest.KEY[i-1][0])) {
-                    correctAnswer = "<p class='mcTextCorrectAnswer'>"+ mcTest.KEY[i-1][0]+"</p>";
+                    correctAnswer = "<p class='mcTextCorrectAnswer'>"+ StringEscapeUtils.escapeHtml4(mcTest.KEY[i-1][0])+"</p>";
                 }
                 String tempAnswer = answer;
                 if(tempAnswer.equals(MCTest.SKIP_CODE)) tempAnswer = "";
-                html += "<td colspan='5'><input type='text' class='mcText' value='"+tempAnswer+"' disabled>"+correctAnswer+"</td>";
+                html += "<td colspan='5'><input type='text' class='mcText' value='"+StringEscapeUtils.escapeHtml4(tempAnswer)+"' disabled>"+
+                        correctAnswer+"</td>";
             }
             String mcResult = "";
             if(isTeacher) mcResult = "onchange='changeMCJudgement(this,"+uid+","+i+")'";
@@ -576,7 +580,7 @@ public class Template {
                         "<h1>Hands-On</h1>" +
                         "</div>" +
                         "<div class='row'>" +
-                        "<p>Test Packet: <a class='link' target='_blank' href='" + frqTest.STUDENT_PACKET + "'>link</a></p>" +
+                        "<p>Test Packet: <a class='link' target='_blank' href='" + StringEscapeUtils.escapeHtml4(frqTest.STUDENT_PACKET) + "'>link</a></p>" +
                         "<p><b>Submissions:</b></p>";
 
                 html += "<table id='frqSubmissionsTable'><tr id='frqSubmissionsTr'><th>Problem</th><th>Team</th><th>Result</th></tr>";
@@ -651,7 +655,8 @@ public class Template {
             String html = "<div id='clarificationsColumn' class='column' style='display:none;'><h1>Clarifications</h1>";
 
             if (!user.teacher) {
-                html += "<textarea maxlength='255' oninput='inputMaxLength(this)' id='clarification_input' placeholder='Ask a question.'></textarea><button onclick='sendClarification()' class='chngButton'>Send Clarification</button>";
+                html += "<textarea maxlength='255' oninput='inputMaxLength(this)' id='clarification_input' " +
+                        "placeholder='Ask a question.'></textarea><button onclick='sendClarification()' class='chngButton'>Send Clarification</button>";
             }
 
             html += "<div class='clarification_group'>";
@@ -663,21 +668,21 @@ public class Template {
                     String askerName = "";
                     if(userStatus.admin) {
                         Student asker = StudentMap.getByUID(clarification.uid);
-                        if (asker != null) askerName = " - " + asker.getName();
+                        if (asker != null) askerName = " - " + StringEscapeUtils.escapeHtml4(asker.getName());
                     }
 
                     html += "<div class='clarification' id='clarification_"+clarification.index+"'><h3>Question"+
-                            StringEscapeUtils.escapeHtml4(askerName)+"</h3><span>" +
+                            askerName+"</h3><span>" +
                             StringEscapeUtils.escapeHtml4(clarification.question) +
                             "</span><h3>Answer</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.response) + "</span></div>";
                     noClarifications = false;
                 } else if (userStatus.admin) {    // Not yet responded, so add in the response textarea
                     String askerName = "";
                     Student asker = StudentMap.getByUID(clarification.uid);
-                    if (asker != null) askerName = " - " + asker.getName();
+                    if (asker != null) askerName = " - " + StringEscapeUtils.escapeHtml4(asker.getName());
 
                     html += "<div class='clarification' id='clarification_"+clarification.index+"'><h3>Question"+
-                            StringEscapeUtils.escapeHtml4(askerName)+"</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.question) +
+                            askerName+"</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.question) +
                             "</span><h3>Answer</h3><span><textarea maxlength='255' oninput='inputMaxLength(this)' placeholder='Send a response.'></textarea><button " +
                             "onclick='answerClarification(this, "+i+")' class='chngButton'>Send</button></span></div>";
 
@@ -704,8 +709,8 @@ public class Template {
             else return nav + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
         } else {
             if(userStatus.signedUp || userStatus.admin) {
-                if (mcTest.exists) nav += MC_HEADER;
-                if (frqTest.exists) nav += FRQ_HEADER;
+                if (mcTest.exists && !competitionStatus.mcBefore) nav += MC_HEADER;
+                if (frqTest.exists && !competitionStatus.frqBefore) nav += FRQ_HEADER;
                 if((competitionStatus.frqDuring || competitionStatus.frqFinished) && (competitionStatus.mcDuring || competitionStatus.mcFinished))
                     nav += "<li id='clarificationNav' onclick='showClarifications()' class='secondNavItem'>Clarifications</li>";
             }
@@ -780,6 +785,7 @@ public class Template {
         // This will store the json scoreboard information
         scoreboardData = new JsonArray();
         teamCodeData = new JsonArray();
+        tempUserData = new JsonObject();
 
         competition.entries.allEntries.sort(sorter);
         sortedTeams.clear();
@@ -805,7 +811,15 @@ public class Template {
 
             scoreboardData.add(entryJSON);
             teamCodeData.add(entry.password);
-
+            for(short uid: entry.uids) {
+                Student student = StudentMap.getByUID(uid);
+                if(student.temp) {
+                    JsonArray tempJSON = new JsonArray();
+                    tempJSON.add(student.email);
+                    tempJSON.add(student.password);
+                    tempUserData.add(""+student.uid,tempJSON);
+                }
+            }
             // rank++;
         }
 
@@ -818,7 +832,10 @@ public class Template {
                 "<button class='chngButton' onclick='createTeam()'>Create</button></div></div>" +
                 "<div id='selectStudent'><div class='center'><div class='leftBlock'>" +
                 "<h1>Select Student</h1>" +
-                "<div id='studentSearch'><input oninput='searchForStudent(this)'></input>" +
+                "<div id='createStudent'><input maxLength='50' placeholder='First Name' id='fnameTemp'></input>" +
+                "<input maxLength='50' placeholder='Last Name' class='half' id='lnameTemp'></input><input maxLength='100' placeholder='School' id='inputSchool'></input>" +
+                "<button onclick='createTempStudent()' class='chngButton'>Create student</button></div>" +
+                "<div id='studentSearch'><h3>Search for student</h3><input oninput='searchForStudent(this)'></input>" +
                 "<div class='tableCnt'>" +
                 "<table id='studentSearchTable'></table></div>" +
                 "</div></div>" +
@@ -841,6 +858,7 @@ public class Template {
                 "<div id='teamListCnt'><h1>Scoreboard</h1>" +
                 "<button id='addExistingTeam' onclick='showAddExistingTeam()' class='creatorOnly chngButton'>Add Existing Team</button>" +
                 "<button id='createTeam' onclick='showSignup()' class='creatorOnly chngButton'>Create Team</button>" +
+                "<!--<a id='downloadScoreboard' onclick='downloadScoreboard()'>Download Scoreboard</a>-->" +
                 "<table id='teamList'></table></div><div id='teamCnt'><h1 id='openTeamName'></h1>" +
                 "<div id='teamControls'><img class='creatorOnly editTeam' id='deleteTeam' onclick='Team.showDeleteConfirmation()' src='/res/console/delete.svg'>" +
                 "<img class='creatorOnly' id='editSaveTeam' onclick='Team.editSaveTeam()' src='/res/console/edit.svg'></div>" +
