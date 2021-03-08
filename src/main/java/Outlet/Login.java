@@ -30,7 +30,7 @@ public class Login extends HttpServlet{
                     "    <div class=\"column\"><div id=\"center\" class=\"head-row row\">" +
                             "<h1>Login</h1>" +
                     "        <form onsubmit=\"login(); return false;\" id=\"login-box\">" +
-                    "            <label for=\"email\">Email</label>\n" +
+                    "            <label for=\"email\">Email/Username</label>\n" +
                     "            <input type=\"text\" id=\"email\" name=\"email\" maxlength=\"255\">" +
                     "            <label for=\"pass\">Password</label>" +
                     "            <input type=\"password\" id=\"pass\" name=\"pass\">" +
@@ -74,7 +74,18 @@ public class Login extends HttpServlet{
             writer.write("{\"error\":\"Email is empty.\"}");
             return;
         }
+
+        User user = UserMap.getUserByEmail(email);
+        if(user == null) {
+            writer.write("{\"error\":\"No user exists with that email.\"}");
+            return;
+        }
+
         if(resend) {
+            if(user.temp) {
+                writer.write("{\"error\":\"Temporary users cannot reset their password.\"}");
+                return;
+            }
             int status = Conn.resendResetVerification(email);
             if(status != 0) writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
             else writer.write("{\"success\":\"Resent verification email.\"}");
@@ -83,7 +94,12 @@ public class Login extends HttpServlet{
         String resetS = request.getParameter("reset");   // If this person is changing their password
         boolean reset = resetS!=null && resetS.equals("true");
         if(reset) { // Put their hashed code into the 'reset_pass' database along with their email
-            int status = Conn.ResetPassword(email); // Put the data into the 'reset_pass' database
+            if(user.temp) {
+                writer.write("{\"error\":\"Temporary users cannot reset their password.\"}");
+                return;
+            }
+
+            int status = Conn.ResetPassword(user); // Put the data into the 'reset_pass' database
 
             // Perform the reset update. If the user doesn't already exist and no errors occurred, then we tell the page to show the "input code" box for verification
             if (status >= 0) {    // The page will wait for a code to be entered. The user can also follow the link
@@ -100,16 +116,13 @@ public class Login extends HttpServlet{
 
         String pass = request.getParameter("pass");
 
-        if(email == null || email.isEmpty()) {
-            writer.write("{\"error\":\"Email is empty.\"}");
-            return;
-        } else if(pass == null || pass.isEmpty()) {
+        if(pass == null || pass.isEmpty()) {
             writer.write("{\"error\":\"Password is empty.\"}");
             return;
         }
 
         try {
-            BigInteger token = Conn.Login(email, pass);
+            BigInteger token = Conn.Login(user, pass);
             if(token.compareTo(BigInteger.valueOf(0)) >= 0) {   // The login was successful
                 Cookie tokenCookie = new Cookie("token", token.toString(Character.MAX_RADIX));
                 tokenCookie.setMaxAge(60*60*48);    // Set 2 Days before they must login again

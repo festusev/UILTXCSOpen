@@ -176,7 +176,12 @@ public class Template {
         PrintWriter writer = response.getWriter();
         CompetitionStatus competitionStatus = new CompetitionStatus(mcTest, frqTest);
         UserStatus userStatus = UserStatus.getCompeteStatus(uData, competition);
-        writer.write(HEADERS+
+
+        String jsPDF = "";
+        if(userStatus.admin) {
+            jsPDF = "<script src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.0/jspdf.umd.min.js' defer></script>";
+        }
+        writer.write(HEADERS+ jsPDF +
                         // Dynamic.loadNav(request) +
                 Dynamic.get_consoleHTML(1,getNavBarHTML(userStatus, competitionStatus) + "<div id='content'>" +
                         "<span id='columns'>" + getColumnsHTML(uData, userStatus, competitionStatus) +
@@ -858,7 +863,8 @@ public class Template {
                 "<div id='teamListCnt'><h1>Scoreboard</h1>" +
                 "<button id='addExistingTeam' onclick='showAddExistingTeam()' class='creatorOnly chngButton'>Add Existing Team</button>" +
                 "<button id='createTeam' onclick='showSignup()' class='creatorOnly chngButton'>Create Team</button>" +
-                "<!--<a id='downloadScoreboard' onclick='downloadScoreboard()'>Download Scoreboard</a>-->" +
+                "<!--<a id='downloadScoreboard' onclick='downloadScoreboard()'>Download Scoreboard</a>" +
+                "<a id='downloadRoster' onclick='downloadRoster()'>Download Roster</a>-->" +
                 "<table id='teamList'></table></div><div id='teamCnt'><h1 id='openTeamName'></h1>" +
                 "<div id='teamControls'><img class='creatorOnly editTeam' id='deleteTeam' onclick='Team.showDeleteConfirmation()' src='/res/console/delete.svg'>" +
                 "<img class='creatorOnly' id='editSaveTeam' onclick='Team.editSaveTeam()' src='/res/console/edit.svg'></div>" +

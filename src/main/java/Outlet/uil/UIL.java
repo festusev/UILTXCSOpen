@@ -705,7 +705,7 @@ public class UIL extends HttpServlet{
                 right.append("<p class='emptyWarning'>There are no public competitions.</p>");
             } else {    // There are published competitions
                 ArrayList<Competition> ordered = new ArrayList<>(published.values());  // Sort them by date
-                Collections.sort(ordered, new SortCompByDate());
+                ordered.sort(new SortCompByDate());
 
                 boolean foundPublic = false;
                 StringBuilder upcoming = new StringBuilder();

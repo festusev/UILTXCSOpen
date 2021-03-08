@@ -1740,3 +1740,35 @@ function createTempStudent() {
     ws.send(JSON.stringify(data));
     Team.closeSelectStudent();
 }
+// Creates a pdf of the roster and downloads it
+function downloadRoster() {
+    if (!pageState.isCreator)
+        return;
+    var doc = new jspdf.jsPDF();
+    doc.setFont("times");
+    var row = 20; // the pixel row that we are on
+    for (var tid in teams) {
+        var team = teams[tid];
+        doc.setFontSize(20);
+        doc.text("Team: " + team.tname, 20, row);
+        row += 10;
+        doc.setFontSize(12);
+        doc.text("Name", 20, row);
+        doc.text("Username", 100, row);
+        doc.text("Password", 180, row);
+        row += 10;
+        doc.text("Primaries", 20, row);
+        row += 10;
+        for (var _i = 0, _a = team.students; _i < _a.length; _i++) {
+            var student = _a[_i];
+            doc.text(student.name, 20, row);
+            if (student.temp) {
+                doc.text(student.uname, 100, row);
+                doc.text(student.password, 180, row);
+            }
+            row += 10;
+        }
+        row += 10;
+    }
+    doc.save("roster.pdf");
+}

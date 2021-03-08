@@ -59,7 +59,7 @@ function resetPassword() {
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function(){
         if (xhr.readyState === 4) {
-            if (xhr.status == 200) { // If an error occurred
+            if (xhr.status === 200) { // If an error occurred
                 var response = JSON.parse(xhr.responseText);
                 if(Object.keys(response).includes("success")) {
                     document.getElementById("center").innerHTML = response["success"].replace("EMAIL_REPLACE", email.value);
@@ -73,7 +73,7 @@ function resetPassword() {
                 addErrorBox("Whoops! A server error occurred. Contact an admin if the problem continues.");
             }
         }
-    }
+    };
     xhr.open('POST', 'login', true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     emailStored = email.value;
@@ -84,7 +84,7 @@ function resend(){
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function(){
         if (xhr.readyState === 4) {
-            if (xhr.status == 200) { // If an error occurred
+            if (xhr.status === 200) { // If an error occurred
                 var response = JSON.parse(xhr.responseText);
                 if(Object.keys(response).includes("success")) {
                     addSuccessBox("Resent verification email.");

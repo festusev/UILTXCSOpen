@@ -283,10 +283,10 @@ public class Conn {
     /***
      * Sends a resetPassword email to the user and stores their email along with a vToken, code, and expiration date
      * in the 'reset_password' database.
-     * @param email
+     * @param user
      * @return
      */
-    public static int ResetPassword(String email) {
+    public static int ResetPassword(User user) {
         /**
          * Generate the random 8 character code
          */
@@ -310,23 +310,14 @@ public class Conn {
                 System.out.println("--ERROR MAKING CONNECTION--");
                 return -1; // If an error occurred making the connection
             }
-            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM users WHERE email = ?");
-            stmt.setString(1, email);
-            ResultSet rs = stmt.executeQuery();
-            boolean emailTaken = false;
-            while(rs.next()) {  // Loop through matching rows
-                if(rs.getString("email").equals(email)) emailTaken = true;
-            }
-            if(!emailTaken) return -2;
 
             // Purge any entries in the 'reset_pass' database which match the email
-            stmt = conn.prepareStatement("DELETE FROM reset_password WHERE email = ?");
-            stmt.setString(1, email);   // TODO: Right now, if someone is in the process of registering with this email or uname, they will be interrupted by another person attempting to register with the same email or uname.
+            PreparedStatement stmt = conn.prepareStatement("DELETE FROM reset_password WHERE email = ?");
+            stmt.setString(1, user.email);   // TODO: Right now, if someone is in the process of registering with this email or uname, they will be interrupted by another person attempting to register with the same email or uname.
             stmt.executeUpdate();
 
-            if(conn==null) return -1; // If an error occurred making the connection
             stmt = conn.prepareStatement("INSERT INTO reset_password(email, expires, vtoken, code) VALUES (?, ?, ?, ?)");
-            stmt.setString(1, email);
+            stmt.setString(1, user.email);
             stmt.setLong(2, System.currentTimeMillis() + 15*60*1000);   // Expires in 15 minutes
             stmt.setString(3, "");
             stmt.setString(4, code);
@@ -336,7 +327,7 @@ public class Conn {
 
             // And now we send the email asynchronously
             new Thread(() -> {
-                SendMail.sendVerification(email, code);
+                SendMail.sendVerification(user.email, code);
             }).start();
         }
         catch(Exception e)
@@ -469,16 +460,15 @@ public class Conn {
     }
     /**
      * Returns -1 if a server error occurred, -2 if the email doesn't match a user, and -3 if the password is incorrect
-     * @param email
+     * @param user
      * @param password
      * @return token, -1, -2
      * @throws NoSuchAlgorithmException
      * @throws SQLException
      */
-    public static BigInteger Login(String email, String password) throws NoSuchAlgorithmException, SQLException {
+    public static BigInteger Login(User user, String password) throws NoSuchAlgorithmException, SQLException {
         BigInteger token = generateToken();
 
-        User user = UserMap.getUserByEmail(email);
         if(user == null) return BigInteger.valueOf(-2);
 
         if(!user.verifyPassword(password)) { // If the password is incorrect, return -3
@@ -490,7 +480,7 @@ public class Conn {
         try {
             PreparedStatement stmt = conn.prepareStatement("UPDATE users SET token=? WHERE email=?");
             stmt.setString(1, token.toString(Character.MAX_RADIX));
-            stmt.setString(2, email);
+            stmt.setString(2, user.email);
             stmt.executeUpdate();
         }
         catch (SQLException e) {
