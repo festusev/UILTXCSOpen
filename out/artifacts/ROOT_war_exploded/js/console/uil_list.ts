@@ -280,6 +280,7 @@ class Competition {
     name: string;
 
     isPublic: boolean;
+    showScoreboard : boolean;
     writtenExists: boolean;
     handsOnExists: boolean;
 
@@ -330,6 +331,7 @@ class Competition {
         comp_edit: HTMLDivElement,
         compName : HTMLInputElement,
         compPublic : HTMLInputElement,
+        showScoreboard : HTMLInputElement
         // viewCompetition : HTMLElement,
         errorSuccessBox: HTMLElement,   // The box for errors and successes
 
@@ -374,6 +376,7 @@ class Competition {
         comp_edit: null,
         compName : null,
         compPublic : null,
+        showScoreboard : null,
         // viewCompetition : null,
         errorSuccessBox: null,
 
@@ -411,12 +414,13 @@ class Competition {
         list_handsOn_changeproblems : null
     };
 
-    constructor(cid: string, published: boolean, isPublic: boolean, name:string, judges:[number, string][], writtenObj:any, handsOnObj:any) {
+    constructor(cid: string, published: boolean, isPublic: boolean, showScoreboard: boolean, name:string, judges:[number, string][], writtenObj:any, handsOnObj:any) {
         competitions.push(this);
 
         this.cid = cid;
         this.published = published;
         this.isPublic = isPublic;
+        this.showScoreboard = showScoreboard;
         this.name = name;
         this.judges = judges;
         this.writtenExists = !!writtenObj;
@@ -584,6 +588,7 @@ class Competition {
         formData.append("op_cid", this.cid);    // The CID we are operating on
         formData.append("name", this.dom.compName.value);
         formData.append("isPublic", ""+this.dom.compPublic.checked);
+        formData.append("showScoreboard", ""+this.dom.showScoreboard.checked);
         formData.append("numNonAlts", ""+this.dom.numNonAlts.value);
 
         formData.append("description", this.dom.description.value);
@@ -1295,9 +1300,7 @@ list_handsOn_changeproblems.appendChild(li);
             alternateExists_toggle_input.classList.add("checkbox");
             alternateExists_toggle_input.type = "checkbox";
             alternateExists_toggle_input.name = "altExists";
-            alternateExists_toggle_input.onclick = function(){
-                thisComp.isPublic = alternateExists_toggle_input.checked;
-            };
+
             if(alternateExists) alternateExists_toggle_input.checked = true;
             alternateExists_toggle.appendChild(alternateExists_toggle_input);
             thisComp.dom.altExists = alternateExists_toggle_input;
@@ -1659,6 +1662,33 @@ list_handsOn_changeproblems.appendChild(li);
         /* CLOSE */
 
         /* OPEN */
+        let showScoreboard_header = document.createElement("div");
+        makeHalf(showScoreboard_header);
+        body.appendChild(showScoreboard_header);
+
+        let h2_showScoreboard_header = document.createElement("h3");
+        h2_showScoreboard_header.innerHTML = "Show Scoreboard";
+        showScoreboard_header.appendChild(h2_showScoreboard_header);
+        /* CLOSE */
+
+        /* OPEN */
+        let showScoreboard_toggle = document.createElement("div");
+        makeHalf(showScoreboard_toggle);
+        body.appendChild(showScoreboard_toggle);
+
+        let showScoreboard_toggle_input = document.createElement("input");
+        showScoreboard_toggle_input.classList.add("checkbox");
+        showScoreboard_toggle_input.type = "checkbox";
+        showScoreboard_toggle_input.name = "showScoreboard";
+        showScoreboard_toggle_input.onclick = function(){
+            thisComp.showScoreboard = showScoreboard_toggle_input.checked;
+        };
+        if(this.showScoreboard) showScoreboard_toggle_input.checked = true;
+        showScoreboard_toggle.appendChild(showScoreboard_toggle_input);
+        this.dom.showScoreboard = showScoreboard_toggle_input;
+        /* CLOSE */
+
+        /* OPEN */
         let numNonAlts_header = document.createElement("div");
         makeHalf(numNonAlts_header);
         body.appendChild(numNonAlts_header);
@@ -1862,7 +1892,7 @@ function loadCompetitions():boolean {
                 if(responses.length>0) {
                     for(let competition of responses) {
                         let obj:Competition = new Competition(competition["cid"], competition["published"],competition["isPublic"],
-                            competition["name"], competition["judges"], competition["written"], competition["handsOn"]);
+                            competition["showScoreboard"],competition["name"], competition["judges"], competition["written"], competition["handsOn"]);
                         let handsOnProblemsList = [];
                         if(competition["handsOn"] != null) handsOnProblemsList = competition["handsOn"]["problems"];
                         let compDom:HTMLElement = obj.getDOM(handsOnProblemsList, competition["description"], competition["rules"],
@@ -1920,7 +1950,7 @@ function createNewCompetition():void {
         dom.class_competitions.innerHTML = "";
     }
 
-    let competition:Competition = new Competition("", false,false, "New Competition",[], false, false);
+    let competition:Competition = new Competition("", false,false, true, "New Competition",[], false, false);
 
     dom.class_competitions.insertBefore(competition.getDOM([], "", "", 3, false), dom.class_competitions.firstChild);
     toggleEditCompetition(competition);

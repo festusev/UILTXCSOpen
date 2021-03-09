@@ -25,6 +25,7 @@ public class Profile extends HttpServlet{
         compJ.addProperty("name", competition.template.name);
         compJ.addProperty("published", competition.published);
         compJ.addProperty("isPublic", competition.isPublic);
+        compJ.addProperty("showScoreboard", competition.template.showScoreboard);
         compJ.addProperty("description", competition.template.description);
 
         JsonArray judges = new JsonArray();

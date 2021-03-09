@@ -27,6 +27,10 @@ public class CompetitionSocket {
     private static Gson gson = new Gson();
 
     public void sendLoadScoreboardData(UserStatus status) {
+        if(!competition.template.showScoreboard && !status.admin) { // If we aren't showing the scoreboard and this user isn't an admin, don't send the scoreboard
+            return;
+        }
+
         JsonObject response = new JsonObject();
         response.addProperty("action", "loadScoreboard");
         response.addProperty("isCreator", status.admin);

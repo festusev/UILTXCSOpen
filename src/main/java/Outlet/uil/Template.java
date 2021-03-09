@@ -28,6 +28,7 @@ public class Template {
     public final String HEADERS;
     public final String MC_HEADER = "<li onclick='showMC();' id='writtenNav' class='secondNavItem'>Written</li>";
     public final String FRQ_HEADER = "<li onclick='showFRQ();' id='handsOnNav' class='secondNavItem'>Hands-On</li>";
+    public final boolean showScoreboard;
 
     public String navBarHTML;   // For the competition-specific nav bar that goes underneath the header nav bar
     private String scoreboardHTML;  // The scoreboard page html after the nav bars
@@ -57,13 +58,16 @@ public class Template {
     private boolean scoreboardInitialized = false;  // Whether or not the scoreboard has been initialized
 
     // Used whenever the competition is not published. 'published' should always be false.
-    public Template(boolean published, String n, String description, MCTest mc, FRQTest fr, short cid, Competition competition) {
+    public Template(boolean published, String n, String description, MCTest mc, FRQTest fr, short cid, boolean showScoreboard,
+                    Competition competition) {
         name = n;this.description = description;this.mcTest = mc;this.frqTest=fr;this.cid=cid;this.competition=competition;
-        mcFirst = true;HEADERS="";this.sorter = new SortUILTeams();
+        mcFirst = true;HEADERS="";this.sorter = new SortUILTeams();this.showScoreboard = showScoreboard;
     }
 
-    public Template(String n, String description, MCTest mc, FRQTest fr, short cid, Competition competition){
-        name = n;this.description = description;mcTest = mc;frqTest = fr;this.cid = cid; this.sorter = new SortUILTeams();this.competition=competition;
+    public Template(String n, String description, MCTest mc, FRQTest fr, short cid, boolean showScoreboard, Competition competition){
+        name = n;this.description = description;mcTest = mc;frqTest = fr;this.cid = cid; this.sorter = new SortUILTeams();
+        this.showScoreboard = showScoreboard;
+        this.competition=competition;
 
         if(mcTest.exists && !frqTest.exists) {
             mcFirst = true;
@@ -92,8 +96,7 @@ public class Template {
         }
 
         navBarHTML = "<ul id='upperHalf'><li id='nav_compname'>"+
-                name+"</li><li onclick='showAbout();' id='aboutNav' class='secondNavItem'>About</li><li onclick='showScoreboard();' " +
-                "class='secondNavItem' id='scoreboardNav'>Scoreboard</li>";
+                name+"</li><li onclick='showAbout();' id='aboutNav' class='secondNavItem'>About</li>";
         // answersHTML = "<div id='answersColumn' class='column' style='display:none'><div class='row head-row'><h1>Answers</h1></div>";
         if(mc.exists) {
             mcHTML = new String[2];
@@ -710,6 +713,10 @@ public class Template {
         /*if(userStatus.signedUp) {
             nav += "<li id='team' onclick='showTeam()'>Team</li>";
         }*/
+        if(userStatus.admin || competition.template.showScoreboard)
+            nav += "<li onclick='showScoreboard();' class='secondNavItem' id='scoreboardNav'>Scoreboard</li>" +
+                    "<script>requestLoadScoreboard()</script>";
+
         if((!frqTest.exists || competitionStatus.frqBefore) && (!mcTest.exists || competitionStatus.mcBefore)) {
             if(mcFirst) return nav + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
             else return nav + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
@@ -830,8 +837,7 @@ public class Template {
         }
 
         // create HTML
-        scoreboardHTML = "<script>requestLoadScoreboard()</script>" +
-                "<div class='column' id='scoreboardColumn' style='display:none;'>" +
+        scoreboardHTML = "<div class='column' id='scoreboardColumn' style='display:none;'>" +
                 "<div id='signUpBox' style='display:none'><div class='center'><h1>Create Team</h1>" +
                 "<img src='/res/close.svg' id='signUpClose' onclick='hideSignup()'/>" +
                 "<p id='errorBoxERROR'></p><p class='instruction'>Team Name</p><input name='teamCode' id='teamCode' maxlength='25' class='creatingTeam'>" +

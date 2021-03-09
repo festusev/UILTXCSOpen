@@ -80,7 +80,8 @@ public class UIL extends HttpServlet{
             Competition comp = new Competition(cid, published,
                     rs.getBoolean("isPublic"),rs.getString("name"),rs.getString("description"),
                     alternateExists, numNonAlts,mcTest, frqTest,
-                    Clarification.fromJsonToArray(rs.getString("clarifications")),gson.fromJson(rs.getString("judges"),short[].class));
+                    Clarification.fromJsonToArray(rs.getString("clarifications")),gson.fromJson(rs.getString("judges"),short[].class),
+                    rs.getBoolean("showScoreboard"));
 
             if(!comp.published) {
                 unpublished.put(comp.template.cid, comp);
@@ -354,6 +355,7 @@ public class UIL extends HttpServlet{
         short numNonAlts = Short.parseShort(request.getParameter("numNonAlts"));
         boolean writtenExists = request.getParameter("writtenExists").equals("true");
         boolean handsOnExists = request.getParameter("handsOnExists").equals("true");
+        boolean showScoreboard = request.getParameter("showScoreboard").equals("true");
         short[] judges = gson.fromJson(request.getParameter("judges"), short[].class);
 
         if(name.isEmpty()) {
@@ -596,7 +598,7 @@ public class UIL extends HttpServlet{
             // We are creating a competition and returning the cid
             try {
                 competition = Competition.createCompetition(u, true, isPublic,
-                        name, description, alternateExists,numNonAlts, mcTest, frqTest, judges);
+                        name, description, alternateExists,numNonAlts, mcTest, frqTest, judges, showScoreboard);
                 // retCid = true;
             } catch (SQLException e) {
                 System.out.println("Error creating the competition");
@@ -642,7 +644,7 @@ public class UIL extends HttpServlet{
             }*/
 
             try {
-                competition.update(u, true, isPublic, alternateExists, numNonAlts, name, description, mcTest, frqTest,judges);
+                competition.update(u, true, isPublic, alternateExists, numNonAlts, name, description, mcTest, frqTest,judges,showScoreboard);
                 competition.template.updateScoreboard();
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -891,6 +893,7 @@ public class UIL extends HttpServlet{
                 boolean writtenExists = request.getParameter("writtenExists").equals("true");
                 boolean handsOnExists = request.getParameter("handsOnExists").equals("true");
                 short[] judges = gson.fromJson(request.getParameter("judges"), short[].class);
+                boolean showScoreboard = request.getParameter("showScoreboard").equals("true");
                 boolean alternateExists = false;
                 short numNonAlts = 1;
 
@@ -1000,7 +1003,7 @@ public class UIL extends HttpServlet{
                     // We are creating a competition and returning the cid
                     try {
                         competition = Competition.createCompetition((Teacher)u, false, isPublic,
-                                name, description,alternateExists,numNonAlts, mcTest, frqTest, judges);
+                                name, description,alternateExists,numNonAlts, mcTest, frqTest, judges,showScoreboard);
                     } catch (SQLException e) {
                         e.printStackTrace();
                         writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
@@ -1027,7 +1030,8 @@ public class UIL extends HttpServlet{
                         frqTest.delete(competition);
                     }
                     try {
-                        competition.update(teacher, competition.published, isPublic, alternateExists, numNonAlts, name, description, mcTest, frqTest, judges);
+                        competition.update(teacher, competition.published, isPublic, alternateExists, numNonAlts, name,
+                                description, mcTest, frqTest, judges, showScoreboard);
                     } catch (SQLException e) {
                         e.printStackTrace();
                         writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");

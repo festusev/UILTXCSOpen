@@ -38,20 +38,20 @@ public class Competition {
 
     public ArrayList<Clarification> clarifications;
 
-    private void setTemplate(boolean published, MCTest mc, FRQTest frq, String name, String description, short cid) {
+    private void setTemplate(boolean published, MCTest mc, FRQTest frq, String name, String description, short cid, boolean showScoreboard) {
         if(published) {
-            template = new Template(name, description, mc, frq, cid, this);
+            template = new Template(name, description, mc, frq, cid, showScoreboard, this);
             // entries = new EntryMap();
             // template.updateScoreboard();
         } else {
-            template = new Template(false, name, description, mc, frq, cid, this);
+            template = new Template(false, name, description, mc, frq, cid, showScoreboard, this);
             // entries = new EntryMap();
         }
     }
 
     public Competition(short cid, boolean published, boolean isPublic, String name, String description,
                        boolean alternateExists, short numNonAlts, MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications,
-                       short[] judges) {
+                       short[] judges, boolean showScoreboard) {
         this.teacher = null;
         this.published = published;
         this.isPublic = isPublic;
@@ -60,15 +60,16 @@ public class Competition {
         this.judges = judges;
 
         entries = new EntryMap();
-        setTemplate(published, mc, frq, name, description, cid);
+        setTemplate(published, mc, frq, name, description, cid, showScoreboard);
 
 
         this.clarifications = clarifications;
     }
 
     public Competition(Teacher teacher, short cid, boolean published, boolean isPublic, String name, String description,
-                       boolean alternateExists, short numNonAlts, MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications, short[] judges) {
-        this(cid, published, isPublic, name, description, alternateExists, numNonAlts, mc, frq,clarifications, judges);
+                       boolean alternateExists, short numNonAlts, MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications,
+                       short[] judges, boolean showScoreboard) {
+        this(cid, published, isPublic, name, description, alternateExists, numNonAlts, mc, frq,clarifications, judges, showScoreboard);
         setTeacher(teacher);
     }
 
@@ -86,12 +87,12 @@ public class Competition {
     /* Returns a new competition object that has been inserted into the database */
     public static Competition createCompetition(Teacher teacher, boolean published, boolean isPublic, String name,
                                                 String description, boolean alternateExists, short numNonAlts,
-                                                MCTest mcTest, FRQTest frqTest, short[] judges) throws SQLException {
+                                                MCTest mcTest, FRQTest frqTest, short[] judges, boolean showScoreboard) throws SQLException {
         Connection  conn = Conn.getConnection();
         PreparedStatement stmt = conn.prepareStatement("INSERT INTO competitions (uid, name, isPublic, description, " +
                 "alternateExists, numNonAlts, mcKey, mcCorrectPoints, mcIncorrectPoints, mcInstructions, mcTestLink," +
                 "mcOpens, mcTime, frqMaxPoints, frqIncorrectPenalty, frqProblemMap, frqStudentPack," +
-                "frqJudgePacket, frqOpens, frqTime, type, published, clarifications,judges) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]',?)",
+                "frqJudgePacket, frqOpens, frqTime, type, published, clarifications,judges, showScoreboard) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]',?,?)",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -148,6 +149,7 @@ public class Competition {
         stmt.setShort(21, (short) type);
         stmt.setBoolean(22, published);
         stmt.setString(23, gson.toJson(judges));
+        stmt.setBoolean(24, showScoreboard);
 
         System.out.println(stmt);
         stmt.execute();
@@ -173,7 +175,7 @@ public class Competition {
             stmt.executeUpdate();
 
             Competition competition = new Competition(teacher, cid, published, isPublic, name, description,alternateExists,
-                    numNonAlts, mcTest, frqTest, new ArrayList<>(), new short[0]);
+                    numNonAlts, mcTest, frqTest, new ArrayList<>(), new short[0], showScoreboard);
             competition.setJudges(judges);  // We do this so that the teacher objects are updated with this competition that they are judging
             System.out.println("CID = " + cid + ", " + competition.template.cid);
             UIL.addCompetition(competition);
@@ -197,12 +199,12 @@ public class Competition {
     }
 
     public void updateDB(String name, String description, boolean alternateExists, short numNonAlts, MCTest mcTest,
-                         FRQTest frqTest, short[] judges) throws SQLException {
+                         FRQTest frqTest, short[] judges, boolean showScoreboard) throws SQLException {
         Connection conn = Conn.getConnection();
         PreparedStatement stmt = conn.prepareStatement("UPDATE competitions SET uid=?, name=?, isPublic=?, description=?, " +
                         "alternateExists=?, numNonAlts=?, mcKey=?, mcCorrectPoints=?, mcIncorrectPoints=?, mcInstructions=?, mcTestLink=?," +
                         "mcOpens=?, mcTime=?, frqMaxPoints=?, frqIncorrectPenalty=?, frqProblemMap=?, frqStudentPack=?," +
-                        "frqJudgePacket=?, frqOpens=?, frqTime=?, type=?, published=?, clarifications=?, judges=? WHERE cid=?",
+                        "frqJudgePacket=?, frqOpens=?, frqTime=?, type=?, published=?, clarifications=?, judges=?, showScoreboard=? WHERE cid=?",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -259,28 +261,30 @@ public class Competition {
         stmt.setBoolean(22, published);
         stmt.setString(23, Clarification.toJson(this.clarifications).toString());
         stmt.setString(24, gson.toJson(judges));
-        stmt.setShort(25, template.cid);
+        stmt.setBoolean(25, showScoreboard);
+        stmt.setShort(26, template.cid);
         stmt.executeUpdate();
     }
 
     public void update() throws SQLException {
-        updateDB(template.name, template.description, alternateExists,numNonAlts, template.mcTest, template.frqTest, judges);
+        updateDB(template.name, template.description, alternateExists,numNonAlts, template.mcTest, template.frqTest, judges,
+                template.showScoreboard);
     }
 
     /* Updates the competition in the database and the template */
     public void update(Teacher teacher, boolean published, boolean isPublic, boolean alternateExists, short numNonAlts,
-                       String name, String description, MCTest mcTest, FRQTest frqTest, short[] judges) throws SQLException {
+                       String name, String description, MCTest mcTest, FRQTest frqTest, short[] judges, boolean showScoreboard) throws SQLException {
         frqTest.setDirectories(template.cid, teacher.uid);
         frqTest.initializeFiles();
 
-        updateDB(name, description, alternateExists, numNonAlts, mcTest, frqTest, judges);
+        updateDB(name, description, alternateExists, numNonAlts, mcTest, frqTest, judges, showScoreboard);
 
         this.isPublic = isPublic;
 
         this.alternateExists = alternateExists;
         this.numNonAlts = numNonAlts;
         this.setJudges(judges);
-        setTemplate(published, mcTest, frqTest, name, description, template.cid);
+        setTemplate(published, mcTest, frqTest, name, description, template.cid, showScoreboard);
     }
 
     public void setJudges(short[] judges) {
