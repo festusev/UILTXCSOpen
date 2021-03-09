@@ -195,6 +195,7 @@ var config = {
             if (pageState.openTeam)
                 oldOpenTeamTID = pageState.openTeam.tid; // The old team that was open. May be null
             teams = {};
+            writtenTestScoreboard = [];
             pageState.isCreator = response.isCreator;
             pageState.mcExists = response.mcExists;
             pageState.frqExists = response.frqExists;
@@ -266,6 +267,24 @@ var config = {
             };
             for (var i = 0, j = response.teams.length; i < j; i++) {
                 _loop_1(i, j);
+            }
+            if (pageState.mcExists) {
+                writtenTestScoreboard.sort(function (s1, s2) {
+                    var s1IsUndefined = typeof s1.mcScore == "undefined";
+                    var s2IsUndefined = typeof s2.mcScore == "undefined";
+                    if (s1IsUndefined && s2IsUndefined)
+                        return 0;
+                    else if (s1IsUndefined && !s2IsUndefined)
+                        return 1;
+                    else if (!s1IsUndefined && s2IsUndefined)
+                        return -1;
+                    if (s1.mcScore == s2.mcScore)
+                        return 0;
+                    else if (s1.mcScore < s2.mcScore)
+                        return 1;
+                    else
+                        return -1;
+                });
             }
             if (response.isCreator) {
                 if (pageState.mcExists) {
@@ -594,6 +613,7 @@ var Student = /** @class */ (function () {
     Student.students = {};
     return Student;
 }());
+var writtenTestScoreboard = []; // The list of students sorted by their mc score
 var teams = {}; // Maps tids to their team
 var Team = /** @class */ (function () {
     function Team(data, tempData) {
@@ -609,6 +629,8 @@ var Team = /** @class */ (function () {
                 }
             }
             student.team = thisTeam;
+            if (pageState.mcExists)
+                writtenTestScoreboard.push(student);
             return student;
         }
         var thisTeam = this;
@@ -667,22 +689,25 @@ var Team = /** @class */ (function () {
         var tnameTD = document.createElement("td");
         tnameTD.innerText = this.tname;
         this.dom.tr.appendChild(tnameTD);
+        var totalScore = 0;
         if (pageState.mcExists) {
             var mcTD = document.createElement("td");
             mcTD.classList.add("right");
             mcTD.innerText = "" + this.mcScore;
+            totalScore += this.mcScore;
             this.dom.mcTD = mcTD;
             this.dom.tr.appendChild(mcTD);
         }
         if (pageState.frqExists) {
             var frqTD = document.createElement("td");
             frqTD.classList.add("right");
+            totalScore += this.frqScore;
             frqTD.innerText = "" + this.frqScore;
             this.dom.tr.appendChild(frqTD);
         }
         var totalTD = document.createElement("td");
         totalTD.classList.add("right");
-        totalTD.innerText = "" + (this.mcScore + this.frqScore);
+        totalTD.innerText = "" + totalScore;
         this.dom.tr.appendChild(totalTD);
         var thisTeam = this;
         this.dom.tr.onclick = function () { Team.toggleTeam(thisTeam); };
@@ -1735,10 +1760,87 @@ function makeDownloadURL(csv) {
 }*/
 // Sends the temporary student data to the server
 function createTempStudent() {
+    var openTeam = pageState.openTeam;
+    openTeam.save();
+    var data = ["createTempStudent", dom.fnameTemp.value, dom.lnameTemp.value, dom.inputSchool.value, openTeam.tid, pageState.addingAlt];
     addSuccessBox(dom.openTeamFeedbackCnt, "Saving team...");
-    var data = ["createTempStudent", dom.fnameTemp.value, dom.lnameTemp.value, dom.inputSchool.value, pageState.openTeam.tid, pageState.addingAlt];
     ws.send(JSON.stringify(data));
     Team.closeSelectStudent();
+}
+function writeToPDF(doc, text, x, status, maxwidth) {
+    if (status.row > (doc.internal.pageSize.height - 40) * status.count) {
+        doc.addPage();
+        status.row -= (doc.internal.pageSize.height - 40) * status.count;
+        status.count++;
+    }
+    if (!maxwidth)
+        maxwidth = doc.internal.pageSize.width - 40;
+    doc.text(x, status.row, text, {
+        maxWidth: maxwidth,
+        align: 'left'
+    });
+}
+// Creates a pdf of the scoreboard and downloads it
+function downloadScoreboard() {
+    if (!pageState.isCreator)
+        return;
+    var doc = new jspdf.jsPDF();
+    doc.setFont("times");
+    var pageCount = { count: 1, row: 20 };
+    // First, add in the general scoreboard
+    doc.setFontSize(20);
+    writeToPDF(doc, "Scoreboard", 20, pageCount);
+    pageCount.row += 10;
+    doc.setFontSize(12);
+    writeToPDF(doc, "Name", 20, pageCount, 30);
+    if (pageState.mcExists) {
+        writeToPDF(doc, "Written", 60, pageCount, 30);
+    }
+    if (pageState.frqExists) {
+        writeToPDF(doc, "Hands-On", 120, pageCount, 30);
+    }
+    writeToPDF(doc, "Total", 160, pageCount, 30);
+    pageCount.row += 10;
+    for (var tid in teams) {
+        var team = teams[tid];
+        writeToPDF(doc, team.tname, 20, pageCount, 30);
+        var totalScore = 0;
+        if (pageState.mcExists) {
+            totalScore += team.mcScore;
+            writeToPDF(doc, "" + team.mcScore, 60, pageCount, 30);
+        }
+        if (pageState.frqExists) {
+            totalScore += team.frqScore;
+            writeToPDF(doc, "" + team.frqScore, 120, pageCount, 30);
+        }
+        writeToPDF(doc, "" + totalScore, 160, pageCount, 30);
+        pageCount.row += 10 * Math.ceil(team.tname.length / 9);
+    }
+    if (pageState.mcExists) {
+        pageCount.row += 10;
+        doc.setFontSize(20);
+        writeToPDF(doc, "Written Scoreboard", 20, pageCount);
+        pageCount.row += 10;
+        doc.setFontSize(12);
+        writeToPDF(doc, "Name", 20, pageCount, 30);
+        writeToPDF(doc, "Team", 60, pageCount, 80);
+        writeToPDF(doc, "Total", 150, pageCount, 30);
+        pageCount.row += 10;
+        for (var _i = 0, writtenTestScoreboard_1 = writtenTestScoreboard; _i < writtenTestScoreboard_1.length; _i++) {
+            var student = writtenTestScoreboard_1[_i];
+            writeToPDF(doc, student.name, 20, pageCount, 30);
+            writeToPDF(doc, student.team.tname, 60, pageCount, 80);
+            var mcScoreString = "Not Taken";
+            if (student.mcScore)
+                mcScoreString = "" + student.mcScore;
+            writeToPDF(doc, mcScoreString, 150, pageCount, 30);
+            var marginModifier = student.team.tname.length;
+            if (student.name.length > marginModifier)
+                marginModifier = student.name.length;
+            pageCount.row += 10 * Math.ceil(marginModifier / 9);
+        }
+    }
+    doc.save("scoreboard.pdf");
 }
 // Creates a pdf of the roster and downloads it
 function downloadRoster() {
@@ -1746,29 +1848,41 @@ function downloadRoster() {
         return;
     var doc = new jspdf.jsPDF();
     doc.setFont("times");
-    var row = 20; // the pixel row that we are on
+    var pageCount = { count: 1, row: 20 };
     for (var tid in teams) {
         var team = teams[tid];
         doc.setFontSize(20);
-        doc.text("Team: " + team.tname, 20, row);
-        row += 10;
+        writeToPDF(doc, "Team: " + team.tname, 20, pageCount);
+        pageCount.row += 10;
+        doc.setFontSize(14);
+        writeToPDF(doc, "Primaries", 20, pageCount);
+        pageCount.row += 10;
         doc.setFontSize(12);
-        doc.text("Name", 20, row);
-        doc.text("Username", 100, row);
-        doc.text("Password", 180, row);
-        row += 10;
-        doc.text("Primaries", 20, row);
-        row += 10;
+        writeToPDF(doc, "Name", 20, pageCount, 50);
+        writeToPDF(doc, "Username", 80, pageCount, 50);
+        writeToPDF(doc, "Password", 140, pageCount, 50);
+        pageCount.row += 10;
         for (var _i = 0, _a = team.students; _i < _a.length; _i++) {
             var student = _a[_i];
-            doc.text(student.name, 20, row);
+            writeToPDF(doc, student.name, 20, pageCount, 50);
             if (student.temp) {
-                doc.text(student.uname, 100, row);
-                doc.text(student.password, 180, row);
+                writeToPDF(doc, student.uname, 80, pageCount, 50);
+                writeToPDF(doc, student.password, 140, pageCount, 50);
             }
-            row += 10;
+            pageCount.row += 10 * Math.ceil(student.name.length / 17);
         }
-        row += 10;
+        if (team.alt) {
+            doc.setFontSize(14);
+            writeToPDF(doc, "Written Specialist", 20, pageCount);
+            pageCount.row += 10;
+            doc.setFontSize(12);
+            writeToPDF(doc, team.alt.name, 20, pageCount, 50);
+            if (team.alt.temp) {
+                writeToPDF(doc, team.alt.uname, 80, pageCount, 50);
+                writeToPDF(doc, team.alt.password, 140, pageCount, 50);
+            }
+        }
+        pageCount.row += 10;
     }
     doc.save("roster.pdf");
 }

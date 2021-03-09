@@ -344,7 +344,8 @@ public class Template {
                 "<div id='aboutHead'><h1>" + StringEscapeUtils.escapeHtml4(name) + "</h1>" + actMessage + "</div>" +
                 //"<div class='row' id='aboutDescriptionRow'>" +
                 "<p>" + escapedDescription + "</p></div>" +
-                "<div id='aboutInfo'><h2>Author</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.getName())+"</p>"+StringEscapeUtils.escapeHtml4(school);
+                "<div id='aboutInfo'><h2>Author</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.getName())+"</p>"+
+                school;
         if(mcTest.exists) {
             about += "<h2>Written</h2><p>"+mcTest.opens.DATE_STRING+"<br>"+(mcTest.TIME/(1000*60))+" min<br>"+mcTest.KEY.length+" questions</p>";
         }
@@ -863,8 +864,8 @@ public class Template {
                 "<div id='teamListCnt'><h1>Scoreboard</h1>" +
                 "<button id='addExistingTeam' onclick='showAddExistingTeam()' class='creatorOnly chngButton'>Add Existing Team</button>" +
                 "<button id='createTeam' onclick='showSignup()' class='creatorOnly chngButton'>Create Team</button>" +
-                "<!--<a id='downloadScoreboard' onclick='downloadScoreboard()'>Download Scoreboard</a>" +
-                "<a id='downloadRoster' onclick='downloadRoster()'>Download Roster</a>-->" +
+                "<a id='downloadScoreboard' onclick='downloadScoreboard()' class='creatorOnly'>Download Scoreboard</a>" +
+                "<a id='downloadRoster' onclick='downloadRoster()' class='creatorOnly'>Download Roster</a>" +
                 "<table id='teamList'></table></div><div id='teamCnt'><h1 id='openTeamName'></h1>" +
                 "<div id='teamControls'><img class='creatorOnly editTeam' id='deleteTeam' onclick='Team.showDeleteConfirmation()' src='/res/console/delete.svg'>" +
                 "<img class='creatorOnly' id='editSaveTeam' onclick='Team.editSaveTeam()' src='/res/console/edit.svg'></div>" +

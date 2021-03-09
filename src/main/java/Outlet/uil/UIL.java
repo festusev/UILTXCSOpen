@@ -875,16 +875,16 @@ public class UIL extends HttpServlet{
 
                 short cid;
                 try {
-                    cid = Short.parseShort(cidS);   // If this is not a published competition, cidS will be empty so this will error
+                    cid = Short.parseShort(cidS);   // If this is not a saved competition, cidS will be empty so this will error
                     competition = UIL.getCompetition(cid);
 
-                    if (competition != null && competition.teacher.uid == teacher.uid) {
+                    if (competition != null && competition.teacher.uid == teacher.uid && competition.published) {
                         savePublished(request, writer, teacher);
+                        return;
                     }
-                    return;
                 } catch (Exception e) {}
 
-                // In this case, we are not saving a public competition, so many things will be truncated
+                // In this case, we are not saving a published competition, so many things will be truncated
                 String description = request.getParameter("description");
                 String name = request.getParameter("name");
                 boolean isPublic = request.getParameter("isPublic").equals("true");

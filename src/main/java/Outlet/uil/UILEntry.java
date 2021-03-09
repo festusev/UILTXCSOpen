@@ -476,8 +476,6 @@ public class UILEntry {
         obj.add("nonAlts", array);
 
         if(altUID >= 0 && competition.template.frqTest.exists) {    // Alternates exist and this team has one
-            JsonArray alt = new JsonArray();
-
             Student student = StudentMap.getByUID(altUID);
             if(student != null) {
                 JsonArray studentData = student.getJSON();
@@ -487,7 +485,7 @@ public class UILEntry {
                     if (submission != null) studentData.add(submission.scoringReport[0]);
                 }
 
-                obj.add("alt", alt);
+                obj.add("alt", studentData);
             }
         }
 

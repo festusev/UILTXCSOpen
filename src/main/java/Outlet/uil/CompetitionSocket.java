@@ -521,6 +521,8 @@ public class CompetitionSocket {
                 Student student = StudentMap.getByEmail(uname);
                 student.cids.put(competition.template.cid, entry);
                 entry.uids.add(student.uid);
+                if(isAlt) entry.altUID = student.uid;
+
                 entry.updateUIDS();
                 competition.template.updateScoreboard();
 

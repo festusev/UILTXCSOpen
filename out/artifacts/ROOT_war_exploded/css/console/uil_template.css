@@ -281,10 +281,10 @@
     text-overflow: ellipsis;
     width: 50%;
 }
-#openPrimariesList {
+#openPrimariesList, #openAlternateList {
     max-width: 100%;
 }
-#openPrimariesList b {
+#openPrimariesList b, #openAlternateList b {
     display:inline-block;
     min-width: 7rem;
     user-select: none;
@@ -854,6 +854,12 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+#downloadRoster, #downloadScoreboard {
+    margin-left: 2rem;
+    cursor: pointer;
+    color: var(--prim-dark);
+    white-space: nowrap;
 }
 @media only screen and (max-width: 720px){
     #countdownCnt {
