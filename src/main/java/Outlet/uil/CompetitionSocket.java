@@ -576,8 +576,7 @@ public class CompetitionSocket {
                     }
                     broadcast("{\"action\":\"reload\"}");
                 } else if(action.equals("startWritten")) {
-                    Date now = new Date(); // Now
-                    MCTest mcTest = new MCTest(true, sdf.format(now), competition.template.mcTest.KEY,
+                    MCTest mcTest = new MCTest(true, data.get(1).getAsString(), competition.template.mcTest.KEY,
                             competition.template.mcTest.CORRECT_PTS, competition.template.mcTest.INCORRECT_PTS,
                             competition.template.mcTest.INSTRUCTIONS, competition.template.mcTest.TEST_LINK,
                             competition.template.mcTest.TIME);
@@ -605,9 +604,8 @@ public class CompetitionSocket {
                     }
                     broadcast("{\"action\":\"reload\"}");
                 } else if(action.equals("startHandsOn")) {
-                    Date now = new Date(); // Now
                     FRQTest oldFRQ = competition.template.frqTest;
-                    FRQTest frqTest = new FRQTest(true, sdf.format(now), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
+                    FRQTest frqTest = new FRQTest(true, data.get(1).getAsString(), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
                             oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE);
                     try {
                         competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,

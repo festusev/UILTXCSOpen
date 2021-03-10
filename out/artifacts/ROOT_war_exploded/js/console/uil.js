@@ -2080,15 +2080,20 @@ function showHandsOnScoreboard() {
 /*
 The start and stop controls for the written and hands-on.
  */
+function getNowString() {
+    var d = new Date();
+    // @ts-ignore
+    return ("" + (d.getMonth() + 1)).padStart(2) + "/" + ("" + d.getDate()).padStart(2) + "/" + d.getFullYear() + " " + d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
+}
 function stopWritten() {
     ws.send("[\"stopWritten\"]");
 }
 function startWritten() {
-    ws.send("[\"startWritten\"]");
+    ws.send("[\"startWritten\",\"" + getNowString() + "\"]");
 }
 function stopHandsOn() {
     ws.send("[\"stopHandsOn\"]");
 }
 function startHandsOn() {
-    ws.send("[\"startHandsOn\"]");
+    ws.send("[\"startHandsOn\",\"" + getNowString() + "\"]");
 }

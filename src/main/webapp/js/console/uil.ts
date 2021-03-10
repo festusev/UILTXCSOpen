@@ -2214,12 +2214,18 @@ function showHandsOnScoreboard() {
 /*
 The start and stop controls for the written and hands-on.
  */
+function getNowString():string {    // Gets the current date formatted as MM/dd/yyyy HH:mm:ss
+    let d = new Date();
+    // @ts-ignore
+    return (""+(d.getMonth()+1)).padStart(2)+"/"+(""+d.getDate()).padStart(2) + "/" + d.getFullYear()+" "+d.getHours()+":"+d.getMinutes()+":"+d.getSeconds();
+}
+
 function stopWritten() {
     ws.send("[\"stopWritten\"]");
 }
 
 function startWritten() {
-    ws.send("[\"startWritten\"]");
+    ws.send("[\"startWritten\",\""+getNowString()+"\"]");
 }
 
 function stopHandsOn() {
@@ -2227,5 +2233,5 @@ function stopHandsOn() {
 }
 
 function startHandsOn() {
-    ws.send("[\"startHandsOn\"]");
+    ws.send("[\"startHandsOn\",\""+getNowString()+"\"]");
 }
