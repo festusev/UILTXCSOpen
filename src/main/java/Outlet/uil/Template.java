@@ -720,9 +720,21 @@ public class Template {
             nav += "<li onclick='showScoreboard();' class='secondNavItem' id='scoreboardNav'>Scoreboard</li>" +
                     "<script>requestLoadScoreboard()</script>";
 
+        String postfix = "";    // The controls to start and stop portions of the competition. Only for the creator.
+        if(userStatus.creator) {
+            if(mcTest.exists) {
+                if(competitionStatus.mcDuring) postfix += "<button onclick='stopWritten()' class='chngButton'>Stop Written</button>";
+                else postfix += "<button onclick='startWritten()' class='chngButton'>Start Written</button>";
+            }
+            if(frqTest.exists) {
+                if(competitionStatus.frqDuring) postfix += "<button onclick='stopHandsOn()' class='chngButton'>Stop Hands-On</button>";
+                else postfix += "<button onclick='startHandsOn()' class='chngButton' >Start Hands-On</button>";
+            }
+        }
+
         if((!frqTest.exists || competitionStatus.frqBefore) && (!mcTest.exists || competitionStatus.mcBefore)) {
-            if(mcFirst) return nav + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
-            else return nav + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
+            if(mcFirst) return nav + postfix + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
+            else return nav + postfix + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
         } else {
             if(userStatus.signedUp || userStatus.admin) {
                 if (mcTest.exists && !competitionStatus.mcBefore) nav += MC_HEADER;
@@ -738,17 +750,17 @@ public class Template {
                 } else {    // They are not a teacher, so when the test closes, do nothing
                     closesScript = mcTest.closes.getScript("");
                 }
-                return nav + "<li id='countdownCnt'>Written ends in <p id='countdown'>" + closesScript + "</p></li></ul>";
+                return nav + postfix + "<li id='countdownCnt'>Written ends in <p id='countdown'>" + closesScript + "</p></li></ul>";
             } else if (!competitionStatus.mcDuring && competitionStatus.frqDuring) {
                 String closesScript = frqTest.closes.getScript("updateNav()");
 
-                return nav + "<li id='countdownCnt'>Hands-On ends in <p id='countdown'>" + closesScript + "</p></li></ul>";
+                return nav + postfix + "<li id='countdownCnt'>Hands-On ends in <p id='countdown'>" + closesScript + "</p></li></ul>";
             } else if (competitionStatus.mcFinished && competitionStatus.frqBefore) {
-                return nav + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
+                return nav + postfix + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
             } else if (competitionStatus.mcBefore && competitionStatus.frqFinished) {
-                return nav + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
+                return nav + postfix + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
             } else if (competitionStatus.mcFinished && competitionStatus.frqFinished) {
-                return nav + "<li id='countdownCnt'>The competition has ended!</li></ul>";
+                return nav + postfix + "<li id='countdownCnt'>The competition has ended!</li></ul>";
             } else {
                 String closesScript;
                 if(userStatus.teacher || userStatus.finishedMC)  {   // They are a teacher
@@ -756,7 +768,7 @@ public class Template {
                 } else {
                     closesScript = closes.getScript("");
                 }
-                return nav + "<li id='countdownCnt'>Competition closes in <p id='countdown'>" + closesScript + "</ul>";  // MC and FRQ at the same time.
+                return nav + postfix + "<li id='countdownCnt'>Competition closes in <p id='countdown'>" + closesScript + "</ul>";  // MC and FRQ at the same time.
             }
         }
     }

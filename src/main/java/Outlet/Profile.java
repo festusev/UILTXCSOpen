@@ -81,6 +81,7 @@ public class Profile extends HttpServlet{
             handsOnJ.addProperty("studentPacketLink", competition.template.frqTest.STUDENT_PACKET);
             handsOnJ.addProperty("maxPoints",competition.template.frqTest.MAX_POINTS);
             handsOnJ.addProperty("incorrectPenalty", competition.template.frqTest.INCORRECT_PENALTY);
+            handsOnJ.addProperty("autoGrade", competition.template.frqTest.AUTO_GRADE);
             compJ.add("handsOn", handsOnJ);
         }
 

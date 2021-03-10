@@ -507,4 +507,26 @@ public class UILEntry {
         if(competition.template.frqTest.exists) frq = frqScore;
         return frq + mc;
     }
+
+    public void socketSendFRQProblems() {
+        if(!competition.template.frqTest.exists) return;
+
+        JsonObject obj = new JsonObject();
+        obj.addProperty("action", "updateFRQProblems");
+        obj.addProperty("html", competition.template.getFRQProblems(this));
+        String response = obj.toString();
+        for (short uid : uids) {
+            CompetitionSocket socket = CompetitionSocket.connected.get(uid);
+            System.out.println("Looking at uid=" + uid);
+            if (socket != null) {
+                System.out.println("Socket != null for uid=" + uid);
+
+                try {
+                    socket.send(response);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 }

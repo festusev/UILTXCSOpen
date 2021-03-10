@@ -23,6 +23,9 @@ public class FRQSubmission {
         FORMAT_ERROR    // When the output is formatted incorrectly
     }
 
+    // If false, the team will see a "grading" message. If true, they'll see the result.
+    // It also won't count as a submission for the purpose of the scoreboard.
+    boolean graded;
     public Result result;
     short problemNumber;
     long submittedTime;  // Time in milliseconds when it was submitted
@@ -31,16 +34,17 @@ public class FRQSubmission {
     boolean overrideShowOutput = false; // Whether we should overwrite the output of showOutput() with overriddenShowOutput.
     boolean overriddenShowOutput = true;    // This is used in case the teacher changes the judgement but it was initially wrong.
 
-    public FRQSubmission(short problemNumber, Result result, String input, String output, long submittedTime) {
+    public FRQSubmission(short problemNumber, Result result, String input, String output, long submittedTime, boolean graded) {
         this.problemNumber = problemNumber;
         this.result = result;
         this.input = input;
         this.output = output;
         this.submittedTime = submittedTime;
+        this.graded = graded;
     }
 
     public boolean takePenalty() {
-        return result != Result.CORRECT && result != Result.UNCLEAR_FILE_TYPE && result != Result.SERVER_ERROR;
+        return result != Result.CORRECT && result != Result.UNCLEAR_FILE_TYPE && result != Result.SERVER_ERROR && graded;
     }
 
     public boolean showInput() {
@@ -88,7 +92,9 @@ public class FRQSubmission {
      *   [
      *     [input,
      *     output,
-     *     judgement]
+     *     judgement,
+     *     submittedTime,
+     *     graded]
      *   ]
      * ], [...], ...]
      * If the judgement dictates it, there will be no output displayed.
@@ -110,9 +116,10 @@ public class FRQSubmission {
                 String output = submissionJson.get(1).getAsString();
                 String judgementI = submissionJson.get(2).getAsString();
                 Long submittedTime = submissionJson.get(3).getAsLong();
+                boolean graded = submissionJson.get(4).getAsBoolean();
 
                 Result judgement = Result.valueOf(judgementI);
-                FRQSubmission submission = new FRQSubmission((short)(i + 1), judgement, input, output, submittedTime);    // Problem indices begin at 1
+                FRQSubmission submission = new FRQSubmission((short)(i + 1), judgement, input, output, submittedTime, graded);    // Problem indices begin at 1
                 submission.entry = entry;
                 submissions.add(submission);
             }
@@ -135,6 +142,7 @@ public class FRQSubmission {
                 submissionJson.add(submission.output);
                 submissionJson.add(submission.result.name());
                 submissionJson.add(submission.submittedTime);
+                submissionJson.add(submission.graded);
 
                 submissionsJson.add(submissionJson);
             }

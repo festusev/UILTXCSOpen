@@ -313,7 +313,8 @@ class Competition {
         problemMap: HandsOnProblem[],
         studentPacketLink: string,
         judgePacketLink: string,
-        time: number
+        time: number,
+        autoGrade: boolean
     } = {
         opens:"",
         maxPoints:0,
@@ -368,7 +369,8 @@ class Competition {
         handsOnMaxPoints : HTMLInputElement,
         handsOnIncorrectPenalty : HTMLInputElement,
         handsOnCheckbox: HTMLInputElement,
-        list_handsOn_changeproblems : HTMLElement
+        list_handsOn_changeproblems : HTMLElement,
+        handsOnAutoGrade : HTMLInputElement
     } = {
         form: null,
         comp_head: null,
@@ -411,7 +413,8 @@ class Competition {
         handsOnMaxPoints : null,
         handsOnIncorrectPenalty : null,
         handsOnCheckbox : null,
-        list_handsOn_changeproblems : null
+        list_handsOn_changeproblems : null,
+        handsOnAutoGrade : null
     };
 
     constructor(cid: string, published: boolean, isPublic: boolean, showScoreboard: boolean, name:string, judges:[number, string][], writtenObj:any, handsOnObj:any) {
@@ -455,6 +458,7 @@ class Competition {
             this.handsOn.studentPacketLink = handsOnObj.studentPacketLink;
             this.handsOn.judgePacketLink = handsOnObj.judgePacketLink;
             this.handsOn.time = handsOnObj.time;
+            this.handsOn.autoGrade = handsOnObj.autoGrade;
         }
     }
 
@@ -597,7 +601,7 @@ class Competition {
         for(let judgeUID of this.judges) {
             judgeUIDs.push(judgeUID[0]);
         }
-        formData.append("judges", JSON.stringify(judgeUIDs))
+        formData.append("judges", JSON.stringify(judgeUIDs));
         formData.append("writtenExists", ""+this.writtenExists);
 
         if(this.writtenExists) {
@@ -627,6 +631,7 @@ class Competition {
             formData.append("frqStudentPacket", this.dom.handsOnStudentPacket.value);
             formData.append("frqJudgePacket", "");  // TODO: Add this
             formData.append("alternateExists", ""+this.dom.altExists.checked);
+            formData.append("frqAutoGrade", ""+this.dom.handsOnAutoGrade.checked);
 
             let problems:Array<[string, boolean, boolean]> = [];
             let problemIndices:number[] = [];   /* A list like [1, 2, -1, 9, 5], corresponding to a name in the problems array */
@@ -1304,6 +1309,30 @@ list_handsOn_changeproblems.appendChild(li);
             if(alternateExists) alternateExists_toggle_input.checked = true;
             alternateExists_toggle.appendChild(alternateExists_toggle_input);
             thisComp.dom.altExists = alternateExists_toggle_input;
+            /* CLOSE */
+
+            /* OPEN */
+            let autoGrade_header = document.createElement("div");
+            makeHalf(autoGrade_header);
+            handsOn_section.appendChild(autoGrade_header);
+
+            let h2_autoGrade_header = document.createElement("h3");
+            h2_autoGrade_header.innerHTML = "Auto Grade";
+            autoGrade_header.appendChild(h2_autoGrade_header);
+            /* CLOSE */
+
+            /* OPEN */
+            let autoGrade_toggle = document.createElement("div");
+            handsOn_section.appendChild(autoGrade_toggle);
+
+            let autoGrade_toggle_input = document.createElement("input");
+            autoGrade_toggle_input.classList.add("checkbox");
+            autoGrade_toggle_input.type = "checkbox";
+            autoGrade_toggle_input.name = "altExists";
+
+            if(thisComp.handsOn.autoGrade) autoGrade_toggle_input.checked = true;
+            autoGrade_toggle.appendChild(autoGrade_toggle_input);
+            thisComp.dom.handsOnAutoGrade = autoGrade_toggle_input;
             /* CLOSE */
 
             /* OPEN */

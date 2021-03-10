@@ -328,7 +328,8 @@ var Competition = /** @class */ (function () {
             handsOnMaxPoints: null,
             handsOnIncorrectPenalty: null,
             handsOnCheckbox: null,
-            list_handsOn_changeproblems: null
+            list_handsOn_changeproblems: null,
+            handsOnAutoGrade: null
         };
         competitions.push(this);
         this.cid = cid;
@@ -366,6 +367,7 @@ var Competition = /** @class */ (function () {
             this.handsOn.studentPacketLink = handsOnObj.studentPacketLink;
             this.handsOn.judgePacketLink = handsOnObj.judgePacketLink;
             this.handsOn.time = handsOnObj.time;
+            this.handsOn.autoGrade = handsOnObj.autoGrade;
         }
     }
     Competition.prototype.toggleWrittenKey = function (h2) {
@@ -519,6 +521,7 @@ var Competition = /** @class */ (function () {
             formData.append("frqStudentPacket", this.dom.handsOnStudentPacket.value);
             formData.append("frqJudgePacket", ""); // TODO: Add this
             formData.append("alternateExists", "" + this.dom.altExists.checked);
+            formData.append("frqAutoGrade", "" + this.dom.handsOnAutoGrade.checked);
             var problems = [];
             var problemIndices = []; /* A list like [1, 2, -1, 9, 5], corresponding to a name in the problems array */
             for (var i = 0, j = this.handsOn.problemMap.length; i < j; i++) {
@@ -1148,6 +1151,26 @@ list_handsOn_changeproblems.appendChild(li);
                 alternateExists_toggle_input.checked = true;
             alternateExists_toggle.appendChild(alternateExists_toggle_input);
             thisComp.dom.altExists = alternateExists_toggle_input;
+            /* CLOSE */
+            /* OPEN */
+            var autoGrade_header = document.createElement("div");
+            makeHalf(autoGrade_header);
+            handsOn_section.appendChild(autoGrade_header);
+            var h2_autoGrade_header = document.createElement("h3");
+            h2_autoGrade_header.innerHTML = "Auto Grade";
+            autoGrade_header.appendChild(h2_autoGrade_header);
+            /* CLOSE */
+            /* OPEN */
+            var autoGrade_toggle = document.createElement("div");
+            handsOn_section.appendChild(autoGrade_toggle);
+            var autoGrade_toggle_input = document.createElement("input");
+            autoGrade_toggle_input.classList.add("checkbox");
+            autoGrade_toggle_input.type = "checkbox";
+            autoGrade_toggle_input.name = "altExists";
+            if (thisComp.handsOn.autoGrade)
+                autoGrade_toggle_input.checked = true;
+            autoGrade_toggle.appendChild(autoGrade_toggle_input);
+            thisComp.dom.handsOnAutoGrade = autoGrade_toggle_input;
             /* CLOSE */
             /* OPEN */
             var handsOn_start = document.createElement("div");

@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 public class FRQTest {
     public final boolean exists;    // If this FRQ test exists and is being run
 
+    public final boolean AUTO_GRADE;    // If we should automatically send graded frq submissions back to the teams
     public final String NAME = "Programming";
     public final String TIME_TEXT;
     public final long TIME;
@@ -58,23 +59,19 @@ public class FRQTest {
     public FRQTest() {
         exists = false;TIME_TEXT="";TIME=0;STUDENT_PACKET="";JUDGE_PACKET="";
         scoreDirPath = ""; testcaseDirPath = "";MAX_POINTS = 0; INCORRECT_PENALTY = 0; PROBLEM_MAP = new FRQProblem[0];
+        AUTO_GRADE = true;
     }
     public FRQTest(boolean published,String opensString, short mp, short ip, FRQProblem[] pm, String studentPacket,
-                   String judgePacket, long time) {
+                   String judgePacket, long time, boolean autoGrade) {
+        MAX_POINTS = mp; INCORRECT_PENALTY = ip; PROBLEM_MAP = pm;
+        exists = true;TIME_TEXT=(time/(1000*60)) + " minutes";TIME=time;STUDENT_PACKET=studentPacket;JUDGE_PACKET=judgePacket;
+        AUTO_GRADE = autoGrade;
+
         if(published) {
-            opens = new Countdown(opensString, "countdown");MAX_POINTS = mp; INCORRECT_PENALTY = ip; PROBLEM_MAP = pm;
-            exists = true;TIME_TEXT=(time/(1000*60)) + " minutes";TIME=time;STUDENT_PACKET=studentPacket;JUDGE_PACKET=judgePacket;
+            opens = new Countdown(opensString, "countdown");
             closes = Countdown.add(opens, TIME, "countdown");
             closes.onDone = "";
         } else {
-            MAX_POINTS = mp;
-            INCORRECT_PENALTY = ip;
-            PROBLEM_MAP = pm;
-            exists = true;
-            TIME_TEXT = (time / (1000 * 60)) + " minutes";
-            TIME = time;
-            STUDENT_PACKET = studentPacket;
-            JUDGE_PACKET = judgePacket;
             opens = new Countdown(opensString);
             closes = new Countdown(opensString);
         }
@@ -306,14 +303,14 @@ public class FRQTest {
             if (ret != 0) {
                 System.out.println("Program exited with code: " + ret);
                 System.out.println("Compilation failure");
-                return new FRQSubmission(problemNum, FRQSubmission.Result.COMPILETIME_ERROR, "", "", currentTime);
+                return new FRQSubmission(problemNum, FRQSubmission.Result.COMPILETIME_ERROR, "", "", currentTime, AUTO_GRADE);
             }
 
             System.out.println("Compilation success");
         } catch (InterruptedException var32) {
             System.out.printf("Compilation failure");
             var32.printStackTrace();
-            return new FRQSubmission(problemNum, FRQSubmission.Result.COMPILETIME_ERROR, "", "", currentTime);
+            return new FRQSubmission(problemNum, FRQSubmission.Result.COMPILETIME_ERROR, "", "", currentTime, AUTO_GRADE);
         }
 
         System.out.println("Looking for file with probNum="+problemNum);
@@ -322,20 +319,21 @@ public class FRQTest {
         //do {
         if (testcase == null) {
             System.out.println("Issue loading");
-            return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "", currentTime);
+            return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "", currentTime, AUTO_GRADE);
         }
 
         File in_file = testcase.key;
         File ans_file = testcase.value;
 
-        if(ans_file == null) return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "", currentTime);   // There is no answer file. This is a misconfiguration.
+        if(ans_file == null) return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "",
+                currentTime, AUTO_GRADE);   // There is no answer file. This is a misconfiguration.
 
         if(in_file != null) {   // Only add in the dat file if there is one
             try {
                 Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", "/bin/ln -s " + in_file.getAbsolutePath() + " " + dir + PROBLEM_MAP[problemNum - 1].name.toLowerCase() + ".dat"}).waitFor();
             } catch (InterruptedException e) {
                 e.printStackTrace();
-                return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "", currentTime);
+                return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "", currentTime, AUTO_GRADE);
             }
             System.out.println("Test Case " + in_file.getName());
         }
@@ -347,7 +345,7 @@ public class FRQTest {
             r.waitFor();
         } catch (InterruptedException e) {
             e.printStackTrace();
-            return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "", currentTime);
+            return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "", currentTime, AUTO_GRADE);
         }
         InputStream stdout = r.getInputStream();
         InputStream stderr = r.getErrorStream();
@@ -360,14 +358,14 @@ public class FRQTest {
                 System.out.println("Time limit exceeded");
                 r.destroyForcibly();
                 close(stdout, stderr);
-                return new FRQSubmission(problemNum, FRQSubmission.Result.EXCEEDED_TIME_LIMIT, "", "", currentTime);
+                return new FRQSubmission(problemNum, FRQSubmission.Result.EXCEEDED_TIME_LIMIT, "", "", currentTime, AUTO_GRADE);
             }
 
             xcode = r.waitFor();
         } catch (InterruptedException var31) {
             var31.printStackTrace();
             close(stdout, stderr);
-            return new FRQSubmission(problemNum, FRQSubmission.Result.RUNTIME_ERROR, "", "", currentTime);
+            return new FRQSubmission(problemNum, FRQSubmission.Result.RUNTIME_ERROR, "", "", currentTime, AUTO_GRADE);
         }
 
         long b = System.currentTimeMillis();
@@ -384,14 +382,14 @@ public class FRQTest {
             System.out.println("Runtime error");
             System.out.println(errors);
             close(stdout, stderr);
-            return new FRQSubmission(problemNum, FRQSubmission.Result.RUNTIME_ERROR, "", "", currentTime);
+            return new FRQSubmission(problemNum, FRQSubmission.Result.RUNTIME_ERROR, "", "", currentTime, AUTO_GRADE);
         }
 
         if (xcode != 0) {
             System.out.println("Runtime error");
             System.out.println("Program exited with code: " + xcode);
             close(stdout, stderr);
-            return new FRQSubmission(problemNum, FRQSubmission.Result.RUNTIME_ERROR, "", "", currentTime);
+            return new FRQSubmission(problemNum, FRQSubmission.Result.RUNTIME_ERROR, "", "", currentTime, AUTO_GRADE);
         }
 
         String newline = System.getProperty("line.separator");
@@ -432,7 +430,8 @@ public class FRQTest {
         ans_key = ans_key.replaceAll("\\s+", "");
         String noWhitespaceOutput = output.replaceAll("\\s+", "");
 
-        return new FRQSubmission((short)0, ans_key.equals(noWhitespaceOutput)?FRQSubmission.Result.CORRECT :FRQSubmission.Result.INCORRECT, "", output, System.currentTimeMillis());
+        return new FRQSubmission((short)0, ans_key.equals(noWhitespaceOutput)?FRQSubmission.Result.CORRECT :FRQSubmission.Result.INCORRECT,
+                "", output, System.currentTimeMillis(), AUTO_GRADE);
     }
 
     /***
@@ -472,11 +471,11 @@ public class FRQTest {
         long currentTime = System.currentTimeMillis();
 
         if (cntWhitespace) {
-            return new FRQSubmission(probNum,FRQSubmission.Result.EMPTY_FILE, "", "", currentTime);
+            return new FRQSubmission(probNum,FRQSubmission.Result.EMPTY_FILE, "", "", currentTime, AUTO_GRADE);
         } else {
             int i = givenFName.lastIndexOf(46);
             if (i < 0) {
-                return new FRQSubmission(probNum,FRQSubmission.Result.UNCLEAR_FILE_TYPE, "", "", currentTime);
+                return new FRQSubmission(probNum,FRQSubmission.Result.UNCLEAR_FILE_TYPE, "", "", currentTime, AUTO_GRADE);
             } else {
                 String givenName = givenFName.substring(0, i);
                 if (i > 0) {
@@ -532,7 +531,7 @@ public class FRQTest {
                                 submission = run(fileName, exe_file, scoreDirPath + directory, 1, probNum);
                             } else {
                                 if (!extension.equals("cpp")) {
-                                    return new FRQSubmission(probNum, FRQSubmission.Result.UNCLEAR_FILE_TYPE, new String(bytes), "", currentTime);
+                                    return new FRQSubmission(probNum, FRQSubmission.Result.UNCLEAR_FILE_TYPE, new String(bytes), "", currentTime, AUTO_GRADE);
                                 }
 
                                 exe_file = givenName + ".out";
@@ -545,10 +544,10 @@ public class FRQTest {
                         return submission;
                     } catch (Exception var17) {
                         var17.printStackTrace();
-                        return new FRQSubmission(probNum, FRQSubmission.Result.SERVER_ERROR, new String(bytes), "", currentTime);
+                        return new FRQSubmission(probNum, FRQSubmission.Result.SERVER_ERROR, new String(bytes), "", currentTime, AUTO_GRADE);
                     }
                 } else {
-                    return new FRQSubmission(probNum, FRQSubmission.Result.SERVER_ERROR, new String(bytes), "", currentTime);
+                    return new FRQSubmission(probNum, FRQSubmission.Result.SERVER_ERROR, new String(bytes), "", currentTime, AUTO_GRADE);
                 }
             }
         }

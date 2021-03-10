@@ -92,7 +92,8 @@ public class Competition {
         PreparedStatement stmt = conn.prepareStatement("INSERT INTO competitions (uid, name, isPublic, description, " +
                 "alternateExists, numNonAlts, mcKey, mcCorrectPoints, mcIncorrectPoints, mcInstructions, mcTestLink," +
                 "mcOpens, mcTime, frqMaxPoints, frqIncorrectPenalty, frqProblemMap, frqStudentPack," +
-                "frqJudgePacket, frqOpens, frqTime, type, published, clarifications,judges, showScoreboard) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]',?,?)",
+                "frqJudgePacket, frqOpens, frqTime, type, published, clarifications,judges, showScoreboard, frqAutoGrade) " +
+                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]',?,?,?)",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -130,6 +131,7 @@ public class Competition {
             stmt.setString(18, frqTest.JUDGE_PACKET);
             stmt.setString(19, frqTest.opens.DATE_STRING);
             stmt.setLong(20, frqTest.TIME);
+            stmt.setBoolean(25, frqTest.AUTO_GRADE);
         } else {
             stmt.setShort(14, (short)0);
             stmt.setShort(15, (short)0);
@@ -138,6 +140,7 @@ public class Competition {
             stmt.setString(18, null);
             stmt.setString(19, null);
             stmt.setLong(20, 0);
+            stmt.setBoolean(25,true);
         }
 
         int type = 0;   // 0 if just MC, 1 if just FRQ, 2 if both
@@ -204,7 +207,8 @@ public class Competition {
         PreparedStatement stmt = conn.prepareStatement("UPDATE competitions SET uid=?, name=?, isPublic=?, description=?, " +
                         "alternateExists=?, numNonAlts=?, mcKey=?, mcCorrectPoints=?, mcIncorrectPoints=?, mcInstructions=?, mcTestLink=?," +
                         "mcOpens=?, mcTime=?, frqMaxPoints=?, frqIncorrectPenalty=?, frqProblemMap=?, frqStudentPack=?," +
-                        "frqJudgePacket=?, frqOpens=?, frqTime=?, type=?, published=?, clarifications=?, judges=?, showScoreboard=? WHERE cid=?",
+                        "frqJudgePacket=?, frqOpens=?, frqTime=?, type=?, published=?, clarifications=?, judges=?, showScoreboard=?, " +
+                        "frqAutoGrade=?   WHERE cid=?",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -241,6 +245,7 @@ public class Competition {
             stmt.setString(18, frqTest.JUDGE_PACKET);
             stmt.setString(19, frqTest.opens.DATE_STRING);
             stmt.setLong(20, frqTest.TIME);
+            stmt.setBoolean(26, frqTest.AUTO_GRADE);
         } else {
             stmt.setShort(14, (short)0);
             stmt.setShort(15, (short)0);
@@ -249,6 +254,7 @@ public class Competition {
             stmt.setString(18, null);
             stmt.setString(19, null);
             stmt.setLong(20, 0);
+            stmt.setBoolean(26, true);
         }
 
         int type = 0;   // 0 if just MC, 1 if just FRQ, 2 if both
@@ -262,7 +268,7 @@ public class Competition {
         stmt.setString(23, Clarification.toJson(this.clarifications).toString());
         stmt.setString(24, gson.toJson(judges));
         stmt.setBoolean(25, showScoreboard);
-        stmt.setShort(26, template.cid);
+        stmt.setShort(27, template.cid);
         stmt.executeUpdate();
     }
 
@@ -342,6 +348,8 @@ public class Competition {
                             compJ.addProperty("input", StringEscapeUtils.escapeHtml4(submission.input).replaceAll("\n","<br>"));
                         if (submission.showOutput())
                             compJ.addProperty("output", StringEscapeUtils.escapeHtml4(submission.output).replaceAll("\n","<br>"));
+
+                        compJ.addProperty("graded", submission.graded);
                         writer.write(new Gson().toJson(compJ));
                     }
                 } else if(action.equals("changeFRQJudgement")) {
@@ -416,8 +424,11 @@ public class Competition {
                             //}*/
 
                         submission.entry.update();
-                        template.updateScoreboard();
-                        //}
+
+                        if(submission.graded || template.frqTest.AUTO_GRADE) {
+                            submission.entry.socketSendFRQProblems();
+                            template.updateScoreboard();
+                        }
                     }
                 } else if(action.equals("showMCSubmission")) {
                     short uid = Short.parseShort(request.getParameter("uid"));
@@ -594,25 +605,31 @@ public class Competition {
                     submission.entry = temp;
                     temp.addFRQRun(submission, probNum);
                     frqSubmissions.add(submission);
-                    if (submission.result == FRQSubmission.Result.CORRECT) {
-                        writer.write("{\"status\":\"success\",\"scored\":\"You gained points!\"}");
-                    } else if (submission.result == FRQSubmission.Result.COMPILETIME_ERROR) {
-                        writer.write("{\"status\":\"error\",\"error\":\"Compile-time error.\"}");
-                    } else if (submission.result == FRQSubmission.Result.RUNTIME_ERROR) {
-                        writer.write("{\"status\":\"error\",\"error\":\"Runtime error\"}");
-                    } else if (submission.result == FRQSubmission.Result.EXCEEDED_TIME_LIMIT) {
-                        writer.write("{\"status\":\"error\",\"error\":\"Time limit exceeded.\"}");
-                    } else if (submission.result == FRQSubmission.Result.INCORRECT) {
-                        writer.write("{\"status\":\"error\",\"error\":\"Wrong answer.\"}");
-                    } else if (submission.result == FRQSubmission.Result.SERVER_ERROR) {
-                        writer.write("{\"status\":\"error\",\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
-                    } else if (submission.result == FRQSubmission.Result.EMPTY_FILE) {
-                        writer.write("{\"status\":\"error\",\"error\":\"Empty file.\"}");
-                    } else if (submission.result == FRQSubmission.Result.UNCLEAR_FILE_TYPE) {
-                        writer.write("{\"status\":\"error\",\"error\":\"Unclear file type. Files must end in .java, .py, or .cpp.\"}");
-                    }
 
-                    template.updateScoreboard();
+                    if(template.frqTest.AUTO_GRADE && submission.graded) {
+                        if (submission.result == FRQSubmission.Result.CORRECT) {
+                            writer.write("{\"status\":\"success\",\"scored\":\"You gained points!\"}");
+                        } else if (submission.result == FRQSubmission.Result.COMPILETIME_ERROR) {
+                            writer.write("{\"status\":\"error\",\"error\":\"Compile-time error.\"}");
+                        } else if (submission.result == FRQSubmission.Result.RUNTIME_ERROR) {
+                            writer.write("{\"status\":\"error\",\"error\":\"Runtime error\"}");
+                        } else if (submission.result == FRQSubmission.Result.EXCEEDED_TIME_LIMIT) {
+                            writer.write("{\"status\":\"error\",\"error\":\"Time limit exceeded.\"}");
+                        } else if (submission.result == FRQSubmission.Result.INCORRECT) {
+                            writer.write("{\"status\":\"error\",\"error\":\"Wrong answer.\"}");
+                        } else if (submission.result == FRQSubmission.Result.SERVER_ERROR) {
+                            writer.write("{\"status\":\"error\",\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
+                        } else if (submission.result == FRQSubmission.Result.EMPTY_FILE) {
+                            writer.write("{\"status\":\"error\",\"error\":\"Empty file.\"}");
+                        } else if (submission.result == FRQSubmission.Result.UNCLEAR_FILE_TYPE) {
+                            writer.write("{\"status\":\"error\",\"error\":\"Unclear file type. Files must end in .java, .py, or .cpp.\"}");
+                        }
+
+                        template.updateScoreboard();
+
+                        // Update all of their team member's frqProblems
+                        temp.socketSendFRQProblems();
+                    }
 
                     // Send it to the teacher and the judges
                     CompetitionSocket socket = CompetitionSocket.connected.get(teacher.uid);
@@ -629,19 +646,6 @@ public class Competition {
                             JsonObject obj = new JsonObject();
                             obj.addProperty("action", "addSmallFRQ");
                             obj.addProperty("html", template.getSmallFRQ(frqSubmissions.indexOf(submission), submission));
-                            socket.send(gson.toJson(obj));
-                        }
-                    }
-
-                    // Update all of their team member's frqProblems
-                    for (short uid : temp.uids) {
-                        socket = CompetitionSocket.connected.get(uid);
-                        System.out.println("Looking at uid=" + uid);
-                        if (socket != null) {
-                            System.out.println("Socket != null for uid=" + uid);
-                            JsonObject obj = new JsonObject();
-                            obj.addProperty("action", "updateFRQProblems");
-                            obj.addProperty("html", template.getFRQProblems(temp));
                             socket.send(gson.toJson(obj));
                         }
                     }

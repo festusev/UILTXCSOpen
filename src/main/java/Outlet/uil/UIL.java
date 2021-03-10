@@ -74,7 +74,7 @@ public class UIL extends HttpServlet{
                         rs.getShort("frqMaxPoints"), rs.getShort("frqIncorrectPenalty"),
                         gson.fromJson(rs.getString("frqProblemMap"),FRQProblem[].class),
                         rs.getString("frqStudentPack"),rs.getString("frqJudgePacket"),
-                        rs.getLong("frqTime"));
+                        rs.getLong("frqTime"), rs.getBoolean("frqAutoGrade"));
             }
 
             Competition comp = new Competition(cid, published,
@@ -574,7 +574,8 @@ public class UIL extends HttpServlet{
             }
 
             frqTest = new FRQTest(true, frqOpensString, frqMaxPoints, frqIncorrectPenalty, frqProblemMap,
-                    request.getParameter("frqStudentPacket"), request.getParameter("frqJudgePacket"), frqTime);
+                    request.getParameter("frqStudentPacket"), request.getParameter("frqJudgePacket"), frqTime,
+                    request.getParameter("frqAutoGrade").equals("true"));
         }
 
         if(!mcTest.exists && !frqTest.exists) {
@@ -974,7 +975,8 @@ public class UIL extends HttpServlet{
                     frqTime = Long.parseLong(request.getParameter("frqTime"))*1000*60;
 
                     frqTest = new FRQTest(false, frqOpensString, frqMaxPoints, frqIncorrectPenalty, frqProblemMap,
-                            request.getParameter("frqStudentPacket"), request.getParameter("frqJudgePacket"), frqTime);
+                            request.getParameter("frqStudentPacket"), request.getParameter("frqJudgePacket"), frqTime,
+                            request.getParameter("frqAutoGrade").equals("true"));
                 }
 
                 boolean creatingComp = cidS==null || cidS.isEmpty();

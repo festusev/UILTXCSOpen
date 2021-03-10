@@ -145,6 +145,9 @@ var config = {
     RESULTS: ["Correct", "Incorrect", "Server Error", "Compile time Error", "Runtime Error", "Empty File",
         "Time Limit Exceeded", "Unclear File Type", "Package Error", "Wrong Output Format"],
     SOCKET_FUNCTIONS: {
+        "reload": function (response) {
+            window.location.reload();
+        },
         "addSmallMC": function (response) {
             var html = response["html"];
             var template = document.createElement('template');
@@ -164,12 +167,13 @@ var config = {
             var template = document.createElement('template');
             template.innerHTML = response["html"];
             dom.frqProblems.replaceWith(template.content.firstChild);
+            dom.cached.frqProblems = template.content.firstChild;
         }, "updateScoreboard": function (response) {
             var template = document.createElement('template');
             template.innerHTML = response["html"];
             var display = dom.scoreboard.style.display;
             dom.scoreboard.replaceWith(template.content.firstChild);
-            dom.cached[config.IDs.scoreboard] = null;
+            dom.cached[config.IDs.scoreboard] = template.content.firstChild;
             if (response["rank"]) {
                 dom.bottomRank.innerText = response["rank"];
                 dom.bottomOutOf.innerText = response["numTeams"];
@@ -1703,6 +1707,7 @@ function showFRQSubmission(row, submissionId) {
                 var name_1 = response["name"];
                 var team = response["team"];
                 var result = response["result"];
+                var graded = response["graded"];
                 var div = document.createElement("div");
                 div.classList.add("frqSubmissionEditor");
                 var probName_cnt = document.createElement("div");
@@ -1713,6 +1718,15 @@ function showFRQSubmission(row, submissionId) {
                 teamName_cnt.innerHTML = "<b>Team</b><h2>" + team + "</h2>";
                 teamName_cnt.classList.add("half");
                 div.appendChild(teamName_cnt);
+                var frqIsGraded = document.createElement("div");
+                frqIsGraded.classList.add("frqIsGraded");
+                if (graded) {
+                    frqIsGraded.innerText = "Graded Sent";
+                }
+                else {
+                    frqIsGraded.innerHTML = "<button class='chngButton' onclick='publishGradedFRQ(this, " + submissionId + ")'>Send Graded</button>";
+                }
+                div.appendChild(frqIsGraded);
                 var result_cnt = document.createElement("p");
                 result_cnt.classList.add("resultCnt");
                 result_cnt.innerHTML = "<b>Judgement:</b>";
@@ -1770,6 +1784,11 @@ function showFRQSubmission(row, submissionId) {
     xhr.open('POST', "/console/competitions", true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send("cid=" + cid + "&action=showFRQSubmission&id=" + submissionId);
+}
+// Updates an frq submission as graded
+function publishGradedFRQ(htmlElement, submissionID) {
+    htmlElement.parentNode.innerHTML = "Graded Sent";
+    ws.send("[\"publishGradedFRQ\"," + submissionID + "]");
 }
 /**
  * Takes in the submission index (submissionId) of the submission on the server. Contacts the server, retrieves the
@@ -2057,4 +2076,19 @@ function showHandsOnScoreboard() {
     dom.teamListCnt.classList.add("showHandsOn");
     dom.teamListCnt.classList.remove("showGeneral");
     dom.teamListCnt.classList.remove("showWritten");
+}
+/*
+The start and stop controls for the written and hands-on.
+ */
+function stopWritten() {
+    ws.send("[\"stopWritten\"]");
+}
+function startWritten() {
+    ws.send("[\"startWritten\"]");
+}
+function stopHandsOn() {
+    ws.send("[\"stopHandsOn\"]");
+}
+function startHandsOn() {
+    ws.send("[\"startHandsOn\"]");
 }

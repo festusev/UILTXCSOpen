@@ -117,6 +117,11 @@
 #nav_compname {
     max-width: 30%;
 }
+#upperHalf .chngButton {
+    display: inline-block;
+    margin-right: 1rem;
+    margin-top: 5px;
+}
 #scoreboardColumn {
     display: flex;
 }
@@ -692,7 +697,9 @@
     max-height: 88vh;
     width: 50%;
     box-sizing: border-box;
+    position: relative;
 }
+
 .frqSubmissionEditor .half{
     width:50%;
     display: inline-block;
