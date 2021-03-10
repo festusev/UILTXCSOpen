@@ -40,6 +40,9 @@ var pageState = {
     isCreator: false,
     mcExists: false,
     frqExists: false,
+    frqMaxPoints: 0,
+    frqIncorrectPenalty: 0,
+    frqProblemMap: [],
     alternateExists: false,
     numNonAlts: 1,
     openTeam: null,
@@ -109,6 +112,11 @@ var config = {
         deleteSubtitle: "deleteSubtitle",
         deleteTeam: "deleteTeam",
         studentSearchTable: "studentSearchTable",
+        generalScoreboard: "generalScoreboard",
+        writtenScoreboard: "writtenScoreboard",
+        writtenScoreboardTable: "writtenScoreboardTable",
+        handsOnScoreboard: "handsOnScoreboard",
+        handsOnScoreboardTable: "handsOnScoreboardTable",
         // Select global team IDs
         selectGlobalTeam: "selectGlobalTeam",
         selectGlobalTeamList: "selectGlobalTeamList",
@@ -196,16 +204,21 @@ var config = {
                 oldOpenTeamTID = pageState.openTeam.tid; // The old team that was open. May be null
             teams = {};
             writtenTestScoreboard = [];
+            handsOnScoreboard = [];
             pageState.isCreator = response.isCreator;
             pageState.mcExists = response.mcExists;
             pageState.frqExists = response.frqExists;
+            pageState.frqIncorrectPenalty = response.frqIncorrectPenalty;
+            pageState.frqMaxPoints = response.frqMaxPoints;
+            pageState.frqProblemMap = response.frqProblemMap;
             pageState.alternateExists = response.alternateExists;
             pageState.numNonAlts = response.numNonAlts;
             // If they are the creator, display the "#editSaveTeam" image
             if (pageState.isCreator) {
                 document.body.classList.add("isCreator");
             }
-            var fragment = document.createDocumentFragment(); // A collection of table row elements
+            var generalFragment = document.createDocumentFragment(); // A collection of table row elements for the general table
+            var handsOnFragment = document.createDocumentFragment(); // A collection of table rows for the hands-on table
             dom.teamList.innerHTML = "";
             // First, add in the table headers
             var headers = "<th>Name</th>";
@@ -216,7 +229,7 @@ var config = {
             headers += "<th class='right'>Total</th>";
             var headerDOM = document.createElement("tr");
             headerDOM.innerHTML = headers;
-            fragment.appendChild(headerDOM);
+            generalFragment.appendChild(headerDOM);
             // These datapoints are displayed on the right bar if the user is an admin
             var numWrittenSubmitted = 0;
             var writtenSum = 0; // Sum of written scores
@@ -230,7 +243,7 @@ var config = {
                     newToggleTeam = team;
                 if (pageState.isCreator)
                     team.code = response.teamCodes[i];
-                fragment.appendChild(team.dom.tr);
+                generalFragment.appendChild(team.dom.tr);
                 var _loop_3 = function (student) {
                     var tr = document.createElement("tr");
                     tr.classList.add("_" + student.uid);
@@ -285,6 +298,22 @@ var config = {
                     else
                         return -1;
                 });
+                var writtenTestFragment = document.createDocumentFragment();
+                for (var _i = 0, writtenTestScoreboard_1 = writtenTestScoreboard; _i < writtenTestScoreboard_1.length; _i++) {
+                    var student = writtenTestScoreboard_1[_i];
+                    writtenTestFragment.appendChild(student.dom.tr);
+                }
+                dom.writtenScoreboardTable.innerHTML = "<tr><th>Name</th><th>Team</th><th>Total</th></tr>";
+                dom.writtenScoreboardTable.appendChild(writtenTestFragment);
+            }
+            if (pageState.frqExists) {
+                handsOnScoreboard.sort(function (t1, t2) {
+                    return t2.frqScore - t1.frqScore;
+                });
+                for (var _a = 0, handsOnScoreboard_1 = handsOnScoreboard; _a < handsOnScoreboard_1.length; _a++) {
+                    var team = handsOnScoreboard_1[_a];
+                    handsOnFragment.appendChild(team.dom.frqTR);
+                }
             }
             if (response.isCreator) {
                 if (pageState.mcExists) {
@@ -305,7 +334,20 @@ var config = {
                 dom.numUsers.innerText = "" + numStudents;
             }
             dom.teamList.innerHTML = "";
-            dom.teamList.appendChild(fragment);
+            dom.teamList.appendChild(generalFragment);
+            if (pageState.frqExists) {
+                dom.handsOnScoreboardTable.innerHTML = "";
+                var handsOnHeader = document.createElement("tr");
+                handsOnHeader.innerHTML = "<th></th>";
+                for (var _b = 0, _c = response.frqProblemMap; _b < _c.length; _b++) {
+                    var problem = _c[_b];
+                    var problemTH = document.createElement("th");
+                    problemTH.innerText = problem;
+                    handsOnHeader.appendChild(problemTH);
+                }
+                dom.handsOnScoreboardTable.appendChild(handsOnHeader);
+                dom.handsOnScoreboardTable.appendChild(handsOnFragment);
+            }
             if (pageState.isCreator) {
                 var selectStudentFromClassFragment = document.createDocumentFragment(); // Add in the students from their class
                 var _loop_2 = function (classStudent) {
@@ -321,8 +363,8 @@ var config = {
                     tr.innerHTML = "<td>" + student.name + "</td>";
                     selectStudentFromClassFragment.appendChild(tr);
                 };
-                for (var _i = 0, _a = response.studentsInClass; _i < _a.length; _i++) {
-                    var classStudent = _a[_i];
+                for (var _d = 0, _e = response.studentsInClass; _d < _e.length; _d++) {
+                    var classStudent = _e[_d];
                     _loop_2(classStudent);
                 }
                 dom.selectStudentFromClass.innerHTML = "";
@@ -330,12 +372,7 @@ var config = {
                 dom.selectSignedUpStudent.innerHTML = "";
                 dom.selectSignedUpStudent.appendChild(selectStudentFragment);
             }
-            if (!newToggleTeam)
-                Team.toggleTeam(newToggleTeam); // New toggle team is null, so close the dom.
-            else {
-                Team.renderOpenTeam(newToggleTeam);
-                newToggleTeam.dom.tr.classList.add("selected");
-            }
+            Team.toggleTeam(newToggleTeam, false);
         }, "scoreboardOpenTeamFeedback": function (response) {
             if (response.isError)
                 addErrorBox(dom.openTeamFeedbackCnt, response.msg);
@@ -428,7 +465,7 @@ var config = {
         "addTempStudent": function (response) {
             addSuccessBox(dom.openTeamFeedbackCnt, "Team saved successfully.");
             var team = teams["" + response.tid]; // The team they are in
-            var student = new Student([response.name, response.uid]);
+            var student = new Student([response.name, response.uid], team);
             student.temp = true;
             student.uname = response.uname;
             student.password = response.password;
@@ -515,6 +552,11 @@ var dom = {
     get fnameTemp() { return this.getHelper(config.IDs.fnameTemp); },
     get lnameTemp() { return this.getHelper(config.IDs.lnameTemp); },
     get inputSchool() { return this.getHelper(config.IDs.inputSchool); },
+    get generalScoreboard() { return this.getHelper(config.IDs.generalScoreboard); },
+    get writtenScoreboard() { return this.getHelper(config.IDs.writtenScoreboard); },
+    get writtenScoreboardTable() { return this.getHelper(config.IDs.writtenScoreboardTable); },
+    get handsOnScoreboard() { return this.getHelper(config.IDs.handsOnScoreboard); },
+    get handsOnScoreboardTable() { return this.getHelper(config.IDs.handsOnScoreboardTable); },
     classes: {
         cached: {},
         getHelper: function (className) {
@@ -604,22 +646,46 @@ var GlobalTeacher = /** @class */ (function () {
     return GlobalTeacher;
 }());
 var Student = /** @class */ (function () {
-    function Student(data) {
+    function Student(data, team) {
         this.temp = false; // If they are a temporary user
+        this.dom = { tr: null };
         this.name = data[0];
         this.uid = data[1];
         this.mcScore = data[2];
+        this.team = team;
+        if (pageState.mcExists && team != null) {
+            this.dom.tr = document.createElement("tr");
+            this.dom.tr.classList.add("student");
+            this.dom.tr.onclick = function () {
+                Team.toggleTeam(team);
+            };
+            var nameTD = document.createElement("td");
+            nameTD.innerText = this.name;
+            this.dom.tr.appendChild(nameTD);
+            var tnameTD = document.createElement("td");
+            tnameTD.innerText = this.team.tname;
+            this.dom.tr.appendChild(tnameTD);
+            var totalTD = document.createElement("td");
+            if (this.mcScore)
+                totalTD.innerText = "" + this.mcScore;
+            else
+                totalTD.innerText = "Not Taken";
+            this.dom.tr.appendChild(totalTD);
+        }
+        Student.students["" + this.uid] = this;
     }
     Student.students = {};
     return Student;
 }());
 var writtenTestScoreboard = []; // The list of students sorted by their mc score
+var handsOnScoreboard = []; // The list of teams sorted by their hands-on score
 var teams = {}; // Maps tids to their team
 var Team = /** @class */ (function () {
     function Team(data, tempData) {
-        this.dom = { tr: null, mcTD: null };
+        this.editedSinceLastSave = false; // If this team has been edited since the last save
+        this.dom = { tr: null, mcTD: null, frqTR: null };
         function createStudent(data) {
-            var student = new Student(data);
+            var student = new Student(data, thisTeam);
             if (pageState.isCreator) { // If they are the creator, check if this student is a temporary user
                 var temp = tempData["" + student.uid]; // First element is their username, second is their password
                 if (temp) {
@@ -628,12 +694,13 @@ var Team = /** @class */ (function () {
                     student.password = temp[1];
                 }
             }
-            student.team = thisTeam;
             if (pageState.mcExists)
                 writtenTestScoreboard.push(student);
             return student;
         }
         var thisTeam = this;
+        if (pageState.frqExists)
+            handsOnScoreboard.push(this);
         this.tname = data.tname;
         this.school = data.school;
         this.tid = data.tid;
@@ -679,38 +746,76 @@ var Team = /** @class */ (function () {
                 this.mcScore -= this.students[indexOfLowest].mcScore;
             }
         }
+        this.frqResponses = data.frqResponses;
         teams["" + this.tid] = this;
         this.render();
     }
     // Creates the html objects
     Team.prototype.render = function () {
-        this.dom.tr = document.createElement("tr");
-        this.dom.tr.classList.add("team");
-        var tnameTD = document.createElement("td");
-        tnameTD.innerText = this.tname;
-        this.dom.tr.appendChild(tnameTD);
-        var totalScore = 0;
-        if (pageState.mcExists) {
-            var mcTD = document.createElement("td");
-            mcTD.classList.add("right");
-            mcTD.innerText = "" + this.mcScore;
-            totalScore += this.mcScore;
-            this.dom.mcTD = mcTD;
-            this.dom.tr.appendChild(mcTD);
+        function createGeneralRow(team) {
+            team.dom.tr = document.createElement("tr");
+            team.dom.tr.classList.add("team");
+            var tnameTD = document.createElement("td");
+            tnameTD.innerText = team.tname;
+            team.dom.tr.appendChild(tnameTD);
+            var totalScore = 0;
+            if (pageState.mcExists) {
+                var mcTD = document.createElement("td");
+                mcTD.classList.add("right");
+                mcTD.innerText = "" + team.mcScore;
+                totalScore += team.mcScore;
+                team.dom.mcTD = mcTD;
+                team.dom.tr.appendChild(mcTD);
+            }
+            if (pageState.frqExists) {
+                var frqTD = document.createElement("td");
+                frqTD.classList.add("right");
+                totalScore += team.frqScore;
+                frqTD.innerText = "" + team.frqScore;
+                team.dom.tr.appendChild(frqTD);
+            }
+            var totalTD = document.createElement("td");
+            totalTD.classList.add("right");
+            totalTD.innerText = "" + totalScore;
+            team.dom.tr.appendChild(totalTD);
+            team.dom.tr.onclick = function () {
+                Team.toggleTeam(team);
+            };
         }
-        if (pageState.frqExists) {
-            var frqTD = document.createElement("td");
-            frqTD.classList.add("right");
-            totalScore += this.frqScore;
-            frqTD.innerText = "" + this.frqScore;
-            this.dom.tr.appendChild(frqTD);
+        function createFRQRow(team) {
+            // Create the frq table row
+            team.dom.frqTR = document.createElement("tr");
+            team.dom.frqTR.onclick = function () {
+                Team.toggleTeam(team);
+            };
+            var tnameTD = document.createElement("td");
+            tnameTD.innerText = team.tname;
+            team.dom.frqTR.appendChild(tnameTD);
+            for (var _i = 0, _a = team.frqResponses; _i < _a.length; _i++) {
+                var frqResponse = _a[_i];
+                var td = document.createElement("td");
+                if (frqResponse > 0) {
+                    td.innerText = "" + (Math.abs(pageState.frqMaxPoints) - Math.abs(frqResponse - 1) * Math.abs(pageState.frqIncorrectPenalty)); // + " pts";
+                    td.classList.add("solved");
+                }
+                else if (frqResponse == 0) {
+                    td.innerText = "0"; // tries";
+                    td.classList.add("untried");
+                }
+                else {
+                    var tries = Math.abs(frqResponse);
+                    if (tries > 1)
+                        td.innerText = "" + tries; // + " tries";
+                    else
+                        td.innerText = "1"; // try";
+                    td.classList.add("tried");
+                }
+                team.dom.frqTR.appendChild(td);
+            }
         }
-        var totalTD = document.createElement("td");
-        totalTD.classList.add("right");
-        totalTD.innerText = "" + totalScore;
-        this.dom.tr.appendChild(totalTD);
-        var thisTeam = this;
-        this.dom.tr.onclick = function () { Team.toggleTeam(thisTeam); };
+        createGeneralRow(this);
+        if (pageState.frqExists)
+            createFRQRow(this);
     };
     // Save the team and copy over the temporary information to the official information
     Team.prototype.save = function () {
@@ -733,6 +838,7 @@ var Team = /** @class */ (function () {
         }*/
         // pageState.saveTeamList.length = 0;
         ws.send(JSON.stringify(data));
+        pageState.openTeam.editedSinceLastSave = false;
         addSuccessBox(dom.openTeamFeedbackCnt, "Saving team...");
     };
     Team.prototype.delete = function () {
@@ -746,6 +852,7 @@ var Team = /** @class */ (function () {
             }
         }
         dom.teamList.removeChild(this.dom.tr);
+        dom.handsOnScoreboardTable.removeChild(this.dom.frqTR);
         dom.teamCnt.style.display = "none";
         pageState.openTeam.dom.tr.classList.remove("selected");
         pageState.openTeam = null;
@@ -916,21 +1023,56 @@ var Team = /** @class */ (function () {
     /*
      Toggles between looking at a team and not. If the given team object is null or equal to the currently open team,
      then close the 'teamCnt'. Otherwise, open it and set its information properly.
+     If requestLoad is true, it will fire the requestLoadScoreboards
      */
-    Team.toggleTeam = function (team) {
+    Team.toggleTeam = function (team, requestLoad) {
+        if (requestLoad === void 0) { requestLoad = true; }
         if (!team || team == pageState.openTeam) { // Close the "#teamCnt"
             dom.teamCnt.style.display = "none";
             pageState.openTeam.dom.tr.classList.remove("selected");
+            if (requestLoad && team.editedSinceLastSave)
+                requestLoadScoreboard();
+            if (pageState.mcExists && pageState.openTeam) {
+                for (var _i = 0, _a = pageState.openTeam.students; _i < _a.length; _i++) {
+                    var student = _a[_i];
+                    student.dom.tr.classList.remove("selected");
+                }
+                if (pageState.openTeam.alt)
+                    pageState.openTeam.alt.dom.tr.classList.remove("selected");
+            }
+            if (pageState.frqExists && pageState.openTeam) {
+                pageState.openTeam.dom.frqTR.classList.remove("selected");
+            }
             pageState.openTeam = null;
-            requestLoadScoreboard();
         }
         else {
             deleteErrorSuccessBox(dom.openTeamFeedbackCnt);
             if (pageState.openTeam) {
                 pageState.openTeam.dom.tr.classList.remove("selected");
-                requestLoadScoreboard();
+                if (pageState.mcExists) {
+                    for (var _b = 0, _c = pageState.openTeam.students; _b < _c.length; _b++) {
+                        var student = _c[_b];
+                        student.dom.tr.classList.remove("selected");
+                    }
+                    if (pageState.openTeam.alt)
+                        pageState.openTeam.alt.dom.tr.classList.remove("selected");
+                }
+                if (pageState.frqExists)
+                    pageState.openTeam.dom.frqTR.classList.remove("selected");
+                if (requestLoad && pageState.openTeam.editedSinceLastSave)
+                    requestLoadScoreboard();
             }
             team.dom.tr.classList.add("selected");
+            if (pageState.mcExists) {
+                for (var _d = 0, _e = team.students; _d < _e.length; _d++) {
+                    var student = _e[_d];
+                    student.dom.tr.classList.add("selected");
+                }
+                if (team.alt)
+                    team.alt.dom.tr.classList.add("selected");
+            }
+            if (pageState.frqExists)
+                team.dom.frqTR.classList.add("selected");
             Team.renderOpenTeam(team);
         }
     };
@@ -946,6 +1088,7 @@ var Team = /** @class */ (function () {
             }
             else { // Enter editing mode
                 pageState.editingTeam = true;
+                pageState.openTeam.editedSinceLastSave = true;
                 dom.editSaveTeam.src = "/res/console/save.svg";
                 dom.teamCnt.classList.add("editing");
                 if (pageState.openTeam.students.length < pageState.numNonAlts)
@@ -1192,12 +1335,26 @@ function createTeam() {
                     addErrorBox(dom.errorBoxERROR, result["error"]);
                 if (result["status"] === "success") {
                     if (pageState.isCreator) { // If they are the creator, add in the new team
-                        var newTeam = new Team({
-                            tname: result["tname"], school: "", tid: result["tid"],
-                            students: { nonAlts: [], alt: null }, frq: 0
-                        });
+                        var newTeam = void 0;
+                        if (pageState.frqExists) {
+                            var frqResponses = [];
+                            frqResponses.length = pageState.frqProblemMap.length;
+                            frqResponses.fill(0);
+                            newTeam = new Team({
+                                tname: result["tname"], school: "", tid: result["tid"],
+                                students: { nonAlts: [], alt: null }, frq: 0, frqResponses: frqResponses
+                            });
+                        }
+                        else {
+                            newTeam = new Team({
+                                tname: result["tname"], school: "", tid: result["tid"],
+                                students: { nonAlts: [], alt: null }, frq: 0
+                            });
+                        }
                         newTeam.code = result["code"];
                         dom.teamList.appendChild(newTeam.dom.tr);
+                        if (pageState.frqExists)
+                            dom.handsOnScoreboardTable.appendChild(newTeam.dom.frqTR);
                         Team.toggleTeam(newTeam);
                         hideSignup();
                     }
@@ -1826,8 +1983,8 @@ function downloadScoreboard() {
         writeToPDF(doc, "Team", 60, pageCount, 80);
         writeToPDF(doc, "Total", 150, pageCount, 30);
         pageCount.row += 10;
-        for (var _i = 0, writtenTestScoreboard_1 = writtenTestScoreboard; _i < writtenTestScoreboard_1.length; _i++) {
-            var student = writtenTestScoreboard_1[_i];
+        for (var _i = 0, writtenTestScoreboard_2 = writtenTestScoreboard; _i < writtenTestScoreboard_2.length; _i++) {
+            var student = writtenTestScoreboard_2[_i];
             writeToPDF(doc, student.name, 20, pageCount, 30);
             writeToPDF(doc, student.team.tname, 60, pageCount, 80);
             var mcScoreString = "Not Taken";
@@ -1885,4 +2042,19 @@ function downloadRoster() {
         pageCount.row += 10;
     }
     doc.save("roster.pdf");
+}
+function showGeneralScoreboard() {
+    dom.teamListCnt.classList.add("showGeneral");
+    dom.teamListCnt.classList.remove("showWritten");
+    dom.teamListCnt.classList.remove("showHandsOn");
+}
+function showWrittenScoreboard() {
+    dom.teamListCnt.classList.add("showWritten");
+    dom.teamListCnt.classList.remove("showGeneral");
+    dom.teamListCnt.classList.remove("showHandsOn");
+}
+function showHandsOnScoreboard() {
+    dom.teamListCnt.classList.add("showHandsOn");
+    dom.teamListCnt.classList.remove("showGeneral");
+    dom.teamListCnt.classList.remove("showWritten");
 }

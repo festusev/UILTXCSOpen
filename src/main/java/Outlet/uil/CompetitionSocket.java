@@ -38,6 +38,16 @@ public class CompetitionSocket {
         response.addProperty("frqExists", competition.template.frqTest.exists);
         response.addProperty("alternateExists", competition.alternateExists);
         response.addProperty("numNonAlts", competition.numNonAlts);
+        if(competition.template.frqTest.exists) {
+            response.addProperty("frqMaxPoints", competition.template.frqTest.MAX_POINTS);
+            response.addProperty("frqIncorrectPenalty", competition.template.frqTest.INCORRECT_PENALTY);
+
+            JsonArray problemMap = new JsonArray();
+            for(FRQProblem problem: competition.template.frqTest.PROBLEM_MAP) {
+                problemMap.add(problem.name);
+            }
+            response.add("frqProblemMap", problemMap);
+        }
         response.add("teams", competition.template.scoreboardData);
         if(status.admin) {
             response.addProperty("numHandsOnSubmitted", competition.frqSubmissions.size());

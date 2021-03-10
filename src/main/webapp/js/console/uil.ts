@@ -7,6 +7,9 @@ let pageState = {
     isCreator : false,
     mcExists : false,
     frqExists : false,
+    frqMaxPoints : 0,
+    frqIncorrectPenalty : 0,
+    frqProblemMap: [],
     alternateExists : false,
     numNonAlts : 1,
     openTeam : null, // The team object that is currently open in "#teamCnt"
@@ -79,6 +82,12 @@ const config = {
         deleteSubtitle : "deleteSubtitle",
         deleteTeam : "deleteTeam",  // The trashcan button
         studentSearchTable : "studentSearchTable",
+
+        generalScoreboard : "generalScoreboard",
+        writtenScoreboard : "writtenScoreboard",
+        writtenScoreboardTable : "writtenScoreboardTable",
+        handsOnScoreboard : "handsOnScoreboard",
+        handsOnScoreboardTable : "handsOnScoreboardTable",
 
         // Select global team IDs
         selectGlobalTeam : "selectGlobalTeam",
@@ -172,9 +181,10 @@ const config = {
             clarification_list.innerHTML = "<div class='clarification' id='clarification_"+response["index"]+"'><h3>Question</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
                 response["answer"] + "</span></div>" + clarification_list.innerHTML;
         }, "loadScoreboard": function (response: {
-            isCreator: boolean, mcExists: boolean, frqExists: boolean, alternateExists: boolean, numNonAlts: number,
+            isCreator: boolean, mcExists: boolean, frqExists: boolean, alternateExists: boolean, numNonAlts: number, frqMaxPoints?: number,
+            frqIncorrectPenalty?: number, frqProblemMap?: string[],
             teams: { tname: string, school: string, tid: number, students: { nonAlts: [string,number,number?][],
-                    alt?: [string,number,number?]}, frq?: number }[],
+                    alt?: [string,number,number?]}, frq?: number, frqResponses?: number[]}[],
             numHandsOnSubmitted?: number, teamCodes? : string[], studentsInClass? : [string,number][], tempUsers?: {[uid:string]:[string,string]}
         }) {
             let newToggleTeam: Team = null;  // The new team object that we are toggling open
@@ -183,9 +193,13 @@ const config = {
 
             teams = {};
             writtenTestScoreboard = [];
+            handsOnScoreboard = [];
             pageState.isCreator = response.isCreator;
             pageState.mcExists = response.mcExists;
             pageState.frqExists = response.frqExists;
+            pageState.frqIncorrectPenalty = response.frqIncorrectPenalty;
+            pageState.frqMaxPoints = response.frqMaxPoints;
+            pageState.frqProblemMap = response.frqProblemMap;
             pageState.alternateExists = response.alternateExists;
             pageState.numNonAlts = response.numNonAlts;
 
@@ -194,7 +208,8 @@ const config = {
                 document.body.classList.add("isCreator");
             }
 
-            let fragment = document.createDocumentFragment();   // A collection of table row elements
+            let generalFragment = document.createDocumentFragment();   // A collection of table row elements for the general table
+            let handsOnFragment = document.createDocumentFragment();    // A collection of table rows for the hands-on table
 
             dom.teamList.innerHTML = "";
 
@@ -206,7 +221,7 @@ const config = {
 
             let headerDOM = document.createElement("tr");
             headerDOM.innerHTML = headers;
-            fragment.appendChild(headerDOM);
+            generalFragment.appendChild(headerDOM);
 
             // These datapoints are displayed on the right bar if the user is an admin
             let numWrittenSubmitted: number = 0;
@@ -219,10 +234,11 @@ const config = {
             for (let i=0,j=response.teams.length;i<j;i++) {
                 let teamData = response.teams[i];
                 let team: Team = new Team(teamData, response.tempUsers);
+
                 if(team.tid == oldOpenTeamTID) newToggleTeam = team;
 
                 if(pageState.isCreator) team.code = response.teamCodes[i];
-                fragment.appendChild(team.dom.tr);
+                generalFragment.appendChild(team.dom.tr);
 
                 for (let student of team.students) {
                     let tr = document.createElement("tr");
@@ -271,6 +287,18 @@ const config = {
                     else if (s1.mcScore < s2.mcScore) return 1;
                     else return -1;
                 });
+                let writtenTestFragment = document.createDocumentFragment();
+                for(let student of writtenTestScoreboard) {
+                    writtenTestFragment.appendChild(student.dom.tr);
+                }
+                dom.writtenScoreboardTable.innerHTML = "<tr><th>Name</th><th>Team</th><th>Total</th></tr>";
+                dom.writtenScoreboardTable.appendChild(writtenTestFragment);
+            }
+            if(pageState.frqExists) {
+                handsOnScoreboard.sort(function(t1: Team, t2: Team) {
+                    return t2.frqScore - t1.frqScore;
+                });
+                for(let team of handsOnScoreboard) handsOnFragment.appendChild(team.dom.frqTR);
             }
 
             if(response.isCreator) {
@@ -293,7 +321,20 @@ const config = {
             }
 
             dom.teamList.innerHTML = "";
-            dom.teamList.appendChild(fragment);
+            dom.teamList.appendChild(generalFragment);
+
+            if(pageState.frqExists) {
+                dom.handsOnScoreboardTable.innerHTML = "";
+                let handsOnHeader = document.createElement("tr");
+                handsOnHeader.innerHTML = "<th></th>";
+                for(let problem of response.frqProblemMap) {
+                    let problemTH = document.createElement("th");
+                    problemTH.innerText = problem;
+                    handsOnHeader.appendChild(problemTH);
+                }
+                dom.handsOnScoreboardTable.appendChild(handsOnHeader);
+                dom.handsOnScoreboardTable.appendChild(handsOnFragment);
+            }
 
             if(pageState.isCreator) {
                 let selectStudentFromClassFragment = document.createDocumentFragment(); // Add in the students from their class
@@ -320,11 +361,7 @@ const config = {
                 dom.selectSignedUpStudent.appendChild(selectStudentFragment);
             }
 
-            if(!newToggleTeam) Team.toggleTeam(newToggleTeam);  // New toggle team is null, so close the dom.
-            else {
-                Team.renderOpenTeam(newToggleTeam);
-                newToggleTeam.dom.tr.classList.add("selected");
-            }
+            Team.toggleTeam(newToggleTeam, false);
         }, "scoreboardOpenTeamFeedback": function (response: { isError: boolean, msg: string }) { // When there is an error or a success that has to do with editing a team
             if (response.isError) addErrorBox(dom.openTeamFeedbackCnt, response.msg);
             else addSuccessBox(dom.openTeamFeedbackCnt, response.msg);
@@ -414,7 +451,7 @@ const config = {
         "addTempStudent" : function(response: {name: string, uname: string, password: string, isAlt:boolean, uid: number, tid:number}) {
             addSuccessBox(dom.openTeamFeedbackCnt, "Team saved successfully.");
             let team: Team = teams["" + response.tid];  // The team they are in
-            let student: Student = new Student([response.name,response.uid]);
+            let student: Student = new Student([response.name,response.uid], team);
             student.temp = true;
             student.uname = response.uname;
             student.password = response.password;
@@ -502,7 +539,11 @@ let dom = {
     get fnameTemp() {return this.getHelper(config.IDs.fnameTemp)},
     get lnameTemp() {return this.getHelper(config.IDs.lnameTemp)},
     get inputSchool() {return this.getHelper(config.IDs.inputSchool)},
-
+    get generalScoreboard() {return this.getHelper(config.IDs.generalScoreboard)},
+    get writtenScoreboard() {return this.getHelper(config.IDs.writtenScoreboard)},
+    get writtenScoreboardTable() {return this.getHelper(config.IDs.writtenScoreboardTable)},
+    get handsOnScoreboard() {return this.getHelper(config.IDs.handsOnScoreboard)},
+    get handsOnScoreboardTable() {return this.getHelper(config.IDs.handsOnScoreboardTable)},
 
     classes : {
         cached: {},    // DOM objects that have already been accessed
@@ -615,16 +656,41 @@ class Student {
     password: string;   // If they are a temp
     mcScore:number;
     team: Team;
+    dom : {tr: HTMLTableRowElement} = {tr: null};
     static students: {[key:string]:Student} = {};
-    constructor(data: [string,number,number?]) {
+
+    constructor(data: [string,number,number?], team?: Team) {
         this.name = data[0];
         this.uid = data[1];
 
         this.mcScore = <number>data[2];
+        this.team = team;
+        if(pageState.mcExists && team != null) {
+            this.dom.tr = document.createElement("tr");
+            this.dom.tr.classList.add("student");
+            this.dom.tr.onclick = function() {
+                Team.toggleTeam(team);
+            };
+
+            let nameTD = document.createElement("td");
+            nameTD.innerText = this.name;
+            this.dom.tr.appendChild(nameTD);
+
+            let tnameTD = document.createElement("td");
+            tnameTD.innerText = this.team.tname;
+            this.dom.tr.appendChild(tnameTD);
+
+            let totalTD = document.createElement("td");
+            if(this.mcScore) totalTD.innerText = "" + this.mcScore;
+            else totalTD.innerText = "Not Taken";
+            this.dom.tr.appendChild(totalTD);
+        }
+        Student.students[""+this.uid] = this;
     }
 }
 
 let writtenTestScoreboard: Student[] = [];  // The list of students sorted by their mc score
+let handsOnScoreboard: Team[] = [];     // The list of teams sorted by their hands-on score
 let teams: {[key:string]:Team} = {};    // Maps tids to their team
 class Team {
     tname: string;
@@ -637,17 +703,21 @@ class Team {
     mcScore : number;
     frqScore: number;
     code : string;
+    frqResponses : number[];    // A list of the frq response indices
+
+    editedSinceLastSave : boolean = false;  // If this team has been edited since the last save
 
     dom : {
         tr : HTMLTableRowElement,  // The table row in the scoreboard
-        mcTD : HTMLTableCellElement    // The table cell that holds this team's written score
-    } = {tr: null, mcTD: null};
+        mcTD : HTMLTableCellElement,    // The table cell that holds this team's written score
+        frqTR : HTMLTableRowElement // The table row in the hands-on table
+    } = {tr: null, mcTD: null, frqTR: null};
 
 
-    constructor(data: { tname: string, school: string, tid: number, students: { nonAlts: [string,number,number?][],
-            alt?: [string,number,number?]}, frq?: number }, tempData?:{[uid:string]:[string,string]}) {
+    constructor(data: {tname: string, school: string, tid: number, students: { nonAlts: [string,number,number?][],
+            alt?: [string,number,number?]}, frq?: number, frqResponses?: number[]}, tempData?:{[uid:string]:[string,string]}) {
         function createStudent(data:[string,number,number?]):Student {
-            let student: Student = new Student(data);
+            let student: Student = new Student(data, thisTeam);
             if(pageState.isCreator) {   // If they are the creator, check if this student is a temporary user
                 let temp = tempData[""+student.uid];    // First element is their username, second is their password
                 if(temp) {
@@ -656,11 +726,11 @@ class Team {
                     student.password = temp[1];
                 }
             }
-            student.team = thisTeam;
             if(pageState.mcExists) writtenTestScoreboard.push(student);
             return student;
         }
         let thisTeam:Team = this;
+        if(pageState.frqExists) handsOnScoreboard.push(this);
 
         this.tname = data.tname;
         this.school = data.school;
@@ -708,6 +778,8 @@ class Team {
             }
         }
 
+        this.frqResponses = data.frqResponses;
+
         teams[""+this.tid] = this;
         this.render();
     }
@@ -715,38 +787,71 @@ class Team {
 
     // Creates the html objects
     render() {
-        this.dom.tr = document.createElement("tr");
-        this.dom.tr.classList.add("team");
+        function createGeneralRow(team: Team) {
+            team.dom.tr = document.createElement("tr");
+            team.dom.tr.classList.add("team");
 
-        let tnameTD = document.createElement("td");
-        tnameTD.innerText = this.tname;
-        this.dom.tr.appendChild(tnameTD);
+            let tnameTD = document.createElement("td");
+            tnameTD.innerText = team.tname;
+            team.dom.tr.appendChild(tnameTD);
 
-        let totalScore: number = 0;
-        if(pageState.mcExists) {
-            let mcTD = document.createElement("td");
-            mcTD.classList.add("right");
-            mcTD.innerText = "" + this.mcScore;
-            totalScore += this.mcScore;
-            this.dom.mcTD = mcTD;
-            this.dom.tr.appendChild(mcTD);
+            let totalScore: number = 0;
+            if (pageState.mcExists) {
+                let mcTD = document.createElement("td");
+                mcTD.classList.add("right");
+                mcTD.innerText = "" + team.mcScore;
+                totalScore += team.mcScore;
+                team.dom.mcTD = mcTD;
+                team.dom.tr.appendChild(mcTD);
+            }
+
+            if (pageState.frqExists) {
+                let frqTD = document.createElement("td");
+                frqTD.classList.add("right");
+                totalScore += team.frqScore;
+                frqTD.innerText = "" + team.frqScore;
+                team.dom.tr.appendChild(frqTD);
+            }
+
+            let totalTD = document.createElement("td");
+            totalTD.classList.add("right");
+            totalTD.innerText = "" + totalScore;
+            team.dom.tr.appendChild(totalTD);
+
+            team.dom.tr.onclick = function () {
+                Team.toggleTeam(team);
+            };
         }
+        function createFRQRow(team: Team) {
+            // Create the frq table row
+            team.dom.frqTR = document.createElement("tr");
+            team.dom.frqTR.onclick = function() {
+                Team.toggleTeam(team);
+            };
 
-        if(pageState.frqExists) {
-            let frqTD = document.createElement("td");
-            frqTD.classList.add("right");
-            totalScore += this.frqScore;
-            frqTD.innerText = "" + this.frqScore;
-            this.dom.tr.appendChild(frqTD);
+            let tnameTD = document.createElement("td");
+            tnameTD.innerText = team.tname;
+            team.dom.frqTR.appendChild(tnameTD);
+
+            for(let frqResponse of team.frqResponses) {
+                let td = document.createElement("td");
+                if(frqResponse > 0) {
+                    td.innerText = "" + (Math.abs(pageState.frqMaxPoints) - Math.abs(frqResponse-1)*Math.abs(pageState.frqIncorrectPenalty)); // + " pts";
+                    td.classList.add("solved");
+                } else if(frqResponse == 0) {
+                    td.innerText = "0"; // tries";
+                    td.classList.add("untried");
+                } else {
+                    let tries = Math.abs(frqResponse);
+                    if(tries > 1) td.innerText = "" + tries;    // + " tries";
+                    else td.innerText = "1"; // try";
+                    td.classList.add("tried");
+                }
+                team.dom.frqTR.appendChild(td);
+            }
         }
-
-        let totalTD = document.createElement("td");
-        totalTD.classList.add("right");
-        totalTD.innerText = "" + totalScore;
-        this.dom.tr.appendChild(totalTD);
-
-        let thisTeam: Team = this;
-        this.dom.tr.onclick = function(){Team.toggleTeam(thisTeam);};
+        createGeneralRow(this);
+        if(pageState.frqExists) createFRQRow(this);
     }
 
     // Save the team and copy over the temporary information to the official information
@@ -770,7 +875,7 @@ class Team {
 
         // pageState.saveTeamList.length = 0;
         ws.send(JSON.stringify(data));
-
+        pageState.openTeam.editedSinceLastSave = false;
         addSuccessBox(dom.openTeamFeedbackCnt, "Saving team...");
     }
 
@@ -785,6 +890,7 @@ class Team {
         }
 
         dom.teamList.removeChild(this.dom.tr);
+        dom.handsOnScoreboardTable.removeChild(this.dom.frqTR);
 
         dom.teamCnt.style.display = "none";
         pageState.openTeam.dom.tr.classList.remove("selected");
@@ -971,22 +1077,48 @@ class Team {
     /*
      Toggles between looking at a team and not. If the given team object is null or equal to the currently open team,
      then close the 'teamCnt'. Otherwise, open it and set its information properly.
+     If requestLoad is true, it will fire the requestLoadScoreboards
      */
-    static toggleTeam(team: Team) {
+    static toggleTeam(team: Team, requestLoad:boolean = true) {
         if(!team || team == pageState.openTeam) {   // Close the "#teamCnt"
             dom.teamCnt.style.display = "none";
             pageState.openTeam.dom.tr.classList.remove("selected");
-            pageState.openTeam = null;
 
-            requestLoadScoreboard();
+            if(requestLoad && team.editedSinceLastSave) requestLoadScoreboard();
+
+            if(pageState.mcExists && pageState.openTeam) {
+                for(let student of pageState.openTeam.students) {
+                    student.dom.tr.classList.remove("selected");
+                }
+                if(pageState.openTeam.alt) pageState.openTeam.alt.dom.tr.classList.remove("selected");
+            }
+            if(pageState.frqExists && pageState.openTeam) {
+                (<Team>pageState.openTeam).dom.frqTR.classList.remove("selected");
+            }
+            pageState.openTeam = null;
         } else {
             deleteErrorSuccessBox(dom.openTeamFeedbackCnt);
 
             if(pageState.openTeam) {
                 pageState.openTeam.dom.tr.classList.remove("selected");
-                requestLoadScoreboard();
+                if(pageState.mcExists) {
+                    for(let student of pageState.openTeam.students) {
+                        student.dom.tr.classList.remove("selected");
+                    }
+                    if(pageState.openTeam.alt) pageState.openTeam.alt.dom.tr.classList.remove("selected");
+                }
+                if(pageState.frqExists) pageState.openTeam.dom.frqTR.classList.remove("selected");
+                if(requestLoad && pageState.openTeam.editedSinceLastSave) requestLoadScoreboard();
             }
             team.dom.tr.classList.add("selected");
+            if(pageState.mcExists) {
+                for(let student of team.students) {
+                    student.dom.tr.classList.add("selected");
+                }
+                if(team.alt) team.alt.dom.tr.classList.add("selected");
+            }
+            if(pageState.frqExists) team.dom.frqTR.classList.add("selected");
+
             Team.renderOpenTeam(team);
         }
     }
@@ -1002,6 +1134,7 @@ class Team {
                 pageState.openTeam.save();
             } else {    // Enter editing mode
                 pageState.editingTeam = true;
+                pageState.openTeam.editedSinceLastSave = true;
 
                 dom.editSaveTeam.src = "/res/console/save.svg";
                 dom.teamCnt.classList.add("editing");
@@ -1266,12 +1399,25 @@ function createTeam(){
                     addErrorBox(dom.errorBoxERROR, result["error"]);
                 if (result["status"] === "success") {
                     if (pageState.isCreator) {   // If they are the creator, add in the new team
-                        let newTeam: Team = new Team({
-                            tname: result["tname"], school: "", tid: result["tid"],
-                            students: {nonAlts: [], alt: null}, frq: 0
-                        });
+                        let newTeam: Team;
+                        if(pageState.frqExists) {
+                            let frqResponses: number[] = [];
+                            frqResponses.length = pageState.frqProblemMap.length;
+                            frqResponses.fill(0);
+
+                            newTeam = new Team({
+                                tname: result["tname"], school: "", tid: result["tid"],
+                                students: {nonAlts: [], alt: null}, frq: 0, frqResponses: frqResponses
+                            });
+                        } else {
+                            newTeam = new Team({
+                                tname: result["tname"], school: "", tid: result["tid"],
+                                students: {nonAlts: [], alt: null}, frq: 0
+                            });
+                        }
                         newTeam.code = result["code"];
                         dom.teamList.appendChild(newTeam.dom.tr);
+                        if(pageState.frqExists) dom.handsOnScoreboardTable.appendChild(newTeam.dom.frqTR);
 
                         Team.toggleTeam(newTeam);
                         hideSignup();
@@ -2026,4 +2172,22 @@ function downloadRoster() {
         pageCount.row += 10;
     }
     doc.save("roster.pdf");
+}
+
+function showGeneralScoreboard() {
+    dom.teamListCnt.classList.add("showGeneral");
+    dom.teamListCnt.classList.remove("showWritten");
+    dom.teamListCnt.classList.remove("showHandsOn");
+}
+
+function showWrittenScoreboard() {
+    dom.teamListCnt.classList.add("showWritten");
+    dom.teamListCnt.classList.remove("showGeneral");
+    dom.teamListCnt.classList.remove("showHandsOn");
+}
+
+function showHandsOnScoreboard() {
+    dom.teamListCnt.classList.add("showHandsOn");
+    dom.teamListCnt.classList.remove("showGeneral");
+    dom.teamListCnt.classList.remove("showWritten");
 }

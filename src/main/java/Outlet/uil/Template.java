@@ -182,7 +182,8 @@ public class Template {
 
         String jsPDF = "";
         if(userStatus.admin) {
-            jsPDF = "<script src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.0/jspdf.umd.min.js' defer></script>";
+            jsPDF = "<script src='/js/html2canvas.min.js' defer></script>" +
+                    "<script src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.0/jspdf.umd.min.js' defer></script>";
         }
         writer.write(HEADERS+ jsPDF +
                         // Dynamic.loadNav(request) +
@@ -306,10 +307,12 @@ public class Template {
                 int rank = sortedTeams.indexOf(entry.tid) + 1;
 
                 string += "<div id='leftBarBottom'>";
-                string += 
-                        "<p id='bottomRank'>" + ordinal(rank) + "</p>" +
-                        "<p>out of <span id='bottomOutOf'>" + competition.entries.tidMap.values().size() +
-                        "</span> teams</p></div>";
+                if(showScoreboard) {
+                    string +=
+                            "<p id='bottomRank'>" + ordinal(rank) + "</p>" +
+                                    "<p>out of <span id='bottomOutOf'>" + competition.entries.tidMap.values().size() +
+                                    "</span> teams</p></div>";
+                }
             }
         } /*else if(userStatus.teacher) {
             string += "<div id='leftBarBottom'><a href='/profile' class='bottomLeftLink'>Create Competition</a></div>";
@@ -820,7 +823,10 @@ public class Template {
             entryJSON.addProperty("school", entry.school);
             entryJSON.addProperty("tid", entry.tid);
             entryJSON.add("students", entry.getStudentJSON());
-            if(frqTest.exists) entryJSON.addProperty("frq", entry.frqScore);
+            if(frqTest.exists) {
+                entryJSON.addProperty("frq", entry.frqScore);
+                entryJSON.add("frqResponses", entry.getFRQJSON());
+            }
 
             scoreboardData.add(entryJSON);
             teamCodeData.add(entry.password);
@@ -866,13 +872,18 @@ public class Template {
                 "<button id='deleteButton' onclick='deleteTeamOrStudent()'>Yes, Delete</button>" +
                 "<button onclick='closeDeleteConfirmation()'>Cancel</button>" +
                 "</div></div>" +
-
-                "<div id='teamListCnt'><h1>Scoreboard</h1>" +
-                "<button id='addExistingTeam' onclick='showAddExistingTeam()' class='creatorOnly chngButton'>Add Existing Team</button>" +
+                "<div id='teamListCnt' class='showGeneral'><h1>Scoreboard</h1><div id='scoreboardNav'>" +
+                "<button onclick='showGeneralScoreboard()' id='showGeneralButton'>General</button>";
+        if(mcTest.exists) scoreboardHTML += "<button onclick='showWrittenScoreboard()' id='showWrittenButton'>Written</button>";
+        if(frqTest.exists) scoreboardHTML += "<button onclick='showHandsOnScoreboard()' id='showHandsOnButton'>Hands-On</button>";
+        scoreboardHTML += "</div><button id='addExistingTeam' onclick='showAddExistingTeam()' class='creatorOnly chngButton'>Add Existing Team</button>" +
                 "<button id='createTeam' onclick='showSignup()' class='creatorOnly chngButton'>Create Team</button>" +
                 "<a id='downloadScoreboard' onclick='downloadScoreboard()' class='creatorOnly'>Download Scoreboard</a>" +
                 "<a id='downloadRoster' onclick='downloadRoster()' class='creatorOnly'>Download Roster</a>" +
-                "<table id='teamList'></table></div><div id='teamCnt'><h1 id='openTeamName'></h1>" +
+                "<div id='generalScoreboard'><table id='teamList'></table></div>";
+        if(mcTest.exists) scoreboardHTML += "<div id='writtenScoreboard'><table id='writtenScoreboardTable'></table></div>";
+        if(frqTest.exists) scoreboardHTML += "<div id='handsOnScoreboard'><table id='handsOnScoreboardTable'></table></div>";
+        scoreboardHTML += "</div><div id='teamCnt'><h1 id='openTeamName'></h1>" +
                 "<div id='teamControls'><img class='creatorOnly editTeam' id='deleteTeam' onclick='Team.showDeleteConfirmation()' src='/res/console/delete.svg'>" +
                 "<img class='creatorOnly' id='editSaveTeam' onclick='Team.editSaveTeam()' src='/res/console/edit.svg'></div>" +
                 "<div id='openTeamFeedbackCnt'></div><p class='creatorOnly'><span class='label'>Code:</span><span id='openTeamCode'></span></p>";

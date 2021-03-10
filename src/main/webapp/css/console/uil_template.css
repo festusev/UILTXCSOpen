@@ -145,10 +145,6 @@
 #teamList .right {
     width: 14%;
 }
-#teamListCnt table tr:not(.team) {
-    background-color: rgba(0,0,0,0);
-    box-shadow: none;
-}
 #selectStudent, #selectGlobalTeam, #deleteConfirmationCnt {
     position: absolute;
     left: 0;
@@ -249,6 +245,22 @@
 #teamListCnt {
     flex-grow: 1;
     display: block;
+}
+#teamListCnt.showGeneral #generalScoreboard {
+    display: block;
+}
+#teamListCnt.showGeneral #showGeneralButton, #teamListCnt.showWritten #showWrittenButton, #teamListCnt.showHandsOn #showHandsOnButton {
+    background-color: lightgray;
+}
+
+#teamListCnt.showWritten #writtenScoreboard {
+    display: block;
+}
+#teamListCnt.showHandsOn #handsOnScoreboard {
+    display: block;
+}
+#handsOnScoreboard {
+    margin-top: 1rem;
 }
 #teamCnt {
     width: calc(50% - 2rem);
@@ -861,6 +873,59 @@
     color: var(--prim-dark);
     white-space: nowrap;
 }
+#handsOnScoreboard, #writtenScoreboard, #generalScoreboard {
+    display: none;
+}
+#scoreboardNav button {
+    margin-right: 1rem;
+    cursor: pointer;
+    border: 1px solid lightgray;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+}
+#scoreboardColumn #handsOnScoreboardTable {
+    border-spacing: 2px 2px;
+}
+#handsOnScoreboardTable tr{
+    cursor: pointer;
+}
+#handsOnScoreboardTable tr.selected td:first-child{
+    background-color: var(--sec-light);
+}
+#handsOnScoreboardTable th {
+    padding: 0;
+    overflow: hidden;
+    text-align: center;
+}
+#handsOnScoreboardTable td:nth-child(1) {
+    text-align: left;
+}
+#handsOnScoreboardTable td{
+    padding-right: 0;
+    padding-left: 0;
+    text-align: center;
+}
+.solved, .untried, .tried {
+    color: white;
+    text-align: center;
+}
+#handsOnScoreboardTable .solved {
+    background-color: var(--success-dark);
+}
+#handsOnScoreboardTable .untried {
+    background-color: var(--warn-col);
+}
+#handsOnScoreboardTable .tried {
+    background-color: #fe793d;
+}
+#writtenScoreboardTable .student {
+    background-color: white;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+}
+#writtenScoreboardTable .student.selected {
+    background-color: var(--sec-light);
+}
 @media only screen and (max-width: 720px){
     #countdownCnt {
         display: none !important;
@@ -918,7 +983,7 @@
 }
 @media only screen and (max-width: 1450px){
     .column{
-        margin:0px;
+        margin: 0px;
         padding: 1rem 2rem;
     }
     #aboutColumn, #mcColumn {

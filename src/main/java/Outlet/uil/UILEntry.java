@@ -492,6 +492,14 @@ public class UILEntry {
         return obj;
     }
 
+    public JsonArray getFRQJSON() {
+        JsonArray array = new JsonArray();
+        for(Pair<Short, ArrayList<FRQSubmission>> pair: frqResponses) {
+            array.add(pair.key);
+        }
+        return array;
+    }
+
     public int getScore() {
         int frq = 0;
         int mc = 0;
