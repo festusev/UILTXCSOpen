@@ -38,6 +38,8 @@ public class CompetitionSocket {
         response.addProperty("isCreator", status.admin);
         response.addProperty("mcExists", competition.template.mcTest.exists);
         response.addProperty("frqExists", competition.template.frqTest.exists);
+        response.addProperty("mcCorrectPoints", competition.template.mcTest.CORRECT_PTS);
+        response.addProperty("mcIncorrectPoints", competition.template.mcTest.INCORRECT_PTS);
         response.addProperty("alternateExists", competition.alternateExists);
         response.addProperty("numNonAlts", competition.numNonAlts);
         if(competition.template.frqTest.exists) {
@@ -109,13 +111,23 @@ public class CompetitionSocket {
                 int index = competition.clarifications.size();  // The index of this clarification in the list
                 competition.clarifications.add(clarification);
 
+                String askerName = "";
+                Student asker = StudentMap.getByUID(clarification.uid);
+                if(asker != null) {
+                    UILEntry entry = asker.cids.get(competition.template.cid);
+                    if(entry != null) {
+                        askerName = " - " + entry.tname;
+                    }
+                }
+
                 CompetitionSocket teacherSocket = connected.get(competition.teacher.uid);
                 if(teacherSocket != null) {
                     JsonObject object = new JsonObject();
+
                     object.addProperty("action", "nc");
                     object.addProperty("index", clarification.index);
-                    object.addProperty("name", StringEscapeUtils.escapeHtml4(user.getName()));
-                    object.addProperty("question", StringEscapeUtils.escapeHtml4(clarification.question));
+                    object.addProperty("name", askerName);
+                    object.addProperty("question", clarification.question);
                     object.addProperty("id", index);
 
                     teacherSocket.send(object.toString());
@@ -127,10 +139,11 @@ public class CompetitionSocket {
                     CompetitionSocket competitionSocket = connected.get(judgeUID);
                     if(competitionSocket != null) {
                         JsonObject object = new JsonObject();
+
                         object.addProperty("action", "nc");
                         object.addProperty("index", clarification.index);
-                        object.addProperty("name", StringEscapeUtils.escapeHtml4(user.getName()));
-                        object.addProperty("question", StringEscapeUtils.escapeHtml4(clarification.question));
+                        object.addProperty("name", askerName);
+                        object.addProperty("question", clarification.question);
                         object.addProperty("id", index);
 
                         competitionSocket.send(object.toString());
@@ -157,11 +170,21 @@ public class CompetitionSocket {
                 clarification.responded = true;
                 clarification.response = data.get(2).getAsString();
 
+                String askerName = "";
+                Student asker = StudentMap.getByUID(clarification.uid);
+                if(asker != null) {
+                    UILEntry entry = asker.cids.get(competition.template.cid);
+                    if(entry != null) {
+                        askerName = " - " + entry.tname;
+                    }
+                }
+
                 JsonObject object = new JsonObject();
                 object.addProperty("action", "ac");
                 object.addProperty("index", clarification.index);
-                object.addProperty("question", StringEscapeUtils.escapeHtml4(clarification.question));
-                object.addProperty("answer", StringEscapeUtils.escapeHtml4(clarification.response));
+                object.addProperty("name", askerName);
+                object.addProperty("question", clarification.question);
+                object.addProperty("answer", clarification.response);
                 String stringified = object.toString();
 
                 // Relay the clarification to all of the people who are connected to this competition and signed up
@@ -479,7 +502,11 @@ public class CompetitionSocket {
                         if (competition.template.mcTest.exists) {
                             UILEntry entry = student.cids.get(competition.template.cid);    // If they are already signed up for this competition
                             if (entry != null && entry.mc.containsKey(student.uid)) {
-                                studentData.add(entry.mc.get(student.uid).scoringReport[0]);
+                                MCSubmission submission = entry.mc.get(student.uid);
+                                JsonArray mcData = new JsonArray();
+                                mcData.add(submission.scoringReport[1]);
+                                mcData.add(submission.scoringReport[3]);
+                                studentData.add(mcData);
                             }
                         }
 

@@ -592,8 +592,8 @@ public class Template {
                         "<div style='flex-grow:1' id='frqSubmissions'><div class='row head-row'>" +
                         "<h1>Hands-On</h1>" +
                         "</div>" +
-                        "<div class='row'>" +
-                        "<p>Test Packet: <a class='link' target='_blank' href='" + StringEscapeUtils.escapeHtml4(frqTest.STUDENT_PACKET) + "'>link</a></p>" +
+                        "<div class='row'><audio src='/blip.mp3' preload='auto' controls='none' style='display:none' id='playBell'></audio>" +
+                        "<p>Most recent problems are first.<br>Test Packet: <a class='link' target='_blank' href='" + StringEscapeUtils.escapeHtml4(frqTest.STUDENT_PACKET) + "'>link</a></p>" +
                         "<p><b>Submissions:</b></p>";
 
                 html += "<table id='frqSubmissionsTable'><tr id='frqSubmissionsTr'><th>Problem</th><th>Team</th><th>Result</th></tr>";
@@ -677,23 +677,21 @@ public class Template {
             boolean noClarifications = true;
             for (int i=competition.clarifications.size()-1;i>=0;i--) {
                 Clarification clarification = competition.clarifications.get(i);
-                if(clarification.responded) {  // Only show responded clarifications to non creators
-                    String askerName = "";
-                    if(userStatus.admin) {
-                        Student asker = StudentMap.getByUID(clarification.uid);
-                        if (asker != null) askerName = " - " + StringEscapeUtils.escapeHtml4(asker.getName());
+                String askerName = "";
+                Student asker = StudentMap.getByUID(clarification.uid);
+                if(asker != null) {
+                    UILEntry entry = asker.cids.get(cid);
+                    if(entry != null) {
+                        askerName = " - " + entry.tname;
                     }
-
+                }
+                if(clarification.responded) {  // Only show responded clarifications to non creators
                     html += "<div class='clarification' id='clarification_"+clarification.index+"'><h3>Question"+
                             askerName+"</h3><span>" +
                             StringEscapeUtils.escapeHtml4(clarification.question) +
                             "</span><h3>Answer</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.response) + "</span></div>";
                     noClarifications = false;
                 } else if (userStatus.admin) {    // Not yet responded, so add in the response textarea
-                    String askerName = "";
-                    Student asker = StudentMap.getByUID(clarification.uid);
-                    if (asker != null) askerName = " - " + StringEscapeUtils.escapeHtml4(asker.getName());
-
                     html += "<div class='clarification' id='clarification_"+clarification.index+"'><h3>Question"+
                             askerName+"</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.question) +
                             "</span><h3>Answer</h3><span><textarea maxlength='255' oninput='inputMaxLength(this)' placeholder='Send a response.'></textarea><button " +
@@ -932,6 +930,9 @@ public class Template {
             }
             entry.uids = new HashSet<>();
             competition.entries.delEntry(entry);
+
+            // Remove frq submissions
+            competition.frqSubmissions.removeIf(s -> (s.entry.tid == entry.tid));
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {

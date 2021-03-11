@@ -950,7 +950,7 @@ list_handsOn_changeproblems.appendChild(li);
             if (filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) {
                 filename = filename.substring(1);
             }
-            problem.outputFname = filename;
+            problem.inputFname = filename;
             input_in_proxy.innerText = filename;
             input_in_proxy.title = filename;
         };
@@ -974,7 +974,7 @@ list_handsOn_changeproblems.appendChild(li);
                 filename = filename.substring(1);
             }
 
-            problem.inputFname = filename;
+            problem.outputFname = filename;
             input_out_proxy.innerText = filename;
             input_out_proxy.title = filename;
         };

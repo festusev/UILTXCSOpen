@@ -453,7 +453,8 @@ public class UILEntry {
         return score;
     }
 
-    // Returns a JSON list of objects formatted: {tid: tid, nonAlts: [["name", uid, mcScore]], alt: ["name",uid,mcScore]}. if there is no mcTest, there is no mcScore
+    // Returns a JSON list of objects formatted: {tid: tid, nonAlts: [["name", uid, [mcNumCorrect, mcNumIncorrect]]],
+    // alt: ["name",uid,[mcNumCorrect, mcNumIncorrect]]}. if there is no mcTest, there is no mcScore
     public JsonObject getStudentJSON() {
         JsonObject obj = new JsonObject();
 
@@ -468,7 +469,12 @@ public class UILEntry {
 
             if(competition.template.mcTest.exists && mc.containsKey(uid)) {
                 MCSubmission submission = mc.get(uid);
-                if(submission != null) studentData.add(submission.scoringReport[0]);
+                if(submission != null) {
+                    JsonArray mcData = new JsonArray();
+                    mcData.add(submission.scoringReport[1]);
+                    mcData.add(submission.scoringReport[3]);
+                    studentData.add(mcData);
+                }
             }
             array.add(studentData);
         }
@@ -481,7 +487,12 @@ public class UILEntry {
 
                 if (competition.template.mcTest.exists && mc.containsKey(altUID)) {
                     MCSubmission submission = mc.get(altUID);
-                    if (submission != null) studentData.add(submission.scoringReport[0]);
+                    if(submission != null) {
+                        JsonArray mcData = new JsonArray();
+                        mcData.add(submission.scoringReport[1]);
+                        mcData.add(submission.scoringReport[3]);
+                        studentData.add(mcData);
+                    }
                 }
 
                 obj.add("alt", studentData);

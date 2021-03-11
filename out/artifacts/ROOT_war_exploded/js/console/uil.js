@@ -39,6 +39,8 @@ var Global = WebAssembly.Global;
 var pageState = {
     isCreator: false,
     mcExists: false,
+    mcCorrectPoints: 0,
+    mcIncorrectPoints: 0,
     frqExists: false,
     frqMaxPoints: 0,
     frqIncorrectPenalty: 0,
@@ -136,6 +138,7 @@ var config = {
         handsOnSubmissionAverage: "handsOnSubmissionAverage",
         numTeams: "numTeams",
         numUsers: "numUsers",
+        playBell: "playBell",
         downloadScoreboard: "downloadScoreboard"
     },
     CLASSES: {
@@ -159,6 +162,7 @@ var config = {
             template.innerHTML = html;
             var row = dom.frqSubmissionsTable.insertRow(1);
             row.replaceWith(template.content.firstChild);
+            dom.playBell.play();
         }, "updateTeam": function (response) {
             dom.teamMembers.innerHTML = response["html"];
         }, "competitionDeleted": function (response) {
@@ -186,9 +190,24 @@ var config = {
             if (clarification_list.innerHTML == "There are no clarifications.") {
                 clarification_list.innerHTML = "";
             }
-            clarification_list.innerHTML = "<div class='clarification' id='clarification_" + response["index"] + "'><h3>Question - " + response["name"] + "</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
-                "<textarea placeholder='Send a response.' maxlength='255' oninput='inputMaxLength(this,255)'></textarea><button class='chngButton' onclick='answerClarification(this, " +
-                response["id"] + ")'>Send</button></span></div>" + clarification_list.innerHTML;
+            var clarification = document.createElement("div");
+            clarification.id = "clarification_" + response["index"];
+            clarification.classList.add("clarification");
+            var clarificationQuestionH3 = document.createElement("h3");
+            clarificationQuestionH3.innerText = "Question" + response["name"];
+            clarification.appendChild(clarificationQuestionH3);
+            var clarificationQuestion = document.createElement("span");
+            clarificationQuestion.innerText = response["question"];
+            clarification.appendChild(clarificationQuestion);
+            var clarificationAnswerH3 = document.createElement("h3");
+            clarificationAnswerH3.innerText = "Answer";
+            clarification.appendChild(clarificationAnswerH3);
+            var clarificationAnswer = document.createElement("span");
+            clarificationAnswer.innerHTML = "<textarea placeholder='Send a response.' maxlength='255' " +
+                "oninput='inputMaxLength(this,255)'></textarea><button class='chngButton' onclick='answerClarification(this, " +
+                response["id"] + ")'>Send</button>";
+            clarification.appendChild(clarificationAnswer);
+            clarification_list.insertBefore(clarification, clarification_list.firstChild);
         }, "ac": function (response) {
             var clarification_list = dom.clarificationColumn.querySelector(".clarification_group");
             if (clarification_list.innerHTML == "There are no clarifications.") {
@@ -199,8 +218,22 @@ var config = {
                 if (clarificationDOM != null)
                     clarification_list.removeChild(clarificationDOM);
             }
-            clarification_list.innerHTML = "<div class='clarification' id='clarification_" + response["index"] + "'><h3>Question</h3><span>" + response["question"] + "</span><h3>Answer</h3><span>" +
-                response["answer"] + "</span></div>" + clarification_list.innerHTML;
+            var clarification = document.createElement("div");
+            clarification.id = "clarification_" + response["index"];
+            clarification.classList.add("clarification");
+            var clarificationQuestionH3 = document.createElement("h3");
+            clarificationQuestionH3.innerText = "Question" + response["name"];
+            clarification.appendChild(clarificationQuestionH3);
+            var clarificationQuestion = document.createElement("span");
+            clarificationQuestion.innerText = response["question"];
+            clarification.appendChild(clarificationQuestion);
+            var clarificationAnswerH3 = document.createElement("h3");
+            clarificationAnswerH3.innerText = "Answer";
+            clarification.appendChild(clarificationAnswerH3);
+            var clarificationAnswer = document.createElement("span");
+            clarificationAnswer.innerText = response["answer"];
+            clarification.appendChild(clarificationAnswer);
+            clarification_list.insertBefore(clarification, clarification_list.firstChild);
         }, "loadScoreboard": function (response) {
             var newToggleTeam = null; // The new team object that we are toggling open
             var oldOpenTeamTID = -1; // The tid of the old open team
@@ -211,6 +244,8 @@ var config = {
             handsOnScoreboard = [];
             pageState.isCreator = response.isCreator;
             pageState.mcExists = response.mcExists;
+            pageState.mcCorrectPoints = response.mcCorrectPoints;
+            pageState.mcIncorrectPoints = response.mcIncorrectPoints;
             pageState.frqExists = response.frqExists;
             pageState.frqIncorrectPenalty = response.frqIncorrectPenalty;
             pageState.frqMaxPoints = response.frqMaxPoints;
@@ -295,8 +330,9 @@ var config = {
                         return 1;
                     else if (!s1IsUndefined && s2IsUndefined)
                         return -1;
-                    if (s1.mcScore == s2.mcScore)
-                        return 0;
+                    if (s1.mcScore == s2.mcScore) { // Tiebreak
+                        return s2.mcNumCorrect / (s2.mcNumIncorrect + s2.mcNumCorrect) - s1.mcNumCorrect / (s1.mcNumIncorrect + s1.mcNumCorrect);
+                    }
                     else if (s1.mcScore < s2.mcScore)
                         return 1;
                     else
@@ -307,7 +343,7 @@ var config = {
                     var student = writtenTestScoreboard_1[_i];
                     writtenTestFragment.appendChild(student.dom.tr);
                 }
-                dom.writtenScoreboardTable.innerHTML = "<tr><th>Name</th><th>Team</th><th>Total</th></tr>";
+                dom.writtenScoreboardTable.innerHTML = "<tr><th>Name</th><th>Team</th><th>Correct</th><th>Incorrect</th><th>% Correct</th><th>Total</th></tr>";
                 dom.writtenScoreboardTable.appendChild(writtenTestFragment);
             }
             if (pageState.frqExists) {
@@ -342,7 +378,7 @@ var config = {
             if (pageState.frqExists) {
                 dom.handsOnScoreboardTable.innerHTML = "";
                 var handsOnHeader = document.createElement("tr");
-                handsOnHeader.innerHTML = "<th></th>";
+                handsOnHeader.innerHTML = "<th></th><th>Total</th>";
                 for (var _b = 0, _c = response.frqProblemMap; _b < _c.length; _b++) {
                     var problem = _c[_b];
                     var problemTH = document.createElement("th");
@@ -470,6 +506,9 @@ var config = {
             addSuccessBox(dom.openTeamFeedbackCnt, "Team saved successfully.");
             var team = teams["" + response.tid]; // The team they are in
             var student = new Student([response.name, response.uid], team);
+            student.render();
+            if (pageState.mcExists)
+                dom.writtenScoreboardTable.appendChild(student.dom.tr);
             student.temp = true;
             student.uname = response.uname;
             student.password = response.password;
@@ -561,6 +600,7 @@ var dom = {
     get writtenScoreboardTable() { return this.getHelper(config.IDs.writtenScoreboardTable); },
     get handsOnScoreboard() { return this.getHelper(config.IDs.handsOnScoreboard); },
     get handsOnScoreboardTable() { return this.getHelper(config.IDs.handsOnScoreboardTable); },
+    get playBell() { return this.getHelper(config.IDs.playBell); },
     classes: {
         cached: {},
         getHelper: function (className) {
@@ -655,8 +695,21 @@ var Student = /** @class */ (function () {
         this.dom = { tr: null };
         this.name = data[0];
         this.uid = data[1];
-        this.mcScore = data[2];
         this.team = team;
+        Student.students["" + this.uid] = this;
+        if (data[2]) {
+            this.mcNumCorrect = data[2][0];
+            this.mcNumIncorrect = data[2][1];
+            this.mcScore = Math.abs(pageState.mcCorrectPoints) * this.mcNumCorrect - Math.abs(pageState.mcIncorrectPoints) * this.mcNumIncorrect;
+        }
+        else {
+            this.mcNumIncorrect = 0;
+            this.mcNumCorrect = 0;
+            this.mcScore = null;
+        }
+    }
+    Student.prototype.render = function () {
+        var team = this.team;
         if (pageState.mcExists && team != null) {
             this.dom.tr = document.createElement("tr");
             this.dom.tr.classList.add("student");
@@ -669,6 +722,18 @@ var Student = /** @class */ (function () {
             var tnameTD = document.createElement("td");
             tnameTD.innerText = this.team.tname;
             this.dom.tr.appendChild(tnameTD);
+            var numCorrectTD = document.createElement("td");
+            if (this.mcScore)
+                numCorrectTD.innerText = "" + this.mcNumCorrect;
+            this.dom.tr.appendChild(numCorrectTD);
+            var numIncorrectTD = document.createElement("td");
+            if (this.mcScore)
+                numIncorrectTD.innerText = "" + this.mcNumIncorrect;
+            this.dom.tr.appendChild(numIncorrectTD);
+            var percentCorrectTD = document.createElement("td");
+            if (this.mcScore)
+                percentCorrectTD.innerText = (this.mcNumCorrect / (this.mcNumCorrect + this.mcNumIncorrect)).toFixed(2);
+            this.dom.tr.appendChild(percentCorrectTD);
             var totalTD = document.createElement("td");
             if (this.mcScore)
                 totalTD.innerText = "" + this.mcScore;
@@ -676,8 +741,7 @@ var Student = /** @class */ (function () {
                 totalTD.innerText = "Not Taken";
             this.dom.tr.appendChild(totalTD);
         }
-        Student.students["" + this.uid] = this;
-    }
+    };
     Student.students = {};
     return Student;
 }());
@@ -690,6 +754,7 @@ var Team = /** @class */ (function () {
         this.dom = { tr: null, mcTD: null, frqTR: null };
         function createStudent(data) {
             var student = new Student(data, thisTeam);
+            student.render();
             if (pageState.isCreator) { // If they are the creator, check if this student is a temporary user
                 var temp = tempData["" + student.uid]; // First element is their username, second is their password
                 if (temp) {
@@ -795,6 +860,9 @@ var Team = /** @class */ (function () {
             var tnameTD = document.createElement("td");
             tnameTD.innerText = team.tname;
             team.dom.frqTR.appendChild(tnameTD);
+            var totalTD = document.createElement("td");
+            totalTD.innerText = "" + team.frqScore;
+            team.dom.frqTR.appendChild(totalTD);
             for (var _i = 0, _a = team.frqResponses; _i < _a.length; _i++) {
                 var frqResponse = _a[_i];
                 var td = document.createElement("td");
@@ -867,9 +935,12 @@ var Team = /** @class */ (function () {
         if (studentDOM != null) {
             dom.selectSignedUpStudent.removeChild(studentDOM);
         }
-        if (pageState.mcExists && student.mcScore) {
-            this.mcScore -= student.mcScore;
-            this.dom.mcTD.innerText = "" + this.mcScore;
+        if (pageState.mcExists) {
+            if (student.mcScore) {
+                this.mcScore -= student.mcScore;
+                this.dom.mcTD.innerText = "" + this.mcScore;
+            }
+            dom.writtenScoreboardTable.removeChild(student.dom.tr);
         }
         for (var i = 0; i < this.students.length; i++) {
             if (this.students[i].uid == student.uid)
@@ -908,11 +979,11 @@ var Team = /** @class */ (function () {
         if (!pageState.isCreator)
             return;
         var openTeam = pageState.openTeam;
-        var selectedSuccessfully = (pageState.alternateExists && pageState.addingAlt && !openTeam.alt) ||
-            (!pageState.addingAlt && openTeam.students.length < pageState.numNonAlts); // If we are changing which team this student is on
+        if (!((pageState.alternateExists && pageState.addingAlt && !openTeam.alt) || (!pageState.addingAlt && openTeam.students.length < pageState.numNonAlts)))
+            return;
         // This must come first, so that if the student is already in this team, this works
         // If team is null, they are adding a student from their class.
-        if (selectedSuccessfully && student.team != null) {
+        if (student.team != null) {
             if (student.team.alt && student.uid == student.team.alt.uid)
                 student.team.alt = null;
             else {
@@ -925,7 +996,11 @@ var Team = /** @class */ (function () {
                 student.team.students = newStudentsList;
             }
             // pageState.saveTeamList.push(teamData.team);
-            student.team = openTeam;
+        }
+        student.team = openTeam;
+        student.render();
+        if (!student.team && pageState.mcExists) {
+            dom.writtenScoreboardTable.appendChild(student.dom.tr);
         }
         if (pageState.alternateExists && pageState.addingAlt && !openTeam.alt) {
             openTeam.alt = student;
@@ -943,11 +1018,9 @@ var Team = /** @class */ (function () {
                 pageState.openTeam.students.push(student);
             }
         }
-        if (selectedSuccessfully) {
-            Team.renderOpenTeam(openTeam);
-            Team.editSaveTeam();
-            Team.closeSelectStudent();
-        }
+        Team.renderOpenTeam(openTeam);
+        Team.editSaveTeam();
+        Team.closeSelectStudent();
     };
     Team.renderOpenTeam = function (team) {
         // gets the table row for a student. [0] = uname, [1] = uid, [2] = mc score
@@ -974,7 +1047,7 @@ var Team = /** @class */ (function () {
             if (pageState.mcExists) {
                 var mcTD = document.createElement("td");
                 mcTD.classList.add("right");
-                if (typeof student.mcScore != "undefined")
+                if (student.mcScore)
                     mcTD.innerText = student.mcScore + "pts";
                 else
                     mcTD.innerText = "Not taken";
@@ -1959,111 +2032,228 @@ function writeToPDF(doc, text, x, status, maxwidth) {
         align: 'left'
     });
 }
+function exportCSV(arrayData, delimiter, fileName) {
+    var csv = "";
+    arrayData.forEach(function (array) {
+        csv += array.join(delimiter) + "\n";
+    });
+    var csvData = new Blob([csv], { type: 'text/csv' });
+    var csvUrl = URL.createObjectURL(csvData);
+    var hiddenElement = document.createElement('a');
+    hiddenElement.href = csvUrl;
+    hiddenElement.target = '_blank';
+    hiddenElement.download = fileName + '.csv';
+    hiddenElement.click();
+}
 // Creates a pdf of the scoreboard and downloads it
 function downloadScoreboard() {
     if (!pageState.isCreator)
         return;
-    var doc = new jspdf.jsPDF();
-    doc.setFont("times");
-    var pageCount = { count: 1, row: 20 };
-    // First, add in the general scoreboard
-    doc.setFontSize(20);
-    writeToPDF(doc, "Scoreboard", 20, pageCount);
-    pageCount.row += 10;
-    doc.setFontSize(12);
-    writeToPDF(doc, "Name", 20, pageCount, 30);
-    if (pageState.mcExists) {
-        writeToPDF(doc, "Written", 60, pageCount, 30);
-    }
-    if (pageState.frqExists) {
-        writeToPDF(doc, "Hands-On", 120, pageCount, 30);
-    }
-    writeToPDF(doc, "Total", 160, pageCount, 30);
-    pageCount.row += 10;
+    var data = [["Name", "Written", "Hands-On", "Total"]];
     for (var tid in teams) {
         var team = teams[tid];
-        writeToPDF(doc, team.tname, 20, pageCount, 30);
         var totalScore = 0;
+        var teamData = [team.tname.replace(/[^a-zA-Z0-9 ]/g, '')];
         if (pageState.mcExists) {
             totalScore += team.mcScore;
-            writeToPDF(doc, "" + team.mcScore, 60, pageCount, 30);
+            teamData.push("" + team.mcScore);
         }
         if (pageState.frqExists) {
             totalScore += team.frqScore;
-            writeToPDF(doc, "" + team.frqScore, 120, pageCount, 30);
+            teamData.push("" + team.frqScore);
         }
-        writeToPDF(doc, "" + totalScore, 160, pageCount, 30);
-        pageCount.row += 10 * Math.ceil(team.tname.length / 9);
+        teamData.push("" + totalScore);
+        data.push(teamData);
     }
+    data.push([]);
     if (pageState.mcExists) {
+        data.push(["Written Scoreboard"]);
+        data.push(["Name", "Team", "Correct", "Incorrect", "% Correct", "Total"]);
+        for (var _i = 0, writtenTestScoreboard_2 = writtenTestScoreboard; _i < writtenTestScoreboard_2.length; _i++) {
+            var student = writtenTestScoreboard_2[_i];
+            var mcCorrect = "";
+            var mcIncorrect = "";
+            var mcPercentCorrect = "";
+            var mcScoreString = "Not Taken";
+            if (student.mcScore) {
+                mcCorrect = "" + student.mcNumCorrect;
+                mcIncorrect = "" + student.mcNumIncorrect;
+                mcPercentCorrect = "" + (student.mcNumCorrect / (student.mcNumIncorrect + student.mcNumCorrect)).toFixed(2);
+                mcScoreString = "" + student.mcScore;
+            }
+            var studentData = [student.name.replace(/[^a-zA-Z0-9 ]/g, ''),
+                student.team.tname.replace(/[^a-zA-Z0-9 ]/g, ''), mcCorrect, mcIncorrect, mcPercentCorrect, mcScoreString];
+            data.push(studentData);
+        }
+    }
+    data.push([]);
+    if (pageState.frqExists) {
+        data.push(["Hands-On Scoreboard"]);
+        var frqHeader = ["", "Total"];
+        for (var _a = 0, _b = pageState.frqProblemMap; _a < _b.length; _a++) {
+            var problem = _b[_a];
+            frqHeader.push(problem);
+        }
+        data.push(frqHeader);
+        for (var tid in teams) {
+            var team = teams[tid];
+            var frqTeamData = [team.tname.replace(/[^a-zA-Z0-9 ]/g, ''), "" + team.frqScore];
+            for (var _c = 0, _d = team.frqResponses; _c < _d.length; _c++) {
+                var frqResponse = _d[_c];
+                if (frqResponse > 0) {
+                    frqTeamData.push("" + (Math.abs(pageState.frqMaxPoints) - Math.abs(frqResponse - 1) * Math.abs(pageState.frqIncorrectPenalty)));
+                }
+                else if (frqResponse == 0) {
+                    frqTeamData.push("0");
+                }
+                else {
+                    var tries = Math.abs(frqResponse);
+                    frqTeamData.push("" + tries);
+                }
+            }
+            data.push(frqTeamData);
+        }
+    }
+    exportCSV(data, ",", "scoreboard");
+    /*let doc = new jspdf.jsPDF();
+    doc.setFont("times");
+    let pageCount:{count:number, row: number} = {count: 1, row: 20};
+
+    // First, add in the general scoreboard
+    doc.setFontSize(20);
+    writeToPDF(doc, "Scoreboard",  20, pageCount);
+    pageCount.row += 10;
+
+    doc.setFontSize(12);
+    writeToPDF(doc, "Name", 20, pageCount, 30);
+    if(pageState.mcExists) {
+        writeToPDF(doc, "Written", 60, pageCount, 30);
+    }
+    if(pageState.frqExists) {
+        writeToPDF(doc, "Hands-On", 120, pageCount, 30);
+    }
+    writeToPDF(doc, "Total",160,pageCount,30);
+    pageCount.row += 10;
+
+    for(let tid in teams) {
+        let team = teams[tid];
+        writeToPDF(doc, team.tname, 20, pageCount, 30);
+        let totalScore:number = 0;
+        if(pageState.mcExists) {
+            totalScore += team.mcScore;
+            writeToPDF(doc, ""+team.mcScore, 60, pageCount, 30);
+        }
+        if(pageState.frqExists) {
+            totalScore += team.frqScore;
+            writeToPDF(doc, ""+team.frqScore, 120, pageCount, 30);
+        }
+        writeToPDF(doc, ""+totalScore,160,pageCount,30);
+        pageCount.row += 10 * Math.ceil(team.tname.length/9);
+    }
+
+    if(pageState.mcExists) {
         pageCount.row += 10;
         doc.setFontSize(20);
         writeToPDF(doc, "Written Scoreboard", 20, pageCount);
         pageCount.row += 10;
+
         doc.setFontSize(12);
         writeToPDF(doc, "Name", 20, pageCount, 30);
         writeToPDF(doc, "Team", 60, pageCount, 80);
         writeToPDF(doc, "Total", 150, pageCount, 30);
         pageCount.row += 10;
-        for (var _i = 0, writtenTestScoreboard_2 = writtenTestScoreboard; _i < writtenTestScoreboard_2.length; _i++) {
-            var student = writtenTestScoreboard_2[_i];
+
+        for (let student of writtenTestScoreboard) {
             writeToPDF(doc, student.name, 20, pageCount, 30);
             writeToPDF(doc, student.team.tname, 60, pageCount, 80);
-            var mcScoreString = "Not Taken";
-            if (student.mcScore)
-                mcScoreString = "" + student.mcScore;
+            let mcScoreString = "Not Taken";
+            if(student.mcScore) mcScoreString = "" + student.mcScore;
             writeToPDF(doc, mcScoreString, 150, pageCount, 30);
-            var marginModifier = student.team.tname.length;
-            if (student.name.length > marginModifier)
-                marginModifier = student.name.length;
-            pageCount.row += 10 * Math.ceil(marginModifier / 9);
+
+            let marginModifier:number = student.team.tname.length;
+            if(student.name.length > marginModifier) marginModifier = student.name.length;
+
+            pageCount.row += 10 * Math.ceil(marginModifier/9);
         }
     }
-    doc.save("scoreboard.pdf");
+
+    doc.save("scoreboard.pdf");*/
 }
 // Creates a pdf of the roster and downloads it
 function downloadRoster() {
     if (!pageState.isCreator)
         return;
-    var doc = new jspdf.jsPDF();
-    doc.setFont("times");
-    var pageCount = { count: 1, row: 20 };
+    var data = [["Name", "Username", "Password"]];
     for (var tid in teams) {
         var team = teams[tid];
-        doc.setFontSize(20);
-        writeToPDF(doc, "Team: " + team.tname, 20, pageCount);
-        pageCount.row += 10;
-        doc.setFontSize(14);
-        writeToPDF(doc, "Primaries", 20, pageCount);
-        pageCount.row += 10;
-        doc.setFontSize(12);
-        writeToPDF(doc, "Name", 20, pageCount, 50);
-        writeToPDF(doc, "Username", 80, pageCount, 50);
-        writeToPDF(doc, "Password", 140, pageCount, 50);
-        pageCount.row += 10;
         for (var _i = 0, _a = team.students; _i < _a.length; _i++) {
             var student = _a[_i];
-            writeToPDF(doc, student.name, 20, pageCount, 50);
+            var studentData = [];
+            studentData.push(student.name);
             if (student.temp) {
-                writeToPDF(doc, student.uname, 80, pageCount, 50);
-                writeToPDF(doc, student.password, 140, pageCount, 50);
+                studentData.push(student.uname);
+                studentData.push(student.password);
             }
-            pageCount.row += 10 * Math.ceil(student.name.length / 17);
+            data.push(studentData);
         }
         if (team.alt) {
+            var studentData = [];
+            studentData.push(team.alt.name);
+            if (team.alt.temp) {
+                studentData.push(team.alt.uname);
+                studentData.push(team.alt.password);
+            }
+            data.push(studentData);
+        }
+    }
+    exportCSV(data, ",", "roster");
+    /*let doc = new jspdf.jsPDF();
+    doc.setFont("times");
+    let pageCount:{count:number, row: number} = {count: 1, row: 20};
+
+    for(let tid in teams) {
+        let team = teams[tid];
+
+        doc.setFontSize(20);
+        writeToPDF(doc, "Team: " + team.tname,  20, pageCount);
+        pageCount.row += 10;
+
+        doc.setFontSize(14);
+        writeToPDF(doc, "Primaries", 20, pageCount);
+
+        pageCount.row += 10;
+        doc.setFontSize(12);
+        writeToPDF(doc, "Name", 20,pageCount, 50);
+        writeToPDF(doc, "Username", 80,pageCount, 50);
+        writeToPDF(doc, "Password", 140,pageCount, 50);
+
+        pageCount.row += 10;
+
+        for(let student of team.students) {
+            writeToPDF(doc, student.name, 20,pageCount, 50);
+            if(student.temp) {
+                writeToPDF(doc, student.uname, 80, pageCount,50);
+                writeToPDF(doc, student.password, 140, pageCount, 50);
+            }
+            pageCount.row += 10 * Math.ceil(student.name.length/17);
+        }
+
+        if(team.alt) {
             doc.setFontSize(14);
             writeToPDF(doc, "Written Specialist", 20, pageCount);
             pageCount.row += 10;
+
             doc.setFontSize(12);
-            writeToPDF(doc, team.alt.name, 20, pageCount, 50);
-            if (team.alt.temp) {
+            writeToPDF(doc, team.alt.name, 20, pageCount,50);
+            if(team.alt.temp) {
                 writeToPDF(doc, team.alt.uname, 80, pageCount, 50);
                 writeToPDF(doc, team.alt.password, 140, pageCount, 50);
             }
         }
+
         pageCount.row += 10;
     }
-    doc.save("roster.pdf");
+    doc.save("roster.pdf");*/
 }
 function showGeneralScoreboard() {
     dom.teamListCnt.classList.add("showGeneral");

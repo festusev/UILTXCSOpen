@@ -17,6 +17,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
+import static Outlet.Conn.getConnection;
+
 /***
  * Manages all of the public and private competitions. Serves up a competition based on a cid passed through the url.
  * Initializes the competitions as Competition objects from the 'competitions' database, and passes off GET and POST
