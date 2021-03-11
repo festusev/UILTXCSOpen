@@ -1627,7 +1627,7 @@ function submitFRQ(){
             if (xhr.status == 200) { // If an error occurred
                 const response = JSON.parse(xhr.responseText);
                 if(response["status"]=="success") {
-                    addScoredBox(box, "SCORED: " + response["scored"]);
+                    addScoredBox(box, "SUCCESS: " + response["scored"]);
                     $("frqProblem"+probId).hide();
                 } else {
                     addErrorBox(box, response["error"]);
@@ -1855,12 +1855,15 @@ function showFRQSubmission(row:HTMLTableRowElement, submissionId: number) {
                     div.appendChild(input_cnt);
 
                     let output = response["output"];
+                    let outputFile:string = response["outputFile"];
                     if(output) {
+                        let outputDiff:string = htmldiff(output, outputFile);
                         let output_cnt = document.createElement("div");
                         output_cnt.classList.add("outputCnt");
-                        output_cnt.innerHTML = "<b>Output</b><span>"+output.replace(/\r\n/g, "<br>")
-                            .replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>")+"</span>";
+                        output_cnt.innerHTML = "<b>Output</b><span>"+outputDiff.replace(/\t/g, "<div class='tab'></div>")+"</span>";
                         div.appendChild(output_cnt);
+                        // .replace(/\r\n/g, "<br>")
+                        //                             .replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>")
                     }
                 }
                 add(div);

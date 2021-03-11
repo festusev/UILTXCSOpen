@@ -6,8 +6,10 @@ import java.lang.reflect.Type;
 
 public class FRQProblem {
     public String name = "";
-    public boolean input = false;
-    public boolean output = false;
+
+    public String inputFname = "";
+    public String outputFname = "";
+    public String outputFile = null;  // Not stored in the database, but if a teacher opens a submission for this problem, it is read from disk and stored here.
 
     private static Gson gson = new Gson();
 
@@ -15,22 +17,37 @@ public class FRQProblem {
         // Empty
     }
 
-    public FRQProblem(String name, boolean input, boolean output) {
-        this.name = name; this.input = input; this.output = output;
+    public FRQProblem(String name, String inputFname, String outputFname) {
+        this.name = name; this.inputFname = inputFname; this.outputFname = outputFname;
     }
 
     static FRQProblem[] fromJsonArray(String s) {
-        System.out.println("Converting from json to array");
+        JsonArray jsonArray = JsonParser.parseString(s).getAsJsonArray();
 
-        String[][] jsonArray = gson.fromJson(s, String[][].class);
+        FRQProblem[] problems = new FRQProblem[jsonArray.size()];
 
-        FRQProblem[] problems = new FRQProblem[jsonArray.length];
-
-        for(int i=0,j=jsonArray.length;i<j;i++) {
-            problems[i] = new FRQProblem(jsonArray[i][0], Boolean.parseBoolean(jsonArray[i][1]), Boolean.parseBoolean(jsonArray[i][2]));
-            System.out.println("Problem:"+problems[i].name+","+problems[i].input+","+problems[i].output);
+        for(int i=0,j=jsonArray.size();i<j;i++) {
+            JsonArray problem = jsonArray.get(i).getAsJsonArray();
+            problems[i] = new FRQProblem(problem.get(0).getAsString(),
+                    problem.get(1).getAsString(), problem.get(2).getAsString());
+            System.out.println("Problem:"+problems[i].name+","+problems[i].inputFname+","+problems[i].outputFname);
         }
 
         return problems;
+    }
+
+    static String toJsonArray(FRQProblem[] problems) {
+        JsonArray jsonArray = new JsonArray();
+
+        for(int i=0,j=problems.length;i<j;i++) {
+            JsonArray jsonProblem = new JsonArray();
+
+            FRQProblem problem = problems[i];
+            jsonProblem.add(problem.name);
+            jsonProblem.add(problem.inputFname);
+            jsonProblem.add(problem.outputFname);
+            jsonArray.add(jsonProblem);
+        }
+        return jsonArray.toString();
     }
 }

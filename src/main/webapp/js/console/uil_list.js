@@ -289,7 +289,8 @@ var Competition = /** @class */ (function () {
             problemMap: [],
             studentPacketLink: "",
             judgePacketLink: "",
-            time: 0
+            time: 0,
+            autoGrade: null
         };
         this.dom = {
             form: null,
@@ -452,7 +453,7 @@ var Competition = /** @class */ (function () {
         this.dom.handsOnTime.value = "" + template.handsOn.time;
         if (this.handsOn.problemMap.length < template.handsOn.numProblems) {
             for (var i = this.handsOn.problemMap.length + 1, j = template.handsOn.numProblems; i <= j; i++) {
-                this.addHandsOnProblem(-1, "", false, false);
+                this.addHandsOnProblem(-1, "", "", "");
             }
         }
         this.written.instructions = template.written.instructions;
@@ -526,7 +527,7 @@ var Competition = /** @class */ (function () {
             var problemIndices = []; /* A list like [1, 2, -1, 9, 5], corresponding to a name in the problems array */
             for (var i = 0, j = this.handsOn.problemMap.length; i < j; i++) {
                 var problem = this.handsOn.problemMap[i];
-                problems.push([problem.dom.name.value, problem.hasInput, problem.hasOutput]);
+                problems.push([problem.dom.name.value, problem.inputFname, problem.outputFname]);
                 problemIndices.push(problem.oldIndex);
                 problem.oldIndex = i; /* Now that the problem has been saved, we set it to be its current index */
                 if (problem.dom.input.files.length > 0) {
@@ -802,7 +803,7 @@ li.appendChild(delQuestion);
 
 list_handsOn_changeproblems.appendChild(li);
 */
-    Competition.prototype.addHandsOnProblem = function (probIndex, name, hasInputFile, hasOutputFile) {
+    Competition.prototype.addHandsOnProblem = function (probIndex, name, inputFname, outputFname) {
         var thisComp = this;
         if (this.handsOn.problemMap.length >= 24)
             return; // Don't let them have more than 24 hands on problems
@@ -828,8 +829,15 @@ list_handsOn_changeproblems.appendChild(li);
         li.appendChild(input_in_hidden);
         problem.dom.input = input_in_hidden;
         input_in_hidden.onchange = function () {
-            problem.hasInput = true;
-            input_in_proxy.innerText = "Change";
+            var fullPath = input_in_hidden.value;
+            var startIndex = (fullPath.indexOf('\\') >= 0 ? fullPath.lastIndexOf('\\') : fullPath.lastIndexOf('/'));
+            var filename = fullPath.substring(startIndex);
+            if (filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) {
+                filename = filename.substring(1);
+            }
+            problem.outputFname = filename;
+            input_in_proxy.innerText = filename;
+            input_in_proxy.title = filename;
         };
         var input_in_proxy = document.createElement("button");
         input_in_proxy.classList.add("handsOn_probIn");
@@ -842,8 +850,15 @@ list_handsOn_changeproblems.appendChild(li);
         li.appendChild(input_out_hidden);
         problem.dom.output = input_out_hidden;
         input_out_hidden.onchange = function () {
-            problem.hasOutput = true;
-            input_out_proxy.innerText = "Change";
+            var fullPath = input_out_hidden.value;
+            var startIndex = (fullPath.indexOf('\\') >= 0 ? fullPath.lastIndexOf('\\') : fullPath.lastIndexOf('/'));
+            var filename = fullPath.substring(startIndex);
+            if (filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) {
+                filename = filename.substring(1);
+            }
+            problem.inputFname = filename;
+            input_out_proxy.innerText = filename;
+            input_out_proxy.title = filename;
         };
         var input_out_proxy = document.createElement("button");
         input_out_proxy.classList.add("handsOn_probOut");
@@ -851,13 +866,15 @@ list_handsOn_changeproblems.appendChild(li);
         input_out_proxy.onclick = function () { input_out_hidden.click(); };
         li.appendChild(input_out_proxy);
         input_name.value = name;
-        problem.hasInput = hasInputFile;
-        problem.hasOutput = hasOutputFile;
-        if (problem.hasInput) {
-            input_in_proxy.innerText = "Change";
+        problem.inputFname = inputFname;
+        problem.outputFname = outputFname;
+        if (problem.inputFname.length > 0) {
+            input_in_proxy.innerText = inputFname;
+            input_in_proxy.title = inputFname;
         }
-        if (problem.hasOutput) {
-            input_out_proxy.innerText = "Change";
+        if (problem.outputFname.length > 0) {
+            input_out_proxy.innerText = outputFname;
+            input_out_proxy.title = outputFname;
         }
         var delQuestion = document.createElement("img");
         delQuestion.src = "/res/close.svg";
@@ -1252,7 +1269,7 @@ list_handsOn_changeproblems.appendChild(li);
             var add_handsOn_changeproblems = document.createElement("button");
             add_handsOn_changeproblems.innerText = "Add";
             add_handsOn_changeproblems.onclick = function () {
-                thisComp.addHandsOnProblem(-1, "", false, false);
+                thisComp.addHandsOnProblem(-1, "", "", "");
             };
             handsOn_changeproblems.appendChild(add_handsOn_changeproblems);
             /* CLOSE */

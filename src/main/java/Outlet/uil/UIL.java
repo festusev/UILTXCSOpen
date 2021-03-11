@@ -72,7 +72,7 @@ public class UIL extends HttpServlet{
             } else {
                 frqTest = new FRQTest(published,rs.getString("frqOpens"),
                         rs.getShort("frqMaxPoints"), rs.getShort("frqIncorrectPenalty"),
-                        gson.fromJson(rs.getString("frqProblemMap"),FRQProblem[].class),
+                        FRQProblem.fromJsonArray(rs.getString("frqProblemMap")),
                         rs.getString("frqStudentPack"),rs.getString("frqJudgePacket"),
                         rs.getLong("frqTime"), rs.getBoolean("frqAutoGrade"));
             }

@@ -126,7 +126,7 @@ public class Competition {
         if(frqTest.exists) {
             stmt.setShort(14, frqTest.MAX_POINTS);
             stmt.setShort(15, frqTest.INCORRECT_PENALTY);
-            stmt.setString(16, gson.toJson(frqTest.PROBLEM_MAP));
+            stmt.setString(16, FRQProblem.toJsonArray(frqTest.PROBLEM_MAP));
             stmt.setString(17, frqTest.STUDENT_PACKET);
             stmt.setString(18, frqTest.JUDGE_PACKET);
             stmt.setString(19, frqTest.opens.DATE_STRING);
@@ -240,7 +240,7 @@ public class Competition {
         if(frqTest.exists) {
             stmt.setShort(14, frqTest.MAX_POINTS);
             stmt.setShort(15, frqTest.INCORRECT_PENALTY);
-            stmt.setString(16, gson.toJson(frqTest.PROBLEM_MAP));
+            stmt.setString(16, FRQProblem.toJsonArray(frqTest.PROBLEM_MAP));
             stmt.setString(17, frqTest.STUDENT_PACKET);
             stmt.setString(18, frqTest.JUDGE_PACKET);
             stmt.setString(19, frqTest.opens.DATE_STRING);
@@ -339,8 +339,9 @@ public class Competition {
                     int id = Integer.parseInt(request.getParameter("id"));
                     if (frqSubmissions.size() > id) {
                         FRQSubmission submission = frqSubmissions.get(id);
+                        FRQProblem problem = template.frqTest.PROBLEM_MAP[submission.problemNumber - 1];
                         JsonObject compJ = new JsonObject();
-                        compJ.addProperty("name", StringEscapeUtils.escapeHtml4(template.frqTest.PROBLEM_MAP[submission.problemNumber - 1].name));
+                        compJ.addProperty("name", StringEscapeUtils.escapeHtml4(problem.name));
                         compJ.addProperty("team", StringEscapeUtils.escapeHtml4(submission.entry.tname));
                         compJ.addProperty("result", submission.getResultString());
 
@@ -350,6 +351,11 @@ public class Competition {
                             compJ.addProperty("output", StringEscapeUtils.escapeHtml4(submission.output).replaceAll("\n","<br>"));
 
                         compJ.addProperty("graded", submission.graded);
+                        if(problem.outputFile == null) {
+                            template.frqTest.loadOutputFile(submission.problemNumber, problem);
+                        }
+                        compJ.addProperty("outputFile", problem.outputFile);
+
                         writer.write(new Gson().toJson(compJ));
                     }
                 } else if(action.equals("changeFRQJudgement")) {
@@ -629,6 +635,8 @@ public class Competition {
 
                         // Update all of their team member's frqProblems
                         temp.socketSendFRQProblems();
+                    } else {    // send a placeholder message saying that the teacher is grading it
+                        writer.write("{\"status\":\"success\",\"scored\":\"Your submission is being graded.\"}");
                     }
 
                     // Send it to the teacher and the judges

@@ -73,8 +73,8 @@ public class Profile extends HttpServlet{
                 JsonArray problemJ = new JsonArray();
                 FRQProblem problem = competition.template.frqTest.PROBLEM_MAP[i];
                 problemJ.add(problem.name);
-                problemJ.add(problem.input);
-                problemJ.add(problem.output);
+                problemJ.add(problem.inputFname);
+                problemJ.add(problem.outputFname);
                 problemsJ.add(problemJ);
             }
             handsOnJ.add("problems", problemsJ);

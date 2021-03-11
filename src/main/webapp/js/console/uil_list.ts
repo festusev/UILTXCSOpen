@@ -264,8 +264,8 @@ class HandsOnProblem {
         input: null,
         output: null
     };
-    hasInput: boolean;
-    hasOutput: boolean;
+    inputFname: string;
+    outputFname: string;
     /* If this problem has been saved to the server, oldIndex stores the index of this problem in the server.
     *  If it has not been saved, it is set to -1, and when it is saved it will be overwritten to be the index
     *  at the time of saving */
@@ -322,7 +322,8 @@ class Competition {
         problemMap:[],
         studentPacketLink:"",
         judgePacketLink:"",
-        time:0
+        time:0,
+        autoGrade: null
     };
 
     dom: {
@@ -551,7 +552,7 @@ class Competition {
 
         if(this.handsOn.problemMap.length < template.handsOn.numProblems) {
             for(let i=this.handsOn.problemMap.length+1,j=template.handsOn.numProblems;i<=j;i++) {
-                this.addHandsOnProblem(-1, "", false, false);
+                this.addHandsOnProblem(-1, "", "", "");
             }
         }
 
@@ -633,11 +634,11 @@ class Competition {
             formData.append("alternateExists", ""+this.dom.altExists.checked);
             formData.append("frqAutoGrade", ""+this.dom.handsOnAutoGrade.checked);
 
-            let problems:Array<[string, boolean, boolean]> = [];
+            let problems:[string, string, string][] = [];
             let problemIndices:number[] = [];   /* A list like [1, 2, -1, 9, 5], corresponding to a name in the problems array */
             for(let i=0,j=this.handsOn.problemMap.length;i<j;i++) {
                 let problem:HandsOnProblem = this.handsOn.problemMap[i];
-                problems.push([problem.dom.name.value, problem.hasInput, problem.hasOutput]);
+                problems.push([problem.dom.name.value, problem.inputFname, problem.outputFname]);
                 problemIndices.push(problem.oldIndex);
                 problem.oldIndex = i; /* Now that the problem has been saved, we set it to be its current index */
 
@@ -914,7 +915,7 @@ li.appendChild(delQuestion);
 list_handsOn_changeproblems.appendChild(li);
 */
 
-    addHandsOnProblem(probIndex: number, name: string, hasInputFile: boolean, hasOutputFile: boolean): void {
+    addHandsOnProblem(probIndex: number, name: string, inputFname: string, outputFname: string): void {
         let thisComp:Competition = this;
 
         if(this.handsOn.problemMap.length >= 24) return;    // Don't let them have more than 24 hands on problems
@@ -943,8 +944,15 @@ list_handsOn_changeproblems.appendChild(li);
         li.appendChild(input_in_hidden);
         problem.dom.input = input_in_hidden;
         input_in_hidden.onchange = function() {
-            problem.hasInput = true;
-            input_in_proxy.innerText = "Change";
+            let fullPath = input_in_hidden.value;
+            let startIndex = (fullPath.indexOf('\\') >= 0 ? fullPath.lastIndexOf('\\') : fullPath.lastIndexOf('/'));
+            let filename = fullPath.substring(startIndex);
+            if (filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) {
+                filename = filename.substring(1);
+            }
+            problem.outputFname = filename;
+            input_in_proxy.innerText = filename;
+            input_in_proxy.title = filename;
         };
 
         let input_in_proxy = document.createElement("button");
@@ -959,8 +967,16 @@ list_handsOn_changeproblems.appendChild(li);
         li.appendChild(input_out_hidden);
         problem.dom.output = input_out_hidden;
         input_out_hidden.onchange = function(){
-            problem.hasOutput = true;
-            input_out_proxy.innerText = "Change";
+            let fullPath = input_out_hidden.value;
+            let startIndex = (fullPath.indexOf('\\') >= 0 ? fullPath.lastIndexOf('\\') : fullPath.lastIndexOf('/'));
+            let filename = fullPath.substring(startIndex);
+            if (filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) {
+                filename = filename.substring(1);
+            }
+
+            problem.inputFname = filename;
+            input_out_proxy.innerText = filename;
+            input_out_proxy.title = filename;
         };
 
         let input_out_proxy = document.createElement("button");
@@ -970,14 +986,16 @@ list_handsOn_changeproblems.appendChild(li);
         li.appendChild(input_out_proxy);
 
         input_name.value = name;
-        problem.hasInput = hasInputFile;
-        problem.hasOutput = hasOutputFile;
+        problem.inputFname = inputFname;
+        problem.outputFname = outputFname;
 
-        if(problem.hasInput) {
-            input_in_proxy.innerText = "Change";
+        if(problem.inputFname.length > 0) {
+            input_in_proxy.innerText = inputFname;
+            input_in_proxy.title = inputFname;
         }
-        if(problem.hasOutput) {
-            input_out_proxy.innerText = "Change";
+        if(problem.outputFname.length > 0) {
+            input_out_proxy.innerText = outputFname;
+            input_out_proxy.title = outputFname;
         }
 
         let delQuestion = document.createElement("img");
@@ -1041,7 +1059,7 @@ list_handsOn_changeproblems.appendChild(li);
         return li;
     }
 
-    getDOM(handsOnProblemMap:[string, boolean, boolean][], whatItIsText:string, rulesText:string,numNonAlts: number,alternateExists:boolean):HTMLElement {
+    getDOM(handsOnProblemMap:[string, string, string][], whatItIsText:string, rulesText:string,numNonAlts: number,alternateExists:boolean):HTMLElement {
         function makeHalf(element:HTMLElement) {
             element.classList.add("profile_cmpnt");
             element.classList.add("half");
@@ -1422,7 +1440,7 @@ list_handsOn_changeproblems.appendChild(li);
             let add_handsOn_changeproblems = document.createElement("button");
             add_handsOn_changeproblems.innerText = "Add";
             add_handsOn_changeproblems.onclick = function() {
-                thisComp.addHandsOnProblem(-1, "", false, false);
+                thisComp.addHandsOnProblem(-1, "", "", "");
             };
             handsOn_changeproblems.appendChild(add_handsOn_changeproblems);
             /* CLOSE */

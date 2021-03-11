@@ -369,7 +369,6 @@ public class UILEntry {
         if(!competition.template.frqTest.exists) return;
 
         probNum--;  // We only use probNum for indexes
-        boolean update = true;
         Pair<Short, ArrayList<FRQSubmission>> problem = frqResponses[probNum];
         problem.value.add(result);
 
@@ -378,9 +377,9 @@ public class UILEntry {
             //System.out.println("--ADDING SUCCESSFUL FRQ RUN, # tries = " +frqResponses[probNum] + " score = "+java.lang.Math.max(CS.template.frqTest.calcScore(frqResponses[probNum]), competition.frqTest.MIN_POINTS));
             problem.key = (short)(java.lang.Math.abs(problem.key) + 1);
             frqScore += java.lang.Math.max(competition.template.frqTest.calcScore(problem.key), competition.template.frqTest.MIN_POINTS);
-        } else update = false;
+        }
 
-        if(update) update();
+        update();
     }
 
     // Recalculates the score from a single FRQProblem. Looks for the first correct FRQProblem, and ignores every submission

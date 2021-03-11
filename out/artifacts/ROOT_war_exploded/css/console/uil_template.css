@@ -699,7 +699,9 @@
     box-sizing: border-box;
     position: relative;
 }
-
+.outputCnt {
+    padding-bottom: 2rem;
+}
 .frqSubmissionEditor .half{
     width:50%;
     display: inline-block;
@@ -923,7 +925,7 @@
     background-color: var(--warn-col);
 }
 #handsOnScoreboardTable .tried {
-    background-color: #fe793d;
+    background-color: var(--sec-col);
 }
 #writtenScoreboardTable .student {
     background-color: white;
@@ -932,6 +934,16 @@
 }
 #writtenScoreboardTable .student.selected {
     background-color: var(--sec-light);
+}
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+del {
+    text-decoration: line-through;
+    background-color: #fbb6c2;
+    color: #555;
 }
 @media only screen and (max-width: 720px){
     #countdownCnt {

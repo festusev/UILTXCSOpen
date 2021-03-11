@@ -456,6 +456,9 @@ public class FRQTest {
             OutputStream os = new FileOutputStream(file);
             os.write(bytes);
             os.close();
+
+            FRQProblem problem = PROBLEM_MAP[probNum-1];
+            problem.outputFile = new String(bytes);
         } catch (Exception var18) {
             var18.printStackTrace();
         }
@@ -550,6 +553,21 @@ public class FRQTest {
                     return new FRQSubmission(probNum, FRQSubmission.Result.SERVER_ERROR, new String(bytes), "", currentTime, AUTO_GRADE);
                 }
             }
+        }
+    }
+
+    /*
+    Loads the text of the file from the disk.
+     */
+    public void loadOutputFile(int probNum, FRQProblem problem) {
+        File outputFile = files.get(probNum - 1).value;
+        try {
+            InputStream inputStream = new FileInputStream(outputFile);
+            byte[] bytes = new byte[inputStream.available()];
+            inputStream.read(bytes);
+            problem.outputFile = new String(bytes);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

@@ -183,7 +183,8 @@ public class Template {
         String jsPDF = "";
         if(userStatus.admin) {
             jsPDF = "<script src='/js/html2canvas.min.js' defer></script>" +
-                    "<script src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.0/jspdf.umd.min.js' defer></script>";
+                    "<script src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.0/jspdf.umd.min.js' defer></script>" +
+                    "<script src='/js/htmldiff.js' defer></script>";
         }
         writer.write(HEADERS+ jsPDF +
                         // Dynamic.loadNav(request) +
