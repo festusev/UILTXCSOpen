@@ -70,6 +70,7 @@ public class UILEntry {
         this.competition = competition;
         uids = new HashSet<>();
         altUID = -1;
+        altUID = -1;
         mc = new HashMap<>();
         frqResponses = new Pair[competition.template.frqTest.PROBLEM_MAP.length];
         for(int i=0;i<competition.template.frqTest.PROBLEM_MAP.length;i++) {
@@ -104,8 +105,8 @@ public class UILEntry {
         if(comp.template.frqTest.exists) {
             frqResponses = FRQSubmission.parseList(rs.getString("frqResponses"), this);
 
-            for(Pair<Short, ArrayList<FRQSubmission>> problem: frqResponses) {
-                if(problem.key > 0) frqScore += java.lang.Math.max(competition.template.frqTest.calcScore(problem.key), competition.template.frqTest.MIN_POINTS);
+            for(int i=1,j=frqResponses.length;i<j;i++) {
+                frqScore += competition.template.frqTest.calcScore(frqResponses[i].key);
             }
         } else {
             frqResponses = new Pair[0];
@@ -300,7 +301,7 @@ public class UILEntry {
             if(competition.template.mcTest.exists) {
                 stmt.setString(5, stringifyMC());
             } else {
-                stmt.setString(6, "{}");
+                stmt.setString(5, "{}");
             }
             if(competition.template.frqTest.exists) {
                 stmt.setString(6, FRQSubmission.stringifyList(frqResponses));
@@ -368,15 +369,13 @@ public class UILEntry {
     public void addFRQRun(FRQSubmission result, int probNum) {
         if(!competition.template.frqTest.exists) return;
 
-        probNum--;  // We only use probNum for indexes
         Pair<Short, ArrayList<FRQSubmission>> problem = frqResponses[probNum];
         problem.value.add(result);
 
         if(result.takePenalty()) problem.key--;
         else if(result.result == FRQSubmission.Result.CORRECT) {
-            //System.out.println("--ADDING SUCCESSFUL FRQ RUN, # tries = " +frqResponses[probNum] + " score = "+java.lang.Math.max(CS.template.frqTest.calcScore(frqResponses[probNum]), competition.frqTest.MIN_POINTS));
             problem.key = (short)(java.lang.Math.abs(problem.key) + 1);
-            frqScore += java.lang.Math.max(competition.template.frqTest.calcScore(problem.key), competition.template.frqTest.MIN_POINTS);
+            frqScore += competition.template.frqTest.calcScore(problem.key);
         }
 
         update();
@@ -388,8 +387,7 @@ public class UILEntry {
         Pair<Short, ArrayList<FRQSubmission>> problem = frqResponses[probNum];
 
         // The old number of points that this problem contributed to the total frq score
-        int oldScore = 0;
-        if(problem.key > 0 ) oldScore = java.lang.Math.max(competition.template.frqTest.calcScore(problem.key), competition.template.frqTest.MIN_POINTS);
+        int oldScore = competition.template.frqTest.calcScore(problem.key);
 
         int numTries = 0;   // The new number of tries. If positive, the problem is solved
         for(int i=0;i<problem.value.size();i++) {
@@ -404,7 +402,7 @@ public class UILEntry {
 
         frqScore = (short)(frqScore - oldScore);
         if(numTries > 0)    // It has been solved
-            frqScore = (short)(frqScore + java.lang.Math.max(competition.template.frqTest.calcScore(problem.key), competition.template.frqTest.MIN_POINTS));
+            frqScore = (short)(frqScore + competition.template.frqTest.calcScore(problem.key));
     }
 
     public boolean finishedMC(short uid) {
@@ -504,8 +502,14 @@ public class UILEntry {
 
     public JsonArray getFRQJSON() {
         JsonArray array = new JsonArray();
-        for(Pair<Short, ArrayList<FRQSubmission>> pair: frqResponses) {
+        if(competition.template.frqTest.dryRunMode) {
+            Pair<Short, ArrayList<FRQSubmission>> pair = frqResponses[0];
             array.add(pair.key);
+        } else {
+            for (int i = 1; i < frqResponses.length; i++) {
+                Pair<Short, ArrayList<FRQSubmission>> pair = frqResponses[i];
+                array.add(pair.key);
+            }
         }
         return array;
     }

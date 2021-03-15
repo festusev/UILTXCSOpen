@@ -150,27 +150,24 @@ const config = {
             template.innerHTML = response["html"];
             dom.frqProblems.replaceWith(template.content.firstChild);
             dom.cached.frqProblems = template.content.firstChild;
-        }, "updateScoreboard": function (response: { [k: string]: any }) {
+        }, /*"updateScoreboard": function (response: { [k: string]: any }) {
             let template = document.createElement('template');
             template.innerHTML = response["html"];
             let display: string = dom.scoreboard.style.display;
             dom.scoreboard.replaceWith(template.content.firstChild);
             dom.cached[config.IDs.scoreboard] = template.content.firstChild;
 
-            if (response["rank"]) {
-                dom.bottomRank.innerText = response["rank"];
-                dom.bottomOutOf.innerText = response["numTeams"];
-            }
+
 
             showColumn();
-        }, "reScoreMC": function (response: { [k: string]: any }) {
+        }, */
+        "reScoreMC": function (response: { [k: string]: any }) {
             // TODO: Write this
         }, "nc": function (response: { [k: string]: any }) { // Add in a new clarification with no response
             let clarification_list: HTMLElement = dom.clarificationColumn.querySelector(".clarification_group");
             if (clarification_list.innerHTML == "There are no clarifications.") {
                 clarification_list.innerHTML = "";
             }
-
 
             let clarification = document.createElement("div");
             clarification.id = "clarification_"+response["index"];
@@ -368,6 +365,8 @@ const config = {
                 }
                 dom.numTeams.innerText = "" + response.teams.length;
                 dom.numUsers.innerText = "" + numStudents;
+            } else {
+                // dom.bottomRank =u
             }
 
             dom.teamList.innerHTML = "";
@@ -2441,4 +2440,12 @@ function stopHandsOn() {
 
 function startHandsOn() {
     ws.send("[\"startHandsOn\",\""+getNowString()+"\"]");
+}
+
+function stopDryRun() {
+    ws.send("[\"stopDryRun\",\""+getNowString()+"\"]");
+}
+
+function startDryRun() {
+    ws.send("[\"startDryRun\",\""+getNowString()+"\"]");
 }

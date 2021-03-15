@@ -122,6 +122,57 @@
     margin-right: 1rem;
     margin-top: 5px;
 }
+/* Dropdown Button */
+.dropbtn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 16px;
+    font-size: 16px;
+    border: none;
+}
+
+/* The container <div> - needed to position the dropdown content */
+#sectionControls {
+    position: relative;
+    display: inline-block;
+}
+
+/* Dropdown Content (Hidden by Default) */
+#sectionControlsList {
+    display: none;
+    position: absolute;
+    background-color: #ffffff;
+    min-width: 160px;
+    z-index: 1;
+    margin-left: -18px;
+    margin-top: 8px;
+}
+
+/* Links inside the dropdown */
+#sectionControlsList p {
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    box-sizing: border-box;
+}
+
+#sectionControlsButton {
+    cursor: pointer;
+    border:none;
+    outline:none;
+    font-size: var(--font-size);
+}
+
+/* Change color of dropdown links on hover */
+#sectionControlsList p:hover {background-color: var(--light-gray);}
+
+/* Show the dropdown menu on hover */
+#sectionControls:hover #sectionControlsList {display: block;}
+
+/* Change the background color of the dropdown button when the dropdown content is shown */
+#sectionControls:hover #sectionControlsButton {
+    background-color: var(--light-gray);
+}
 #scoreboardColumn {
     display: flex;
 }

@@ -38,7 +38,7 @@ public class Competition {
 
     public ArrayList<Clarification> clarifications;
 
-    private void setTemplate(boolean published, MCTest mc, FRQTest frq, String name, String description, short cid, boolean showScoreboard) {
+    public void setTemplate(boolean published, MCTest mc, FRQTest frq, String name, String description, short cid, boolean showScoreboard) {
         if(published) {
             template = new Template(name, description, mc, frq, cid, showScoreboard, this);
             // entries = new EntryMap();
@@ -92,8 +92,9 @@ public class Competition {
         PreparedStatement stmt = conn.prepareStatement("INSERT INTO competitions (uid, name, isPublic, description, " +
                 "alternateExists, numNonAlts, mcKey, mcCorrectPoints, mcIncorrectPoints, mcInstructions, mcTestLink," +
                 "mcOpens, mcTime, frqMaxPoints, frqIncorrectPenalty, frqProblemMap, frqStudentPack," +
-                "frqJudgePacket, frqOpens, frqTime, type, published, clarifications,judges, showScoreboard, frqAutoGrade) " +
-                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]',?,?,?)",
+                "frqJudgePacket, frqOpens, frqTime, type, published, clarifications,judges, showScoreboard, frqAutoGrade," +
+                        "dryRunExists,dryRunStudentPacket) " +
+                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]',?,?,?,?,?)",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -153,6 +154,8 @@ public class Competition {
         stmt.setBoolean(22, published);
         stmt.setString(23, gson.toJson(judges));
         stmt.setBoolean(24, showScoreboard);
+        stmt.setBoolean(26, frqTest.DRYRUN_EXISTS);
+        stmt.setString(27, frqTest.DRYRUN_STUDENT_PACKET);
 
         System.out.println(stmt);
         stmt.execute();
@@ -208,7 +211,7 @@ public class Competition {
                         "alternateExists=?, numNonAlts=?, mcKey=?, mcCorrectPoints=?, mcIncorrectPoints=?, mcInstructions=?, mcTestLink=?," +
                         "mcOpens=?, mcTime=?, frqMaxPoints=?, frqIncorrectPenalty=?, frqProblemMap=?, frqStudentPack=?," +
                         "frqJudgePacket=?, frqOpens=?, frqTime=?, type=?, published=?, clarifications=?, judges=?, showScoreboard=?, " +
-                        "frqAutoGrade=?   WHERE cid=?",
+                        "frqAutoGrade=?, dryRunExists=?, dryRunStudentPacket=? WHERE cid=?",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -268,7 +271,9 @@ public class Competition {
         stmt.setString(23, Clarification.toJson(this.clarifications).toString());
         stmt.setString(24, gson.toJson(judges));
         stmt.setBoolean(25, showScoreboard);
-        stmt.setShort(27, template.cid);
+        stmt.setBoolean(27, frqTest.DRYRUN_EXISTS);
+        stmt.setString(28, frqTest.DRYRUN_STUDENT_PACKET);
+        stmt.setShort(29, template.cid);
         stmt.executeUpdate();
     }
 
@@ -339,7 +344,7 @@ public class Competition {
                     int id = Integer.parseInt(request.getParameter("id"));
                     if (frqSubmissions.size() > id) {
                         FRQSubmission submission = frqSubmissions.get(id);
-                        FRQProblem problem = template.frqTest.PROBLEM_MAP[submission.problemNumber - 1];
+                        FRQProblem problem = template.frqTest.PROBLEM_MAP[submission.problemNumber];
                         JsonObject compJ = new JsonObject();
                         compJ.addProperty("name", StringEscapeUtils.escapeHtml4(problem.name));
                         compJ.addProperty("team", StringEscapeUtils.escapeHtml4(submission.entry.tname));
@@ -408,7 +413,7 @@ public class Competition {
                         submission.overrideShowOutput = true;   // Don't let them circumvent the show output rule
                         submission.overriddenShowOutput = oldShowOutput;
 
-                        submission.entry.recalculateFRQScore(submission.problemNumber-1);
+                        submission.entry.recalculateFRQScore(submission.problemNumber);
                             /*Pair<Short, ArrayList<FRQSubmission>> problem = submission.entry.frqResponses[submission.problemNumber - 1];
                             short currentValue = problem.key;
                             //if(submission.result == FRQSubmission.Result.SERVER_ERROR) {    // We switched it to not giving a penalty, so reduce the extreme
@@ -583,6 +588,19 @@ public class Competition {
                 return;
             } else if(action.equals("submitFRQ")) {
                 if(temp.altUID != user.uid && (competitionStatus.frqDuring || competitionStatus.frqOverflow)) {
+                    short probNum = Short.parseShort(request.getParameter("probNum"));
+
+                    if (temp.frqResponses[probNum].key > 0) {
+                        writer.write("{\"status\":\"error\",\"error\":\"You've already gotten this problem.\"}");
+                        return;
+                    } else if(template.frqTest.dryRunMode && probNum >= 1) { // It is in the dry run mode and they are submitting a non dry run
+                        writer.write("{\"status\":\"error\",\"error\":\"You may only submit the dry run.\"}");
+                        return;
+                    } else if(!template.frqTest.dryRunMode && probNum <= 0) { // It isn't in the dry run mode and they are submitting a dry run
+                        writer.write("{\"status\":\"error\",\"error\":\"The dry run has closed.\"}");
+                        return;
+                    }
+
                     Part filePart = request.getPart("textfile");
                     InputStream fileContent = filePart.getInputStream();
 
@@ -593,13 +611,6 @@ public class Competition {
                     }
 
                     fileContent.read(bytes);
-
-                    short probNum = Short.parseShort(request.getParameter("probNum"));
-
-                    if (temp.frqResponses[probNum - 1].key > 0) {
-                        writer.write("{\"status\":\"error\",\"error\":\"You've already gotten this problem.\"}");
-                        return;
-                    }
 
                     String fname = filePart.getSubmittedFileName();
                     if (fname == null || fname.isEmpty() || !fname.matches("^[a-zA-Z0-9.]*$")) {   // Make sure it doesn't have commands

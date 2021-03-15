@@ -1,6 +1,8 @@
 package Outlet.uil;
 import Outlet.*;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -76,7 +78,8 @@ public class UIL extends HttpServlet{
                         rs.getShort("frqMaxPoints"), rs.getShort("frqIncorrectPenalty"),
                         FRQProblem.fromJsonArray(rs.getString("frqProblemMap")),
                         rs.getString("frqStudentPack"),rs.getString("frqJudgePacket"),
-                        rs.getLong("frqTime"), rs.getBoolean("frqAutoGrade"));
+                        rs.getLong("frqTime"), rs.getBoolean("frqAutoGrade"),
+                        rs.getBoolean("dryRunExists"), rs.getString("dryRunStudentPacket"));
             }
 
             Competition comp = new Competition(cid, published,
@@ -288,21 +291,22 @@ public class UIL extends HttpServlet{
             System.out.println("Looping, partName=" + partName);
             String prefix = partName.substring(0, 3);  // Either 'fi:' or 'fo:'
             if (prefix.equals("fi:")) {  // File in
-                int probNum = Integer.parseInt(partName.substring(3));
-
                 InputStream fileContent = part.getInputStream();
                 byte[] bytes = new byte[fileContent.available()];
                 fileContent.read(bytes);
+
+                int probNum = Integer.parseInt(partName.substring(3));
 
                 System.out.println("probNum=" + probNum);
                 frqTest.setTestcaseFile(probNum, bytes, true);
+
                 numFiles++;
             } else if (prefix.equals("fo:")) {   // File out
-                int probNum = Integer.parseInt(partName.substring(3));
-
                 InputStream fileContent = part.getInputStream();
                 byte[] bytes = new byte[fileContent.available()];
                 fileContent.read(bytes);
+
+                int probNum = Integer.parseInt(partName.substring(3));
 
                 System.out.println("probNum=" + probNum);
                 frqTest.setTestcaseFile(probNum, bytes, false);
@@ -330,17 +334,20 @@ public class UIL extends HttpServlet{
             System.out.println("Looping, partName=" + partName);
             String prefix = partName.substring(0, 3);  // Either 'fi:' or 'fo:'
             if (prefix.equals("fi:")) {  // File in
-                int probNum = Integer.parseInt(partName.substring(3));
-
                 InputStream fileContent = part.getInputStream();
-                if(fileContent.available() > MAX_FILE_SIZE) return "Problem " + probNum + "'s input file is over 1 MB.";
+
+                if(fileContent.available() > MAX_FILE_SIZE) {
+                    String type = partName.substring(3);
+                    return "Problem " + Integer.parseInt(type) + "'s input file is over 1 MB.";
+                }
                 numFiles++;
             } else if (prefix.equals("fo:")) {   // File out
-                int probNum = Integer.parseInt(partName.substring(3));
-
                 InputStream fileContent = part.getInputStream();
 
-                if(fileContent.available() > MAX_FILE_SIZE) return "Problem " + probNum + "'s output file is over 1 MB.";
+                if(fileContent.available() > MAX_FILE_SIZE) {
+                    String type = partName.substring(3);
+                    return "Problem " + Integer.parseInt(type) + "'s input file is over 1 MB.";
+                }
                 numFiles++;
             }
         }
@@ -577,7 +584,8 @@ public class UIL extends HttpServlet{
 
             frqTest = new FRQTest(true, frqOpensString, frqMaxPoints, frqIncorrectPenalty, frqProblemMap,
                     request.getParameter("frqStudentPacket"), request.getParameter("frqJudgePacket"), frqTime,
-                    request.getParameter("frqAutoGrade").equals("true"));
+                    request.getParameter("frqAutoGrade").equals("true"), request.getParameter("dryRunExists").equals("true"),
+                    request.getParameter("dryRunStudentPacket"));
         }
 
         if(!mcTest.exists && !frqTest.exists) {
@@ -978,7 +986,8 @@ public class UIL extends HttpServlet{
 
                     frqTest = new FRQTest(false, frqOpensString, frqMaxPoints, frqIncorrectPenalty, frqProblemMap,
                             request.getParameter("frqStudentPacket"), request.getParameter("frqJudgePacket"), frqTime,
-                            request.getParameter("frqAutoGrade").equals("true"));
+                            request.getParameter("frqAutoGrade").equals("true"), request.getParameter("dryRunExists").equals("true"),
+                            request.getParameter("dryRunStudentPacket"));
                 }
 
                 boolean creatingComp = cidS==null || cidS.isEmpty();

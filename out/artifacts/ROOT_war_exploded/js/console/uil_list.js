@@ -290,7 +290,9 @@ var Competition = /** @class */ (function () {
             studentPacketLink: "",
             judgePacketLink: "",
             time: 0,
-            autoGrade: null
+            autoGrade: null,
+            dryRunExists: false,
+            dryRunStudentPacket: ""
         };
         this.dom = {
             form: null,
@@ -330,7 +332,10 @@ var Competition = /** @class */ (function () {
             handsOnIncorrectPenalty: null,
             handsOnCheckbox: null,
             list_handsOn_changeproblems: null,
-            handsOnAutoGrade: null
+            handsOnAutoGrade: null,
+            dryrun: null,
+            list_dryrun: null,
+            dryRunStudentLink: null
         };
         competitions.push(this);
         this.cid = cid;
@@ -369,6 +374,8 @@ var Competition = /** @class */ (function () {
             this.handsOn.judgePacketLink = handsOnObj.judgePacketLink;
             this.handsOn.time = handsOnObj.time;
             this.handsOn.autoGrade = handsOnObj.autoGrade;
+            this.handsOn.dryRunExists = handsOnObj.dryRunExists;
+            this.handsOn.dryRunStudentPacket = handsOnObj.dryRunStudentPacket;
         }
     }
     Competition.prototype.toggleWrittenKey = function (h2) {
@@ -384,11 +391,11 @@ var Competition = /** @class */ (function () {
     Competition.prototype.toggleHandsOnProblems = function (h2) {
         if (this.dom.handsOnProblems.style.display !== "block") {
             this.dom.handsOnProblems.style.display = "block";
-            h2.innerHTML = "Problems<span style='float:right;font-weight:bold;'>-</span>";
+            h2.innerHTML = "<b>Problems</b><span style='float:right;font-weight:bold;'>-</span>";
         }
         else {
             this.dom.handsOnProblems.style.display = "none";
-            h2.innerHTML = "Problems<span style='float:right;font-weight:bold;'>+</span>";
+            h2.innerHTML = "<b>Problems</b><span style='float:right;font-weight:bold;'>+</span>";
         }
     };
     Competition.prototype.toggleWrittenTest = function () {
@@ -523,6 +530,8 @@ var Competition = /** @class */ (function () {
             formData.append("frqJudgePacket", ""); // TODO: Add this
             formData.append("alternateExists", "" + this.dom.altExists.checked);
             formData.append("frqAutoGrade", "" + this.dom.handsOnAutoGrade.checked);
+            formData.append("dryRunExists", "" + this.handsOn.dryRunExists);
+            formData.append("dryRunStudentPacket", this.dom.dryRunStudentLink.value);
             var problems = [];
             var problemIndices = []; /* A list like [1, 2, -1, 9, 5], corresponding to a name in the problems array */
             for (var i = 0, j = this.handsOn.problemMap.length; i < j; i++) {
@@ -803,14 +812,13 @@ li.appendChild(delQuestion);
 
 list_handsOn_changeproblems.appendChild(li);
 */
-    Competition.prototype.addHandsOnProblem = function (probIndex, name, inputFname, outputFname) {
+    Competition.prototype.addHandsOnProblem = function (probIndex, name, inputFname, outputFname, isDryRun) {
         var thisComp = this;
         if (this.handsOn.problemMap.length >= 24)
             return; // Don't let them have more than 24 hands on problems
         var index = this.handsOn.problemMap.length;
         var problem = new HandsOnProblem();
         problem.oldIndex = probIndex;
-        this.handsOn.problemMap.push(problem);
         var li = document.createElement("li");
         li.dataset.probNum = "" + index;
         var input_name = document.createElement("input");
@@ -876,15 +884,19 @@ list_handsOn_changeproblems.appendChild(li);
             input_out_proxy.innerText = outputFname;
             input_out_proxy.title = outputFname;
         }
-        var delQuestion = document.createElement("img");
-        delQuestion.src = "/res/close.svg";
-        delQuestion.classList.add("deleteProblem");
-        delQuestion.onclick = function () {
-            thisComp.handsOn.problemMap.splice(thisComp.handsOn.problemMap.indexOf(problem), 1);
-            thisComp.dom.list_handsOn_changeproblems.removeChild(li);
-        };
-        li.appendChild(delQuestion);
-        thisComp.dom.list_handsOn_changeproblems.appendChild(li);
+        if (!isDryRun) {
+            var delQuestion = document.createElement("img");
+            delQuestion.src = "/res/close.svg";
+            delQuestion.classList.add("deleteProblem");
+            delQuestion.onclick = function () {
+                thisComp.handsOn.problemMap.splice(thisComp.handsOn.problemMap.indexOf(problem), 1);
+                thisComp.dom.list_handsOn_changeproblems.removeChild(li);
+            };
+            li.appendChild(delQuestion);
+            thisComp.dom.list_handsOn_changeproblems.appendChild(li);
+        }
+        this.handsOn.problemMap.push(problem);
+        return [li, problem];
     };
     Competition.prototype.getOpenCompetition = function () {
         var thisComp = this;
@@ -930,6 +942,7 @@ list_handsOn_changeproblems.appendChild(li);
         li.appendChild(del);
         return li;
     };
+    // The first element of handsOnProblemMap is the dry run data.
     Competition.prototype.getDOM = function (handsOnProblemMap, whatItIsText, rulesText, numNonAlts, alternateExists) {
         function makeHalf(element) {
             element.classList.add("profile_cmpnt");
@@ -1143,6 +1156,7 @@ list_handsOn_changeproblems.appendChild(li);
             return written_section;
         }
         function getHandsOnSection() {
+            thisComp.handsOn.problemMap.length = 0;
             var handsOn_section = document.createElement("span");
             handsOn_section.classList.add("handsOnSection");
             if (!thisComp.handsOnExists)
@@ -1240,10 +1254,87 @@ list_handsOn_changeproblems.appendChild(li);
             handsOn_length.appendChild(unit_handsOn_length);
             /* CLOSE */
             /* OPEN */
+            //let dryrun = document.createElement("div");
+            //makeFull(dryrun);
+            //dryrun.classList.add("handsOnSectionDryRunCnt");
+            //dryrun.classList.add("competitionSubgroup");
+            //handsOn_section.appendChild(dryrun);
+            // dryrun.innerHTML = "<p>Dry Run</p>";
+            //thisComp.dom.dryrun = dryrun;
+            /* OPEN */
+            var dryrun_header = document.createElement("div");
+            makeHalf(dryrun_header);
+            handsOn_section.appendChild(dryrun_header);
+            var h2_dryrun_header = document.createElement("h3");
+            h2_dryrun_header.innerHTML = "<b>Dry Run</b>";
+            dryrun_header.appendChild(h2_dryrun_header);
+            /* CLOSE */
+            /* OPEN */
+            var dryrun_toggle = document.createElement("div");
+            makeHalf(dryrun_toggle);
+            handsOn_section.appendChild(dryrun_toggle);
+            var dryrun_toggle_input = document.createElement("input");
+            dryrun_toggle_input.classList.add("checkbox");
+            dryrun_toggle_input.type = "checkbox";
+            dryrun_toggle_input.name = "altExists";
+            if (thisComp.handsOn.dryRunExists)
+                dryrun_toggle_input.checked = true;
+            dryrun_toggle.appendChild(dryrun_toggle_input);
+            dryrun_toggle_input.onclick = function () {
+                thisComp.handsOn.dryRunExists = dryrun_toggle_input.checked;
+                if (thisComp.handsOn.dryRunExists) {
+                    list_dryrun.style.display = "block";
+                    dryRun_studentlink.style.display = "block";
+                    input_dryRun_studentlink.style.display = "block";
+                }
+                else {
+                    list_dryrun.style.display = "none";
+                    dryRun_studentlink.style.display = "none";
+                    input_dryRun_studentlink.style.display = "none";
+                }
+            };
+            /* CLOSE */
+            /* OPEN */
+            var dryRun_studentlink = document.createElement("div");
+            makeFull(dryRun_studentlink);
+            dryRun_studentlink.innerText = "Dry Run Packet Link";
+            if (!thisComp.handsOn.dryRunExists)
+                dryRun_studentlink.style.display = "none";
+            handsOn_section.appendChild(dryRun_studentlink);
+            var input_dryRun_studentlink = document.createElement("input");
+            input_dryRun_studentlink.name = "dryRunStudentPacket";
+            input_dryRun_studentlink.type = "url";
+            input_dryRun_studentlink.placeholder = "https://what_the_student_sees.com";
+            input_dryRun_studentlink.value = thisComp.handsOn.dryRunStudentPacket ? thisComp.handsOn.dryRunStudentPacket : "";
+            input_dryRun_studentlink.maxLength = 255;
+            if (!thisComp.handsOn.dryRunExists)
+                input_dryRun_studentlink.style.display = "none";
+            input_dryRun_studentlink.oninput = function () {
+                inputMaxLength(input_dryRun_studentlink);
+            };
+            dryRun_studentlink.appendChild(input_dryRun_studentlink);
+            thisComp.dom.dryRunStudentLink = input_dryRun_studentlink;
+            /* CLOSE */
+            var list_dryrun = document.createElement("ol");
+            list_dryrun.classList.add("handsOnProblemList");
+            thisComp.dom.list_dryrun = list_dryrun;
+            if (!thisComp.handsOn.dryRunExists)
+                list_dryrun.style.display = "none";
+            handsOn_section.appendChild(list_dryrun);
+            if (handsOnProblemMap[0]) {
+                var data = thisComp.addHandsOnProblem(0, handsOnProblemMap[0][0], handsOnProblemMap[0][1], handsOnProblemMap[0][2], true);
+                list_dryrun.appendChild(data[0]);
+            }
+            else {
+                var data = thisComp.addHandsOnProblem(0, "", "", "", true);
+                list_dryrun.appendChild(data[0]);
+            }
+            /* CLOSE */
+            /* OPEN */
             var handsOn_problems = document.createElement("div");
             makeFull(handsOn_problems);
             handsOn_problems.onclick = function () { thisComp.toggleHandsOnProblems(handsOn_problems); };
-            handsOn_problems.innerHTML = "Problems<span style='float:right;font-weight:bold;'>+</span>";
+            handsOn_problems.innerHTML = "<b>Problems</b><span style='float:right;font-weight:bold;'>+</span>";
             handsOn_problems.style.cursor = "pointer";
             handsOn_section.appendChild(handsOn_problems);
             /* CLOSE */
@@ -1253,7 +1344,7 @@ list_handsOn_changeproblems.appendChild(li);
             handsOn_changeproblems.classList.add("handsOnSectionProblemCnt");
             handsOn_changeproblems.classList.add("competitionSubgroup");
             handsOn_changeproblems.style.display = "none";
-            handsOn_changeproblems.innerHTML = "<p>Problems</p>";
+            // handsOn_changeproblems.innerHTML = "<p>Problems</p>";
             handsOn_section.appendChild(handsOn_changeproblems);
             thisComp.dom.handsOnProblems = handsOn_changeproblems;
             var list_handsOn_changeproblems = document.createElement("ol");
@@ -1261,8 +1352,7 @@ list_handsOn_changeproblems.appendChild(li);
             thisComp.dom.list_handsOn_changeproblems = list_handsOn_changeproblems;
             handsOn_changeproblems.appendChild(list_handsOn_changeproblems);
             if (thisComp.handsOnExists) {
-                thisComp.handsOn.problemMap.length = 0;
-                for (var i = 0, j = handsOnProblemMap.length; i < j; i++) {
+                for (var i = 1, j = handsOnProblemMap.length; i < j; i++) {
                     thisComp.addHandsOnProblem(i, handsOnProblemMap[i][0], handsOnProblemMap[i][1], handsOnProblemMap[i][2]);
                 }
             }

@@ -21,6 +21,18 @@ public class FRQProblem {
         this.name = name; this.inputFname = inputFname; this.outputFname = outputFname;
     }
 
+    static FRQProblem parse(JsonArray array) {
+        return new FRQProblem(array.get(0).getAsString(),array.get(1).getAsString(), array.get(2).getAsString());
+    }
+
+    public JsonArray stringify() {
+        JsonArray jsonArray = new JsonArray();
+        jsonArray.add(this.name);
+        jsonArray.add(this.inputFname);
+        jsonArray.add(this.outputFname);
+        return jsonArray;
+    }
+
     static FRQProblem[] fromJsonArray(String s) {
         JsonArray jsonArray = JsonParser.parseString(s).getAsJsonArray();
 
@@ -28,8 +40,7 @@ public class FRQProblem {
 
         for(int i=0,j=jsonArray.size();i<j;i++) {
             JsonArray problem = jsonArray.get(i).getAsJsonArray();
-            problems[i] = new FRQProblem(problem.get(0).getAsString(),
-                    problem.get(1).getAsString(), problem.get(2).getAsString());
+            problems[i] = parse(problem);
             System.out.println("Problem:"+problems[i].name+","+problems[i].inputFname+","+problems[i].outputFname);
         }
 

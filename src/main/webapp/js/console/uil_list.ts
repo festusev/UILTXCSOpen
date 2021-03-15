@@ -266,6 +266,7 @@ class HandsOnProblem {
     };
     inputFname: string;
     outputFname: string;
+
     /* If this problem has been saved to the server, oldIndex stores the index of this problem in the server.
     *  If it has not been saved, it is set to -1, and when it is saved it will be overwritten to be the index
     *  at the time of saving */
@@ -310,11 +311,13 @@ class Competition {
         opens: string,
         maxPoints: number,
         incorrectPenalty: number,
-        problemMap: HandsOnProblem[],
+        problemMap: HandsOnProblem[],   // The first problem is the dry run (null if there is no dry run)
         studentPacketLink: string,
         judgePacketLink: string,
         time: number,
-        autoGrade: boolean
+        autoGrade: boolean,
+        dryRunExists : boolean,
+        dryRunStudentPacket : string
     } = {
         opens:"",
         maxPoints:0,
@@ -323,7 +326,9 @@ class Competition {
         studentPacketLink:"",
         judgePacketLink:"",
         time:0,
-        autoGrade: null
+        autoGrade: null,
+        dryRunExists : false,
+        dryRunStudentPacket : ""
     };
 
     dom: {
@@ -371,7 +376,10 @@ class Competition {
         handsOnIncorrectPenalty : HTMLInputElement,
         handsOnCheckbox: HTMLInputElement,
         list_handsOn_changeproblems : HTMLElement,
-        handsOnAutoGrade : HTMLInputElement
+        handsOnAutoGrade : HTMLInputElement,
+        dryrun : HTMLElement,
+        list_dryrun : HTMLElement,
+        dryRunStudentLink : HTMLInputElement
     } = {
         form: null,
         comp_head: null,
@@ -415,10 +423,14 @@ class Competition {
         handsOnIncorrectPenalty : null,
         handsOnCheckbox : null,
         list_handsOn_changeproblems : null,
-        handsOnAutoGrade : null
+        handsOnAutoGrade : null,
+        dryrun : null,
+        list_dryrun : null,
+        dryRunStudentLink : null
     };
 
-    constructor(cid: string, published: boolean, isPublic: boolean, showScoreboard: boolean, name:string, judges:[number, string][], writtenObj:any, handsOnObj:any) {
+    constructor(cid: string, published: boolean, isPublic: boolean, showScoreboard: boolean, name:string,
+                judges:[number, string][], writtenObj:any, handsOnObj:any) {
         competitions.push(this);
 
         this.cid = cid;
@@ -460,6 +472,8 @@ class Competition {
             this.handsOn.judgePacketLink = handsOnObj.judgePacketLink;
             this.handsOn.time = handsOnObj.time;
             this.handsOn.autoGrade = handsOnObj.autoGrade;
+            this.handsOn.dryRunExists = handsOnObj.dryRunExists;
+            this.handsOn.dryRunStudentPacket = handsOnObj.dryRunStudentPacket;
         }
     }
 
@@ -476,10 +490,10 @@ class Competition {
     toggleHandsOnProblems(h2:HTMLHeadElement) {
         if(this.dom.handsOnProblems.style.display !== "block") {
             this.dom.handsOnProblems.style.display = "block";
-            h2.innerHTML = "Problems<span style='float:right;font-weight:bold;'>-</span>";
+            h2.innerHTML = "<b>Problems</b><span style='float:right;font-weight:bold;'>-</span>";
         } else {
             this.dom.handsOnProblems.style.display = "none";
-            h2.innerHTML = "Problems<span style='float:right;font-weight:bold;'>+</span>";
+            h2.innerHTML = "<b>Problems</b><span style='float:right;font-weight:bold;'>+</span>";
         }
     }
 
@@ -633,6 +647,8 @@ class Competition {
             formData.append("frqJudgePacket", "");  // TODO: Add this
             formData.append("alternateExists", ""+this.dom.altExists.checked);
             formData.append("frqAutoGrade", ""+this.dom.handsOnAutoGrade.checked);
+            formData.append("dryRunExists", ""+this.handsOn.dryRunExists);
+            formData.append("dryRunStudentPacket", this.dom.dryRunStudentLink.value);
 
             let problems:[string, string, string][] = [];
             let problemIndices:number[] = [];   /* A list like [1, 2, -1, 9, 5], corresponding to a name in the problems array */
@@ -915,14 +931,13 @@ li.appendChild(delQuestion);
 list_handsOn_changeproblems.appendChild(li);
 */
 
-    addHandsOnProblem(probIndex: number, name: string, inputFname: string, outputFname: string): void {
+    addHandsOnProblem(probIndex: number, name: string, inputFname: string, outputFname: string, isDryRun?: boolean): [HTMLLIElement,HandsOnProblem] {
         let thisComp:Competition = this;
 
         if(this.handsOn.problemMap.length >= 24) return;    // Don't let them have more than 24 hands on problems
         let index:number = this.handsOn.problemMap.length;
         let problem:HandsOnProblem = new HandsOnProblem();
         problem.oldIndex = probIndex;
-        this.handsOn.problemMap.push(problem);
 
         let li = document.createElement("li");
         li.dataset.probNum = "" + index;
@@ -998,16 +1013,20 @@ list_handsOn_changeproblems.appendChild(li);
             input_out_proxy.title = outputFname;
         }
 
-        let delQuestion = document.createElement("img");
-        delQuestion.src = "/res/close.svg";
-        delQuestion.classList.add("deleteProblem");
-        delQuestion.onclick = function() {
-            thisComp.handsOn.problemMap.splice(thisComp.handsOn.problemMap.indexOf(problem), 1);
-            thisComp.dom.list_handsOn_changeproblems.removeChild(li);
-        };
-        li.appendChild(delQuestion);
+        if(!isDryRun) {
+            let delQuestion = document.createElement("img");
+            delQuestion.src = "/res/close.svg";
+            delQuestion.classList.add("deleteProblem");
+            delQuestion.onclick = function () {
+                thisComp.handsOn.problemMap.splice(thisComp.handsOn.problemMap.indexOf(problem), 1);
+                thisComp.dom.list_handsOn_changeproblems.removeChild(li);
+            };
+            li.appendChild(delQuestion);
+            thisComp.dom.list_handsOn_changeproblems.appendChild(li);
+        }
 
-        thisComp.dom.list_handsOn_changeproblems.appendChild(li);
+        this.handsOn.problemMap.push(problem);
+        return [li, problem];
     }
 
 
@@ -1059,7 +1078,9 @@ list_handsOn_changeproblems.appendChild(li);
         return li;
     }
 
-    getDOM(handsOnProblemMap:[string, string, string][], whatItIsText:string, rulesText:string,numNonAlts: number,alternateExists:boolean):HTMLElement {
+    // The first element of handsOnProblemMap is the dry run data.
+    getDOM(handsOnProblemMap:[string, string, string][], whatItIsText:string, rulesText:string,numNonAlts: number,
+           alternateExists:boolean):HTMLElement {
         function makeHalf(element:HTMLElement) {
             element.classList.add("profile_cmpnt");
             element.classList.add("half");
@@ -1299,6 +1320,8 @@ list_handsOn_changeproblems.appendChild(li);
             return written_section;
         }
         function getHandsOnSection():HTMLElement {
+            thisComp.handsOn.problemMap.length = 0;
+
             let handsOn_section = document.createElement("span");
             handsOn_section.classList.add("handsOnSection");
             if(!thisComp.handsOnExists) handsOn_section.style.display = "none";
@@ -1408,10 +1431,93 @@ list_handsOn_changeproblems.appendChild(li);
             /* CLOSE */
 
             /* OPEN */
+            //let dryrun = document.createElement("div");
+            //makeFull(dryrun);
+            //dryrun.classList.add("handsOnSectionDryRunCnt");
+            //dryrun.classList.add("competitionSubgroup");
+            //handsOn_section.appendChild(dryrun);
+            // dryrun.innerHTML = "<p>Dry Run</p>";
+            //thisComp.dom.dryrun = dryrun;
+
+            /* OPEN */
+            let dryrun_header = document.createElement("div");
+            makeHalf(dryrun_header);
+            handsOn_section.appendChild(dryrun_header);
+
+            let h2_dryrun_header = document.createElement("h3");
+            h2_dryrun_header.innerHTML = "<b>Dry Run</b>";
+            dryrun_header.appendChild(h2_dryrun_header);
+            /* CLOSE */
+
+            /* OPEN */
+            let dryrun_toggle = document.createElement("div");
+            makeHalf(dryrun_toggle);
+            handsOn_section.appendChild(dryrun_toggle);
+
+            let dryrun_toggle_input = document.createElement("input");
+            dryrun_toggle_input.classList.add("checkbox");
+            dryrun_toggle_input.type = "checkbox";
+            dryrun_toggle_input.name = "altExists";
+
+            if(thisComp.handsOn.dryRunExists) dryrun_toggle_input.checked = true;
+            dryrun_toggle.appendChild(dryrun_toggle_input);
+            dryrun_toggle_input.onclick = function() {
+                thisComp.handsOn.dryRunExists = dryrun_toggle_input.checked;
+
+                if(thisComp.handsOn.dryRunExists) {
+                    list_dryrun.style.display = "block";
+                    dryRun_studentlink.style.display = "block";
+                    input_dryRun_studentlink.style.display = "block";
+                } else {
+                    list_dryrun.style.display = "none";
+                    dryRun_studentlink.style.display = "none";
+                    input_dryRun_studentlink.style.display = "none";
+                }
+            };
+            /* CLOSE */
+
+            /* OPEN */
+            let dryRun_studentlink = document.createElement("div");
+            makeFull(dryRun_studentlink);
+            dryRun_studentlink.innerText = "Dry Run Packet Link";
+            if(!thisComp.handsOn.dryRunExists) dryRun_studentlink.style.display = "none";
+            handsOn_section.appendChild(dryRun_studentlink);
+
+            let input_dryRun_studentlink = document.createElement("input");
+            input_dryRun_studentlink.name = "dryRunStudentPacket";
+            input_dryRun_studentlink.type = "url";
+            input_dryRun_studentlink.placeholder = "https://what_the_student_sees.com";
+            input_dryRun_studentlink.value = thisComp.handsOn.dryRunStudentPacket?thisComp.handsOn.dryRunStudentPacket:"";
+            input_dryRun_studentlink.maxLength = 255;
+            if(!thisComp.handsOn.dryRunExists) input_dryRun_studentlink.style.display = "none";
+            input_dryRun_studentlink.oninput = function() {
+                inputMaxLength(input_dryRun_studentlink);
+            };
+            dryRun_studentlink.appendChild(input_dryRun_studentlink);
+            thisComp.dom.dryRunStudentLink = input_dryRun_studentlink;
+            /* CLOSE */
+
+            let list_dryrun = document.createElement("ol");
+            list_dryrun.classList.add("handsOnProblemList");
+            thisComp.dom.list_dryrun = list_dryrun;
+            if(!thisComp.handsOn.dryRunExists) list_dryrun.style.display = "none";
+            handsOn_section.appendChild(list_dryrun);
+
+            if(handsOnProblemMap[0]) {
+                let data: [HTMLLIElement, HandsOnProblem] = thisComp.addHandsOnProblem(0, handsOnProblemMap[0][0],
+                    handsOnProblemMap[0][1], handsOnProblemMap[0][2], true);
+                list_dryrun.appendChild(data[0]);
+            } else {
+                let data: [HTMLLIElement, HandsOnProblem] = thisComp.addHandsOnProblem(0, "", "", "", true);
+                list_dryrun.appendChild(data[0]);
+            }
+            /* CLOSE */
+
+            /* OPEN */
             let handsOn_problems = document.createElement("div");
             makeFull(handsOn_problems);
             handsOn_problems.onclick = function(){thisComp.toggleHandsOnProblems(handsOn_problems);};
-            handsOn_problems.innerHTML = "Problems<span style='float:right;font-weight:bold;'>+</span>";
+            handsOn_problems.innerHTML = "<b>Problems</b><span style='float:right;font-weight:bold;'>+</span>";
             handsOn_problems.style.cursor = "pointer";
             handsOn_section.appendChild(handsOn_problems);
             /* CLOSE */
@@ -1422,7 +1528,7 @@ list_handsOn_changeproblems.appendChild(li);
             handsOn_changeproblems.classList.add("handsOnSectionProblemCnt");
             handsOn_changeproblems.classList.add("competitionSubgroup");
             handsOn_changeproblems.style.display = "none";
-            handsOn_changeproblems.innerHTML = "<p>Problems</p>";
+            // handsOn_changeproblems.innerHTML = "<p>Problems</p>";
             handsOn_section.appendChild(handsOn_changeproblems);
             thisComp.dom.handsOnProblems = handsOn_changeproblems;
 
@@ -1431,8 +1537,7 @@ list_handsOn_changeproblems.appendChild(li);
             thisComp.dom.list_handsOn_changeproblems = list_handsOn_changeproblems;
             handsOn_changeproblems.appendChild(list_handsOn_changeproblems);
             if(thisComp.handsOnExists) {
-                thisComp.handsOn.problemMap.length = 0;
-                for(let i=0, j=handsOnProblemMap.length;i<j;i++) {
+                for(let i=1, j=handsOnProblemMap.length;i<j;i++) {
                     thisComp.addHandsOnProblem(i, handsOnProblemMap[i][0], handsOnProblemMap[i][1], handsOnProblemMap[i][2]);
                 }
             }
@@ -1997,9 +2102,11 @@ function createNewCompetition():void {
         dom.class_competitions.innerHTML = "";
     }
 
-    let competition:Competition = new Competition("", false,false, true, "New Competition",[], false, false);
+    let competition:Competition = new Competition("", false,false, true,
+        "New Competition",[], false, false);
 
-    dom.class_competitions.insertBefore(competition.getDOM([], "", "", 3, false), dom.class_competitions.firstChild);
+    dom.class_competitions.insertBefore(competition.getDOM([], "", "",
+        3, false), dom.class_competitions.firstChild);
     toggleEditCompetition(competition);
     showClassComps(document.getElementById("showClassComps"));
 }

@@ -82,6 +82,11 @@ public class Profile extends HttpServlet{
             handsOnJ.addProperty("maxPoints",competition.template.frqTest.MAX_POINTS);
             handsOnJ.addProperty("incorrectPenalty", competition.template.frqTest.INCORRECT_PENALTY);
             handsOnJ.addProperty("autoGrade", competition.template.frqTest.AUTO_GRADE);
+            handsOnJ.addProperty("dryRunExists", competition.template.frqTest.DRYRUN_EXISTS);
+            if(competition.template.frqTest.PROBLEM_MAP[0] != null) {
+                handsOnJ.add("dryRun", competition.template.frqTest.PROBLEM_MAP[0].stringify());
+            }
+            handsOnJ.addProperty("dryRunStudentPacket", competition.template.frqTest.DRYRUN_STUDENT_PACKET);
             compJ.add("handsOn", handsOnJ);
         }
 

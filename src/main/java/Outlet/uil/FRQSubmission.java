@@ -27,7 +27,7 @@ public class FRQSubmission {
     // It also won't count as a submission for the purpose of the scoreboard.
     boolean graded;
     public Result result;
-    short problemNumber;
+    short problemNumber;    // If 0, then this is a dry run submission
     long submittedTime;  // Time in milliseconds when it was submitted
 
     UILEntry entry;
@@ -119,7 +119,7 @@ public class FRQSubmission {
                 boolean graded = submissionJson.get(4).getAsBoolean();
 
                 Result judgement = Result.valueOf(judgementI);
-                FRQSubmission submission = new FRQSubmission((short)(i + 1), judgement, input, output, submittedTime, graded);    // Problem indices begin at 1
+                FRQSubmission submission = new FRQSubmission(i, judgement, input, output, submittedTime, graded);    // Problem indices begin at 1
                 submission.entry = entry;
                 submissions.add(submission);
             }

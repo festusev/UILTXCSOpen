@@ -172,18 +172,8 @@ var config = {
             template.innerHTML = response["html"];
             dom.frqProblems.replaceWith(template.content.firstChild);
             dom.cached.frqProblems = template.content.firstChild;
-        }, "updateScoreboard": function (response) {
-            var template = document.createElement('template');
-            template.innerHTML = response["html"];
-            var display = dom.scoreboard.style.display;
-            dom.scoreboard.replaceWith(template.content.firstChild);
-            dom.cached[config.IDs.scoreboard] = template.content.firstChild;
-            if (response["rank"]) {
-                dom.bottomRank.innerText = response["rank"];
-                dom.bottomOutOf.innerText = response["numTeams"];
-            }
-            showColumn();
-        }, "reScoreMC": function (response) {
+        },
+        "reScoreMC": function (response) {
             // TODO: Write this
         }, "nc": function (response) {
             var clarification_list = dom.clarificationColumn.querySelector(".clarification_group");
@@ -372,6 +362,9 @@ var config = {
                 }
                 dom.numTeams.innerText = "" + response.teams.length;
                 dom.numUsers.innerText = "" + numStudents;
+            }
+            else {
+                // dom.bottomRank =u
             }
             dom.teamList.innerHTML = "";
             dom.teamList.appendChild(generalFragment);
@@ -2289,4 +2282,10 @@ function stopHandsOn() {
 }
 function startHandsOn() {
     ws.send("[\"startHandsOn\",\"" + getNowString() + "\"]");
+}
+function stopDryRun() {
+    ws.send("[\"stopDryRun\",\"" + getNowString() + "\"]");
+}
+function startDryRun() {
+    ws.send("[\"startDryRun\",\"" + getNowString() + "\"]");
 }

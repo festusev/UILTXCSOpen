@@ -132,36 +132,31 @@ public class Template {
         }
         frqHTML = "";
         if(fr.exists) {
-            frqHTML =  "<p id='frqInst'><b>Problem Packet: </b><a href='"+StringEscapeUtils.escapeHtml4(frqTest.STUDENT_PACKET)+"' class='link' target='_blank'>link</a><br>Choose a problem to submit:</p>" +
+            String studentPacket = frqTest.STUDENT_PACKET;
+            if(frqTest.dryRunMode) studentPacket = frqTest.DRYRUN_STUDENT_PACKET;
+            frqHTML =  "<p id='frqInst'><b>Problem Packet: </b><a href='"+StringEscapeUtils.escapeHtml4(studentPacket)+
+                        "' class='link' target='_blank'>link</a><br>Choose a problem to submit:</p>" +
                         "<form id='submit' onsubmit='submitFRQ(); return false;' enctype='multipart/form-data'>" +
                         "<select id='frqProblem'>";
-            for(int i=1; i<=frqTest.PROBLEM_MAP.length;i++){
-                frqHTML += "<option value='"+i+"' id='frqProblem"+i+"'>"+StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[i-1].name)+"</option>";
+            if(frqTest.dryRunMode) {
+                frqHTML += "<option value='" + 0 + "' id='frqProblem" + 0 + "'>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[0].name) + "</option>";
+            } else {
+                for (int i = 1; i < frqTest.PROBLEM_MAP.length; i++) {
+                    frqHTML += "<option value='" + i + "' id='frqProblem" + i + "'>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[i].name) + "</option>";
+                }
             }
             frqHTML += "</select>" +
                     "<input type='file' accept='.java,.cpp,.py' id='frqTextfile'/>" +
                     "<button id='submitBtn' class='chngButton'>Submit</button>" +
                     "</form><p id='advice'>Confused? Review the <a href='#' class='link' target='_blank' onclick='showAbout();'>rules</a>.</p>";
-            // answersHTML+="<div class='row'><h2>FRQ</h2><p><b>Student Packet: </b><a href='"+frqTest.STUDENT_PACKET+
-            //         "' class='link'>link</a><br><b>Judge Packet: </b><a href='"+frqTest.JUDGE_PACKET+"' class='link'>link</a></p></div>";
         }
-        // answersHTML+="</div>";
 
         HEADERS = "<html><head><title>" + name + " - TXCSOpen</title>" +
                 Dynamic.loadHeaders() +
                 "<link rel='stylesheet' href='/css/console/console.css'>" +
                 "<link rel='stylesheet' href='/css/console/uil_template.css'>" +
-                //"<script src='/js/diff/base.js'></script>" +
-                //"<script src='/js/diff/line.js'></script>" +
                 "<script src='/js/console/uil.js'></script>" +
                 "</head><body>";
-
-        // Cre a timer to update the scoreboard every SCOREBOARD_UPDATE_INTERVAL seconds
-        /*Timer timer = new Timer();
-        UpdateScoreboard updater = new UpdateScoreboard();
-        updater.template = this;
-        timer.schedule(updater, 0, SCOREBOARD_UPDATE_INTERVAL);
-        updateScoreboard();*/
     }
 
     /** Renders the full page that they are on. Only called once per page visit, and sends all of the htmls hidden except
@@ -357,7 +352,8 @@ public class Template {
             about += "<h2>Written</h2><p>"+mcTest.opens.DATE_STRING+"<br>"+(mcTest.TIME/(1000*60))+" min<br>"+mcTest.KEY.length+" questions</p>";
         }
         if(frqTest.exists) {
-            about += "<h2>Hands-On</h2><p>"+frqTest.opens.DATE_STRING+"<br>"+(frqTest.TIME/(1000*60))+" min<br>"+frqTest.PROBLEM_MAP.length+" questions</p>";
+            about += "<h2>Hands-On</h2><p>"+frqTest.opens.DATE_STRING+"<br>"+(frqTest.TIME/(1000*60))+" min<br>"+
+                    (frqTest.PROBLEM_MAP.length-1)+" questions</p>";
         }
         about += "</div></div>";
         return getFRQHTML(uData, userStatus, competitionStatus) + about + getScoreboardHTML() + /*answers +*/
@@ -578,7 +574,7 @@ public class Template {
     }
 
     public String getSmallFRQ(int i, FRQSubmission submission) {
-        return "<tr onclick='showFRQSubmission(this,"+i+")'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber-1].name) +
+        return "<tr onclick='showFRQSubmission(this,"+i+")'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber].name) +
                 "</td><td>" + StringEscapeUtils.escapeHtml4(submission.entry.tname) + "</td><td id='showFRQSubmission"+i+"'>" + submission.getResultString() +
                 "</td></tr>";
     }
@@ -588,12 +584,15 @@ public class Template {
 
         if(userStatus.teacher) {
             if(userStatus.admin) {   // This is the teacher who created this competition
+                String studentPacket = frqTest.STUDENT_PACKET;
+                if(frqTest.dryRunMode) studentPacket = frqTest.DRYRUN_STUDENT_PACKET;
                 String html =  "<div id='frqColumn' class='column frqSubmissionList' style='display:none;'>" +
                         "<div style='flex-grow:1' id='frqSubmissions'><div class='row head-row'>" +
                         "<h1>Hands-On</h1>" +
                         "</div>" +
                         "<div class='row'><audio src='/blip.mp3' preload='auto' controls='none' style='display:none' id='playBell'></audio>" +
-                        "<p>Most recent problems are first.<br>Test Packet: <a class='link' target='_blank' href='" + StringEscapeUtils.escapeHtml4(frqTest.STUDENT_PACKET) + "'>link</a></p>" +
+                        "<p>Most recent problems are first.<br>Test Packet: <a class='link' target='_blank' href='" +
+                        StringEscapeUtils.escapeHtml4(studentPacket) + "'>link</a></p>" +
                         "<p><b>Submissions:</b></p>";
 
                 html += "<table id='frqSubmissionsTable'><tr id='frqSubmissionsTr'><th>Problem</th><th>Team</th><th>Result</th></tr>";
@@ -647,15 +646,26 @@ public class Template {
     }
     public String getFRQProblems(UILEntry entry){
         String problems = "<div id='frqProblems'><b>Problems - " + entry.frqScore +"pts</b>";
-        for(int i=0; i<entry.frqResponses.length; i++) {
-            problems+="<p>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[i].name) + " - ";
-            Pair<Short, ArrayList<FRQSubmission>> problem = entry.frqResponses[i];
+        if(frqTest.dryRunMode) {
+            problems+="<p>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[0].name) + " - ";
+            Pair<Short, ArrayList<FRQSubmission>> problem = entry.frqResponses[0];
             if(problem.key > 0) {
                 problems += frqTest.calcScore(problem.key) + "pts";
             } else{
                 problems += (problem.key*-1) + " tries";
             }
             problems+="</p>";
+        } else {
+            for (int i = 1; i < entry.frqResponses.length; i++) {
+                problems += "<p>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[i].name) + " - ";
+                Pair<Short, ArrayList<FRQSubmission>> problem = entry.frqResponses[i];
+                if (problem.key > 0) {
+                    problems += frqTest.calcScore(problem.key) + "pts";
+                } else {
+                    problems += (problem.key * -1) + " tries";
+                }
+                problems += "</p>";
+            }
         }
         return problems + "</div>";
     }
@@ -721,14 +731,21 @@ public class Template {
 
         String postfix = "";    // The controls to start and stop portions of the competition. Only for the creator.
         if(userStatus.creator) {
+            postfix = "<li id='sectionControls'><button id='sectionControlsButton'>Controls</button><div id='sectionControlsList'>";
             if(mcTest.exists) {
-                if(competitionStatus.mcDuring) postfix += "<button onclick='stopWritten()' class='chngButton'>Stop Written</button>";
-                else postfix += "<button onclick='startWritten()' class='chngButton'>Start Written</button>";
+                if(competitionStatus.mcDuring) postfix += "<p onclick='stopWritten()'>Stop Written</p>";
+                else postfix += "<p onclick='startWritten()'>Start Written</p>";
             }
             if(frqTest.exists) {
-                if(competitionStatus.frqDuring) postfix += "<button onclick='stopHandsOn()' class='chngButton'>Stop Hands-On</button>";
-                else postfix += "<button onclick='startHandsOn()' class='chngButton' >Start Hands-On</button>";
+                if(competitionStatus.frqDuring) postfix += "<p onclick='stopHandsOn()'>Stop Hands-On</p>";
+                else postfix += "<p onclick='startHandsOn()'>Start Hands-On</p>";
+
+                if(frqTest.DRYRUN_EXISTS) {
+                    if (frqTest.dryRunMode) postfix += "<p onclick='stopDryRun()'>Stop Dry Run</p>";
+                    else postfix += "<p onclick='startDryRun()'>Start Dry Run</p>";
+                }
             }
+            postfix += "</div></li>";
         }
 
         if((!frqTest.exists || competitionStatus.frqBefore) && (!mcTest.exists || competitionStatus.mcBefore)) {
@@ -750,6 +767,8 @@ public class Template {
                     closesScript = mcTest.closes.getScript("");
                 }
                 return nav + postfix + "<li id='countdownCnt'>Written ends in <p id='countdown'>" + closesScript + "</p></li></ul>";
+            } else if(!competitionStatus.mcDuring && competitionStatus.frqDryRunMode) {
+                return nav + postfix + "<li id='countdownCnt'>Hands-On Dry-Run is open</p></li></ul>";
             } else if (!competitionStatus.mcDuring && competitionStatus.frqDuring) {
                 String closesScript = frqTest.closes.getScript("updateNav()");
 
@@ -1008,6 +1027,7 @@ class CompetitionStatus {
     public final boolean frqDuring;
     public final boolean frqOverflow;    // If the frq is in the threshold when submissions are accepted
     public final boolean frqFinished;
+    public final boolean frqDryRunMode; // If the frq is in the dry run mode
 
     public static final long OVERFLOW_LENGTH = 1000*60;   // The length of time (milli) after submissions close when they are still accepted
     CompetitionStatus(MCTest mcTest, FRQTest frqTest) {
@@ -1046,27 +1066,33 @@ class CompetitionStatus {
                 frqDuring = false;
                 frqOverflow = false;
                 frqFinished = false;
+                frqDryRunMode = false;
             } else if (!frqTest.closes.done()) {
                 frqBefore = false;
                 frqDuring = true;
                 frqOverflow = false;
                 frqFinished = false;
+                if(frqTest.dryRunMode) frqDryRunMode = true;
+                else frqDryRunMode = false;
             } else if (frqTest.closes.inOverflow(OVERFLOW_LENGTH)) {
                 frqBefore = false;
                 frqDuring = false;
                 frqOverflow = true;
                 frqFinished = true;
+                frqDryRunMode = false;
             } else {
                 frqBefore = false;
                 frqDuring = false;
                 frqOverflow = false;
                 frqFinished = true;
+                frqDryRunMode = false;
             }
         } else {
             frqBefore = false;
             frqDuring = false;
             frqOverflow = false;
             frqFinished = true;
+            frqDryRunMode = false;
         }
         System.out.println("mcBefore="+mcBefore+",mcDuring="+mcDuring+",mcInOverflow="+mcOverflow+",mcFinished="+mcFinished+
                 ",frqBefore="+frqBefore+",frqDuring="+frqDuring+",frqOverflow="+frqOverflow+",frqFinished="+frqFinished);

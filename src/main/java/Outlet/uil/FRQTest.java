@@ -34,8 +34,14 @@ public class FRQTest {
     public final short INCORRECT_PENALTY;   // Number of points taken off MAX_POINTS for each incorrect submission
     public final short MIN_POINTS = 0;  // Minimum number of points you can get for solving a problem;
 
-    public final FRQProblem[] PROBLEM_MAP;  // A list of the problems
+    public final FRQProblem[] PROBLEM_MAP;  // A list of the problems. The first one is the dry run (or null if no dry run)
+
+    public final boolean DRYRUN_EXISTS;
+    public final String DRYRUN_STUDENT_PACKET;
+
     private static ArrayList<Pair<File, File>> files = new ArrayList<>();
+
+    public boolean dryRunMode = false; // If we are in the dry run mode
 
     private static Set<PosixFilePermission> FILE_PERMISSIONS = null;
     static {
@@ -59,13 +65,15 @@ public class FRQTest {
     public FRQTest() {
         exists = false;TIME_TEXT="";TIME=0;STUDENT_PACKET="";JUDGE_PACKET="";
         scoreDirPath = ""; testcaseDirPath = "";MAX_POINTS = 0; INCORRECT_PENALTY = 0; PROBLEM_MAP = new FRQProblem[0];
-        AUTO_GRADE = true;
+        AUTO_GRADE = true;DRYRUN_EXISTS = false;DRYRUN_STUDENT_PACKET = "";
     }
     public FRQTest(boolean published,String opensString, short mp, short ip, FRQProblem[] pm, String studentPacket,
-                   String judgePacket, long time, boolean autoGrade) {
+                   String judgePacket, long time, boolean autoGrade, boolean dryRunExists, String dryRunStudentPacket) {
         MAX_POINTS = mp; INCORRECT_PENALTY = ip; PROBLEM_MAP = pm;
         exists = true;TIME_TEXT=(time/(1000*60)) + " minutes";TIME=time;STUDENT_PACKET=studentPacket;JUDGE_PACKET=judgePacket;
-        AUTO_GRADE = autoGrade;
+        AUTO_GRADE = autoGrade;DRYRUN_EXISTS = dryRunExists;DRYRUN_STUDENT_PACKET = dryRunStudentPacket;
+
+        if(dryRunExists) dryRunMode = true;
 
         if(published) {
             opens = new Countdown(opensString, "countdown");
@@ -82,7 +90,7 @@ public class FRQTest {
         try {
             files.clear();
 
-            for(int i = 1; i <= PROBLEM_MAP.length; ++i) {
+            for(int i = 0; i <= PROBLEM_MAP.length; ++i) {
                 // System.out.println("--Getting files for probNum " + i + " in path "+ testcaseDirPath +i+"/");
                 files.add(get_files(new File(testcaseDirPath + i + "/")));
             }
@@ -111,10 +119,11 @@ public class FRQTest {
             newTestcaseDir.mkdir();
             testcaseDir = newTestcaseDir;
         }
+
     }
 
     public void createProblemDirectories() {
-        for(int i=1;i<=PROBLEM_MAP.length;i++) {
+        for(int i=0;i<PROBLEM_MAP.length;i++) {
             File dir = new File(testcaseDirPath + i);
             dir.mkdir();
         }
@@ -139,10 +148,10 @@ public class FRQTest {
         // Delete all of the directories for problems that have been removed. Also remove FRQSubmission lists
         for(int i=0;i<oldNumProblems;i++) {
             if(!notDeleted[i]) {
-                deleteDirectory(new File(testcaseDirPath +(i+1)));
+                deleteDirectory(new File(testcaseDirPath +i));
 
                 // Remove the submission from the frq submission list.
-                int finalI = i + 1;
+                int finalI = i;
                 competition.frqSubmissions.removeIf(b -> b.problemNumber == finalI);
             }
         }
@@ -160,14 +169,14 @@ public class FRQTest {
                 else problem = new Pair<>((short) 0, new ArrayList<>());
 
                 for(FRQSubmission submission: problem.value) {
-                    submission.problemNumber = (short)(i + 1);
+                    submission.problemNumber = (short)i;
                 }
                 newFRQSubmissions[i] = problem;
             }
             entry.frqResponses = newFRQSubmissions;
             entry.frqScore = 0;
-            for(Pair<Short, ArrayList<FRQSubmission>> problem: entry.frqResponses) {
-                if(problem.key > 0) entry.frqScore += java.lang.Math.max(competition.template.frqTest.calcScore(problem.key), competition.template.frqTest.MIN_POINTS);
+            for(int i=1,j=entry.frqResponses.length;i<j;i++) {
+                entry.frqScore += competition.template.frqTest.calcScore(entry.frqResponses[i].key);
             }
             entry.update();
         }
@@ -177,12 +186,12 @@ public class FRQTest {
         File[] dirs = new File[problemIndices.length];
         for(int i=0,j=problemIndices.length;i<j;i++) {
             if(problemIndices[i] < 0) {  // If the index is less than zero, it is a new problem
-                File newDir = new File(testcaseDirPath + "tmp_" + (i+1));
+                File newDir = new File(testcaseDirPath + "tmp_" +i);
                 newDir.mkdir();
                 dirs[i] = newDir;
             } else {    // In this case, we rename the directory
-                File oldDir = new File(testcaseDirPath + (problemIndices[i]+1));
-                File destDir = new File(testcaseDirPath + "tmp_"+(i+1));
+                File oldDir = new File(testcaseDirPath + (problemIndices[i]));
+                File destDir = new File(testcaseDirPath + "tmp_"+i);
 
                 oldDir.renameTo(destDir);
                 dirs[i] = destDir;
@@ -314,7 +323,7 @@ public class FRQTest {
         }
 
         System.out.println("Looking for file with probNum="+problemNum);
-        Pair<File, File> testcase = files.get(problemNum - 1);
+        Pair<File, File> testcase = files.get(problemNum);
 
         //do {
         if (testcase == null) {
@@ -330,7 +339,8 @@ public class FRQTest {
 
         if(in_file != null) {   // Only add in the dat file if there is one
             try {
-                Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", "/bin/ln -s " + in_file.getAbsolutePath() + " " + dir + PROBLEM_MAP[problemNum - 1].name.toLowerCase() + ".dat"}).waitFor();
+                Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", "/bin/ln -s " + in_file.getAbsolutePath() + " " +
+                        dir + PROBLEM_MAP[problemNum].name.toLowerCase() + ".dat"}).waitFor();
             } catch (InterruptedException e) {
                 e.printStackTrace();
                 return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "", "", currentTime, AUTO_GRADE);
@@ -441,13 +451,11 @@ public class FRQTest {
      * @param isInput
      */
     public void setTestcaseFile(int probNum, byte[] bytes, boolean isInput) {
-        String path = testcaseDirPath +(probNum+1)+"/1";
-        if(!isInput) path+=".a";
+        String path = testcaseDirPath +probNum+"/1";
         System.out.println("Setting testcase file, probNum="+probNum+", path="+path);
+        if(!isInput) path+=".a";
         try {
             File file = new File(path);
-            //if(isInput) files.get(probNum-1).get(0).key = file;
-            //else files.get(probNum-1).get(0).value = file;
             file.getParentFile().mkdirs();  // If the parents doesn't exist, it will make them
             Files.deleteIfExists(file.toPath());
             Files.createFile(file.toPath(), PosixFilePermissions.asFileAttribute(FILE_PERMISSIONS));
@@ -456,11 +464,13 @@ public class FRQTest {
             OutputStream os = new FileOutputStream(file);
             os.write(bytes);
             os.close();
-
-            FRQProblem problem = PROBLEM_MAP[probNum-1];
-            problem.outputFile = new String(bytes);
         } catch (Exception var18) {
             var18.printStackTrace();
+        }
+
+        if (!isInput) {
+            FRQProblem problem = PROBLEM_MAP[probNum];
+            problem.outputFile = new String(bytes);
         }
     }
 
@@ -518,7 +528,7 @@ public class FRQTest {
                 }
 
                 System.out.println("------------------------------------");
-                if (probNum > 0 && probNum <= PROBLEM_MAP.length) {
+                if (probNum >= 0 && probNum < PROBLEM_MAP.length) {
                     dirMade = false;
 
                     try {
@@ -560,7 +570,7 @@ public class FRQTest {
     Loads the text of the file from the disk.
      */
     public void loadOutputFile(int probNum, FRQProblem problem) {
-        File outputFile = files.get(probNum - 1).value;
+        File outputFile = files.get(probNum).value;
         try {
             InputStream inputStream = new FileInputStream(outputFile);
             byte[] bytes = new byte[inputStream.available()];
@@ -572,12 +582,13 @@ public class FRQTest {
     }
 
     /**
-     * Takes in the number of incorrect tries as a negative number and returns the number of points they get
+     * Takes in the number of tries (including the correct one) and returns the number of points they get
      * @param numTries
      * @return
      */
     public short calcScore(short numTries) {
-        return (short)(Math.abs(MAX_POINTS) - Math.abs(numTries-1)*Math.abs(INCORRECT_PENALTY));
+        if(numTries <= 0) return 0; // They haven't gotten it right
+        return (short)(java.lang.Math.max(Math.abs(MAX_POINTS) - (numTries-1)*Math.abs(INCORRECT_PENALTY), MIN_POINTS));
     }
     public Countdown getTimer() {
         Countdown timer = new Countdown(TIME, opens.date.getTime(), "frqTimer");

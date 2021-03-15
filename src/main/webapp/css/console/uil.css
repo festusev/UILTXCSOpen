@@ -99,7 +99,7 @@
 #competitions {
     display: flex;
     flex-flow: row;
-    width: 50rem;
+    width: 60rem;
     max-width: calc(100% - 7rem);
     box-sizing: border-box;
     margin: auto;
@@ -292,6 +292,8 @@ button {
 .handsOnProblemList, .writtenSectionAnswerList {
     list-style: none;
     counter-reset: item;
+    grid-column-start: 1;
+    grid-column-end: 3;
 }
 .handsOnProblemList li, .writtenSectionAnswerList li{
     display: flex;

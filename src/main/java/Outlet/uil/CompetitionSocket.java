@@ -47,8 +47,12 @@ public class CompetitionSocket {
             response.addProperty("frqIncorrectPenalty", competition.template.frqTest.INCORRECT_PENALTY);
 
             JsonArray problemMap = new JsonArray();
-            for(FRQProblem problem: competition.template.frqTest.PROBLEM_MAP) {
-                problemMap.add(problem.name);
+            if(competition.template.frqTest.dryRunMode) {
+                problemMap.add(competition.template.frqTest.PROBLEM_MAP[0].name);
+            } else {
+                for (int i=0;i<competition.template.frqTest.PROBLEM_MAP.length;i++) {
+                    problemMap.add(competition.template.frqTest.PROBLEM_MAP[i].name);
+                }
             }
             response.add("frqProblemMap", problemMap);
         }
@@ -620,7 +624,8 @@ public class CompetitionSocket {
                     Date now = new Date(1); // Date at epoch
                     FRQTest oldFRQ = competition.template.frqTest;
                     FRQTest frqTest = new FRQTest(true, sdf.format(now), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
-                            oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE);
+                            oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE,
+                            oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET);
                     try {
                         competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
                                 competition.numNonAlts, competition.template.name, competition.template.description,
@@ -633,7 +638,8 @@ public class CompetitionSocket {
                 } else if(action.equals("startHandsOn")) {
                     FRQTest oldFRQ = competition.template.frqTest;
                     FRQTest frqTest = new FRQTest(true, data.get(1).getAsString(), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
-                            oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE);
+                            oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE,
+                            oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET);
                     try {
                         competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
                                 competition.numNonAlts, competition.template.name, competition.template.description,
@@ -647,11 +653,72 @@ public class CompetitionSocket {
                     int id = data.get(1).getAsInt();
                     FRQSubmission submission = competition.frqSubmissions.get(id);
                     submission.graded = true;
-                    submission.entry.recalculateFRQScore(submission.problemNumber-1);
+                    submission.entry.recalculateFRQScore(submission.problemNumber);
 
                     submission.entry.update();
                     submission.entry.socketSendFRQProblems();
                     competition.template.updateScoreboard();
+                } else {
+                    CompetitionStatus competitionStatus = new CompetitionStatus(competition.template.mcTest, competition.template.frqTest);
+                    if(action.equals("startDryRun")) {
+                        FRQTest oldFRQ = competition.template.frqTest;
+                        if(oldFRQ.dryRunMode || !oldFRQ.DRYRUN_EXISTS) return;
+
+                        // Now update the scoreboard. frq scores now only include the dry run score
+                        ArrayList<UILEntry> entries = competition.entries.allEntries;
+                        for(UILEntry entry: entries) {
+                            entry.frqScore = competition.template.frqTest.calcScore(entry.frqResponses[0].key);
+                        }
+
+                        if(competitionStatus.frqDuring) {
+                            oldFRQ.dryRunMode = true;
+                            competition.setTemplate(competition.published, competition.template.mcTest, competition.template.frqTest,
+                                    competition.template.name, competition.template.description, competition.template.cid, competition.template.showScoreboard);
+                        } else {
+                            FRQTest frqTest = new FRQTest(true, data.get(1).getAsString(), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
+                                    oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE,
+                                    oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET);
+                            frqTest.dryRunMode = true;
+                            try {
+                                competition.update((Teacher) user, true, competition.isPublic, competition.alternateExists,
+                                        competition.numNonAlts, competition.template.name, competition.template.description,
+                                        competition.template.mcTest, frqTest, competition.getJudges(), competition.template.showScoreboard);
+                                competition.template.updateScoreboard();
+                            } catch (SQLException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        broadcast("{\"action\":\"reload\"}");
+                    } else if(action.equals("stopDryRun")) {
+                        FRQTest oldFRQ = competition.template.frqTest;
+                        if(!oldFRQ.dryRunMode || !oldFRQ.DRYRUN_EXISTS) return;
+
+                        // Now update the scoreboard. frq scores now don't include the score from the dry run
+                        ArrayList<UILEntry> entries = competition.entries.allEntries;
+                        for(UILEntry entry: entries) {
+                            int score = 0;
+                            for(int i=1,j=entry.frqResponses.length;i<j;i++) {
+                                score += competition.template.frqTest.calcScore(entry.frqResponses[i].key);
+                            }
+                            entry.frqScore = (short)score;
+                        }
+
+                        FRQTest frqTest = new FRQTest(true, data.get(1).getAsString(), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
+                                oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE,
+                                oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET);
+                        frqTest.dryRunMode = false;
+                        try {
+                            competition.update((Teacher) user, true, competition.isPublic, competition.alternateExists,
+                                    competition.numNonAlts, competition.template.name, competition.template.description,
+                                    competition.template.mcTest, frqTest, competition.getJudges(), competition.template.showScoreboard);
+                            competition.template.updateScoreboard();
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+
+                        broadcast("{\"action\":\"reload\"}");
+                    }
                 }
             }
         }
