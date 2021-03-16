@@ -548,6 +548,10 @@ public class CompetitionSocket {
                 try {
                     entry = competition.getEntry(tid);
                     if (entry == null) return;
+                    else if(entry.individual && entry.uids.size() >= 1) {
+                        send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":true,\"msg\":\"Individual teams must have one student.\"}");
+                        return;
+                    }
 
                     if (competition.alternateExists) {
                         if (entry.uids.size() >= (competition.numNonAlts + 1)) { // the team is entirely full

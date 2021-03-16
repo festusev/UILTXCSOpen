@@ -1174,6 +1174,7 @@ class Team {
         if(pageState.isCreator) {
             dom.openTeamCode.innerText = team.code;
             dom.openTeamIsIndividual.checked = team.individual;
+            dom.openTeamIsIndividual.onclick = null;
             dom.openTeamIsIndividual.disabled = true;
         }
         if(pageState.mcExists) dom.openTeamWritten.innerText = team.mcScore + " pts";
@@ -1260,7 +1261,9 @@ class Team {
             } else {    // Enter editing mode
                 pageState.editingTeam = true;
                 pageState.openTeam.editedSinceLastSave = true;
-
+                dom.openTeamIsIndividual.onclick = function() {
+                    (<Team>pageState.openTeam).individual = dom.openTeamIsIndividual.checked;
+                };
                 dom.editSaveTeam.src = "/res/console/save.svg";
                 dom.teamCnt.classList.add("editing");
 
