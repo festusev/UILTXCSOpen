@@ -542,7 +542,6 @@ var Competition = /** @class */ (function () {
                 var problem = this.handsOn.problemMap[i];
                 problems.push([problem.dom.name.value, problem.inputFname, problem.outputFname]);
                 problemIndices.push(problem.oldIndex);
-                problem.oldIndex = i; /* Now that the problem has been saved, we set it to be its current index */
                 if (problem.dom.input.files.length > 0) {
                     formData.append("fi:" + i, problem.dom.input.files[0]);
                 }
@@ -580,6 +579,15 @@ var Competition = /** @class */ (function () {
                         if (thisComp.cid.length === 0 && response["cid"] != null)
                             thisComp.cid = response["cid"];
                         // thisComp.dom.viewCompetition.onclick = function(){window.location.href = "/console/competitions?cid="+thisComp.cid;};
+                        // Now, update the old indices
+                        for (var i = 0, j = thisComp.handsOn.problemMap.length; i < j; i++) {
+                            var problem = thisComp.handsOn.problemMap[i];
+                            problem.oldIndex = i; /* Now that the problem has been saved, we set it to be its current index */
+                        }
+                        for (var i = 0; i < thisComp.written.key.length; i++) {
+                            var answer = thisComp.written.key[i];
+                            answer.oldIndex = i;
+                        }
                     }
                     else if (response["error"] != null) { // An error occurred
                         thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, response["error"], thisComp.dom.errorSuccessBox);

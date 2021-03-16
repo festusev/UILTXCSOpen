@@ -906,11 +906,16 @@ public class UIL extends HttpServlet{
                     cid = Short.parseShort(cidS);   // If this is not a saved competition, cidS will be empty so this will error
                     competition = UIL.getCompetition(cid);
 
-                    if (competition != null && competition.teacher.uid == teacher.uid && competition.published) {
-                        savePublished(request, writer, teacher);
+                    try {
+                        if (competition != null && competition.teacher.uid == teacher.uid && competition.published) {
+                            savePublished(request, writer, teacher);
+                            return;
+                        }
+                    } catch (Exception e) {
+                        System.out.println(e.getStackTrace());
                         return;
                     }
-                } catch (Exception e) {return;}
+                } catch(Exception e) {}
 
                 // In this case, we are not saving a published competition, so many things will be truncated
                 String description = request.getParameter("description");
