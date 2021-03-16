@@ -20,6 +20,7 @@ public class UILEntry {
     public String school = "";  // Specified by the students
     public String password;
 
+    public boolean individual;  // If this team is individual, only one student may sign up and they cannot compete in the hands-on
     // Maps uids to the corresponding MCSubmission
     public HashMap<Short, MCSubmission> mc;
 
@@ -86,6 +87,7 @@ public class UILEntry {
         tid = rs.getShort("tid");
         competition = comp;
         password = rs.getString("password");
+        individual = rs.getBoolean("individual");
 
         setUids(rs.getString("uids"));
         altUID = rs.getShort("altUID");
@@ -217,7 +219,7 @@ public class UILEntry {
     public int update() { // Updates entry in the database
         Connection conn = Conn.getConnection();
         try {
-            String statement = "UPDATE `c"+competition.template.cid+"` SET mc=?,frqResponses=? WHERE tid=?";
+            String statement = "UPDATE `c"+competition.template.cid+"` SET mc=?,frqResponses=?,individual=? WHERE tid=?";
             PreparedStatement stmt = conn.prepareStatement(statement);
 
             if(competition.template.mcTest.exists) {
@@ -230,7 +232,8 @@ public class UILEntry {
             } else {
                 stmt.setString(2, "[]");
             }
-            stmt.setShort(3, tid);
+            stmt.setBoolean(3, individual);
+            stmt.setShort(4, tid);
             stmt.executeUpdate();
             return 0;
         } catch (SQLException e) {
@@ -258,7 +261,7 @@ public class UILEntry {
         Connection conn = Conn.getConnection();
         try {
             PreparedStatement stmt = conn.prepareStatement("UPDATE `c"+competition.template.cid+"` SET uids=?,altUID=?," +
-                    "mc=?,frqResponses=? WHERE tid=?");
+                    "mc=?,frqResponses=?,individual=? WHERE tid=?");
 
             stmt.setString(1, gson.toJson(uids));
             stmt.setShort(2, altUID);
@@ -272,7 +275,8 @@ public class UILEntry {
             } else {
                 stmt.setString(4, "[]");
             }
-            stmt.setShort(5, tid);
+            stmt.setBoolean(5, individual);
+            stmt.setShort(6, tid);
             stmt.executeUpdate();
 
             return 0;
@@ -289,8 +293,8 @@ public class UILEntry {
     public int insert(){
         Connection conn = Conn.getConnection();
         try {
-            String statement = "INSERT INTO `c"+competition.template.cid+"` (name, password, uids, altUID, mc, frqResponses" +
-                    ") VALUES (?,?,?,?,?, ?)";
+            String statement = "INSERT INTO `c"+competition.template.cid+"` (name, password, uids, altUID, mc, frqResponses," +
+                    "individual) VALUES (?,?,?,?,?,?,?)";
 
             PreparedStatement stmt = conn.prepareStatement(statement);
             stmt.setString(1, tname);
@@ -308,6 +312,7 @@ public class UILEntry {
             } else {
                 stmt.setString(6, "{}");
             }
+            stmt.setBoolean(7,individual);
             stmt.executeUpdate();
 
             stmt = conn.prepareStatement("SELECT tid FROM `c"+competition.template.cid+"` WHERE name=?");

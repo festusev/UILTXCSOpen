@@ -570,7 +570,7 @@ class Competition {
         this.dom.handsOnTime.value = "" + template.handsOn.time;
 
         if(this.handsOn.problemMap.length < template.handsOn.numProblems) {
-            for(let i=this.handsOn.problemMap.length+1,j=template.handsOn.numProblems;i<=j;i++) {
+            for(let i=this.handsOn.problemMap.length,j=template.handsOn.numProblems;i<=j;i++) {
                 this.addHandsOnProblem(-1, "", "", "");
             }
         }
@@ -965,6 +965,17 @@ list_handsOn_changeproblems.appendChild(li);
         li.appendChild(input_name);
         problem.dom.name = input_name;
 
+        // Add in the delete input button
+        let delete_input = document.createElement("img");
+        delete_input.classList.add("deleteFile");
+        delete_input.src = "/res/console/delete.svg";
+        delete_input.onclick = function() {
+            problem.inputFname = "";
+            input_in_hidden.value = "";
+            input_in_proxy.innerText = "Input";
+        };
+        li.appendChild(delete_input);
+
         /* Each input has the actual input field that takes in the file but is hidden to the user, as well
         *  as an alias button that serves as the proxy between the user and the input field. This is to prevent
         *  weird file input styling. */
@@ -990,6 +1001,17 @@ list_handsOn_changeproblems.appendChild(li);
         input_in_proxy.innerText = "Input";
         li.appendChild(input_in_proxy);
         input_in_proxy.onclick = function(){input_in_hidden.click();};
+
+        // Add in the delete output button
+        let delete_output = document.createElement("img");
+        delete_output.src = "/res/console/delete.svg";
+        delete_output.classList.add("deleteFile");
+        delete_output.onclick = function() {
+            problem.outputFname = "";
+            input_out_hidden.value = "";
+            input_out_proxy.innerText = "Output";
+        };
+        li.appendChild(delete_output);
 
         let input_out_hidden = document.createElement("input");
         input_out_hidden.type = "file";

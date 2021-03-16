@@ -857,6 +857,7 @@ public class Template {
             entryJSON.addProperty("school", entry.school);
             entryJSON.addProperty("tid", entry.tid);
             entryJSON.add("students", entry.getStudentJSON());
+            entryJSON.addProperty("individual", entry.individual);
             if(frqTest.exists) {
                 entryJSON.addProperty("frq", entry.frqScore);
                 entryJSON.add("frqResponses", entry.getFRQJSON());
@@ -920,7 +921,8 @@ public class Template {
         scoreboardHTML += "</div><div id='teamCnt'><h1 id='openTeamName'></h1>" +
                 "<div id='teamControls'><img class='creatorOnly editTeam' id='deleteTeam' onclick='Team.showDeleteConfirmation()' src='/res/console/delete.svg'>" +
                 "<img class='creatorOnly' id='editSaveTeam' onclick='Team.editSaveTeam()' src='/res/console/edit.svg'></div>" +
-                "<div id='openTeamFeedbackCnt'></div><p class='creatorOnly'><span class='label'>Code:</span><span id='openTeamCode'></span></p>";
+                "<div id='openTeamFeedbackCnt'></div><p class='creatorOnly'><span class='label'>Code:</span><span id='openTeamCode'></span>" +
+                "<br><span class='label'>Individual:</span><span><input type='checkbox' id='openTeamIsIndividual'></span></p>";
         if(mcTest.exists) scoreboardHTML += "<p><span class='label'>Written:</span><span id='openTeamWritten'></span></p>";
         if(frqTest.exists) scoreboardHTML += "<p><span class='label'>Hands-On:</span><span id='openTeamHandsOn'></span>";
         scoreboardHTML += "<h3>Primaries";

@@ -50,7 +50,7 @@ public class CompetitionSocket {
             if(competition.template.frqTest.dryRunMode) {
                 problemMap.add(competition.template.frqTest.PROBLEM_MAP[0].name);
             } else {
-                for (int i=0;i<competition.template.frqTest.PROBLEM_MAP.length;i++) {
+                for (int i=1;i<competition.template.frqTest.PROBLEM_MAP.length;i++) {
                     problemMap.add(competition.template.frqTest.PROBLEM_MAP[i].name);
                 }
             }
@@ -208,7 +208,7 @@ public class CompetitionSocket {
             } else if (action.equals("saveTeam")) {
                 System.out.println("Saving team");
 
-                JsonObject team = data.get(1).getAsJsonObject(); // A team of the format: {tid: number, nonAlts:number[], alt:number}
+                JsonObject team = data.get(1).getAsJsonObject(); // A team of the format: {tid: number, nonAlts:number[], alt:number, individual: boolean}
 
                 JsonArray nonAlts = team.get("nonAlts").getAsJsonArray();
                 JsonElement alt = team.get("alt");
@@ -216,13 +216,25 @@ public class CompetitionSocket {
                     send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":true,\"msg\":\"Error while saving team\"}");
                     return;
                 }
-                ;
+
+                boolean individual = team.get("individual").getAsBoolean();
+                if(individual) {
+                    int numStudents = nonAlts.size();
+                    if(!alt.isJsonNull()) {
+                        if(alt.getAsShort() >= 0) numStudents += 1;
+                    }
+                    if(numStudents != 1) { // This is supposed to be an individual team but there isn't one person
+                        send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":true,\"msg\":\"Individual teams must have one student.\"}");
+                        return;
+                    }
+                }
 
                 short tid = team.get("tid").getAsShort();
                 UILEntry entry = competition.entries.getByTid((tid));
+                entry.individual = individual;
 
                 HashMap<Short, MCSubmission> newMC = new HashMap<>();
-                ;
+
 
                 Set<Short> newUIDs = new HashSet<>();
                 for (JsonElement uidE : nonAlts) {    // Loop through the new non alt students
@@ -303,13 +315,12 @@ public class CompetitionSocket {
                 entry.updateAll();
 
                 competition.template.updateScoreboard();
-                ;
 
                 send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":false,\"msg\":\"Team saved successfully.\"}");
             } else if (action.equals("fetchGlobalTeams")) {  // Return a list of the global teams
                 JsonArray array = new JsonArray();
 
-                Set<Short> maps = Team.teams.keySet(); // Collection of uids
+                Set<Short> maps = Team.teams.keySet();  // Collection of uids
                 for (short uid : maps) {
                     Collection<Team> teams = Team.teams.get(uid).values();
 

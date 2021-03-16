@@ -295,6 +295,11 @@ button {
     grid-column-start: 1;
     grid-column-end: 3;
 }
+.handsOnProblemList .deleteFile {
+    height: 2rem;
+    margin-left: 1rem;
+    cursor: pointer;
+}
 .handsOnProblemList li, .writtenSectionAnswerList li{
     display: flex;
     flex-flow: row;

@@ -79,6 +79,7 @@ const config = {
         addAlternateCompetitor : "addAlternateCompetitor",
         openTeamFeedbackCnt : "openTeamFeedbackCnt",
         openTeamCode : "openTeamCode",
+        openTeamIsIndividual : "openTeamIsIndividual",
         deleteMessage : "deleteMessage",
         deleteConfirmationCnt : "deleteConfirmationCnt",
         deleteSubtitle : "deleteSubtitle",
@@ -227,9 +228,9 @@ const config = {
         }, "loadScoreboard": function (response: {
             isCreator: boolean, mcExists: boolean, frqExists: boolean, alternateExists: boolean, numNonAlts: number, frqMaxPoints?: number,
             frqIncorrectPenalty?: number, frqProblemMap?: string[], mcCorrectPoints?: number, mcIncorrectPoints?:number,
-            teams: { tname: string, school: string, tid: number, students: { nonAlts: [string,number,[number,number]?][],
-                    alt?: [string,number,[number,number]?]}, frq?: number, frqResponses?: number[]}[],
-            numHandsOnSubmitted?: number, teamCodes? : string[], studentsInClass? : [string,number][],
+            teams: {tname: string, school: string, tid: number, students: { nonAlts: [string,number,[number,number]?][],
+                    alt?: [string,number,[number,number]?]}, frq?: number, frqResponses?: number[], individual: boolean}[],
+            numHandsOnSubmitted?: number, teamCodes? : string[], individual?: boolean[], studentsInClass? : [string,number][],
             tempUsers?: {[uid:string]:[string,string]}, tid?: number}) {
             let newToggleTeam: Team = null;  // The new team object that we are toggling open
             let oldOpenTeamTID = -1;    // The tid of the old open team
@@ -288,8 +289,10 @@ const config = {
 
                 if(response.tid && team.tid == response.tid) bottomRank = i+1;
 
-                if(pageState.isCreator) team.code = response.teamCodes[i];
-                generalFragment.appendChild(team.dom.tr);
+                if(pageState.isCreator) {
+                    team.code = response.teamCodes[i];
+                }
+                if(!team.individual) generalFragment.appendChild(team.dom.tr);
 
                 for (let student of team.students) {
                     let tr = document.createElement("tr");
@@ -575,6 +578,7 @@ let dom = {
     get selectStudentList() {return this.getHelper(config.IDs.selectStudentList)},
     get openTeamFeedbackCnt() {return this.getHelper(config.IDs.openTeamFeedbackCnt)},
     get openTeamCode(){return this.getHelper(config.IDs.openTeamCode)},
+    get openTeamIsIndividual(){return this.getHelper(config.IDs.openTeamIsIndividual)},
     get selectGlobalTeam(){return this.getHelper(config.IDs.selectGlobalTeam)},
     get selectGlobalTeamList(){return this.getHelper(config.IDs.selectGlobalTeamList)},
     get deleteMessage() {return this.getHelper(config.IDs.deleteMessage)},
@@ -803,6 +807,7 @@ class Team {
     frqScore: number;
     code : string;
     frqResponses : number[];    // A list of the frq response indices
+    individual : boolean;
 
     editedSinceLastSave : boolean = false;  // If this team has been edited since the last save
 
@@ -813,8 +818,9 @@ class Team {
     } = {tr: null, mcTD: null, frqTR: null};
 
 
-    constructor(data: {tname: string, school: string, tid: number, students: { nonAlts: [string,number,[number,number]?][],
-            alt?: [string,number,[number,number]?]}, frq?: number, frqResponses?: number[]}, tempData?:{[uid:string]:[string,string]}) {
+    constructor(data: {tname: string, school: string, tid: number, students: {nonAlts: [string,number,[number,number]?][],
+            alt?: [string,number,[number,number]?]}, frq?: number, frqResponses?: number[], individual:boolean},
+                tempData?:{[uid:string]:[string,string]}) {
         function createStudent(data:[string,number,[number,number]?]):Student {
             let student: Student = new Student(data, thisTeam);
             student.render();
@@ -830,12 +836,15 @@ class Team {
             return student;
         }
         let thisTeam:Team = this;
-        if(pageState.frqExists) handsOnScoreboard.push(this);
 
+        this.individual = data.individual;
         this.tname = data.tname;
         this.school = data.school;
         this.tid = data.tid;
         this.students = [];
+
+        if(pageState.frqExists && !this.individual) handsOnScoreboard.push(this);
+
         for(let studentData of data.students.nonAlts) {
             this.students.push(createStudent(studentData));
         }
@@ -960,7 +969,7 @@ class Team {
 
     // Save the team and copy over the temporary information to the official information
     save() {
-        function getTeamData(team: Team):{tid:number, nonAlts:number[], alt:number} {
+        function getTeamData(team: Team):{tid:number, nonAlts:number[], alt:number, individual: boolean} {
             let nonAltUIDs = [];
             for(let student of team.students) {
                 nonAltUIDs.push(student.uid);
@@ -968,10 +977,10 @@ class Team {
             let alt;
             if(team.alt) alt = team.alt.uid;
             else alt = -1;
-            return {tid: team.tid, nonAlts: nonAltUIDs, alt: alt};
+            return {tid: team.tid, nonAlts: nonAltUIDs, alt: alt, individual:dom.openTeamIsIndividual.checked};
         }
 
-        let data: [string, {tid:number, nonAlts:number[], alt:number}] = ["saveTeam", getTeamData(this)];
+        let data: [string, {tid:number, nonAlts:number[], alt:number, individual:boolean}] = ["saveTeam", getTeamData(this)];
 
         /*for(let team of pageState.saveTeamList) {
             data[1].push(getTeamData(team));
@@ -1014,7 +1023,9 @@ class Team {
                 this.mcScore -= student.mcScore;
                 this.dom.mcTD.innerText = "" + this.mcScore;
             }
-            dom.writtenScoreboardTable.removeChild(student.dom.tr);
+            try {
+                dom.writtenScoreboardTable.removeChild(student.dom.tr);
+            } catch(e){}
         }
 
         for(let i=0;i<this.students.length;i++) {
@@ -1160,7 +1171,11 @@ class Team {
 
         dom.teamCnt.style.display = "block";
         dom.openTeamName.innerText = team.tname;
-        if(pageState.isCreator) dom.openTeamCode.innerText = team.code;
+        if(pageState.isCreator) {
+            dom.openTeamCode.innerText = team.code;
+            dom.openTeamIsIndividual.checked = team.individual;
+            dom.openTeamIsIndividual.disabled = true;
+        }
         if(pageState.mcExists) dom.openTeamWritten.innerText = team.mcScore + " pts";
         if(pageState.frqExists) dom.openTeamHandsOn.innerText = team.frqScore + " pts";
 
@@ -1249,6 +1264,7 @@ class Team {
                 dom.editSaveTeam.src = "/res/console/save.svg";
                 dom.teamCnt.classList.add("editing");
 
+                dom.openTeamIsIndividual.disabled = false;
                 if (pageState.openTeam.students.length < pageState.numNonAlts) dom.addPrimaryCompetitor.style.display = "block";
                 if (pageState.alternateExists && !pageState.openTeam.alt) dom.addAlternateCompetitor.style.display = "block";
             }
@@ -1517,12 +1533,12 @@ function createTeam(){
 
                             newTeam = new Team({
                                 tname: result["tname"], school: "", tid: result["tid"],
-                                students: {nonAlts: [], alt: null}, frq: 0, frqResponses: frqResponses
+                                students: {nonAlts: [], alt: null}, frq: 0, frqResponses: frqResponses,individual:true
                             });
                         } else {
                             newTeam = new Team({
                                 tname: result["tname"], school: "", tid: result["tid"],
-                                students: {nonAlts: [], alt: null}, frq: 0
+                                students: {nonAlts: [], alt: null}, frq: 0,individual:true
                             });
                         }
                         newTeam.code = result["code"];
@@ -2341,15 +2357,16 @@ function downloadScoreboard() {
 function downloadRoster() {
     if(!pageState.isCreator) return;
 
-    let data = [["Name", "Username", "Password"]];
+    let data = [["Team","Name","Username","Password"]];
 
     for(let tid in teams) {
         let team = teams[tid];
         for(let student of team.students) {
             let studentData = [];
-            studentData.push(student.name);
+            studentData.push(team.tname.replace(/[^a-zA-Z0-9 ]/g, ''));
+            studentData.push(student.name.replace(/[^a-zA-Z0-9 ]/g, ''));
             if(student.temp) {
-                studentData.push(student.uname);
+                studentData.push(student.uname.replace(/[^a-zA-Z0-9 ]/g, ''));
                 studentData.push(student.password);
             }
             data.push(studentData);
@@ -2357,9 +2374,10 @@ function downloadRoster() {
 
         if(team.alt) {
             let studentData = [];
-            studentData.push(team.alt.name);
+            studentData.push(team.tname.replace(/[^a-zA-Z0-9 ]/g, ''));
+            studentData.push(team.alt.name.replace(/[^a-zA-Z0-9 ]/g, ''));
             if(team.alt.temp) {
-                studentData.push(team.alt.uname);
+                studentData.push(team.alt.uname.replace(/[^a-zA-Z0-9 ]/g, ''));
                 studentData.push(team.alt.password);
             }
             data.push(studentData);

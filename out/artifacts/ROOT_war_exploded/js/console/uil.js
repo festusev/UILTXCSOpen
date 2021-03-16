@@ -109,6 +109,7 @@ var config = {
         addAlternateCompetitor: "addAlternateCompetitor",
         openTeamFeedbackCnt: "openTeamFeedbackCnt",
         openTeamCode: "openTeamCode",
+        openTeamIsIndividual: "openTeamIsIndividual",
         deleteMessage: "deleteMessage",
         deleteConfirmationCnt: "deleteConfirmationCnt",
         deleteSubtitle: "deleteSubtitle",
@@ -274,9 +275,11 @@ var config = {
                     newToggleTeam = team;
                 if (response.tid && team.tid == response.tid)
                     bottomRank = i + 1;
-                if (pageState.isCreator)
+                if (pageState.isCreator) {
                     team.code = response.teamCodes[i];
-                generalFragment.appendChild(team.dom.tr);
+                }
+                if (!team.individual)
+                    generalFragment.appendChild(team.dom.tr);
                 var _loop_3 = function (student) {
                     var tr = document.createElement("tr");
                     tr.classList.add("_" + student.uid);
@@ -571,6 +574,7 @@ var dom = {
     get selectStudentList() { return this.getHelper(config.IDs.selectStudentList); },
     get openTeamFeedbackCnt() { return this.getHelper(config.IDs.openTeamFeedbackCnt); },
     get openTeamCode() { return this.getHelper(config.IDs.openTeamCode); },
+    get openTeamIsIndividual() { return this.getHelper(config.IDs.openTeamIsIndividual); },
     get selectGlobalTeam() { return this.getHelper(config.IDs.selectGlobalTeam); },
     get selectGlobalTeamList() { return this.getHelper(config.IDs.selectGlobalTeamList); },
     get deleteMessage() { return this.getHelper(config.IDs.deleteMessage); },
@@ -777,12 +781,13 @@ var Team = /** @class */ (function () {
             return student;
         }
         var thisTeam = this;
-        if (pageState.frqExists)
-            handsOnScoreboard.push(this);
+        this.individual = data.individual;
         this.tname = data.tname;
         this.school = data.school;
         this.tid = data.tid;
         this.students = [];
+        if (pageState.frqExists && !this.individual)
+            handsOnScoreboard.push(this);
         for (var _i = 0, _a = data.students.nonAlts; _i < _a.length; _i++) {
             var studentData = _a[_i];
             this.students.push(createStudent(studentData));
@@ -911,7 +916,7 @@ var Team = /** @class */ (function () {
                 alt = team.alt.uid;
             else
                 alt = -1;
-            return { tid: team.tid, nonAlts: nonAltUIDs, alt: alt };
+            return { tid: team.tid, nonAlts: nonAltUIDs, alt: alt, individual: dom.openTeamIsIndividual.checked };
         }
         var data = ["saveTeam", getTeamData(this)];
         /*for(let team of pageState.saveTeamList) {
@@ -949,7 +954,10 @@ var Team = /** @class */ (function () {
                 this.mcScore -= student.mcScore;
                 this.dom.mcTD.innerText = "" + this.mcScore;
             }
-            dom.writtenScoreboardTable.removeChild(student.dom.tr);
+            try {
+                dom.writtenScoreboardTable.removeChild(student.dom.tr);
+            }
+            catch (e) { }
         }
         for (var i = 0; i < this.students.length; i++) {
             if (this.students[i].uid == student.uid)
@@ -1082,8 +1090,11 @@ var Team = /** @class */ (function () {
             dom.addAlternateCompetitor.style.display = "none";
         dom.teamCnt.style.display = "block";
         dom.openTeamName.innerText = team.tname;
-        if (pageState.isCreator)
+        if (pageState.isCreator) {
             dom.openTeamCode.innerText = team.code;
+            dom.openTeamIsIndividual.checked = team.individual;
+            dom.openTeamIsIndividual.disabled = true;
+        }
         if (pageState.mcExists)
             dom.openTeamWritten.innerText = team.mcScore + " pts";
         if (pageState.frqExists)
@@ -1177,6 +1188,7 @@ var Team = /** @class */ (function () {
                 pageState.openTeam.editedSinceLastSave = true;
                 dom.editSaveTeam.src = "/res/console/save.svg";
                 dom.teamCnt.classList.add("editing");
+                dom.openTeamIsIndividual.disabled = false;
                 if (pageState.openTeam.students.length < pageState.numNonAlts)
                     dom.addPrimaryCompetitor.style.display = "block";
                 if (pageState.alternateExists && !pageState.openTeam.alt)
@@ -1428,13 +1440,13 @@ function createTeam() {
                             frqResponses.fill(0);
                             newTeam = new Team({
                                 tname: result["tname"], school: "", tid: result["tid"],
-                                students: { nonAlts: [], alt: null }, frq: 0, frqResponses: frqResponses
+                                students: { nonAlts: [], alt: null }, frq: 0, frqResponses: frqResponses, individual: true
                             });
                         }
                         else {
                             newTeam = new Team({
                                 tname: result["tname"], school: "", tid: result["tid"],
-                                students: { nonAlts: [], alt: null }, frq: 0
+                                students: { nonAlts: [], alt: null }, frq: 0, individual: true
                             });
                         }
                         newTeam.code = result["code"];
@@ -2192,24 +2204,26 @@ function downloadScoreboard() {
 function downloadRoster() {
     if (!pageState.isCreator)
         return;
-    var data = [["Name", "Username", "Password"]];
+    var data = [["Team", "Name", "Username", "Password"]];
     for (var tid in teams) {
         var team = teams[tid];
         for (var _i = 0, _a = team.students; _i < _a.length; _i++) {
             var student = _a[_i];
             var studentData = [];
-            studentData.push(student.name);
+            studentData.push(team.tname.replace(/[^a-zA-Z0-9 ]/g, ''));
+            studentData.push(student.name.replace(/[^a-zA-Z0-9 ]/g, ''));
             if (student.temp) {
-                studentData.push(student.uname);
+                studentData.push(student.uname.replace(/[^a-zA-Z0-9 ]/g, ''));
                 studentData.push(student.password);
             }
             data.push(studentData);
         }
         if (team.alt) {
             var studentData = [];
-            studentData.push(team.alt.name);
+            studentData.push(team.tname.replace(/[^a-zA-Z0-9 ]/g, ''));
+            studentData.push(team.alt.name.replace(/[^a-zA-Z0-9 ]/g, ''));
             if (team.alt.temp) {
-                studentData.push(team.alt.uname);
+                studentData.push(team.alt.uname.replace(/[^a-zA-Z0-9 ]/g, ''));
                 studentData.push(team.alt.password);
             }
             data.push(studentData);

@@ -90,9 +90,21 @@ public class FRQTest {
         try {
             files.clear();
 
-            for(int i = 0; i <= PROBLEM_MAP.length; ++i) {
-                // System.out.println("--Getting files for probNum " + i + " in path "+ testcaseDirPath +i+"/");
-                files.add(get_files(new File(testcaseDirPath + i + "/")));
+            for(int i = 0; i < PROBLEM_MAP.length; ++i) {
+                Pair<File, File> pair = get_files(new File(testcaseDirPath + i + "/"));
+                files.add(pair);
+                FRQProblem problem = PROBLEM_MAP[i];
+
+                if(pair == null) continue;
+
+                if(problem.inputFname.isEmpty() && pair.key != null) {  // Delete the file if the input fname is set to null
+                    pair.key.delete();
+                    pair.key = null;
+                }
+                if(problem.outputFname.isEmpty() && pair.value != null) {   // Delete the file if the output fname is set to null
+                    pair.value.delete();
+                    pair.value = null;
+                }
             }
         } catch (Exception var1) {
             var1.printStackTrace();

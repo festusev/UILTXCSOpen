@@ -178,6 +178,7 @@ public class Competition {
                     "`altUID` SMALLINT NOT NULL," +
                     "`mc` TEXT NOT NULL," +
                     "`frqResponses` MEDIUMTEXT NOT NULL," +
+                    "`individual` BOOLEAN NOT NULL DEFAULT FALSE," +
                     "PRIMARY KEY (`tid`))");
             System.out.println(stmt);
             stmt.executeUpdate();
@@ -678,7 +679,7 @@ public class Competition {
             try {
                 UILEntry entry = entries.getByPassword(code);
                 if(entry != null) {
-                    if(entry.uids.size() > (numNonAlts + (alternateExists?1:0))) {    // This team is full
+                    if(entry.uids.size() > (numNonAlts + (alternateExists?1:0)) || entry.individual && entry.uids.size() >= 1) {    // This team is full
                         writer.write("{\"status\":\"error\",\"error\":\"Team is full.\"}");
                         return;
                     } else if(alternateExists && isAlternate && entry.altUID > 0) { // They are trying to sign up as the alternate and this team already has one
