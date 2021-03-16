@@ -264,12 +264,16 @@ var config = {
             var writtenSum = 0; // Sum of written scores
             var handsOnSum = 0; // Sum of hands on scores
             var numStudents = 0;
+            var bottomRank = 0; // If they are a signed-up student, response.tid is specified and we calculate their bottom rank
+            var bottomOutOf = response.teams.length;
             var selectStudentFragment = document.createDocumentFragment(); // The list of students that goes into the select student window
             var _loop_1 = function (i, j) {
                 var teamData = response.teams[i];
                 var team = new Team(teamData, response.tempUsers);
                 if (team.tid == oldOpenTeamTID)
                     newToggleTeam = team;
+                if (response.tid && team.tid == response.tid)
+                    bottomRank = i + 1;
                 if (pageState.isCreator)
                     team.code = response.teamCodes[i];
                 generalFragment.appendChild(team.dom.tr);
@@ -363,8 +367,9 @@ var config = {
                 dom.numTeams.innerText = "" + response.teams.length;
                 dom.numUsers.innerText = "" + numStudents;
             }
-            else {
-                // dom.bottomRank =u
+            else if (response.tid) {
+                dom.bottomRank.innerText = ordinal(bottomRank);
+                dom.bottomOutOf.innerText = bottomOutOf;
             }
             dom.teamList.innerHTML = "";
             dom.teamList.appendChild(generalFragment);
@@ -605,6 +610,17 @@ var dom = {
         get secondNavItems() { return this.getHelper(config.CLASSES.secondNavItem); }
     }
 };
+function ordinal(i) {
+    var sufixes = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"];
+    switch (i % 100) {
+        case 11:
+        case 12:
+        case 13:
+            return i + "th";
+        default:
+            return i + sufixes[i % 10];
+    }
+}
 var globalTeachers = [];
 // A global teacher that has created teams from their class. Students in these teams may not be signed up for this competition
 var GlobalTeacher = /** @class */ (function () {
@@ -2288,4 +2304,18 @@ function stopDryRun() {
 }
 function startDryRun() {
     ws.send("[\"startDryRun\",\"" + getNowString() + "\"]");
+}
+function releaseMCScores(element) {
+    element.innerText = "Hide Scores";
+    element.onclick = function () {
+        hideMCScore(element);
+    };
+    ws.send("[\"releaseMCScores\"]");
+}
+function hideMCScore(element) {
+    element.innerText = "Release Scores";
+    element.onclick = function () {
+        releaseMCScores(element);
+    };
+    ws.send("[\"hideMCScores\"]");
 }

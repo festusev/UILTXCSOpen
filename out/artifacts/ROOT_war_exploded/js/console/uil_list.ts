@@ -295,7 +295,8 @@ class Competition {
         instructions: string,
         testLink: string,
         answersLink: string,
-        time: number
+        time: number,
+        autoGrade : boolean
     } = {
         opens: "",
         key: [],
@@ -304,7 +305,8 @@ class Competition {
         instructions:"",
         testLink:"",
         answersLink:"",
-        time:0
+        time:0,
+        autoGrade : true
     };
 
     handsOn: {
@@ -366,6 +368,7 @@ class Competition {
         writtenPointsPerCorrect : HTMLInputElement,
         writtenPointsPerIncorrect : HTMLInputElement,
         writtenCheckbox : HTMLInputElement,
+        writtenAutoGradeCheckbox : HTMLInputElement,
 
         handsOnSection: HTMLSpanElement,
         handsOnStart : HTMLInputElement,
@@ -413,6 +416,7 @@ class Competition {
         writtenPointsPerCorrect : null,
         writtenPointsPerIncorrect : null,
         writtenCheckbox : null,
+        writtenAutoGradeCheckbox : null,
 
         handsOnSection: null,
         handsOnStart : null,
@@ -462,6 +466,7 @@ class Competition {
             this.written.testLink = writtenObj.testLink;
             this.written.answersLink = writtenObj.answersLink;
             this.written.time = writtenObj.time;
+            this.written.autoGrade = writtenObj.autoGrade;
         }
 
         if(this.handsOnExists) {    /* HandsOn exists */
@@ -621,6 +626,7 @@ class Competition {
 
         if(this.writtenExists) {
             formData.append("mcOpens", this.dom.writtenOpen.value);
+            formData.append("mcAutoGrade", ""+this.dom.writtenAutoGradeCheckbox.checked);
             formData.append("mcTime", ""+this.dom.writtenTime.value);
             formData.append("mcCorrectPoints", ""+this.dom.writtenPointsPerCorrect.value);
             formData.append("mcIncorrectPoints", ""+this.dom.writtenPointsPerIncorrect.value);
@@ -1097,6 +1103,29 @@ list_handsOn_changeproblems.appendChild(li);
             thisComp.dom.writtenSection = written_section;
             if(!thisComp.writtenExists) written_section.style.display = "none";
             thisComp.dom.writtenSection = written_section;
+
+            /* OPEN */
+            let autoGrade_header = document.createElement("div");
+            makeHalf(autoGrade_header);
+            written_section.appendChild(autoGrade_header);
+
+            let h2_autoGrade = document.createElement("h3");
+            h2_autoGrade.innerHTML = "Auto-Release Scores";
+            autoGrade_header.appendChild(h2_autoGrade);
+            /* CLOSE */
+
+            /* OPEN */
+            let autoGrade_toggle = document.createElement("div");
+            makeHalf(autoGrade_toggle);
+            written_section.appendChild(autoGrade_toggle);
+
+            let autoGrade_toggle_input = document.createElement("input");
+            autoGrade_toggle_input.classList.add("checkbox");
+            autoGrade_toggle_input.type = "checkbox";
+            autoGrade_toggle_input.name = "writtenAutoGrade";
+            if(thisComp.written.autoGrade) autoGrade_toggle_input.checked = true;
+            autoGrade_toggle.appendChild(autoGrade_toggle_input);
+            thisComp.dom.writtenAutoGradeCheckbox = autoGrade_toggle_input;
 
             /* OPEN */
             let written_open = document.createElement("div");

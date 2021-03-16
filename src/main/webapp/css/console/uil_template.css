@@ -480,8 +480,6 @@
     margin:auto;
     margin-top:10px;
 }
-
-
 .mcSubmissionList {
     padding: 1rem;
     box-shadow: none !important;
@@ -496,6 +494,9 @@
     margin-right:2rem;
     border-radius: var(--radius);
     overflow: auto;
+}
+#mcColumn_submissionList button {
+    margin: 0px 0px 10px 0px !important;
 }
 #mcColumn h3{
     font-size:1.2rem;

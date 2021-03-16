@@ -305,9 +305,8 @@ public class Template {
                 string += "<div id='leftBarBottom'>";
                 if(showScoreboard) {
                     string +=
-                            "<p id='bottomRank'>" + ordinal(rank) + "</p>" +
-                                    "<p>out of <span id='bottomOutOf'>" + competition.entries.tidMap.values().size() +
-                                    "</span> teams</p></div>";
+                            "<p id='bottomRank'></p>" +
+                                    "<p>out of <span id='bottomOutOf'></span> teams</p></div>";
                 }
             }
         } /*else if(userStatus.teacher) {
@@ -432,11 +431,16 @@ public class Template {
                         "<h1>Written</h1></div><div class='row'><p>The written section has closed.</p></div></div></div>";
             }
         } else if(userStatus.teacher && userStatus.admin) {  // This is the teacher who made this competition
+            String sendMC = "";
+            if(!mcTest.AUTO_GRADE) {
+                sendMC = "<button class='chngButton' onclick='releaseMCScores(this)'>Release Scores</button>";
+                if (mcTest.graded) sendMC = "<button class='chngButton' onclick='hideMCScore(this)'>Hide Scores</button>";
+            }
             String html =  "<div id='mcColumn' class='column mcSubmissionList' style='display:none;'>" +
                     "<div id='mcColumn_submissionList'><div class='row head-row'>" +
                     "<h1>Written</h1>" +
                     "</div>" +
-                    "<div class='row'>" +
+                    "<div class='row'>" + sendMC +
                     "<p>Test Packet: <a class='link' target='_blank' href='" + StringEscapeUtils.escapeHtml4(mcTest.TEST_LINK) + "'>link</a></p>" +
                     "<p><b>Submissions:</b></p>";
 
@@ -557,7 +561,7 @@ public class Template {
         return html;
     }
     public String getFinishedMC(MCSubmission submission, short tid, short uid, CompetitionStatus status) {
-        if(!status.mcFinished) return "<div id='mcColumn' class='column' style='display:none;'><div class='row head-row'><h1>Written</h1><p>Written scores are hidden until the competition closes.</p></div></div>";
+        if(!mcTest.graded) return "<div id='mcColumn' class='column' style='display:none;'><div class='row head-row'><h1>Written</h1><p>Written scores are hidden until the competition closes.</p></div></div>";
         String html =  "<div id='mcColumn' class='column' style='display:none;'>" +
                         "<div class='row head-row'>" +
                         "<h1>Written</h1>" +
@@ -819,7 +823,7 @@ public class Template {
 
                     for(CompetitionSocket socket: sockets) {
                         UserStatus status = UserStatus.getCompeteStatus(socket.user, competition);
-                        socket.sendLoadScoreboardData(status);
+                        socket.sendLoadScoreboardData(status, socket.user, competition);
                     }
                     scoreboardSocketScheduled = false;
                     task.cancel();
@@ -903,7 +907,7 @@ public class Template {
                 "<button onclick='closeDeleteConfirmation()'>Cancel</button>" +
                 "</div></div>" +
                 "<div id='teamListCnt' class='showGeneral'><h1>Scoreboard</h1><div id='scoreboardNav'>" +
-                "<button onclick='showGeneralScoreboard()' id='showGeneralButton'>General</button>";
+                "<button onclick='showGeneralScoreboard()' id='showGeneralButton'>Teams</button>";
         if(mcTest.exists) scoreboardHTML += "<button onclick='showWrittenScoreboard()' id='showWrittenButton'>Written</button>";
         if(frqTest.exists) scoreboardHTML += "<button onclick='showHandsOnScoreboard()' id='showHandsOnButton'>Hands-On</button>";
         scoreboardHTML += "</div><button id='addExistingTeam' onclick='showAddExistingTeam()' class='creatorOnly chngButton'>Add Existing Team</button>" +

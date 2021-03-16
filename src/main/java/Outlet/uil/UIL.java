@@ -67,7 +67,8 @@ public class UIL extends HttpServlet{
                 mcTest = new MCTest(published,rs.getString("mcOpens"), gson.fromJson(rs.getString("mcKey"), String[][].class),
                         rs.getShort("mcCorrectPoints"),
                         rs.getShort("mcIncorrectPoints"),rs.getString("mcInstructions"),
-                        rs.getString("mcTestLink"), rs.getLong("mcTime"));
+                        rs.getString("mcTestLink"), rs.getLong("mcTime"), rs.getBoolean("mcAutoGrade"),
+                        rs.getBoolean("mcGraded"));
             }
             short cid = rs.getShort("cid");
             short uid = rs.getShort("uid");
@@ -317,7 +318,7 @@ public class UIL extends HttpServlet{
     }
 
     /*
-    Check that all of the files sent are of the right size.
+    Check that all of the files sent are of the right size. If frqTest is not null, then check if each problem has an output file.
      */
     private String checkFileSize(HttpServletRequest request) throws IOException, ServletException {
         /* Now, write all of the files they updated to the disk */
@@ -476,10 +477,12 @@ public class UIL extends HttpServlet{
                 writer.write("{\"error\":\"Specify Length for the Written Test.\"}");
                 return false;
             }
+
+            boolean mcAutoGrade = request.getParameter("mcAutoGrade").equals("true");
             mcTest = new MCTest(true, mcOpensString, mcAnswers, mcCorrectPoints,
                     mcIncorrectPoints,request.getParameter("mcInstructions"),
                     request.getParameter("mcTestLink"),
-                    mcTime);
+                    mcTime, mcAutoGrade, mcAutoGrade);
         }
 
         boolean alternateExists = false;
@@ -522,7 +525,8 @@ public class UIL extends HttpServlet{
             }
 
             Set<String> duplicateChecker = new HashSet<>();
-            for(FRQProblem prob: frqProblemMap) {
+            for(int i=0;i<frqProblemMap.length;i++) {
+                FRQProblem prob = frqProblemMap[i];
                 String s = prob.name;
                 if(s.length() > 20) {
                     writer.write("{\"error\":\"Hands-On problem names cannot be longer than 20 characters.\"}");
@@ -530,7 +534,7 @@ public class UIL extends HttpServlet{
                 } else if(duplicateChecker.contains(s)) {
                     writer.write("{\"error\":\"Duplicate Hands-On problem name '"+s+"'.\"}");
                     return false;
-                } else if(s.isEmpty()) {
+                } else if(s.isEmpty() && i!=0) {
                     writer.write("{\"error\":\"Hands-On problem name is empty.\"}");
                     return false;
                 }
@@ -598,6 +602,17 @@ public class UIL extends HttpServlet{
             if(error != null) { // An error occurred
                 writer.write("{\"error\":\""+error+"\"}");
                 return false;
+            }
+            if(frqTest.DRYRUN_EXISTS && frqTest.PROBLEM_MAP[0].outputFname.isEmpty()) {
+                writer.write("{\"error\":\"The dry run must have an output file.\"}");
+                return false;
+            }
+
+            for (int i = 1, j = frqTest.PROBLEM_MAP.length; i < j; i++) {
+                if (frqTest.PROBLEM_MAP[i].outputFname.isEmpty()) {
+                    writer.write("{\"error\":\"Problem " + i + " must have an output file.\"}");
+                    return false;
+                }
             }
         }
 
@@ -895,7 +910,7 @@ public class UIL extends HttpServlet{
                         savePublished(request, writer, teacher);
                         return;
                     }
-                } catch (Exception e) {}
+                } catch (Exception e) {return;}
 
                 // In this case, we are not saving a published competition, so many things will be truncated
                 String description = request.getParameter("description");
@@ -956,10 +971,11 @@ public class UIL extends HttpServlet{
                     long mcTime;
                     mcTime = Long.parseLong(request.getParameter("mcTime"))*1000*60;
 
+                    boolean mcAutoGrade = request.getParameter("mcAutoGrade").equals("true");
                     mcTest = new MCTest(false, mcOpensString, mcAnswers, mcCorrectPoints,
                             mcIncorrectPoints,request.getParameter("mcInstructions"),
                             request.getParameter("mcAnswersLink"),
-                            mcTime);
+                            mcTime, mcAutoGrade, mcAutoGrade);
                 }
 
                 if(!handsOnExists) {   // No FRQ Test

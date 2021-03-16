@@ -28,7 +28,7 @@ public class CompetitionSocket {
 
     private static Gson gson = new Gson();
 
-    public void sendLoadScoreboardData(UserStatus status) {
+    public void sendLoadScoreboardData(UserStatus status, User user, Competition competition) {
         if(!competition.template.showScoreboard && !status.admin) { // If we aren't showing the scoreboard and this user isn't an admin, don't send the scoreboard
             return;
         }
@@ -66,6 +66,8 @@ public class CompetitionSocket {
 
             response.add("studentsInClass", studentsInClass);
             response.add("tempUsers", competition.template.tempUserData);
+        } else if(status.signedUp) {
+            response.addProperty("tid", ((Student)user).cids.get(competition.template.cid).tid);
         }
 
         try {
@@ -160,7 +162,7 @@ public class CompetitionSocket {
         } else if(action.equals("loadScoreboard")) {
             System.out.println("loading scoreboard");
 
-            sendLoadScoreboardData(status);
+            sendLoadScoreboardData(status, user, competition);
             return;
         }
         if(status.admin) {
@@ -596,7 +598,7 @@ public class CompetitionSocket {
                     MCTest mcTest = new MCTest(true, sdf.format(now), competition.template.mcTest.KEY,
                             competition.template.mcTest.CORRECT_PTS, competition.template.mcTest.INCORRECT_PTS,
                             competition.template.mcTest.INSTRUCTIONS, competition.template.mcTest.TEST_LINK,
-                            competition.template.mcTest.TIME);
+                            competition.template.mcTest.TIME, competition.template.mcTest.AUTO_GRADE,competition.template.mcTest.graded);
                     try {
                         competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
                                 competition.numNonAlts, competition.template.name, competition.template.description,
@@ -610,7 +612,7 @@ public class CompetitionSocket {
                     MCTest mcTest = new MCTest(true, data.get(1).getAsString(), competition.template.mcTest.KEY,
                             competition.template.mcTest.CORRECT_PTS, competition.template.mcTest.INCORRECT_PTS,
                             competition.template.mcTest.INSTRUCTIONS, competition.template.mcTest.TEST_LINK,
-                            competition.template.mcTest.TIME);
+                            competition.template.mcTest.TIME, competition.template.mcTest.AUTO_GRADE, competition.template.mcTest.graded);
                     try {
                         competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
                                 competition.numNonAlts, competition.template.name, competition.template.description,
@@ -658,6 +660,22 @@ public class CompetitionSocket {
                     submission.entry.update();
                     submission.entry.socketSendFRQProblems();
                     competition.template.updateScoreboard();
+                } else if(action.equals("releaseMCScores")) {
+                    competition.template.mcTest.graded = true;
+                    broadcast("{\"action\":\"reload\"}");
+                    try {
+                        competition.update();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                } else if(action.equals("hideMCScores")) {
+                    competition.template.mcTest.graded = false;
+                    broadcast("{\"action\":\"reload\"}");
+                    try {
+                        competition.update();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
                 } else {
                     CompetitionStatus competitionStatus = new CompetitionStatus(competition.template.mcTest, competition.template.frqTest);
                     if(action.equals("startDryRun")) {

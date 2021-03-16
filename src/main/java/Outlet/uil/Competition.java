@@ -93,8 +93,8 @@ public class Competition {
                 "alternateExists, numNonAlts, mcKey, mcCorrectPoints, mcIncorrectPoints, mcInstructions, mcTestLink," +
                 "mcOpens, mcTime, frqMaxPoints, frqIncorrectPenalty, frqProblemMap, frqStudentPack," +
                 "frqJudgePacket, frqOpens, frqTime, type, published, clarifications,judges, showScoreboard, frqAutoGrade," +
-                        "dryRunExists,dryRunStudentPacket) " +
-                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]',?,?,?,?,?)",
+                        "dryRunExists,dryRunStudentPacket,mcAutoGrade,mcGraded) " +
+                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]',?,?,?,?,?,?,?)",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -156,6 +156,8 @@ public class Competition {
         stmt.setBoolean(24, showScoreboard);
         stmt.setBoolean(26, frqTest.DRYRUN_EXISTS);
         stmt.setString(27, frqTest.DRYRUN_STUDENT_PACKET);
+        stmt.setBoolean(28, mcTest.AUTO_GRADE);
+        stmt.setBoolean(29, mcTest.graded);
 
         System.out.println(stmt);
         stmt.execute();
@@ -193,17 +195,6 @@ public class Competition {
         return null;
     }
 
-    public void unPublish() throws SQLException {
-        published = false;
-        UIL.unPublish(this);
-
-        Connection conn = Conn.getConnection();
-        PreparedStatement stmt = conn.prepareStatement("UPDATE competitions SET published=? WHERE cid=?");
-        stmt.setBoolean(1, false);
-        stmt.setShort(2, template.cid);
-        stmt.executeUpdate();
-    }
-
     public void updateDB(String name, String description, boolean alternateExists, short numNonAlts, MCTest mcTest,
                          FRQTest frqTest, short[] judges, boolean showScoreboard) throws SQLException {
         Connection conn = Conn.getConnection();
@@ -211,7 +202,7 @@ public class Competition {
                         "alternateExists=?, numNonAlts=?, mcKey=?, mcCorrectPoints=?, mcIncorrectPoints=?, mcInstructions=?, mcTestLink=?," +
                         "mcOpens=?, mcTime=?, frqMaxPoints=?, frqIncorrectPenalty=?, frqProblemMap=?, frqStudentPack=?," +
                         "frqJudgePacket=?, frqOpens=?, frqTime=?, type=?, published=?, clarifications=?, judges=?, showScoreboard=?, " +
-                        "frqAutoGrade=?, dryRunExists=?, dryRunStudentPacket=? WHERE cid=?",
+                        "frqAutoGrade=?, dryRunExists=?, dryRunStudentPacket=?, mcAutoGrade=?, mcGraded=? WHERE cid=?",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -273,7 +264,9 @@ public class Competition {
         stmt.setBoolean(25, showScoreboard);
         stmt.setBoolean(27, frqTest.DRYRUN_EXISTS);
         stmt.setString(28, frqTest.DRYRUN_STUDENT_PACKET);
-        stmt.setShort(29, template.cid);
+        stmt.setBoolean(29, mcTest.AUTO_GRADE);
+        stmt.setBoolean(30, mcTest.graded);
+        stmt.setShort(31, template.cid);
         stmt.executeUpdate();
     }
 
@@ -352,15 +345,15 @@ public class Competition {
 
                         if (submission.showInput())
                             compJ.addProperty("input", StringEscapeUtils.escapeHtml4(submission.input).replaceAll("\n","<br>"));
-                        if (submission.showOutput())
-                            compJ.addProperty("output", StringEscapeUtils.escapeHtml4(submission.output).replaceAll("\n","<br>"));
+                        if (submission.showOutput()) {
+                            compJ.addProperty("output", StringEscapeUtils.escapeHtml4(submission.output).replaceAll("\n", "<br>"));
+                            if(problem.outputFile == null) {
+                                template.frqTest.loadOutputFile(submission.problemNumber, problem);
+                            }
+                            compJ.addProperty("outputFile", problem.outputFile);
+                        }
 
                         compJ.addProperty("graded", submission.graded);
-                        if(problem.outputFile == null) {
-                            template.frqTest.loadOutputFile(submission.problemNumber, problem);
-                        }
-                        compJ.addProperty("outputFile", problem.outputFile);
-
                         writer.write(new Gson().toJson(compJ));
                     }
                 } else if(action.equals("changeFRQJudgement")) {
@@ -839,6 +832,7 @@ public class Competition {
                     try {
                         stmt = conn.prepareStatement("DELETE FROM users WHERE uid=?");
                         stmt.setShort(1, s.uid);
+                        stmt.executeUpdate();
                         UserMap.delUser(s);
                     } catch (SQLException e) {
                         e.printStackTrace();

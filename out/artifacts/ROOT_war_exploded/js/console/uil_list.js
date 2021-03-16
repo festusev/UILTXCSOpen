@@ -280,7 +280,8 @@ var Competition = /** @class */ (function () {
             instructions: "",
             testLink: "",
             answersLink: "",
-            time: 0
+            time: 0,
+            autoGrade: true
         };
         this.handsOn = {
             opens: "",
@@ -323,6 +324,7 @@ var Competition = /** @class */ (function () {
             writtenPointsPerCorrect: null,
             writtenPointsPerIncorrect: null,
             writtenCheckbox: null,
+            writtenAutoGradeCheckbox: null,
             handsOnSection: null,
             handsOnStart: null,
             handsOnTime: null,
@@ -365,6 +367,7 @@ var Competition = /** @class */ (function () {
             this.written.testLink = writtenObj.testLink;
             this.written.answersLink = writtenObj.answersLink;
             this.written.time = writtenObj.time;
+            this.written.autoGrade = writtenObj.autoGrade;
         }
         if (this.handsOnExists) { /* HandsOn exists */
             this.handsOn.opens = handsOnObj.opens;
@@ -504,6 +507,7 @@ var Competition = /** @class */ (function () {
         formData.append("writtenExists", "" + this.writtenExists);
         if (this.writtenExists) {
             formData.append("mcOpens", this.dom.writtenOpen.value);
+            formData.append("mcAutoGrade", "" + this.dom.writtenAutoGradeCheckbox.checked);
             formData.append("mcTime", "" + this.dom.writtenTime.value);
             formData.append("mcCorrectPoints", "" + this.dom.writtenPointsPerCorrect.value);
             formData.append("mcIncorrectPoints", "" + this.dom.writtenPointsPerIncorrect.value);
@@ -959,6 +963,26 @@ list_handsOn_changeproblems.appendChild(li);
             if (!thisComp.writtenExists)
                 written_section.style.display = "none";
             thisComp.dom.writtenSection = written_section;
+            /* OPEN */
+            var autoGrade_header = document.createElement("div");
+            makeHalf(autoGrade_header);
+            written_section.appendChild(autoGrade_header);
+            var h2_autoGrade = document.createElement("h3");
+            h2_autoGrade.innerHTML = "Auto-Release Scores";
+            autoGrade_header.appendChild(h2_autoGrade);
+            /* CLOSE */
+            /* OPEN */
+            var autoGrade_toggle = document.createElement("div");
+            makeHalf(autoGrade_toggle);
+            written_section.appendChild(autoGrade_toggle);
+            var autoGrade_toggle_input = document.createElement("input");
+            autoGrade_toggle_input.classList.add("checkbox");
+            autoGrade_toggle_input.type = "checkbox";
+            autoGrade_toggle_input.name = "writtenAutoGrade";
+            if (thisComp.written.autoGrade)
+                autoGrade_toggle_input.checked = true;
+            autoGrade_toggle.appendChild(autoGrade_toggle_input);
+            thisComp.dom.writtenAutoGradeCheckbox = autoGrade_toggle_input;
             /* OPEN */
             var written_open = document.createElement("div");
             makeFull(written_open);

@@ -48,6 +48,7 @@ public class Profile extends HttpServlet{
             JsonObject writtenJ = new JsonObject();
             writtenJ.addProperty("opens", competition.template.mcTest.opens.DATE_STRING);
             writtenJ.addProperty("time", (competition.template.mcTest.TIME / (1000 * 60)));
+            writtenJ.addProperty("autoGrade", competition.template.mcTest.AUTO_GRADE);
 
             JsonArray writtenAnswersJ = new JsonArray();
             for (int i = 0, j = competition.template.mcTest.KEY.length; i < j; i++) {

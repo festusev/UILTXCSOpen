@@ -119,7 +119,6 @@ public class FRQTest {
             newTestcaseDir.mkdir();
             testcaseDir = newTestcaseDir;
         }
-
     }
 
     public void createProblemDirectories() {

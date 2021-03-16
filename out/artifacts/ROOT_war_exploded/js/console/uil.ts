@@ -229,8 +229,8 @@ const config = {
             frqIncorrectPenalty?: number, frqProblemMap?: string[], mcCorrectPoints?: number, mcIncorrectPoints?:number,
             teams: { tname: string, school: string, tid: number, students: { nonAlts: [string,number,[number,number]?][],
                     alt?: [string,number,[number,number]?]}, frq?: number, frqResponses?: number[]}[],
-            numHandsOnSubmitted?: number, teamCodes? : string[], studentsInClass? : [string,number][], tempUsers?: {[uid:string]:[string,string]}
-        }) {
+            numHandsOnSubmitted?: number, teamCodes? : string[], studentsInClass? : [string,number][],
+            tempUsers?: {[uid:string]:[string,string]}, tid?: number}) {
             let newToggleTeam: Team = null;  // The new team object that we are toggling open
             let oldOpenTeamTID = -1;    // The tid of the old open team
             if(pageState.openTeam) oldOpenTeamTID = (<Team>pageState.openTeam).tid;     // The old team that was open. May be null
@@ -276,12 +276,17 @@ const config = {
             let handsOnSum: number = 0; // Sum of hands on scores
             let numStudents: number = 0;
 
+            let bottomRank: number = 0; // If they are a signed-up student, response.tid is specified and we calculate their bottom rank
+            let bottomOutOf: number = response.teams.length;
+
             let selectStudentFragment = document.createDocumentFragment();  // The list of students that goes into the select student window
             for (let i=0,j=response.teams.length;i<j;i++) {
                 let teamData = response.teams[i];
                 let team: Team = new Team(teamData, response.tempUsers);
 
                 if(team.tid == oldOpenTeamTID) newToggleTeam = team;
+
+                if(response.tid && team.tid == response.tid) bottomRank = i+1;
 
                 if(pageState.isCreator) team.code = response.teamCodes[i];
                 generalFragment.appendChild(team.dom.tr);
@@ -365,8 +370,9 @@ const config = {
                 }
                 dom.numTeams.innerText = "" + response.teams.length;
                 dom.numUsers.innerText = "" + numStudents;
-            } else {
-                // dom.bottomRank =u
+            } else if(response.tid) {
+                dom.bottomRank.innerText = ordinal(bottomRank);
+                dom.bottomOutOf.innerText = bottomOutOf;
             }
 
             dom.teamList.innerHTML = "";
@@ -609,6 +615,18 @@ let dom = {
     }
 };
 
+
+function ordinal(i: number): string {
+    let sufixes: string[] = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"];
+    switch (i % 100) {
+        case 11:
+        case 12:
+        case 13:
+            return i + "th";
+        default:
+            return i + sufixes[i % 10];
+    }
+}
 
 let globalTeachers: GlobalTeacher[] = [];
 
@@ -2448,4 +2466,20 @@ function stopDryRun() {
 
 function startDryRun() {
     ws.send("[\"startDryRun\",\""+getNowString()+"\"]");
+}
+
+function releaseMCScores(element: HTMLElement) {
+    element.innerText = "Hide Scores";
+    element.onclick = function () {
+        hideMCScore(element);
+    };
+    ws.send("[\"releaseMCScores\"]");
+}
+
+function hideMCScore(element: HTMLElement) {
+    element.innerText = "Release Scores";
+    element.onclick = function () {
+        releaseMCScores(element);
+    };
+    ws.send("[\"hideMCScores\"]");
 }
