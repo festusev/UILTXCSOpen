@@ -640,8 +640,13 @@ public class CompetitionSocket {
                 JsonObject output = new JsonObject();
                 output.addProperty("action","updateFRQSubmission");
                 output.addProperty("submissionID", id);
-                output.addProperty("newOutput", submission.output);
-                output.addProperty("outputFile", competition.template.frqTest.PROBLEM_MAP[submission.problemNumber].outputFile);
+                output.addProperty("newOutput", StringEscapeUtils.escapeHtml4(submission.output).replaceAll("\r?\n","<br>"));
+
+                if(newSubmission.result == FRQSubmission.Result.CORRECT || newSubmission.result == FRQSubmission.Result.INCORRECT) {
+                    output.addProperty("outputFile", StringEscapeUtils.escapeHtml4(
+                            competition.template.frqTest.PROBLEM_MAP[submission.problemNumber].outputFile).replaceAll("\r?\n","<br>"));
+                }
+
                 send(output.toString());
             } else if(action.equals("releaseMCScores")) {
                 competition.template.mcTest.graded = true;
@@ -787,7 +792,7 @@ public class CompetitionSocket {
 
     @OnClose
     public void onClose(Session session) throws IOException {
-        System.out.println("Closing session");
+        // System.out.println("Closing session");
         if(this.user != null) connected.remove(this.user.uid);
         if(competition != null) competitions.get(competition.template.cid).remove(this);
     }
@@ -795,8 +800,8 @@ public class CompetitionSocket {
     @OnError
     public void onError(Session session, Throwable throwable) {
         // Do error handling here
-        System.out.println("ERROR!!!");
-        throwable.printStackTrace();
+        // System.out.println("ERROR!!!");
+        // throwable.printStackTrace();
     }
 
     public void send(String msg) throws IOException {

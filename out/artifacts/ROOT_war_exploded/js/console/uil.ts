@@ -484,12 +484,17 @@ const config = {
                 Team.renderOpenTeam(team);
             }
         },
-        "updateFRQSubmission" : function(response: {submissionID: number, newOutput: string, outputFile: string}) {
+        "updateFRQSubmission" : function(response: {submissionID: number, newOutput: string, outputFile?: string}) {
             if(submissionMap[response.submissionID]) {
                 let div:HTMLElement = submissionMap[response.submissionID];
                 let element:HTMLElement = div.querySelector(".outputCnt");
-                element.innerHTML = "<b>Output</b><span>"+htmldiff(response.newOutput, response.outputFile).
-                replace(/\t/g, "<div class='tab'></div>")+"</span>";
+
+                let output = "";
+                if(response.outputFile) {
+                    output = htmldiff(response.newOutput, response.outputFile);
+                } else output = response.newOutput;
+
+                element.innerHTML = "<b>Output</b><pre>"+output+"</pre>";
 
                 addSuccessBox(document.getElementById("frqSubmissionEditorResponse"), "Regraded submission.")
             }
@@ -752,9 +757,7 @@ class Student {
 
             let percentCorrectTD = document.createElement("td");
             if(this.mcScore != null) {
-                let percentageCorrect = 100*this.mcNumCorrect;
-                if(this.mcNumIncorrect + this.mcNumCorrect != 0) percentageCorrect /= this.mcNumIncorrect + this.mcNumIncorrect;
-                percentCorrectTD.innerText = percentageCorrect.toFixed(2);
+                percentCorrectTD.innerText = getPercentageCorrect(this.mcNumCorrect, this.mcNumIncorrect);
             }
             this.dom.tr.appendChild(percentCorrectTD);
 
@@ -1991,7 +1994,7 @@ function showFRQSubmission(row:HTMLTableRowElement, submissionId: number) {
 
                     let span_input = document.createElement("span");
                     span_input.style.display = "none";
-                    span_input.innerHTML = input.replace(/\r\n/g, "<br>").replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>");
+                    span_input.innerHTML = input.replace(/\r\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>");
 
                     let viewingInput:boolean = false;
                     b_input.onclick = function() {
@@ -2010,7 +2013,7 @@ function showFRQSubmission(row:HTMLTableRowElement, submissionId: number) {
 
                         let output_cnt = document.createElement("div");
                         output_cnt.classList.add("outputCnt");
-                        output_cnt.innerHTML = "<b>Output</b><span>"+outputString.replace(/\t/g, "<div class='tab'></div>")+"</span>";
+                        output_cnt.innerHTML = "<b>Output</b><pre>"+outputString+"</pre>";
                         div.appendChild(output_cnt);
                         // .replace(/\r\n/g, "<br>")
                         //                             .replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>")
@@ -2250,6 +2253,13 @@ function exportCSV(arrayData, delimiter, fileName) {
     hiddenElement.click();
 }
 
+function getPercentageCorrect(correct: number, incorrect: number) {
+    let percentageCorrect = 100*correct;
+    if(incorrect + correct != 0) percentageCorrect /= incorrect + correct;
+
+    return percentageCorrect.toFixed(2);
+}
+
 // Creates a pdf of the scoreboard and downloads it
 function downloadScoreboard() {
     if(!pageState.isCreator) return;
@@ -2287,10 +2297,9 @@ function downloadScoreboard() {
                 mcCorrect = "" + student.mcNumCorrect;
                 mcIncorrect = "" + student.mcNumIncorrect;
 
-                let percentageCorrect = 100*student.mcNumCorrect;
-                if(student.mcNumIncorrect + student.mcNumCorrect != 0) percentageCorrect /= student.mcNumIncorrect + student.mcNumCorrect;
 
-                mcPercentCorrect = "" + percentageCorrect.toFixed(2);
+
+                mcPercentCorrect = "" + getPercentageCorrect(student.mcNumCorrect, student.mcNumIncorrect);
                 mcScoreString = "" + student.mcScore;
             }
 

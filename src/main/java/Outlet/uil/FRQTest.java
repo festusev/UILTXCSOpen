@@ -349,8 +349,8 @@ public class FRQTest {
 
         if(in_file != null) {   // Only add in the dat file if there is one
             try {
-                Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", "/bin/ln -s " + in_file.getAbsolutePath() + " " +
-                        dir + PROBLEM_MAP[problemNum].name.toLowerCase() + ".dat"}).waitFor();
+                Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", "/bin/ln -s " + in_file.getAbsolutePath() + " '" +
+                        dir + PROBLEM_MAP[problemNum].inputFname + "'"}).waitFor();
             } catch (InterruptedException e) {
                 e.printStackTrace();
                 return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "","", "", currentTime, AUTO_GRADE);

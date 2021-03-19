@@ -1020,12 +1020,14 @@
 ins {
     text-decoration: none;
     background-color: #d4fcbc;
+    display: inline-block;
 }
 
 del {
     text-decoration: line-through;
     background-color: #fbb6c2;
     color: #555;
+    display: inline-block;
 }
 @media only screen and (max-width: 720px){
     #countdownCnt {

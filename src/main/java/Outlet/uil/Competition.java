@@ -345,13 +345,13 @@ public class Competition {
                         compJ.addProperty("result", submission.getResultString());
 
                         if (submission.showInput())
-                            compJ.addProperty("input", StringEscapeUtils.escapeHtml4(submission.input).replaceAll("\n","<br>"));
+                            compJ.addProperty("input", StringEscapeUtils.escapeHtml4(submission.input).replaceAll("\r?\n","<br>"));
                         if (submission.showOutput()) {
-                            compJ.addProperty("output", StringEscapeUtils.escapeHtml4(submission.output).replaceAll("\n", "<br>"));
+                            compJ.addProperty("output", StringEscapeUtils.escapeHtml4(submission.output).replaceAll("\r?\n", "<br>"));
                             if(problem.outputFile == null) {
                                 template.frqTest.loadOutputFile(submission.problemNumber, problem);
                             }
-                            compJ.addProperty("outputFile", problem.outputFile);
+                            compJ.addProperty("outputFile", problem.outputFile.replaceAll("\r?\n", "<br>"));
                         }
 
                         compJ.addProperty("graded", submission.graded);
