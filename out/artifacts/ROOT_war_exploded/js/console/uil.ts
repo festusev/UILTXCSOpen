@@ -743,19 +743,23 @@ class Student {
             this.dom.tr.appendChild(tnameTD);
 
             let numCorrectTD = document.createElement("td");
-            if(this.mcScore) numCorrectTD.innerText = ""+this.mcNumCorrect;
+            if(this.mcScore != null) numCorrectTD.innerText = ""+this.mcNumCorrect;
             this.dom.tr.appendChild(numCorrectTD);
 
             let numIncorrectTD = document.createElement("td");
-            if(this.mcScore) numIncorrectTD.innerText = "" + this.mcNumIncorrect;
+            if(this.mcScore != null) numIncorrectTD.innerText = "" + this.mcNumIncorrect;
             this.dom.tr.appendChild(numIncorrectTD);
 
             let percentCorrectTD = document.createElement("td");
-            if(this.mcScore) percentCorrectTD.innerText = (100*this.mcNumCorrect/(this.mcNumCorrect + this.mcNumIncorrect)).toFixed(2);
+            if(this.mcScore != null) {
+                let percentageCorrect = 100*this.mcNumCorrect;
+                if(this.mcNumIncorrect + this.mcNumCorrect != 0) percentageCorrect /= this.mcNumIncorrect + this.mcNumIncorrect;
+                percentCorrectTD.innerText = percentageCorrect.toFixed(2);
+            }
             this.dom.tr.appendChild(percentCorrectTD);
 
             let totalTD = document.createElement("td");
-            if(this.mcScore) totalTD.innerText = "" + this.mcScore;
+            if(this.mcScore != null) totalTD.innerText = "" + this.mcScore;
             else totalTD.innerText = "Not Taken";
             this.dom.tr.appendChild(totalTD);
         }
@@ -1115,7 +1119,7 @@ class Team {
             if(pageState.mcExists) {
                 let mcTD = document.createElement("td");
                 mcTD.classList.add("right");
-                if(student.mcScore) mcTD.innerText = student.mcScore + "pts";
+                if(student.mcScore != null) mcTD.innerText = student.mcScore + "pts";
                 else mcTD.innerText = "Not taken";
                 tr.appendChild(mcTD);
             }
@@ -2080,8 +2084,12 @@ function showMCSubmission(uid: number) {
 
                 let scoring_cnt = document.createElement("div");
                 scoring_cnt.classList.add("mcScoring_cnt");
+
+                let percentageCorrect = 100*scoringReport[1];
+                if(scoringReport[3] + scoringReport[1] != 0) percentageCorrect /= scoringReport[3] + scoringReport[1];
+
                 scoring_cnt.innerHTML = "<b>Score: </b>"+scoringReport[0]+"<br><b>Percentage Correct: </b>"+
-                    (100*scoringReport[1]/(scoringReport[3] + scoringReport[1])).toFixed(2)+
+                    percentageCorrect.toFixed(2)+
                 "<br><b>Correct: </b>"+scoringReport[1]+"" +
                     "<br><b>Incorrect: </b>"+scoringReport[3]+"<br><b>Skipped: </b>"+scoringReport[2];
                 div.appendChild(scoring_cnt);
@@ -2275,10 +2283,14 @@ function downloadScoreboard() {
             let mcIncorrect = "";
             let mcPercentCorrect = "";
             let mcScoreString = "Not Taken";
-            if(student.mcScore) {
+            if(student.mcScore != null) {
                 mcCorrect = "" + student.mcNumCorrect;
                 mcIncorrect = "" + student.mcNumIncorrect;
-                mcPercentCorrect = "" + (100*student.mcNumCorrect/(student.mcNumIncorrect + student.mcNumCorrect)).toFixed(2);
+
+                let percentageCorrect = 100*student.mcNumCorrect;
+                if(student.mcNumIncorrect + student.mcNumCorrect != 0) percentageCorrect /= student.mcNumIncorrect + student.mcNumCorrect;
+
+                mcPercentCorrect = "" + percentageCorrect.toFixed(2);
                 mcScoreString = "" + student.mcScore;
             }
 
