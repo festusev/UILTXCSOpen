@@ -14,6 +14,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
 
+import static Outlet.Conn.getConnection;
+
 /**
  * An html template for each UIL page. Just instantiate it, specify the needed parameters, and then each time someone
  * accesses the page call render(...) and the entire html page will be built AND sent using PrintWriter.
@@ -117,12 +119,13 @@ public class Template {
             // mcHTML[2] += "<th>Skip</th><tr>";
             // short firstHalf = (short)Math.ceil(mcTest.NUM_PROBLEMS/2.0);
             for(int i=1; i<= mcTest.NUM_PROBLEMS; i++) {
-                mcHTML[1] += "<tr class='mcQuestion'><td>" + i + "</td>";
                 if (mcTest.KEY[i - 1][1].equals("0")) {   // This is a MC problem
+                    mcHTML[1] += "<tr class='mcQuestion'><td>" + i + "</td>";
                     for (char c : mcTest.options) {
                         mcHTML[1] += "<td><div class='mcBubble' onclick='setChoice(" + i + ",this)' data-val='" + c + "'></div></td>";
                     }
                 } else {    // This is an SAQ problem
+                    mcHTML[1] += "<tr class='mcQuestion saqQuestion'><td>" + i + "</td>";
                     mcHTML[1] += "<td colspan='5'><input type='text' maxlength='40' class='mcText' onchange='setSAQChoice(" + i + ",this)'></td>";
                 }
             }
@@ -474,8 +477,8 @@ public class Template {
             }
             html += "</tr>";
             for(int i=1; i<= mcTest.NUM_PROBLEMS; i++) {
-                html += "<tr class='mcQuestion'><td>" + i + "</td>";
                 if (mcTest.KEY[i - 1][1].equals("0")) {   // This is a MC problem
+                    html += "<tr class='mcQuestion'><td>" + i + "</td>";
                     for (char c : mcTest.options) {
                         String className = "";
                         if(mcTest.KEY[i-1][0].charAt(0) == c) className = "mcSelected";
@@ -483,7 +486,8 @@ public class Template {
                         html += "<td><div class='mcBubble "+className+"' data-val='" + c + "' style='cursor:unset'></div></td>";
                     }
                 } else {    // This is an SAQ problem
-                    html += "<td colspan='5'><input type='text' class='mcText' disabled><p class='mcTextCorrectAnswer'>"+
+                    html += "<tr class='mcQuestion saqQuestion'><td>" + i + "</td><td colspan='5'>" +
+                            "<input type='text' class='mcText' disabled><p class='mcTextCorrectAnswer'>"+
                             StringEscapeUtils.escapeHtml4(mcTest.KEY[i-1][0])+"</p></td>";
                 }
             }
@@ -523,9 +527,9 @@ public class Template {
         }
         html += "</tr>";
         for(int i=1; i<= mcTest.NUM_PROBLEMS; i++) {
-            html += "<tr class='mcQuestion'><td>" + i + "</td>";
             String answer = submission.answers[i-1];
             if (mcTest.KEY[i - 1][1].equals("0")) {   // This is a MC problem
+                html += "<tr class='mcQuestion'><td>" + i + "</td>";
                 for (char c : mcTest.options) {
                     String className = "";
                     if ((""+c).equals(answer)) className = "mcSelected";
@@ -534,13 +538,15 @@ public class Template {
                     html += "<td><div class='mcBubble "+className+"' data-val='" + c + "' style='cursor:unset'></div></td>";
                 }
             } else {    // This is an SAQ problem
+                html += "<tr class='mcQuestion saqQuestion'><td>" + i + "</td>";
+
                 String correctAnswer = "";
                 if(!answer.equals(mcTest.KEY[i-1][0])) {
                     correctAnswer = "<p class='mcTextCorrectAnswer'>"+ StringEscapeUtils.escapeHtml4(mcTest.KEY[i-1][0])+"</p>";
                 }
                 String tempAnswer = answer;
                 if(tempAnswer.equals(MCTest.SKIP_CODE)) tempAnswer = "";
-                html += "<td colspan='5'><input type='text' class='mcText' value='"+StringEscapeUtils.escapeHtml4(tempAnswer)+"' disabled>"+
+                html += "<td colspan='5'><span>"+StringEscapeUtils.escapeHtml4(tempAnswer)+"</span>"+
                         correctAnswer+"</td>";
             }
             String mcResult = "";
@@ -561,7 +567,7 @@ public class Template {
         return html;
     }
     public String getFinishedMC(MCSubmission submission, short tid, short uid, CompetitionStatus status) {
-        if(!mcTest.graded) return "<div id='mcColumn' class='column' style='display:none;'><div class='row head-row'><h1>Written</h1><p>Written scores are hidden until the competition closes.</p></div></div>";
+        if(!mcTest.graded || status.mcDuring) return "<div id='mcColumn' class='column' style='display:none;'><div class='row head-row'><h1>Written</h1><p>Written scores are hidden until the competition closes.</p></div></div>";
         String html =  "<div id='mcColumn' class='column' style='display:none;'>" +
                         "<div class='row head-row'>" +
                         "<h1>Written</h1>" +
@@ -602,9 +608,9 @@ public class Template {
                 html += "<table id='frqSubmissionsTable'><tr id='frqSubmissionsTr'><th>Problem</th><th>Team</th><th>Result</th></tr>";
 
                 String rows = "";
-                for(int i=0, j=competition.frqSubmissions.size(); i<j; i++) {
+                for(int i=competition.frqSubmissions.size()-1; i>=0; i--) {
                     FRQSubmission submission = competition.frqSubmissions.get(i);
-                    rows = getSmallFRQ(i, submission) + rows;
+                    rows += getSmallFRQ(i, submission);
                 }
                 html += rows + "</table></div></div></div>";
 
@@ -650,6 +656,7 @@ public class Template {
     }
     public String getFRQProblems(UILEntry entry){
         String problems = "<div id='frqProblems'><b>Problems - " + entry.frqScore +"pts</b>";
+        String submissionList = "<b>Response Feed</b><ul id='frqResponseFeed'>";
         if(frqTest.dryRunMode) {
             problems+="<p>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[0].name) + " - ";
             Pair<Short, ArrayList<FRQSubmission>> problem = entry.frqResponses[0];
@@ -657,6 +664,16 @@ public class Template {
                 problems += frqTest.calcScore(problem.key) + "pts";
             } else{
                 problems += (problem.key*-1) + " tries";
+            }
+            for(int i=problem.value.size()-1;i>=0;i--) {
+                FRQSubmission submission = problem.value.get(i);
+                if(submission.graded) {
+                    String colorClass = "gray";    // green if success, gray if no points, red if lost points
+                    if(submission.takePenalty()) colorClass = "red";
+                    else if(submission.result == FRQSubmission.Result.CORRECT) colorClass = "green";
+                    submissionList += "<li><span>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber].name) +
+                            "</span><span class='"+colorClass+"'>" + submission.getResultString() + "</span></li>";
+                }
             }
             problems+="</p>";
         } else {
@@ -670,8 +687,18 @@ public class Template {
                 }
                 problems += "</p>";
             }
+            for(int i=competition.frqSubmissions.size()-1; i>=0; i--) {
+                FRQSubmission submission = competition.frqSubmissions.get(i);
+                if(submission.entry.tid == entry.tid && submission.problemNumber > 0 && submission.graded) {
+                    String colorClass = "gray";    // green if success, gray if no points, red if lost points
+                    if(submission.takePenalty()) colorClass = "red";
+                    else if(submission.result == FRQSubmission.Result.CORRECT) colorClass = "green";
+                    submissionList += "<li><span>"+StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber].name)+
+                            "</span><span class='"+colorClass+"'>"+submission.getResultString()+"</span></li>";
+                }
+            }
         }
-        return problems + "</div>";
+        return problems + submissionList + "</ul></div>";
     }
 
     public String getClarificationHTML(User user, UserStatus userStatus, CompetitionStatus competitionStatus) {
@@ -741,7 +768,7 @@ public class Template {
                 else postfix += "<p onclick='startWritten()'>Start Written</p>";
             }
             if(frqTest.exists) {
-                if(competitionStatus.frqDuring) postfix += "<p onclick='stopHandsOn()'>Stop Hands-On</p>";
+                if(competitionStatus.frqDuring && !frqTest.dryRunMode) postfix += "<p onclick='stopHandsOn()'>Stop Hands-On</p>";
                 else postfix += "<p onclick='startHandsOn()'>Start Hands-On</p>";
 
                 if(frqTest.DRYRUN_EXISTS) {
@@ -952,6 +979,16 @@ public class Template {
             for(short uid: entry.uids) {
                 Student s = StudentMap.getByUID(uid);
                 s.cids.remove(cid);
+                if(s.temp) {
+                    try {
+                        stmt = conn.prepareStatement("DELETE FROM users WHERE uid=?");
+                        stmt.setShort(1, s.uid);
+                        stmt.executeUpdate();
+                        UserMap.delUser(s);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
             entry.uids = new HashSet<>();
             competition.entries.delEntry(entry);
@@ -1073,7 +1110,7 @@ class CompetitionStatus {
                 frqOverflow = false;
                 frqFinished = false;
                 frqDryRunMode = false;
-            } else if (!frqTest.closes.done()) {
+            } else if (!frqTest.closes.done() || frqTest.dryRunMode) {
                 frqBefore = false;
                 frqDuring = true;
                 frqOverflow = false;

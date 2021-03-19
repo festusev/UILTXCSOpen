@@ -217,20 +217,26 @@ public class CompetitionSocket {
                     return;
                 }
 
+                short tid = team.get("tid").getAsShort();
+                UILEntry entry = competition.entries.getByTid((tid));
+
                 boolean individual = team.get("individual").getAsBoolean();
                 if(individual) {
                     int numStudents = nonAlts.size();
                     if(!alt.isJsonNull()) {
                         if(alt.getAsShort() >= 0) numStudents += 1;
                     }
-                    if(numStudents != 1) { // This is supposed to be an individual team but there isn't one person
-                        send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":true,\"msg\":\"Individual teams must have one student.\"}");
+                    if(numStudents > 1) { // This is supposed to be an individual team but there is more than person
+                        send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":true,\"msg\":\"Individual teams can only have one student.\"}");
+                        return;
+                    } else if(numStudents == 0) {   // Delete this team
+                        competition.template.deleteEntry(entry);
+                        competition.template.updateScoreboard();
                         return;
                     }
                 }
 
-                short tid = team.get("tid").getAsShort();
-                UILEntry entry = competition.entries.getByTid((tid));
+
                 entry.individual = individual;
 
                 HashMap<Short, MCSubmission> newMC = new HashMap<>();
@@ -256,7 +262,11 @@ public class CompetitionSocket {
                                 if (oldSubmission != null) newMC.put(student.uid, oldSubmission);
                             }
                             student.cids.put(competition.template.cid, entry);
-                            oldEntry.updateAll();
+
+                            // This is an individual team and the team is empty, so delete this team
+                            if(oldEntry.individual && oldEntry.uids.size() == 0) {
+                                competition.template.deleteEntry(oldEntry);
+                            } else oldEntry.updateAll();
                         } else {
                             MCSubmission submission = oldEntry.mc.get(student.uid);
                             if (submission != null) newMC.put(student.uid, submission);
@@ -291,7 +301,11 @@ public class CompetitionSocket {
                                 }
 
                                 student.cids.put(competition.template.cid, entry);
-                                oldEntry.updateAll();
+
+                                // This is an individual team and the team is empty, so delete this team
+                                if(oldEntry.individual && oldEntry.uids.size() == 0) {
+                                    competition.template.deleteEntry(oldEntry);
+                                } else oldEntry.updateAll();
                             } else {
                                 MCSubmission submission = oldEntry.mc.get(student.uid);
                                 if (submission != null) newMC.put(student.uid, submission);
@@ -607,140 +621,121 @@ public class CompetitionSocket {
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
-            } else if(status.creator) {
-                if(action.equals("stopWritten")) {      // Stop the written test
-                    Date now = new Date(1); // Date at epoch
-                    MCTest mcTest = new MCTest(true, sdf.format(now), competition.template.mcTest.KEY,
-                            competition.template.mcTest.CORRECT_PTS, competition.template.mcTest.INCORRECT_PTS,
-                            competition.template.mcTest.INSTRUCTIONS, competition.template.mcTest.TEST_LINK,
-                            competition.template.mcTest.TIME, competition.template.mcTest.AUTO_GRADE,competition.template.mcTest.graded);
-                    try {
-                        competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
-                                competition.numNonAlts, competition.template.name, competition.template.description,
-                                mcTest, competition.template.frqTest, competition.getJudges(), competition.template.showScoreboard);
-                        competition.template.updateScoreboard();
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                    broadcast("{\"action\":\"reload\"}");
-                } else if(action.equals("startWritten")) {
-                    MCTest mcTest = new MCTest(true, data.get(1).getAsString(), competition.template.mcTest.KEY,
-                            competition.template.mcTest.CORRECT_PTS, competition.template.mcTest.INCORRECT_PTS,
-                            competition.template.mcTest.INSTRUCTIONS, competition.template.mcTest.TEST_LINK,
-                            competition.template.mcTest.TIME, competition.template.mcTest.AUTO_GRADE, competition.template.mcTest.graded);
-                    try {
-                        competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
-                                competition.numNonAlts, competition.template.name, competition.template.description,
-                                mcTest, competition.template.frqTest, competition.getJudges(), competition.template.showScoreboard);
-                        competition.template.updateScoreboard();
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                    broadcast("{\"action\":\"reload\"}");
-                } else if(action.equals("stopHandsOn")) {
-                    Date now = new Date(1); // Date at epoch
-                    FRQTest oldFRQ = competition.template.frqTest;
-                    FRQTest frqTest = new FRQTest(true, sdf.format(now), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
-                            oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE,
-                            oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET);
-                    try {
-                        competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
-                                competition.numNonAlts, competition.template.name, competition.template.description,
-                                competition.template.mcTest, frqTest, competition.getJudges(), competition.template.showScoreboard);
-                        competition.template.updateScoreboard();
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                    broadcast("{\"action\":\"reload\"}");
-                } else if(action.equals("startHandsOn")) {
-                    FRQTest oldFRQ = competition.template.frqTest;
-                    FRQTest frqTest = new FRQTest(true, data.get(1).getAsString(), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
-                            oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE,
-                            oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET);
-                    try {
-                        competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
-                                competition.numNonAlts, competition.template.name, competition.template.description,
-                                competition.template.mcTest, frqTest, competition.getJudges(), competition.template.showScoreboard);
-                        competition.template.updateScoreboard();
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                    broadcast("{\"action\":\"reload\"}");
-                } else if(action.equals("publishGradedFRQ")) {  // Makes the result of an frq submission available to the team that submitted it
-                    int id = data.get(1).getAsInt();
-                    FRQSubmission submission = competition.frqSubmissions.get(id);
-                    submission.graded = true;
-                    submission.entry.recalculateFRQScore(submission.problemNumber);
+            } else if(action.equals("publishGradedFRQ")) {  // Makes the result of an frq submission available to the team that submitted it
+                int id = data.get(1).getAsInt();
+                FRQSubmission submission = competition.frqSubmissions.get(id);
+                submission.graded = true;
+                submission.entry.recalculateFRQScore(submission.problemNumber);
 
-                    submission.entry.update();
-                    submission.entry.socketSendFRQProblems();
+                submission.entry.update();
+                submission.entry.socketSendFRQProblems();
+                competition.template.updateScoreboard();
+            } else if(action.equals("regradeFRQ")) {    // Re-run an frq submission
+                int id = data.get(1).getAsInt();
+                FRQSubmission submission = competition.frqSubmissions.get(id);
+                FRQSubmission newSubmission = competition.template.frqTest.score(submission.problemNumber, submission.input.getBytes(),
+                        submission.inputFname, (short)0, (short)0);
+                submission.output = newSubmission.output;
+                // {submissionID: number, newOutput: string}
+                JsonObject output = new JsonObject();
+                output.addProperty("action","updateFRQSubmission");
+                output.addProperty("submissionID", id);
+                output.addProperty("newOutput", submission.output);
+                output.addProperty("outputFile", competition.template.frqTest.PROBLEM_MAP[submission.problemNumber].outputFile);
+                send(output.toString());
+            } else if(action.equals("releaseMCScores")) {
+                competition.template.mcTest.graded = true;
+                broadcast("{\"action\":\"reload\"}");
+                try {
+                    competition.update();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            } else if(action.equals("hideMCScores")) {
+                competition.template.mcTest.graded = false;
+                broadcast("{\"action\":\"reload\"}");
+                try {
+                    competition.update();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            } else if(action.equals("stopWritten")) {      // Stop the written test
+                Date now = new Date(1); // Date at epoch
+                MCTest mcTest = new MCTest(true, sdf.format(now), competition.template.mcTest.KEY,
+                        competition.template.mcTest.CORRECT_PTS, competition.template.mcTest.INCORRECT_PTS,
+                        competition.template.mcTest.INSTRUCTIONS, competition.template.mcTest.TEST_LINK,
+                        competition.template.mcTest.TIME, competition.template.mcTest.AUTO_GRADE,competition.template.mcTest.graded);
+                try {
+                    competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
+                            competition.numNonAlts, competition.template.name, competition.template.description,
+                            mcTest, competition.template.frqTest, competition.getJudges(), competition.template.showScoreboard);
                     competition.template.updateScoreboard();
-                } else if(action.equals("releaseMCScores")) {
-                    competition.template.mcTest.graded = true;
-                    broadcast("{\"action\":\"reload\"}");
-                    try {
-                        competition.update();
-                    } catch (SQLException e) {
-                        e.printStackTrace();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                broadcast("{\"action\":\"reload\"}");
+            } else if(action.equals("startWritten")) {
+                MCTest mcTest = new MCTest(true, data.get(1).getAsString(), competition.template.mcTest.KEY,
+                        competition.template.mcTest.CORRECT_PTS, competition.template.mcTest.INCORRECT_PTS,
+                        competition.template.mcTest.INSTRUCTIONS, competition.template.mcTest.TEST_LINK,
+                        competition.template.mcTest.TIME, competition.template.mcTest.AUTO_GRADE, competition.template.mcTest.graded);
+                try {
+                    competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
+                            competition.numNonAlts, competition.template.name, competition.template.description,
+                            mcTest, competition.template.frqTest, competition.getJudges(), competition.template.showScoreboard);
+                    competition.template.updateScoreboard();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                broadcast("{\"action\":\"reload\"}");
+            } else if(action.equals("stopHandsOn")) {
+                Date now = new Date(1); // Date at epoch
+                FRQTest oldFRQ = competition.template.frqTest;
+                FRQTest frqTest = new FRQTest(true, sdf.format(now), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
+                        oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE,
+                        oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET);
+                try {
+                    competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
+                            competition.numNonAlts, competition.template.name, competition.template.description,
+                            competition.template.mcTest, frqTest, competition.getJudges(), competition.template.showScoreboard);
+                    competition.template.updateScoreboard();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                broadcast("{\"action\":\"reload\"}");
+            } else if(action.equals("startHandsOn")) {
+                FRQTest oldFRQ = competition.template.frqTest;
+                FRQTest frqTest = new FRQTest(true, data.get(1).getAsString(), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
+                        oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE,
+                        oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET);
+                try {
+                    competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
+                            competition.numNonAlts, competition.template.name, competition.template.description,
+                            competition.template.mcTest, frqTest, competition.getJudges(), competition.template.showScoreboard);
+                    competition.template.updateScoreboard();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                broadcast("{\"action\":\"reload\"}");
+            } else if(action.equals("startDryRun")) {
+                    FRQTest oldFRQ = competition.template.frqTest;
+                    if(oldFRQ.dryRunMode || !oldFRQ.DRYRUN_EXISTS) return;
+
+                    // Now update the scoreboard. frq scores now only include the dry run score
+                    ArrayList<UILEntry> entries = competition.entries.allEntries;
+                    for(UILEntry entry: entries) {
+                        entry.frqScore = competition.template.frqTest.calcScore(entry.frqResponses[0].key);
                     }
-                } else if(action.equals("hideMCScores")) {
-                    competition.template.mcTest.graded = false;
-                    broadcast("{\"action\":\"reload\"}");
-                    try {
-                        competition.update();
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    CompetitionStatus competitionStatus = new CompetitionStatus(competition.template.mcTest, competition.template.frqTest);
-                    if(action.equals("startDryRun")) {
-                        FRQTest oldFRQ = competition.template.frqTest;
-                        if(oldFRQ.dryRunMode || !oldFRQ.DRYRUN_EXISTS) return;
 
-                        // Now update the scoreboard. frq scores now only include the dry run score
-                        ArrayList<UILEntry> entries = competition.entries.allEntries;
-                        for(UILEntry entry: entries) {
-                            entry.frqScore = competition.template.frqTest.calcScore(entry.frqResponses[0].key);
-                        }
-
-                        if(competitionStatus.frqDuring) {
-                            oldFRQ.dryRunMode = true;
-                            competition.setTemplate(competition.published, competition.template.mcTest, competition.template.frqTest,
-                                    competition.template.name, competition.template.description, competition.template.cid, competition.template.showScoreboard);
-                        } else {
-                            FRQTest frqTest = new FRQTest(true, data.get(1).getAsString(), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
-                                    oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE,
-                                    oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET);
-                            frqTest.dryRunMode = true;
-                            try {
-                                competition.update((Teacher) user, true, competition.isPublic, competition.alternateExists,
-                                        competition.numNonAlts, competition.template.name, competition.template.description,
-                                        competition.template.mcTest, frqTest, competition.getJudges(), competition.template.showScoreboard);
-                                competition.template.updateScoreboard();
-                            } catch (SQLException e) {
-                                e.printStackTrace();
-                            }
-                        }
-
-                        broadcast("{\"action\":\"reload\"}");
-                    } else if(action.equals("stopDryRun")) {
-                        FRQTest oldFRQ = competition.template.frqTest;
-                        if(!oldFRQ.dryRunMode || !oldFRQ.DRYRUN_EXISTS) return;
-
-                        // Now update the scoreboard. frq scores now don't include the score from the dry run
-                        ArrayList<UILEntry> entries = competition.entries.allEntries;
-                        for(UILEntry entry: entries) {
-                            int score = 0;
-                            for(int i=1,j=entry.frqResponses.length;i<j;i++) {
-                                score += competition.template.frqTest.calcScore(entry.frqResponses[i].key);
-                            }
-                            entry.frqScore = (short)score;
-                        }
-
+                    // if(competitionStatus.frqDuring) {
+                    oldFRQ.dryRunMode = true;
+                    competition.setTemplate(competition.published, competition.template.mcTest, competition.template.frqTest,
+                            competition.template.name, competition.template.description, competition.template.cid, competition.template.showScoreboard);
+                    /*} else {
                         FRQTest frqTest = new FRQTest(true, data.get(1).getAsString(), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
                                 oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE,
                                 oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET);
-                        frqTest.dryRunMode = false;
+                        frqTest.dryRunMode = true;
                         try {
                             competition.update((Teacher) user, true, competition.isPublic, competition.alternateExists,
                                     competition.numNonAlts, competition.template.name, competition.template.description,
@@ -749,10 +744,43 @@ public class CompetitionSocket {
                         } catch (SQLException e) {
                             e.printStackTrace();
                         }
+                    }*/
 
-                        broadcast("{\"action\":\"reload\"}");
+                    broadcast("{\"action\":\"reload\"}");
+            } else if(action.equals("stopDryRun")) {
+                FRQTest oldFRQ = competition.template.frqTest;
+                if(!oldFRQ.dryRunMode || !oldFRQ.DRYRUN_EXISTS) return;
+
+                // Now update the scoreboard. frq scores now don't include the score from the dry run
+                ArrayList<UILEntry> entries = competition.entries.allEntries;
+                for(UILEntry entry: entries) {
+                    int score = 0;
+                    for(int i=1,j=entry.frqResponses.length;i<j;i++) {
+                        score += competition.template.frqTest.calcScore(entry.frqResponses[i].key);
                     }
+                    entry.frqScore = (short)score;
                 }
+
+                /*
+                FRQTest frqTest = new FRQTest(true, data.get(1).getAsString(), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
+                        oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE,
+                        oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET);
+                frqTest.dryRunMode = false;*/
+
+                oldFRQ.dryRunMode = false;
+                competition.setTemplate(competition.published, competition.template.mcTest, competition.template.frqTest,
+                        competition.template.name, competition.template.description, competition.template.cid, competition.template.showScoreboard);
+
+                /*try {
+                    competition.update((Teacher) user, true, competition.isPublic, competition.alternateExists,
+                            competition.numNonAlts, competition.template.name, competition.template.description,
+                            competition.template.mcTest, frqTest, competition.getJudges(), competition.template.showScoreboard);
+                    competition.template.updateScoreboard();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }*/
+
+                broadcast("{\"action\":\"reload\"}");
             }
         }
     }

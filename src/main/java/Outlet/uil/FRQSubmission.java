@@ -10,6 +10,8 @@ public class FRQSubmission {
     public String input;
     public String output;
 
+    public String inputFname;
+
     enum Result {
         COMPILETIME_ERROR,
         RUNTIME_ERROR,
@@ -31,16 +33,15 @@ public class FRQSubmission {
     long submittedTime;  // Time in milliseconds when it was submitted
 
     UILEntry entry;
-    boolean overrideShowOutput = false; // Whether we should overwrite the output of showOutput() with overriddenShowOutput.
-    boolean overriddenShowOutput = true;    // This is used in case the teacher changes the judgement but it was initially wrong.
 
-    public FRQSubmission(short problemNumber, Result result, String input, String output, long submittedTime, boolean graded) {
+    public FRQSubmission(short problemNumber, Result result, String inputFname, String input, String output, long submittedTime, boolean graded) {
         this.problemNumber = problemNumber;
         this.result = result;
         this.input = input;
         this.output = output;
         this.submittedTime = submittedTime;
         this.graded = graded;
+        this.inputFname = inputFname;
     }
 
     public boolean takePenalty() {
@@ -53,9 +54,8 @@ public class FRQSubmission {
     }
 
     public boolean showOutput() {
-        if(overrideShowOutput) return overriddenShowOutput;
-        if(result == Result.INCORRECT || result == Result.CORRECT || result == Result.PACKAGE_ERROR || result == Result.FORMAT_ERROR) return true;
-        return false;
+        if(result == Result.EXCEEDED_TIME_LIMIT || result == Result.SERVER_ERROR) return false;
+        return true;
     }
 
     public String getResultString() {
@@ -117,9 +117,10 @@ public class FRQSubmission {
                 String judgementI = submissionJson.get(2).getAsString();
                 Long submittedTime = submissionJson.get(3).getAsLong();
                 boolean graded = submissionJson.get(4).getAsBoolean();
+                String inputFname = submissionJson.get(5).getAsString();
 
                 Result judgement = Result.valueOf(judgementI);
-                FRQSubmission submission = new FRQSubmission(i, judgement, input, output, submittedTime, graded);    // Problem indices begin at 1
+                FRQSubmission submission = new FRQSubmission(i, judgement, inputFname, input, output, submittedTime, graded);    // Problem indices begin at 1
                 submission.entry = entry;
                 submissions.add(submission);
             }
@@ -143,6 +144,7 @@ public class FRQSubmission {
                 submissionJson.add(submission.result.name());
                 submissionJson.add(submission.submittedTime);
                 submissionJson.add(submission.graded);
+                submissionJson.add(submission.inputFname);
 
                 submissionsJson.add(submissionJson);
             }

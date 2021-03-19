@@ -140,7 +140,8 @@ var config = {
         numTeams: "numTeams",
         numUsers: "numUsers",
         playBell: "playBell",
-        downloadScoreboard: "downloadScoreboard"
+        downloadScoreboard: "downloadScoreboard",
+        frqSubmissions: "frqSubmissions"
     },
     CLASSES: {
         columns: "column",
@@ -173,8 +174,7 @@ var config = {
             template.innerHTML = response["html"];
             dom.frqProblems.replaceWith(template.content.firstChild);
             dom.cached.frqProblems = template.content.firstChild;
-        },
-        "reScoreMC": function (response) {
+        }, "reScoreMC": function (response) {
             // TODO: Write this
         }, "nc": function (response) {
             var clarification_list = dom.clarificationColumn.querySelector(".clarification_group");
@@ -199,6 +199,7 @@ var config = {
                 response["id"] + ")'>Send</button>";
             clarification.appendChild(clarificationAnswer);
             clarification_list.insertBefore(clarification, clarification_list.firstChild);
+            dom.playBell.play();
         }, "ac": function (response) {
             var clarification_list = dom.clarificationColumn.querySelector(".clarification_group");
             if (clarification_list.innerHTML == "There are no clarifications.") {
@@ -251,7 +252,7 @@ var config = {
             var handsOnFragment = document.createDocumentFragment(); // A collection of table rows for the hands-on table
             dom.teamList.innerHTML = "";
             // First, add in the table headers
-            var headers = "<th>Name</th>";
+            var headers = "<th>Team</th>";
             if (pageState.mcExists)
                 headers += "<th class='right'>Written</th>";
             if (pageState.frqExists)
@@ -319,8 +320,8 @@ var config = {
             }
             if (pageState.mcExists) {
                 writtenTestScoreboard.sort(function (s1, s2) {
-                    var s1IsUndefined = typeof s1.mcScore == "undefined";
-                    var s2IsUndefined = typeof s2.mcScore == "undefined";
+                    var s1IsUndefined = s1.mcScore == null; //typeof s1.mcScore == "undefined";
+                    var s2IsUndefined = s2.mcScore == null; //typeof s2.mcScore == "undefined";
                     if (s1IsUndefined && s2IsUndefined)
                         return 0;
                     else if (s1IsUndefined && !s2IsUndefined)
@@ -468,39 +469,7 @@ var config = {
                 hideSignup();
                 closeAddExistingTeam();
                 return;
-            } /* else {
-                let team: Team = new Team(response);
-                if(pageState.isCreator) team.code = response.code;
-
-                dom.teamList.appendChild(team.dom.tr);
-
-                let selectStudentFragment = document.createDocumentFragment();
-                for (let student of response.students.nonAlts) {
-                    let stuTeam: { team: Team, isAlt: boolean } = {team: team, isAlt: false};   //  This has to be an object so that the selectStudent method can modify it
-                    let tr = document.createElement("tr");
-                    tr.onclick = function () {
-                        Team.selectStudent(student, stuTeam)
-                    };
-                    tr.innerHTML = "<td>" + student[0] + "</td>";
-                    selectStudentFragment.appendChild(tr);
-                }
-
-                if (pageState.alternateExists && response.students.alt) {
-                    let stuTeam: { team: Team, isAlt: boolean } = {team: team, isAlt: true};   //  This has to be an object so that the selectStudent method can modify it
-                    let tr = document.createElement("tr");
-                    tr.onclick = function () {
-                        Team.selectStudent(response.students.alt, stuTeam)
-                    };
-                    tr.innerHTML = "<td>" + response.students.alt[0] + "</td>";
-                    selectStudentFragment.appendChild(tr);
-                }
-                dom.selectStudentList.appendChild(selectStudentFragment);
-
-                hideSignup();
-                closeAddExistingTeam();
-
-                Team.toggleTeam(team);
-            }*/
+            }
         },
         // Adds a new temporary student to the team
         "addTempStudent": function (response) {
@@ -521,6 +490,15 @@ var config = {
             }
             if (pageState.openTeam.tid == team.tid) {
                 Team.renderOpenTeam(team);
+            }
+        },
+        "updateFRQSubmission": function (response) {
+            if (submissionMap[response.submissionID]) {
+                var div = submissionMap[response.submissionID];
+                var element = div.querySelector(".outputCnt");
+                element.innerHTML = "<b>Output</b><span>" + htmldiff(response.newOutput, response.outputFile).
+                    replace(/\t/g, "<div class='tab'></div>") + "</span>";
+                addSuccessBox(document.getElementById("frqSubmissionEditorResponse"), "Regraded submission.");
             }
         }
     }
@@ -603,6 +581,7 @@ var dom = {
     get handsOnScoreboard() { return this.getHelper(config.IDs.handsOnScoreboard); },
     get handsOnScoreboardTable() { return this.getHelper(config.IDs.handsOnScoreboardTable); },
     get playBell() { return this.getHelper(config.IDs.playBell); },
+    get frqSubmissions() { return this.getHelper(config.IDs.frqSubmissions); },
     classes: {
         cached: {},
         getHelper: function (className) {
@@ -745,7 +724,7 @@ var Student = /** @class */ (function () {
             this.dom.tr.appendChild(numIncorrectTD);
             var percentCorrectTD = document.createElement("td");
             if (this.mcScore)
-                percentCorrectTD.innerText = (this.mcNumCorrect / (this.mcNumCorrect + this.mcNumIncorrect)).toFixed(2);
+                percentCorrectTD.innerText = (100 * this.mcNumCorrect / (this.mcNumCorrect + this.mcNumIncorrect)).toFixed(2);
             this.dom.tr.appendChild(percentCorrectTD);
             var totalTD = document.createElement("td");
             if (this.mcScore)
@@ -937,8 +916,11 @@ var Team = /** @class */ (function () {
                 dom.selectSignedUpStudent.removeChild(studentDOM);
             }
         }
-        dom.teamList.removeChild(this.dom.tr);
-        dom.handsOnScoreboardTable.removeChild(this.dom.frqTR);
+        try {
+            dom.teamList.removeChild(this.dom.tr);
+            dom.handsOnScoreboardTable.removeChild(this.dom.frqTR);
+        }
+        catch (e) { }
         dom.teamCnt.style.display = "none";
         pageState.openTeam.dom.tr.classList.remove("selected");
         pageState.openTeam = null;
@@ -1224,11 +1206,22 @@ $(document).ready(function () {
             var savedMCAnswer = savedMC[questionNumberString];
             if (savedMCAnswer == null)
                 continue;
-            var tableCell = questionDOM.childNodes.item(savedMCAnswer.charCodeAt(0) - aCharCode + 1);
-            if (tableCell == null)
-                continue;
-            var div = tableCell.firstChild;
-            div.classList.add("mcSelected");
+            if (questionDOM.classList.contains("saqQuestion")) { // This is an saq question
+                var tableCell = questionDOM.lastChild;
+                if (tableCell == null)
+                    continue;
+                var input = tableCell.firstChild;
+                input.value = savedMCAnswer;
+            }
+            else { // This is an mc question
+                var tableCell = questionDOM.childNodes.item(savedMCAnswer.charCodeAt(0) - aCharCode + 1);
+                if (tableCell == null)
+                    continue;
+                var div = tableCell.firstChild;
+                if (div instanceof HTMLInputElement)
+                    return; // In this case it is an saq question
+                div.classList.add("mcSelected");
+            }
         }
         choices = savedMC;
         /* let $dom = $(dom);
@@ -1444,13 +1437,13 @@ function createTeam() {
                             frqResponses.fill(0);
                             newTeam = new Team({
                                 tname: result["tname"], school: "", tid: result["tid"],
-                                students: { nonAlts: [], alt: null }, frq: 0, frqResponses: frqResponses, individual: true
+                                students: { nonAlts: [], alt: null }, frq: 0, frqResponses: frqResponses, individual: false
                             });
                         }
                         else {
                             newTeam = new Team({
                                 tname: result["tname"], school: "", tid: result["tid"],
-                                students: { nonAlts: [], alt: null }, frq: 0, individual: true
+                                students: { nonAlts: [], alt: null }, frq: 0, individual: false
                             });
                         }
                         newTeam.code = result["code"];
@@ -1521,6 +1514,7 @@ function setChoice(question, dom) {
 }
 function setSAQChoice(question, dom) {
     choices[question] = dom.value;
+    setCookie(cid + "MC", JSON.stringify(choices), 1);
 }
 function submitMC(callback) {
     var numQuestions = document.getElementsByClassName("mcQuestion").length;
@@ -1766,6 +1760,11 @@ function changeMCJudgement(element, uid, probNum) {
     xhr.send("cid=" + cid + "&action=changeMCJudgement&uid=" + uid + "&judgement=" + newJudgement + "&probNum=" + probNum);
     // document.getElementById("showFRQSubmission"+submissionId).innerText = result_cnt_changeJudgement.options[result_cnt_changeJudgement.selectedIndex].text;
 }
+function hideFRQSubmission() {
+    showingFRQSubmission.style.display = "none";
+    // showingFRQSubmissionTR.classList.remove("selected");
+    dom.frqSubmissions.style.display = "block";
+}
 /**
  * Takes in the submission index (submissionId) of the submission on the server. Contacts the server, retrieves the
  * submission information, and displays it.
@@ -1773,7 +1772,7 @@ function changeMCJudgement(element, uid, probNum) {
  */
 var submissionMap = {};
 var showingFRQSubmission = null;
-var showingFRQSubmissionTR = null; // The table row element they clicked on to show this frq submission
+// let showingFRQSubmissionTR:HTMLTableRowElement = null;  // The table row element they clicked on to show this frq submission
 function showFRQSubmission(row, submissionId) {
     function add(element) {
         if (!showingFRQSubmission) {
@@ -1788,10 +1787,11 @@ function showFRQSubmission(row, submissionId) {
             }
         }
         showingFRQSubmission = element;
-        if (showingFRQSubmissionTR)
-            showingFRQSubmissionTR.classList.remove("selected");
+        dom.frqSubmissions.style.display = "none";
+        element.style.display = "block";
+        /*if(showingFRQSubmissionTR) showingFRQSubmissionTR.classList.remove("selected");
         showingFRQSubmissionTR = row;
-        showingFRQSubmissionTR.classList.add("selected");
+        showingFRQSubmissionTR.classList.add("selected");*/
     }
     if (submissionMap[submissionId] != null) {
         add(submissionMap[submissionId]);
@@ -1808,6 +1808,7 @@ function showFRQSubmission(row, submissionId) {
                 var graded = response["graded"];
                 var div = document.createElement("div");
                 div.classList.add("frqSubmissionEditor");
+                div.innerHTML = "<img src='/res/close.svg' onclick='hideFRQSubmission()' class='hideFRQSubmission'>";
                 var probName_cnt = document.createElement("div");
                 probName_cnt.innerHTML = "<b>Problem</b><h2>" + name_1 + "</h2>";
                 probName_cnt.classList.add("half");
@@ -1825,7 +1826,15 @@ function showFRQSubmission(row, submissionId) {
                     frqIsGraded.innerHTML = "<button class='chngButton' onclick='publishGradedFRQ(this, " + submissionId + ")'>Send Graded</button>";
                 }
                 div.appendChild(frqIsGraded);
+                var regradeButton = document.createElement("button");
+                regradeButton.classList.add("chngButton");
+                regradeButton.classList.add("secButton");
+                regradeButton.innerText = "Regrade";
+                regradeButton.onclick = function () { regradeFRQ(submissionId); };
+                div.appendChild(regradeButton);
                 var result_cnt = document.createElement("p");
+                result_cnt.id = "frqSubmissionEditorResponse";
+                addSuccessBox(result_cnt, "Running...");
                 result_cnt.classList.add("resultCnt");
                 result_cnt.innerHTML = "<b>Judgement:</b>";
                 div.appendChild(result_cnt);
@@ -1862,16 +1871,33 @@ function showFRQSubmission(row, submissionId) {
                 if (input) {
                     var input_cnt = document.createElement("div");
                     input_cnt.classList.add("inputCnt");
-                    input_cnt.innerHTML = "<b>Input</b><span>" + input.replace(/\r\n/g, "<br>")
-                        .replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>") + "</span>";
                     div.appendChild(input_cnt);
+                    var b_input = document.createElement("b");
+                    b_input.innerText = "Input";
+                    input_cnt.appendChild(b_input);
+                    var span_input_1 = document.createElement("span");
+                    span_input_1.style.display = "none";
+                    span_input_1.innerHTML = input.replace(/\r\n/g, "<br>").replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>");
+                    var viewingInput_1 = false;
+                    b_input.onclick = function () {
+                        if (viewingInput_1)
+                            span_input_1.style.display = "none";
+                        else
+                            span_input_1.style.display = "block";
+                        viewingInput_1 = !viewingInput_1;
+                    };
+                    input_cnt.appendChild(span_input_1);
                     var output = response["output"];
                     var outputFile = response["outputFile"];
                     if (output) {
-                        var outputDiff = htmldiff(output, outputFile);
+                        var outputString = "";
+                        if (result == "Correct" || result == "Incorrect")
+                            outputString = htmldiff(output, outputFile);
+                        else
+                            outputString = output;
                         var output_cnt = document.createElement("div");
                         output_cnt.classList.add("outputCnt");
-                        output_cnt.innerHTML = "<b>Output</b><span>" + outputDiff.replace(/\t/g, "<div class='tab'></div>") + "</span>";
+                        output_cnt.innerHTML = "<b>Output</b><span>" + outputString.replace(/\t/g, "<div class='tab'></div>") + "</span>";
                         div.appendChild(output_cnt);
                         // .replace(/\r\n/g, "<br>")
                         //                             .replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>")
@@ -1890,6 +1916,10 @@ function showFRQSubmission(row, submissionId) {
 function publishGradedFRQ(htmlElement, submissionID) {
     htmlElement.parentNode.innerHTML = "Graded Sent";
     ws.send("[\"publishGradedFRQ\"," + submissionID + "]");
+}
+// Tell the server to rerun the frq
+function regradeFRQ(submissionID) {
+    ws.send("[\"regradeFRQ\"," + submissionID + "]");
 }
 /**
  * Takes in the submission index (submissionId) of the submission on the server. Contacts the server, retrieves the
@@ -1933,12 +1963,14 @@ function showMCSubmission(uid) {
                 div.appendChild(teamName_cnt);
                 var scoring_cnt = document.createElement("div");
                 scoring_cnt.classList.add("mcScoring_cnt");
-                scoring_cnt.innerHTML = "<b>Score:</b>" + scoringReport[0] + "<br><b>Correct:</b>" + scoringReport[1] + "" +
-                    "<br><b>Incorrect:</b>" + scoringReport[3] + "<br><b>Skipped:</b>" + scoringReport[2];
+                scoring_cnt.innerHTML = "<b>Score: </b>" + scoringReport[0] + "<br><b>Percentage Correct: </b>" +
+                    (100 * scoringReport[1] / (scoringReport[3] + scoringReport[1])).toFixed(2) +
+                    "<br><b>Correct: </b>" + scoringReport[1] + "" +
+                    "<br><b>Incorrect: </b>" + scoringReport[3] + "<br><b>Skipped: </b>" + scoringReport[2];
                 div.appendChild(scoring_cnt);
                 var result_cnt = document.createElement("p");
                 result_cnt.classList.add("resultCnt");
-                result_cnt.innerHTML = "<b>Judgement:</b>";
+                result_cnt.innerHTML = "<b>Answer Sheet:</b>";
                 div.appendChild(result_cnt);
                 var test = response["answers"];
                 var submission_cnt = document.createElement("div");
@@ -2103,7 +2135,7 @@ function downloadScoreboard() {
             if (student.mcScore) {
                 mcCorrect = "" + student.mcNumCorrect;
                 mcIncorrect = "" + student.mcNumIncorrect;
-                mcPercentCorrect = "" + (student.mcNumCorrect / (student.mcNumIncorrect + student.mcNumCorrect)).toFixed(2);
+                mcPercentCorrect = "" + (100 * student.mcNumCorrect / (student.mcNumIncorrect + student.mcNumCorrect)).toFixed(2);
                 mcScoreString = "" + student.mcScore;
             }
             var studentData = [student.name.replace(/[^a-zA-Z0-9 ]/g, ''),

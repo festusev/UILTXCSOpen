@@ -722,35 +722,7 @@ class Competition {
         };
         xhr.open('POST', "/console/competitions", true);
         xhr.send(formData);
-        return false;
-    }
-
-    unPublishCompetition(callback:Function) {
-        try {this.dom.comp_edit.removeChild(document.getElementById("ERROR"));}
-        catch (e){}
-
-        this.published = false;
-
-        let thisComp:Competition = this;
-        let formData = new FormData();
-        formData.append("action", "unPublishCompetition");
-        formData.append("cid", this.cid);
-        let xhr:XMLHttpRequest = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    let response = JSON.parse(xhr.responseText);
-                    if(response["success"] != null) {
-                        thisComp.dom.errorSuccessBox = addSuccessBox(thisComp.dom.comp_edit, response["success"], thisComp.dom.errorSuccessBox);
-                        callback();
-                    } else {
-                        thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error, thisComp.dom.errorSuccessBox);
-                    }
-                }
-            }
-        };
-        xhr.open('POST', "/console/competitions", true);
-        xhr.send(formData);
+        thisComp.dom.errorSuccessBox = addSuccessBox(thisComp.dom.comp_edit, "Saving competition...", thisComp.dom.errorSuccessBox);
         return false;
     }
 
@@ -1175,8 +1147,9 @@ list_handsOn_changeproblems.appendChild(li);
             written_open.appendChild(input_written_open);
             // thisComp.dom.writtenOpen = input_written_open;
             let curDate:Date = new Date();
-            let defaultDate:Date = curDate;
+            let defaultDate:Date;// = curDate;
             if(thisComp.written.opens) defaultDate = new Date(thisComp.written.opens);
+            else defaultDate = new Date(curDate.getFullYear(), curDate.getMonth(), curDate.getDate()+7);
             let minDate = curDate;
             if(defaultDate < curDate) minDate = defaultDate;
             thisComp.dom.writtenOpen = flatpickr(input_written_open, {
@@ -1186,7 +1159,7 @@ list_handsOn_changeproblems.appendChild(li);
                 dateFormat: "m/d/Y H:i:S",
                 defaultDate: defaultDate,
                 minDate: minDate,
-                maxDate: new Date(curDate.getFullYear() + 10, curDate.getMonth(), curDate.getDay())
+                maxDate: new Date(curDate.getFullYear() + 10, curDate.getMonth(), curDate.getDate())
             }).input;
             /* CLOSE */
 
@@ -1450,8 +1423,9 @@ list_handsOn_changeproblems.appendChild(li);
             // thisComp.dom.handsOnStart = input_handsOn_start;
 
             let curDate:Date = new Date();
-            let defaultDate:Date = curDate;
+            let defaultDate:Date;// = curDate;
             if(thisComp.handsOn.opens) defaultDate = new Date(thisComp.handsOn.opens);
+            else defaultDate = new Date(curDate.getFullYear(), curDate.getMonth(), curDate.getDate()+7);
             let minDate = curDate;
             if(defaultDate < curDate) minDate = defaultDate;
             thisComp.dom.handsOnStart = flatpickr(input_handsOn_start, {
@@ -1461,7 +1435,7 @@ list_handsOn_changeproblems.appendChild(li);
                 dateFormat: "m/d/Y H:i:S",
                 defaultDate: defaultDate,
                 minDate: minDate,
-                maxDate: new Date(curDate.getFullYear() + 10, curDate.getMonth(), curDate.getDay())
+                maxDate: new Date(curDate.getFullYear() + 10, curDate.getMonth(), curDate.getDate())
             }).input;
             /* CLOSE */
 

@@ -157,35 +157,32 @@ public class UILEntry {
         uids.remove(u.uid);
         if(altUID == u.uid) altUID = -1;
 
-        int status;
+        int status = 0;
 
         u.cids.remove(competition.template.cid);
 
-        if(mc.containsKey(u.uid)) {
-            mc.remove(u.uid);
-            status = update();
+
+        if(individual && uids.size() == 0) {    // This is an individual team and the team is empty, so delete this team
+            competition.template.deleteEntry(this);
         } else {
-            status = updateUIDS();
-        }
-
-        ArrayList<ClassSocket> list = ClassSocket.classes.get(tid);
-        if(list != null) {
-            for (ClassSocket socket : list) {
-                try {
-                    if(u.temp && socket.user.uid == u.uid) {    // They are a temporary user, and this is their socket
-                        socket.send("[\"action\":\"competitionDeleted\"]");
-                    } else {
-                        JsonObject obj = new JsonObject();
-                        obj.addProperty("action", "updateTeam");
-                        obj.addProperty("html", competition.template.getTeamMembers(StudentMap.getByUID(socket.user.uid), this));
-
-                        socket.send(gson.toJson(obj));
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            if (mc.containsKey(u.uid)) {
+                mc.remove(u.uid);
+                status = update();
+            } else {
+                status = updateUIDS();
             }
         }
+
+        CompetitionSocket socket = CompetitionSocket.connected.get(u.uid);
+        if(u.temp && socket.user.uid == u.uid) {    // They are a temporary user, and this is their socket
+            try {
+                socket.send("[\"action\":\"competitionDeleted\"]");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        competition.template.updateScoreboard();
 
         if(u.temp) {    // They are a temporary user, so delete their account
             Connection conn = getConnection();
@@ -405,9 +402,12 @@ public class UILEntry {
         }
         problem.key = (short) numTries;
 
-        frqScore = (short)(frqScore - oldScore);
-        if(numTries > 0)    // It has been solved
-            frqScore = (short)(frqScore + competition.template.frqTest.calcScore(problem.key));
+        // in this case this problem impacts the current frq score
+        if(probNum == 0 && competition.template.frqTest.dryRunMode || probNum > 0 && !competition.template.frqTest.dryRunMode) {
+            frqScore = (short) (frqScore - oldScore);
+            if (numTries > 0)    // It has been solved
+                frqScore = (short) (frqScore + competition.template.frqTest.calcScore(problem.key));
+        }
     }
 
     public boolean finishedMC(short uid) {

@@ -403,9 +403,6 @@ public class Competition {
                                 submission.result = FRQSubmission.Result.SERVER_ERROR;
                                 break;*/
                         }
-                        //if(oldTakePenalty != submission.takePenalty() || oldTakeNoPenalty != submission.noPenalty()) {    // The result has changed
-                        submission.overrideShowOutput = true;   // Don't let them circumvent the show output rule
-                        submission.overriddenShowOutput = oldShowOutput;
 
                         submission.entry.recalculateFRQScore(submission.problemNumber);
                             /*Pair<Short, ArrayList<FRQSubmission>> problem = submission.entry.frqResponses[submission.problemNumber - 1];
@@ -618,7 +615,7 @@ public class Competition {
                     frqSubmissions.add(submission);
 
                     if(template.frqTest.AUTO_GRADE && submission.graded) {
-                        if (submission.result == FRQSubmission.Result.CORRECT) {
+                        /*if (submission.result == FRQSubmission.Result.CORRECT) {
                             writer.write("{\"status\":\"success\",\"scored\":\"You gained points!\"}");
                         } else if (submission.result == FRQSubmission.Result.COMPILETIME_ERROR) {
                             writer.write("{\"status\":\"error\",\"error\":\"Compile-time error.\"}");
@@ -634,15 +631,15 @@ public class Competition {
                             writer.write("{\"status\":\"error\",\"error\":\"Empty file.\"}");
                         } else if (submission.result == FRQSubmission.Result.UNCLEAR_FILE_TYPE) {
                             writer.write("{\"status\":\"error\",\"error\":\"Unclear file type. Files must end in .java, .py, or .cpp.\"}");
-                        }
+                        }*/
 
                         template.updateScoreboard();
 
                         // Update all of their team member's frqProblems
                         temp.socketSendFRQProblems();
-                    } else {    // send a placeholder message saying that the teacher is grading it
-                        writer.write("{\"status\":\"success\",\"scored\":\"Your submission is being graded.\"}");
-                    }
+                    } //else {    // send a placeholder message saying that the teacher is grading it
+
+                    writer.write("{\"status\":\"success\",\"scored\":\""+fname+" has been submitted.\"}");
 
                     // Send it to the teacher and the judges
                     CompetitionSocket socket = CompetitionSocket.connected.get(teacher.uid);

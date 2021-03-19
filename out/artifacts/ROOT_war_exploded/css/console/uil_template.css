@@ -134,7 +134,6 @@
 /* The container <div> - needed to position the dropdown content */
 #sectionControls {
     position: relative;
-    padding-top: 0.7rem !important;
 }
 
 /* Dropdown Content (Hidden by Default) */
@@ -474,6 +473,7 @@
 #frqColumn.frqSubmissionList {
     box-shadow:none;
     background-color: unset;
+    display: block;
 }
 #frqColumn .head-row {
     width:100%;
@@ -576,6 +576,13 @@
 }
 #frqProblems{
     flex-grow:1;
+    width:50%;
+    box-sizing: border-box;
+    vertical-align: top;
+    background-color: white;
+    box-shadow: var(--shadow);
+    border-radius: 5px;
+    padding: 2rem;
 }
 #challenge-frq-row h1, #challenge-frq-row .subtitle{
     text-align:left;
@@ -590,11 +597,21 @@
     font-size:2rem;
     text-align:left;
 }
-.running-frq #frqProblems{
-    padding-left:1em;
-    width:50%;
+#frqResponseFeed {
+    height: 20rem;
+    max-height: 50%;
+    overflow: auto;
+}
+#frqResponseFeed li span {
+    width: 50%;
     box-sizing: border-box;
-    vertical-align: top;
+    display: inline-block;
+}
+#frqResponseFeed .red {
+    color: var(--warn-col);
+}
+#frqResponseFeed .green {
+    color: var(--success-dark);
 }
 .probSum{
     background-color:var(--sec-col);
@@ -714,9 +731,9 @@
     cursor: pointer;
 }
 #frqSubmissions {
-    display: inline-block;
+    display: block;
     vertical-align: top;
-    width: 50rem;
+    width: 100%;
     box-sizing: border-box;
     background-color: white;
     box-shadow: var(--shadow);
@@ -741,17 +758,22 @@
     text-align:right;
 }
 .frqSubmissionEditor {
-    flex-grow: 1;
     overflow: auto;
     display: inline-block;
     background-color: white;
     box-shadow: var(--shadow);
     padding: 3rem 4rem;
-    margin-left: 1rem;
-    max-height: 88vh;
-    width: 50%;
+    max-height: 75vh;
+    width: 100%;
     box-sizing: border-box;
     position: relative;
+}
+.hideFRQSubmission {
+    height: 2rem;
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    cursor: pointer;
 }
 .outputCnt {
     padding-bottom: 2rem;
@@ -775,6 +797,12 @@
 .frqSubmissionEditor .inputCnt b, .frqSubmissionEditor .outputCnt b{
     display: block;
     margin-bottom: 10px;
+}
+.inputCnt b {
+    cursor: pointer;
+}
+.inputCnt b:hover {
+    color: var(--sec-col);
 }
 .frqSubmissionEditor .inputCnt span, .frqSubmissionEditor .outputCnt span {
     word-wrap: break-word;

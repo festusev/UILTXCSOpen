@@ -406,7 +406,12 @@ a:focus{
 .chngButton:hover{
     background-color:var(--sec-dark);
 }
-
+.secButton {
+    background-color: var(--prim-middle);
+}
+.secButton:hover{
+    background-color: var(--prim-dark);
+}
 
 /***
 Everything to do with the copyright.
