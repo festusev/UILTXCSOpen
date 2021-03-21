@@ -12,6 +12,7 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static Outlet.Conn.getConnection;
@@ -584,9 +585,12 @@ public class Template {
     }
 
     public String getSmallFRQ(int i, FRQSubmission submission) {
+        String timeStamp = new SimpleDateFormat("MM/dd HH:mm").format(submission.submittedTime);
         return "<tr onclick='showFRQSubmission(this,"+i+")'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber].name) +
-                "</td><td>" + StringEscapeUtils.escapeHtml4(submission.entry.tname) + "</td><td id='showFRQSubmission"+i+"'>" + submission.getResultString() +
-                "</td></tr>";
+                "</td><td>" + StringEscapeUtils.escapeHtml4(submission.entry.tname) + "</td><td class='"+
+                (submission.graded?"graded":"")+"' id='showFRQSubmissionGraded"+i+"'>"+
+                submission.graded+"</td><td id='showFRQSubmission"+i+"'>" + submission.getResultString() +
+                "</td><td>"+timeStamp+"</td></tr>";
     }
 
     public String getFRQHTML(User u, UserStatus userStatus, CompetitionStatus competitionStatus) {
@@ -601,11 +605,11 @@ public class Template {
                         "<h1>Hands-On</h1>" +
                         "</div>" +
                         "<div class='row'><audio src='/blip.mp3' preload='auto' controls='none' style='display:none' id='playBell'></audio>" +
-                        "<p>Most recent problems are first.<br>Test Packet: <a class='link' target='_blank' href='" +
+                        "<p>Test Packet: <a class='link' target='_blank' href='" +
                         StringEscapeUtils.escapeHtml4(studentPacket) + "'>link</a></p>" +
                         "<p><b>Submissions:</b></p>";
 
-                html += "<table id='frqSubmissionsTable'><tr id='frqSubmissionsTr'><th>Problem</th><th>Team</th><th>Result</th></tr>";
+                html += "<table id='frqSubmissionsTable'><tr id='frqSubmissionsTr'><th>Problem</th><th>Team</th><th>Graded</th><th>Result</th><th>Timestamp</th></tr>";
 
                 String rows = "";
                 for(int i=competition.frqSubmissions.size()-1; i>=0; i--) {

@@ -417,9 +417,9 @@ var config = {
             Team.toggleTeam(newToggleTeam, false);
         }, "scoreboardOpenTeamFeedback": function (response) {
             if (response.isError)
-                addErrorBox(dom.openTeamFeedbackCnt, response.msg);
+                addErrorBox(dom.openTeamFeedbackCnt, response.msg, true);
             else
-                addSuccessBox(dom.openTeamFeedbackCnt, response.msg);
+                addSuccessBox(dom.openTeamFeedbackCnt, response.msg, true);
         },
         // Add in the results for the student search. The student objects are in the form [name, uid, mcScore]
         "ssearch": function (response) {
@@ -458,7 +458,7 @@ var config = {
             if (!pageState.isCreator)
                 return;
             if (response.error) {
-                addErrorBox(dom.errorBoxERROR, response.error);
+                addErrorBox(dom.errorBoxERROR, response.error, true);
                 return;
             }
             else if (response.reload) {
@@ -473,7 +473,7 @@ var config = {
         },
         // Adds a new temporary student to the team
         "addTempStudent": function (response) {
-            addSuccessBox(dom.openTeamFeedbackCnt, "Team saved successfully.");
+            addSuccessBox(dom.openTeamFeedbackCnt, "Team saved successfully.", true);
             var team = teams["" + response.tid]; // The team they are in
             var student = new Student([response.name, response.uid], team);
             student.render();
@@ -503,7 +503,7 @@ var config = {
                 else
                     output = response.newOutput;
                 element.innerHTML = "<b>Output</b><pre>" + output + "</pre>";
-                addSuccessBox(document.getElementById("frqSubmissionEditorResponse"), "Regraded submission.");
+                addSuccessBox(document.getElementById("frqSubmissionEditorResponse"), "Regraded submission.", true);
             }
         }
     }
@@ -910,7 +910,7 @@ var Team = /** @class */ (function () {
         // pageState.saveTeamList.length = 0;
         ws.send(JSON.stringify(data));
         pageState.openTeam.editedSinceLastSave = false;
-        addSuccessBox(dom.openTeamFeedbackCnt, "Saving team...");
+        addSuccessBox(dom.openTeamFeedbackCnt, "Saving team...", false);
     };
     Team.prototype.delete = function () {
         teams["" + this.tid] = undefined;
@@ -1420,7 +1420,7 @@ function toggleCreateTeam(event) {
     event.stopPropagation();
 }
 function createTeam() {
-    addSuccessBox(dom.errorBoxERROR, "Creating team...");
+    addSuccessBox(dom.errorBoxERROR, "Creating team...", false);
     var data;
     if (pageState.addingExistingTeam) {
         var data_1 = ["addExistingTeam", dom.teamCode.value, pageState.existingGlobalTeacher.teacher.uid, pageState.existingTeam.tid];
@@ -1433,7 +1433,7 @@ function createTeam() {
             data: { "action": "createteam", "cid": cid, "tname": $("#teamCode").val() },
             success: function (result) {
                 if (result == null || result["status"] === "error")
-                    addErrorBox(dom.errorBoxERROR, result["error"]);
+                    addErrorBox(dom.errorBoxERROR, result["error"], true);
                 if (result["status"] === "success") {
                     if (pageState.isCreator) { // If they are the creator, add in the new team
                         var newTeam = void 0;
@@ -1603,48 +1603,64 @@ function beginFRQ() {
     delete dom.cached[config.IDs.frqProblems];
     return false;
 }
-function addScoredBox(box, success) {
-    var errorBox = document.getElementById(box.id + "ERROR");
-    if (!errorBox) {
-        box.insertAdjacentHTML('afterbegin', "<div class='success' id='" + box.id + "ERROR'>" + success + "</div>");
-    }
-    else {
-        errorBox.innerHTML = success;
-        errorBox.className = "success";
-    }
-}
 function deleteErrorSuccessBox(box) {
     var errorBox = document.getElementById(box.id + "ERROR");
     if (errorBox)
         box.removeChild(errorBox);
 }
-function addErrorBox(box, error) {
+function addErrorBox(box, error, timeout) {
     var errorBox = document.getElementById(box.id + "ERROR");
     if (!errorBox) {
-        box.insertAdjacentHTML('afterbegin', "<div class='error' id='" + box.id + "ERROR'>" + error + "</div>");
+        errorBox = document.createElement("div");
+        errorBox.classList.add("error");
+        errorBox.id = box.id + "ERROR";
+        errorBox.innerText = error;
+        box.insertAdjacentElement("afterbegin", errorBox);
     }
     else {
         errorBox.classList.remove("success");
         errorBox.classList.add("error");
         errorBox.innerHTML = "" + error;
     }
+    if (timeout) {
+        setTimeout(function () {
+            try {
+                box.removeChild(errorBox);
+            }
+            catch (e) {
+            }
+        }, 5000);
+    }
 }
-function addSuccessBox(box, success) {
+function addSuccessBox(box, success, timeout) {
     var errorBox = document.getElementById(box.id + "ERROR");
     if (!errorBox) {
-        box.insertAdjacentHTML('afterbegin', "<div class='success' id='" + box.id + "ERROR'>" + success + "</div>");
+        errorBox = document.createElement("div");
+        errorBox.classList.add("success");
+        errorBox.id = box.id + "ERROR";
+        errorBox.innerText = success;
+        box.insertAdjacentElement("afterbegin", errorBox);
     }
     else {
         errorBox.classList.remove("error");
         errorBox.classList.add("success");
         errorBox.innerHTML = "" + success;
     }
+    if (timeout) {
+        setTimeout(function () {
+            try {
+                box.removeChild(errorBox);
+            }
+            catch (e) {
+            }
+        }, 5000);
+    }
 }
 var box = null;
 function submitFRQ() {
     if (!box)
         box = document.getElementById("submit");
-    addScoredBox(box, "Scoring...");
+    addSuccessBox(box, "Scoring...", false);
     var probSelector = document.getElementById("frqProblem");
     var probId = probSelector.options[probSelector.selectedIndex].value;
     var xhr = new XMLHttpRequest();
@@ -1653,16 +1669,16 @@ function submitFRQ() {
             if (xhr.status == 200) { // If an error occurred
                 var response = JSON.parse(xhr.responseText);
                 if (response["status"] == "success") {
-                    addScoredBox(box, "SUCCESS: " + response["scored"]);
+                    addSuccessBox(box, "SUCCESS: " + response["scored"], true);
                     $("frqProblem" + probId).hide();
                 }
                 else {
-                    addErrorBox(box, response["error"]);
+                    addErrorBox(box, response["error"], true);
                 }
                 // grabFRQProblems();
             }
             else { // A server error occurred. Show an error message
-                addErrorBox(box, "Whoops! A server error occurred. Contact an admin if the problem continues.");
+                addErrorBox(box, "Whoops! A server error occurred. Contact an admin if the problem continues.", true);
             }
         }
     };
@@ -1734,7 +1750,7 @@ function leaveTeam() {
 function codeEntered(code) {
     if (code.value.length == 6) { // If the code is fully entered
         // First, put a "verifying" box
-        addSuccessBox(dom.errorBoxERROR, "Joining...");
+        addSuccessBox(dom.errorBoxERROR, "Joining...", false);
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
@@ -1745,11 +1761,11 @@ function codeEntered(code) {
                         window.location.reload();
                     }
                     else {
-                        addErrorBox(dom.errorBoxERROR, response["error"]);
+                        addErrorBox(dom.errorBoxERROR, response["error"], true);
                     }
                 }
                 else { // A server error occurred. Show an error message
-                    addErrorBox(dom.errorBoxERROR, "Whoops! A server error occurred. Contact an admin if the problem continues.");
+                    addErrorBox(dom.errorBoxERROR, "Whoops! A server error occurred. Contact an admin if the problem continues.", true);
                 }
             }
         };
@@ -1823,15 +1839,24 @@ function showFRQSubmission(row, submissionId) {
                 teamName_cnt.innerHTML = "<b>Team</b><h2>" + team + "</h2>";
                 teamName_cnt.classList.add("half");
                 div.appendChild(teamName_cnt);
-                var frqIsGraded = document.createElement("div");
-                frqIsGraded.classList.add("frqIsGraded");
+                var frqIsGraded_1 = document.createElement("div");
+                frqIsGraded_1.classList.add("frqIsGraded");
                 if (graded) {
-                    frqIsGraded.innerText = "Graded Sent";
+                    frqIsGraded_1.innerText = "Graded Sent";
                 }
                 else {
-                    frqIsGraded.innerHTML = "<button class='chngButton' onclick='publishGradedFRQ(this, " + submissionId + ")'>Send Graded</button>";
+                    var frqIsGradedButton = document.createElement("button");
+                    frqIsGradedButton.classList.add("chngButton");
+                    frqIsGradedButton.onclick = function () {
+                        frqIsGraded_1.innerHTML = "Graded Sent";
+                        var graded = document.getElementById("showFRQSubmissionGraded" + submissionId);
+                        graded.innerText = "true";
+                        ws.send("[\"publishGradedFRQ\"," + submissionId + "]");
+                    };
+                    frqIsGradedButton.innerText = "Send Graded";
+                    frqIsGraded_1.appendChild(frqIsGradedButton);
                 }
-                div.appendChild(frqIsGraded);
+                div.appendChild(frqIsGraded_1);
                 var regradeButton = document.createElement("button");
                 regradeButton.classList.add("chngButton");
                 regradeButton.classList.add("secButton");
@@ -1840,7 +1865,7 @@ function showFRQSubmission(row, submissionId) {
                 div.appendChild(regradeButton);
                 var result_cnt = document.createElement("p");
                 result_cnt.id = "frqSubmissionEditorResponse";
-                addSuccessBox(result_cnt, "Running...");
+                addSuccessBox(result_cnt, "Running...", false);
                 result_cnt.classList.add("resultCnt");
                 result_cnt.innerHTML = "<b>Judgement:</b>";
                 div.appendChild(result_cnt);
@@ -1903,8 +1928,13 @@ function showFRQSubmission(row, submissionId) {
                             outputString = output;
                         var output_cnt = document.createElement("div");
                         output_cnt.classList.add("outputCnt");
-                        output_cnt.innerHTML = "<b>Output</b><pre>" + outputString + "</pre>";
+                        output_cnt.classList.add("frqHalf");
+                        output_cnt.innerHTML = "<b>Team</b><pre>" + outputString + "</pre>";
                         div.appendChild(output_cnt);
+                        var judge_cnt = document.createElement("div");
+                        judge_cnt.classList.add("frqHalf");
+                        judge_cnt.innerHTML = "<b>Judge</b><pre>" + outputFile + "</pre>";
+                        div.appendChild(judge_cnt);
                         // .replace(/\r\n/g, "<br>")
                         //                             .replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>")
                     }
@@ -1917,11 +1947,6 @@ function showFRQSubmission(row, submissionId) {
     xhr.open('POST', "/console/competitions", true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send("cid=" + cid + "&action=showFRQSubmission&id=" + submissionId);
-}
-// Updates an frq submission as graded
-function publishGradedFRQ(htmlElement, submissionID) {
-    htmlElement.parentNode.innerHTML = "Graded Sent";
-    ws.send("[\"publishGradedFRQ\"," + submissionID + "]");
 }
 // Tell the server to rerun the frq
 function regradeFRQ(submissionID) {
@@ -2081,7 +2106,7 @@ function createTempStudent() {
     var openTeam = pageState.openTeam;
     openTeam.save();
     var data = ["createTempStudent", dom.fnameTemp.value, dom.lnameTemp.value, dom.inputSchool.value, openTeam.tid, pageState.addingAlt];
-    addSuccessBox(dom.openTeamFeedbackCnt, "Saving team...");
+    addSuccessBox(dom.openTeamFeedbackCnt, "Saving team...", false);
     ws.send(JSON.stringify(data));
     Team.closeSelectStudent();
 }

@@ -575,7 +575,7 @@ var Competition = /** @class */ (function () {
                             problem.dom.input.value = "";
                             problem.dom.output.value = "";
                         }
-                        thisComp.dom.errorSuccessBox = addSuccessBox(thisComp.dom.comp_edit, response["success"], thisComp.dom.errorSuccessBox);
+                        thisComp.dom.errorSuccessBox = addSuccessBox(thisComp.dom.comp_edit, response["success"], true, thisComp.dom.errorSuccessBox);
                         if (thisComp.cid.length === 0 && response["cid"] != null)
                             thisComp.cid = response["cid"];
                         // thisComp.dom.viewCompetition.onclick = function(){window.location.href = "/console/competitions?cid="+thisComp.cid;};
@@ -590,20 +590,20 @@ var Competition = /** @class */ (function () {
                         }
                     }
                     else if (response["error"] != null) { // An error occurred
-                        thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, response["error"], thisComp.dom.errorSuccessBox);
+                        thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, response["error"], true, thisComp.dom.errorSuccessBox);
                     }
                     else {
-                        thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error, thisComp.dom.errorSuccessBox);
+                        thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error, true, thisComp.dom.errorSuccessBox);
                     }
                 }
                 else {
-                    thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error, thisComp.dom.errorSuccessBox);
+                    thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error, true, thisComp.dom.errorSuccessBox);
                 }
             }
         };
         xhr.open('POST', "/console/competitions", true);
         xhr.send(formData);
-        thisComp.dom.errorSuccessBox = addSuccessBox(thisComp.dom.comp_edit, "Saving competition...", thisComp.dom.errorSuccessBox);
+        thisComp.dom.errorSuccessBox = addSuccessBox(thisComp.dom.comp_edit, "Saving competition...", false, thisComp.dom.errorSuccessBox);
         return false;
     };
     Competition.prototype.publishCompetition = function (callback, errorCallback) {
@@ -626,7 +626,7 @@ var Competition = /** @class */ (function () {
                             problem.dom.input.value = "";
                             problem.dom.output.value = "";
                         }
-                        thisComp.dom.errorSuccessBox = addSuccessBox(thisComp.dom.comp_edit, response["success"], thisComp.dom.errorSuccessBox);
+                        thisComp.dom.errorSuccessBox = addSuccessBox(thisComp.dom.comp_edit, response["success"], true, thisComp.dom.errorSuccessBox);
                         if (thisComp.cid.length === 0 && response["cid"] != null)
                             thisComp.cid = response["cid"];
                         // thisComp.dom.comp_head.onclick = function(event){event.stopPropagation();window.location.href = "/console/competitions?cid="+thisComp.cid;};
@@ -641,18 +641,18 @@ var Competition = /** @class */ (function () {
                     else if (response["error"] != null) { // An error occurred
                         if (errorCallback)
                             errorCallback();
-                        thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, response["error"], thisComp.dom.errorSuccessBox);
+                        thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, response["error"], true, thisComp.dom.errorSuccessBox);
                     }
                     else {
                         if (errorCallback)
                             errorCallback();
-                        thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error, thisComp.dom.errorSuccessBox);
+                        thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error, true, thisComp.dom.errorSuccessBox);
                     }
                 }
                 else {
                     if (errorCallback)
                         errorCallback();
-                    thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error, thisComp.dom.errorSuccessBox);
+                    thisComp.dom.errorSuccessBox = addErrorBox(thisComp.dom.comp_edit, config.TEXT.server_error, true, thisComp.dom.errorSuccessBox);
                 }
             }
         };
@@ -1895,35 +1895,50 @@ function createNewCompetition() {
     toggleEditCompetition(competition);
     showClassComps(document.getElementById("showClassComps"));
 }
-function addErrorBox(parentBox, error, errorBox) {
+function addErrorBox(parentBox, error, timeout, errorBox) {
     if (!errorBox) {
         errorBox = document.createElement("div");
         errorBox.classList.add("error");
         errorBox.innerText = error;
         parentBox.insertAdjacentElement('afterbegin', errorBox);
-        return errorBox;
     }
     else {
         errorBox.style.display = "unset";
         errorBox.innerText = error;
         errorBox.className = "error";
-        return errorBox;
     }
+    if (timeout) {
+        setTimeout(function () {
+            try {
+                errorBox.style.display = "none";
+            }
+            catch (e) {
+            }
+        }, 5000);
+    }
+    return errorBox;
 }
-function addSuccessBox(parentBox, success, successBox) {
+function addSuccessBox(parentBox, success, timeout, successBox) {
     if (!successBox) {
         successBox = document.createElement("div");
         successBox.classList.add("success");
         successBox.innerText = success;
         parentBox.insertAdjacentElement('afterbegin', successBox);
-        return successBox;
     }
     else {
         successBox.style.display = "unset";
         successBox.innerText = success;
         successBox.className = "success";
-        return successBox;
     }
+    if (timeout) {
+        setTimeout(function () {
+            try {
+                successBox.style.display = "none";
+            }
+            catch (e) { }
+        }, 5000);
+    }
+    return successBox;
 }
 function inputMaxLength(element) {
     if (element.value.length > element.maxLength) {

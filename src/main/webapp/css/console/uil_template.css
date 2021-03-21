@@ -748,14 +748,23 @@
 #frqSubmissions table th{
     font-weight:bold;
 }
-#frqSubmissions tr{
+#frqSubmissions tr:not(#frqSubmissionsTr) {
     cursor: pointer;
+}
+#frqSubmissions tr:not(#frqSubmissionsTr):hover{
+    background-color: var(--light-gray);
 }
 #frqSubmissions tr.selected {
     background-color: lightgray;
 }
 #frqSubmissions table tr *:last-child {
     text-align:right;
+}
+#frqSubmissions td{
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width:0;
 }
 .frqSubmissionEditor {
     overflow: auto;
@@ -775,8 +784,22 @@
     top: 1rem;
     cursor: pointer;
 }
+
+.frqHalf {
+    width: calc(50% - 2rem);
+    display: inline-block;
+    vertical-align:top;
+    box-sizing: border-box;
+    border: 1px solid lightgray;
+    padding: 1rem;
+    overflow: auto;
+    margin-left: 1rem;
+}
 .outputCnt {
-    padding-bottom: 2rem;
+    margin-right: 1rem;
+    margin-left: 0;
+}
+.frqHalf pre {
 }
 .frqSubmissionEditor .half{
     width:50%;

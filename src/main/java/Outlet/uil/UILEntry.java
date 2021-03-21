@@ -374,7 +374,7 @@ public class UILEntry {
         Pair<Short, ArrayList<FRQSubmission>> problem = frqResponses[probNum];
         problem.value.add(result);
 
-        if(result.takePenalty()) problem.key--;
+        if(!result.graded || result.takePenalty()) problem.key--;
         else if(result.result == FRQSubmission.Result.CORRECT) {
             problem.key = (short)(java.lang.Math.abs(problem.key) + 1);
             frqScore += competition.template.frqTest.calcScore(problem.key);
@@ -394,7 +394,7 @@ public class UILEntry {
         int numTries = 0;   // The new number of tries. If positive, the problem is solved
         for(int i=0;i<problem.value.size();i++) {
             FRQSubmission submission = problem.value.get(i);
-            if(submission.takePenalty()) numTries--;
+            if(submission.takePenalty() || !submission.graded) numTries--;
             else if(submission.result == FRQSubmission.Result.CORRECT) {
                 numTries = -numTries + 1;
                 break;

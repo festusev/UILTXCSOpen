@@ -581,14 +581,14 @@ public class Competition {
                 if(temp.altUID != user.uid && (competitionStatus.frqDuring || competitionStatus.frqOverflow)) {
                     short probNum = Short.parseShort(request.getParameter("probNum"));
 
-                    if (temp.frqResponses[probNum].key > 0) {
-                        writer.write("{\"status\":\"error\",\"error\":\"You've already gotten this problem.\"}");
-                        return;
-                    } else if(template.frqTest.dryRunMode && probNum >= 1) { // It is in the dry run mode and they are submitting a non dry run
+                    if(template.frqTest.dryRunMode && probNum >= 1) { // It is in the dry run mode and they are submitting a non dry run
                         writer.write("{\"status\":\"error\",\"error\":\"You may only submit the dry run.\"}");
                         return;
                     } else if(!template.frqTest.dryRunMode && probNum <= 0) { // It isn't in the dry run mode and they are submitting a dry run
                         writer.write("{\"status\":\"error\",\"error\":\"The dry run has closed.\"}");
+                        return;
+                    } else if (temp.frqResponses[probNum].key > 0) {
+                        writer.write("{\"status\":\"error\",\"error\":\"You've already gotten this problem.\"}");
                         return;
                     }
 
