@@ -940,11 +940,10 @@ public class UIL extends HttpServlet{
                 short[] judges = gson.fromJson(request.getParameter("judges"), short[].class);
                 boolean showScoreboard = request.getParameter("showScoreboard").equals("true");
                 boolean alternateExists = false;
-                short numNonAlts = 1;
+                short numNonAlts = Short.parseShort(request.getParameter("numNonAlts"));
 
                 if(handsOnExists) {
                     alternateExists = request.getParameter("alternateExists").equals("true");
-                    numNonAlts = Short.parseShort(request.getParameter("numNonAlts"));
                 }
                 if(name.isEmpty()) {
                     writer.write("{\"error\":\"Competition name is empty.\"}");

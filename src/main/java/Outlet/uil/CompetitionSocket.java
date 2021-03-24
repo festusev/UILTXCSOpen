@@ -155,7 +155,9 @@ public class CompetitionSocket {
                     }
                 }
 
-                try {competition.update();} catch(Exception ignored) {}
+                try {competition.update();} catch(Exception ignored) {
+                    ignored.printStackTrace();
+                }
             }
             return;
         } else if(action.equals("loadScoreboard")) {
@@ -854,7 +856,13 @@ public class CompetitionSocket {
                     }
                     entry.update();
                 }
+                competition.clarifications.clear();
                 competition.template.updateScoreboard();
+                try {
+                    competition.update();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
                 broadcast("{\"action\":\"reload\"}");
             }
         }

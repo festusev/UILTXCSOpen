@@ -286,7 +286,7 @@ var Competition = /** @class */ (function () {
             answersLink: "",
             time: 0,
             autoGrade: true,
-            numScoresToKeep: 0
+            numScoresToKeep: 1
         };
         this.handsOn = {
             opens: "",
@@ -1010,7 +1010,7 @@ list_handsOn_changeproblems.appendChild(li);
             /* OPEN */
             var numScoresKeep_header = document.createElement("div");
             makeHalf(numScoresKeep_header);
-            body.appendChild(numScoresKeep_header);
+            written_section.appendChild(numScoresKeep_header);
             var h2_numScoresKeep_header = document.createElement("h3");
             h2_numScoresKeep_header.innerHTML = "# Scores to Keep";
             numScoresKeep_header.appendChild(h2_numScoresKeep_header);
@@ -1018,7 +1018,7 @@ list_handsOn_changeproblems.appendChild(li);
             /* OPEN */
             var numScoresKeep_header_input = document.createElement("div");
             makeHalf(numScoresKeep_header_input);
-            body.appendChild(numScoresKeep_header_input);
+            written_section.appendChild(numScoresKeep_header_input);
             var numScoresKeep_input = document.createElement("input");
             numScoresKeep_input.name = "numScoresKeep";
             numScoresKeep_input.type = "number";
@@ -1562,7 +1562,9 @@ list_handsOn_changeproblems.appendChild(li);
         var header = document.createElement("div");
         header.onclick = function (event) {
             event.stopPropagation();
-            toggleEditCompetition(thisComp);
+            if (thisComp.published)
+                window.location.href = "/console/competitions?cid=" + thisComp.cid;
+            // toggleEditCompetition(thisComp);
             // if(thisComp.published) window.location.href = "/console/competitions?cid="+thisComp.cid;
         };
         header.classList.add("comp_head");

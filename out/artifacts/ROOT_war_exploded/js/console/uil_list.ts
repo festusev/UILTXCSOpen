@@ -312,7 +312,7 @@ class Competition {
         answersLink:"",
         time:0,
         autoGrade : true,
-        numScoresToKeep : 0
+        numScoresToKeep : 1
     };
 
     handsOn: {
@@ -1165,7 +1165,7 @@ list_handsOn_changeproblems.appendChild(li);
             /* OPEN */
             let numScoresKeep_header = document.createElement("div");
             makeHalf(numScoresKeep_header);
-            body.appendChild(numScoresKeep_header);
+            written_section.appendChild(numScoresKeep_header);
 
             let h2_numScoresKeep_header = document.createElement("h3");
             h2_numScoresKeep_header.innerHTML = "# Scores to Keep";
@@ -1175,7 +1175,7 @@ list_handsOn_changeproblems.appendChild(li);
             /* OPEN */
             let numScoresKeep_header_input = document.createElement("div");
             makeHalf(numScoresKeep_header_input);
-            body.appendChild(numScoresKeep_header_input);
+            written_section.appendChild(numScoresKeep_header_input);
 
             let numScoresKeep_input = document.createElement("input");
             numScoresKeep_input.name = "numScoresKeep";
@@ -1790,7 +1790,9 @@ list_handsOn_changeproblems.appendChild(li);
         let header = document.createElement("div");
         header.onclick = function(event){
             event.stopPropagation();
-            toggleEditCompetition(thisComp);
+            if (thisComp.published)
+                window.location.href = "/console/competitions?cid=" + thisComp.cid;
+            // toggleEditCompetition(thisComp);
             // if(thisComp.published) window.location.href = "/console/competitions?cid="+thisComp.cid;
         };
         header.classList.add("comp_head");
