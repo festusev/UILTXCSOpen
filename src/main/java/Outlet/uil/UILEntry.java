@@ -158,7 +158,46 @@ public class UILEntry {
         return true;
     }
 
-    public int leaveTeam(Student u ) {
+    public int leaveTeamWithoutUpdate(Student u) {
+        // They don't belong to this team
+        UILEntry tempEntry = u.cids.get(competition.template.cid);
+        if(tempEntry == null || tempEntry.tid != tid || !uids.containsKey(u.uid))
+            return -2;
+        // if(notStarted()) return -3;   // Cannot leave team unless before the competition has started
+
+        uids.remove(u.uid);
+
+        int status = 0;
+        u.cids.remove(competition.template.cid);
+
+        mc.remove(u.uid);
+
+        CompetitionSocket socket = CompetitionSocket.connected.get(u.uid);
+        if(socket != null && u.temp && socket.user.uid == u.uid) {    // They are a temporary user, and this is their socket
+            try {
+                socket.send("[\"action\":\"competitionDeleted\"]");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if(u.temp) {    // They are a temporary user, so delete their account
+            Connection conn = getConnection();
+            PreparedStatement stmt = null;
+            try {
+                stmt = conn.prepareStatement("DELETE FROM users WHERE uid=?");
+                stmt.setShort(1, u.uid);
+                status = stmt.executeUpdate();
+                UserMap.delUser(u);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return status;
+    }
+
+    public int leaveTeam(Student u) {
         // They don't belong to this team
         UILEntry tempEntry = u.cids.get(competition.template.cid);
         if(tempEntry == null || tempEntry.tid != tid || !uids.containsKey(u.uid))

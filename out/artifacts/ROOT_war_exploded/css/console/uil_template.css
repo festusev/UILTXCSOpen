@@ -1005,16 +1005,25 @@
     color: var(--prim-dark);
     white-space: nowrap;
 }
-#uploadRoster{
-    height: 1.5rem;
+#uploadRoster {
     float: right;
-    cursor: pointer;
+    transform: translateY(-200%);
+    display: block;
     margin-right: 2rem;
+}
+#uploadRoster span {
+    display: inline-block;
+    margin-right: 1rem;
+    padding-top: 1rem;
+    vertical-align: top;
+}
+#uploadRoster img{
+    height: 1.5rem;
+    cursor: pointer;
     background-color: white;
     padding: 0.7rem;
     border-radius: 10px;
     box-shadow: var(--shadow);
-    transform: translateY(-200%);
 }
 #uploadRoster:hover {
     background-color:rgb(251,251,251);

@@ -421,8 +421,9 @@ var config = {
                 dom.selectSignedUpStudent.innerHTML = "";
                 dom.selectSignedUpStudent.appendChild(selectStudentFragment);
             }
+            var oldEditingTeam = pageState.editingTeam;
             Team.toggleTeam(newToggleTeam, false);
-            if (pageState.editingTeam)
+            if (oldEditingTeam)
                 Team.editSaveTeam();
         }, "scoreboardOpenTeamFeedback": function (response) {
             var callback = pageState.saveTeamCallbacks.pop();
@@ -1065,14 +1066,22 @@ var Team = /** @class */ (function () {
                         return;
                 }
                 option.innerText = asString;
-                option.onclick = function () {
-                    student.type = value;
-                };
+                option.value = value;
                 if (value == student.type) {
                     option.selected = true;
                 }
                 changeRole.appendChild(option);
             });
+            changeRole.onchange = function () {
+                console.log(changeRole.selectedOptions[0].value);
+                var selected = changeRole.selectedOptions[0].value;
+                if (selected == "0")
+                    student.type = StudentType.PRIMARY;
+                else if (selected == "1")
+                    student.type = StudentType.WRITTEN_SPECIALIST;
+                else
+                    student.type = StudentType.ALTERNATE;
+            };
             tr.appendChild(changeRoleTd);
             /* if(pageState.mcExists) {
                 let mcTD = document.createElement("td");
@@ -2089,7 +2098,7 @@ function parseExcel(file) {
             var line = lines_1[_i];
             try {
                 var cols = line.split("\t");
-                var tname = cols[1].split(",")[0].trim();
+                var tname = cols[1].split(",")[0].replace(" H S", " HS").trim();
                 if (!teams[tname]) {
                     numTeams++;
                     teams[tname] = [];

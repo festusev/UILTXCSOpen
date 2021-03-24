@@ -956,7 +956,7 @@ public class Template {
                 "<button id='createTeam' onclick='showSignup()' class='creatorOnly chngButton'>Create Team</button>" +
                 "<a id='downloadScoreboard' onclick='downloadScoreboard()' class='creatorOnly'>Download Scoreboard</a>" +
                 "<a id='downloadRoster' onclick='downloadRoster()' class='creatorOnly'>Download Roster</a>" +
-                "<img id='uploadRoster' src='/res/upload.svg' class='creatorOnly' onclick='uploadRosterProxy()'/><input id='uploadRosterProxy' type='file' style='display:none' onchange='uploadRoster()'/>" +
+                "<p id='uploadRoster'><span>Upload Roster</span><img src='/res/upload.svg' class='creatorOnly' onclick='uploadRosterProxy()'/></p><input id='uploadRosterProxy' type='file' style='display:none' onchange='uploadRoster()'/>" +
                 "<div id='generalScoreboard'><table id='teamList'></table></div>";
         if(mcTest.exists) scoreboardHTML += "<div id='writtenScoreboard'><table id='writtenScoreboardTable'></table></div>";
         if(frqTest.exists) scoreboardHTML += "<div id='handsOnScoreboard'><table id='handsOnScoreboardTable'></table></div>";

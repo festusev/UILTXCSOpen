@@ -423,9 +423,10 @@ const config = {
                 dom.selectSignedUpStudent.appendChild(selectStudentFragment);
             }
 
+            let oldEditingTeam: boolean = pageState.editingTeam;
             Team.toggleTeam(newToggleTeam, false);
 
-            if(pageState.editingTeam) Team.editSaveTeam();
+            if(oldEditingTeam) Team.editSaveTeam();
         }, "scoreboardOpenTeamFeedback": function (response: { isError: boolean, msg: string }) { // When there is an error or a success that has to do with editing a team
             let callback:Function = pageState.saveTeamCallbacks.pop();
 
@@ -1156,15 +1157,20 @@ class Team {
                         return;
                 }
                 option.innerText = asString;
-                option.onclick = function(){
-                    student.type = value;
-                };
+                option.value = value;
                 if(value == student.type) {
                     option.selected = true;
                 }
                 changeRole.appendChild(option);
             });
+            changeRole.onchange = function(){
+                console.log(changeRole.selectedOptions[0].value);
 
+                let selected = changeRole.selectedOptions[0].value;
+                if(selected == "0") student.type = StudentType.PRIMARY;
+                else if(selected == "1") student.type = StudentType.WRITTEN_SPECIALIST;
+                else student.type = StudentType.ALTERNATE;
+            };
             tr.appendChild(changeRoleTd);
 
             /* if(pageState.mcExists) {
@@ -2254,7 +2260,7 @@ function parseExcel(file: File) {
             try {
                 let cols = line.split("\t");
 
-                let tname = cols[1].split(",")[0].trim();
+                let tname = cols[1].split(",")[0].replace(" H S", " HS").trim();
                 if (!teams[tname]) {
                     numTeams++;
                     teams[tname] = [];

@@ -80,7 +80,6 @@ public class CompetitionSocket {
 
     @OnOpen
     public void onOpen(Session session, @PathParam("cid") String cidS) {
-        System.out.println("OPEN!!! cid="+cidS);
         try{
             short cid = Short.parseShort(cidS);
             competition = UIL.getCompetition(cid);
@@ -93,7 +92,6 @@ public class CompetitionSocket {
         this.session = session;
 
         if(session.getUserProperties().containsKey("user")) {
-            System.out.println("Found user");
             User u = (User) session.getUserProperties().get("user");
             user = u;
             if (u != null) connected.put(u.uid, this);
@@ -161,14 +159,11 @@ public class CompetitionSocket {
             }
             return;
         } else if(action.equals("loadScoreboard")) {
-            System.out.println("loading scoreboard");
-
             sendLoadScoreboardData(status, user, competition);
             return;
         }
         if(status.admin) {
             if (action.equals("rc")) {
-                System.out.println("Responding to a Clarification");
                 Clarification clarification = competition.clarifications.get(data.get(1).getAsInt());
 
                 if (clarification.responded)
@@ -314,7 +309,7 @@ public class CompetitionSocket {
                 // If any students are left in the old uids list, remove them from the competition.
                 for (short uid : entry.uids.keySet()) {
                     Student delMe = StudentMap.getByUID(uid);
-                    entry.leaveTeam(delMe);
+                    entry.leaveTeamWithoutUpdate(delMe);
                 }
 
                 entry.mc = newMC;
