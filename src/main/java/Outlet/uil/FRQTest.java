@@ -1,6 +1,9 @@
 package Outlet.uil;
 
 import Outlet.Countdown;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -43,6 +46,14 @@ public class FRQTest {
 
     public boolean dryRunMode = false; // If we are in the dry run mode
 
+    public final Set<Language> LANGUAGES;
+
+    enum Language {
+        JAVA,
+        CPP,
+        PYTHON
+    }
+
     private static Set<PosixFilePermission> FILE_PERMISSIONS = null;
     static {
         FILE_PERMISSIONS = new HashSet<>();
@@ -65,14 +76,15 @@ public class FRQTest {
     public FRQTest() {
         exists = false;TIME_TEXT="";TIME=0;STUDENT_PACKET="";JUDGE_PACKET="";
         scoreDirPath = ""; testcaseDirPath = "";MAX_POINTS = 0; INCORRECT_PENALTY = 0; PROBLEM_MAP = new FRQProblem[0];
-        AUTO_GRADE = true;DRYRUN_EXISTS = false;DRYRUN_STUDENT_PACKET = "";
+        AUTO_GRADE = true;DRYRUN_EXISTS = false;DRYRUN_STUDENT_PACKET = "";LANGUAGES = new HashSet<>();
     }
     public FRQTest(boolean published,String opensString, short mp, short ip, FRQProblem[] pm, String studentPacket,
-                   String judgePacket, long time, boolean autoGrade, boolean dryRunExists, String dryRunStudentPacket) {
+                   String judgePacket, long time, boolean autoGrade, boolean dryRunExists, String dryRunStudentPacket,
+                   Set<Language> languages) {
         MAX_POINTS = mp; INCORRECT_PENALTY = ip; PROBLEM_MAP = pm;
         exists = true;TIME_TEXT=(time/(1000*60)) + " minutes";TIME=time;STUDENT_PACKET=studentPacket;JUDGE_PACKET=judgePacket;
         AUTO_GRADE = autoGrade;DRYRUN_EXISTS = dryRunExists;DRYRUN_STUDENT_PACKET = dryRunStudentPacket;
-        dryRunMode = false;
+        dryRunMode = false;LANGUAGES = languages;
 
         if(published) {
             opens = new Countdown(opensString, "countdown");
@@ -537,24 +549,24 @@ public class FRQTest {
 
                     try {
                         FRQSubmission submission;
-                        if (extension.equals("java")) {
+                        if (extension.equals("java") && LANGUAGES.contains(Language.JAVA)) {
                             System.out.println("Compiling " + fileName + " into " + givenName + " for prob " + probNum);
                             submission = run(fileName, givenName, scoreDirPath + directory, 0, probNum);
                         } else {
                             String exe_file;
-                            if (extension.equals("py")) {
+                            if (extension.equals("py") && LANGUAGES.contains(Language.PYTHON)) {
                                 exe_file = givenName + ".py";
                                 System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
                                 submission = run(fileName, exe_file, scoreDirPath + directory, 1, probNum);
                             } else {
-                                if (!extension.equals("cpp")) {
-                                    return new FRQSubmission(probNum, FRQSubmission.Result.UNCLEAR_FILE_TYPE, new String(bytes), fPath,
+                                if (extension.equals("cpp") && LANGUAGES.contains(Language.CPP)) {
+                                    exe_file = givenName + ".out";
+                                    System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
+                                    submission = run(fileName, exe_file, scoreDirPath + directory, 2, probNum);
+                                } else {
+                                    return new FRQSubmission(probNum, FRQSubmission.Result.UNCLEAR_FILE_TYPE, fPath, new String(bytes),
                                             "", currentTime, AUTO_GRADE);
                                 }
-
-                                exe_file = givenName + ".out";
-                                System.out.println("Compiling " + fileName + " into " + exe_file + " for prob " + probNum);
-                                submission = run(fileName, exe_file, scoreDirPath + directory, 2, probNum);
                             }
                         }
 
@@ -600,5 +612,22 @@ public class FRQTest {
         Countdown timer = new Countdown(TIME, opens.date.getTime(), "frqTimer");
         timer.onDone = "";
         return timer;
+    }
+
+    public static Set<Language> deserializeLanguages(String s) {
+        Set<Language> languages = new HashSet<>();
+        JsonArray array = JsonParser.parseString(s).getAsJsonArray();
+        for(JsonElement element: array) {
+            languages.add(Language.valueOf(element.getAsString()));
+        }
+        return languages;
+    }
+
+    public static JsonArray serializeLanguages(Set<Language> languages) {
+        JsonArray array = new JsonArray();
+        for(Language language: languages) {
+            array.add(language.name());
+        }
+        return array;
     }
 }

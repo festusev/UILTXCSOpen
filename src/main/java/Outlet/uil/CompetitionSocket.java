@@ -41,7 +41,8 @@ public class CompetitionSocket {
         response.addProperty("mcCorrectPoints", competition.template.mcTest.CORRECT_PTS);
         response.addProperty("mcIncorrectPoints", competition.template.mcTest.INCORRECT_PTS);
         response.addProperty("alternateExists", competition.alternateExists);
-        response.addProperty("numNonAlts", competition.numNonAlts);
+        response.addProperty("teamSize", competition.teamSize);
+        response.addProperty("mcNumScoresToKeep", competition.template.mcTest.NUM_SCORES_TO_KEEP);
         if(competition.template.frqTest.exists) {
             response.addProperty("frqMaxPoints", competition.template.frqTest.MAX_POINTS);
             response.addProperty("frqIncorrectPenalty", competition.template.frqTest.INCORRECT_PENALTY);
@@ -122,7 +123,7 @@ public class CompetitionSocket {
                 if(asker != null) {
                     UILEntry entry = asker.cids.get(competition.template.cid);
                     if(entry != null) {
-                        askerName = " - " + entry.tname;
+                        askerName = " - " + entry.getEscapedTname();
                     }
                 }
 
@@ -181,7 +182,7 @@ public class CompetitionSocket {
                 if(asker != null) {
                     UILEntry entry = asker.cids.get(competition.template.cid);
                     if(entry != null) {
-                        askerName = " - " + entry.tname;
+                        askerName = " - " + entry.getEscapedTname();
                     }
                 }
 
@@ -208,51 +209,44 @@ public class CompetitionSocket {
             } else if (action.equals("saveTeam")) {
                 System.out.println("Saving team");
 
-                JsonObject team = data.get(1).getAsJsonObject(); // A team of the format: {tid: number, nonAlts:number[], alt:number, individual: boolean}
+                JsonObject team = data.get(1).getAsJsonObject(); // A team of the format: {tid: number, students:number[], individual: boolean}
+                JsonArray students = team.get("students").getAsJsonArray(); // A list of objects like: ["sname", "student type"]
 
-                JsonArray nonAlts = team.get("nonAlts").getAsJsonArray();
-                JsonElement alt = team.get("alt");
-                if (nonAlts.size() > competition.numNonAlts || (!alt.isJsonNull() && alt.getAsShort() >= 0 && !competition.alternateExists)) {
+                /*JsonElement alt = team.get("alt");
+                if (nonAlts.size() > competition.teamSize || (!alt.isJsonNull() && alt.getAsShort() >= 0 && !competition.alternateExists)) {
                     send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":true,\"msg\":\"Error while saving team\"}");
                     return;
-                }
+                }*/
 
                 short tid = team.get("tid").getAsShort();
                 UILEntry entry = competition.entries.getByTid((tid));
 
                 boolean individual = team.get("individual").getAsBoolean();
                 if(individual) {
-                    int numStudents = nonAlts.size();
-                    if(!alt.isJsonNull()) {
-                        if(alt.getAsShort() >= 0) numStudents += 1;
-                    }
-                    if(numStudents > 1) { // This is supposed to be an individual team but there is more than person
+                    if(students.size() > 1) { // This is supposed to be an individual team but there is more than person
                         send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":true,\"msg\":\"Individual teams can only have one student.\"}");
                         return;
-                    } else if(numStudents == 0) {   // Delete this team
+                    } else if(students.size() == 0) {   // Delete this team
                         competition.template.deleteEntry(entry);
                         competition.template.updateScoreboard();
                         return;
                     }
                 }
 
-
                 entry.individual = individual;
 
                 HashMap<Short, MCSubmission> newMC = new HashMap<>();
 
 
-                Set<Short> newUIDs = new HashSet<>();
-                for (JsonElement uidE : nonAlts) {    // Loop through the new non alt students
-                    Student student = StudentMap.getByUID(uidE.getAsShort());
-                    newUIDs.add(student.uid);
+                HashMap<Short, UILEntry.StudentType> newUIDs = new HashMap<>();
+                for (JsonElement uidE : students) {    // Loop through the students. each element is formatted as [student id, "student type"]
+                    JsonArray studentArr = uidE.getAsJsonArray();
+                    Student student = StudentMap.getByUID(studentArr.get(0).getAsShort());
+                    newUIDs.put(student.uid, UILEntry.StudentType.valueOf(studentArr.get(1).getAsString()));
 
                     UserStatus studentStatus = UserStatus.getCompeteStatus(student, competition);
-                    if (studentStatus.signedUp) {    // They are already signed up, so remove them from any previous team
+                    if (studentStatus.signedUp || studentStatus.alternate) {    // They are already signed up, so remove them from any previous team
                         UILEntry oldEntry = student.cids.get(competition.template.cid);
-                        if (studentStatus.alt) {
-                            oldEntry.altUID = -1;
-                        }
                         oldEntry.uids.remove(student.uid);  // The old uids list should only store students that are being removed from the competition
 
                         if (oldEntry.tid != entry.tid) { // They were on a different team, so update that team now
@@ -276,7 +270,7 @@ public class CompetitionSocket {
                     }
                 }
 
-                if (competition.alternateExists && !alt.isJsonNull()) {
+                /*if (competition.alternateExists && !alt.isJsonNull()) {
                     short altUID = alt.getAsShort();
                     entry.altUID = altUID;
 
@@ -314,11 +308,11 @@ public class CompetitionSocket {
                             student.cids.put(competition.template.cid, entry);
                         }
                     }
-                }
+                }*/
 
 
                 // If any students are left in the old uids list, remove them from the competition.
-                for (short uid : entry.uids) {
+                for (short uid : entry.uids.keySet()) {
                     Student delMe = StudentMap.getByUID(uid);
                     entry.leaveTeam(delMe);
                 }
@@ -423,7 +417,7 @@ public class CompetitionSocket {
                             //boolean reloadScoreboard = false;   // If any of the students have been moved from other teams, just reload the scoreboard
 
                             for (Student student : team.nonAltStudents) {
-                                if (entry.uids.size() >= competition.numNonAlts)
+                                if (entry.uids.size() >= competition.teamSize)
                                     break;   // Only add as many students as this competition can take
 
                                 MCSubmission storedMCSubmission = null;
@@ -441,7 +435,7 @@ public class CompetitionSocket {
                                 }
 
                                 student.cids.put(competition.template.cid, entry);
-                                entry.uids.add(student.uid);
+                                entry.uids.put(student.uid, UILEntry.StudentType.PRIMARY);
 
                                 if (competition.template.mcTest.exists && storedMCSubmission != null) {
                                     entry.mc.put(student.uid, storedMCSubmission);
@@ -450,7 +444,7 @@ public class CompetitionSocket {
                             if (team.alternate != null && competition.alternateExists) {
                                 MCSubmission storedMCSubmission = null;
                                 UserStatus studentStatus = UserStatus.getCompeteStatus(team.alternate, competition);
-                                if (studentStatus.signedUp) {    // This student is already signed up for this competition
+                                if (studentStatus.signedUp || studentStatus.alternate) {    // This student is already signed up for this competition
                                     //reloadScoreboard = true;
                                     UILEntry oldTeam = team.alternate.cids.get(competition.template.cid);
 
@@ -463,9 +457,7 @@ public class CompetitionSocket {
                                 }
 
                                 team.alternate.cids.put(competition.template.cid, entry);
-
-                                entry.uids.add(team.alternate.uid);
-                                entry.altUID = team.alternate.uid;
+                                entry.uids.put(team.alternate.uid, UILEntry.StudentType.WRITTEN_SPECIALIST);
 
                                 if (competition.template.mcTest.exists && storedMCSubmission != null) {
                                     entry.mc.put(team.alternate.uid, storedMCSubmission);
@@ -532,13 +524,19 @@ public class CompetitionSocket {
 
                         if (competition.template.mcTest.exists) {
                             UILEntry entry = student.cids.get(competition.template.cid);    // If they are already signed up for this competition
-                            if (entry != null && entry.mc.containsKey(student.uid)) {
-                                MCSubmission submission = entry.mc.get(student.uid);
-                                JsonArray mcData = new JsonArray();
-                                mcData.add(submission.scoringReport[1]);
-                                mcData.add(submission.scoringReport[3]);
-                                studentData.add(mcData);
-                            }
+                            if (entry != null) {
+                                studentData.add(entry.uids.get(student.uid).toString());
+
+                                if(entry.mc.containsKey(student.uid)) {
+                                    MCSubmission submission = entry.mc.get(student.uid);
+                                    JsonArray mcData = new JsonArray();
+                                    mcData.add(submission.scoringReport[1]);
+                                    mcData.add(submission.scoringReport[3]);
+                                    studentData.add(mcData);
+                                }
+                            } else continue;
+                        } else {
+                            studentData.add(UILEntry.StudentType.PRIMARY.toString());
                         }
 
                         array.add(studentData);
@@ -555,7 +553,6 @@ public class CompetitionSocket {
                 String lname = data.get(2).getAsString();
                 String school = data.get(3).getAsString();
                 short tid = data.get(4).getAsShort();
-                boolean isAlt = data.get(5).getAsBoolean();
 
                 // First, check if the team has space for this user
                 UILEntry entry = null;
@@ -565,15 +562,8 @@ public class CompetitionSocket {
                     else if(entry.individual && entry.uids.size() >= 1) {
                         send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":true,\"msg\":\"Individual teams must have one student.\"}");
                         return;
-                    }
-
-                    if (competition.alternateExists) {
-                        if (entry.uids.size() >= (competition.numNonAlts + 1)) { // the team is entirely full
-                            return;
-                        } else if (isAlt && entry.altUID >= 0) { // There is already an alternate for this team
-                            return;
-                        }
-                    } else if (entry.uids.size() >= competition.numNonAlts) {
+                    } else if (entry.uids.size() >= competition.teamSize) { // the team is entirely full
+                        send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":true,\"msg\":\"The maximum team size is "+competition.teamSize+".\"}");
                         return;
                     }
                 } catch (SQLException e) {
@@ -589,7 +579,6 @@ public class CompetitionSocket {
                     x++;
                 }
 
-
                 int leftLimit = 48; // numeral '0'
                 int rightLimit = 90; // letter 'Z'
                 Random random = new Random();
@@ -602,8 +591,8 @@ public class CompetitionSocket {
                     Conn.finishRegistration(uname, password, fname, lname, school, false, true);
                     Student student = StudentMap.getByEmail(uname);
                     student.cids.put(competition.template.cid, entry);
-                    entry.uids.add(student.uid);
-                    if (isAlt) entry.altUID = student.uid;
+                    entry.uids.put(student.uid, UILEntry.StudentType.PRIMARY);
+                    // if (isAlt) entry.altUID = student.uid;
 
                     entry.updateUIDS();
                     competition.template.updateScoreboard();
@@ -613,7 +602,6 @@ public class CompetitionSocket {
                     ret.addProperty("name", student.getName());
                     ret.addProperty("uname", student.email);
                     ret.addProperty("password", student.password);
-                    ret.addProperty("isAlt", isAlt);
                     ret.addProperty("uid", student.uid);
                     ret.addProperty("tid", tid);
 
@@ -621,6 +609,79 @@ public class CompetitionSocket {
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
+            } else if(action.equals("uploadRoster")) {
+                // Of the format {[tname:string]:[string,string][]}
+                JsonObject teams = data.get(1).getAsJsonObject();
+                teams.keySet().forEach(tname -> {
+                    if(competition.entries.nameMap.containsKey(tname)) return;
+
+                    // Create the team
+                    int leftLimit = 48; // numeral '0'
+                    int rightLimit = 90; // letter 'Z'
+                    Random random = new Random();
+
+                    String code;
+                    do {
+                        code = random.ints(leftLimit, rightLimit + 1)
+                                .filter(i -> (i <= 57 || i >= 65) && (i <= 90))
+                                .limit(6)
+                                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                                .toString();    // Get a 6-digit team code
+                    } while (competition.entries.getByPassword(code) != null);
+
+                    UILEntry entry = new UILEntry(tname, code, competition);
+                    try {
+                        entry.insert();
+                        competition.entries.addEntry(entry);
+                    } catch(Exception e) {
+                        return;
+                    }
+
+                    JsonArray students = teams.get(tname).getAsJsonArray();
+                    for(JsonElement studentE: students) {
+                        try {
+                            JsonArray studentA = studentE.getAsJsonArray();
+                            String fname = studentA.get(0).getAsString();
+                            String lname = studentA.get(1).getAsString();
+
+                            if (entry.individual && entry.uids.size() >= 1) {
+                                continue;
+                            } else if (entry.uids.size() >= competition.teamSize) { // the team is entirely full
+                                continue;
+                            }
+
+                            String unameBase = (fname + lname).toLowerCase();
+                            String uname = unameBase;
+                            int x = 2;
+                            while (StudentMap.getByEmail(uname) != null) {
+                                uname = unameBase + x;
+                                x++;
+                            }
+
+                            leftLimit = 48; // numeral '0'
+                            rightLimit = 90; // letter 'Z'
+                            random = new Random();
+                            String password = random.ints(leftLimit, rightLimit + 1)
+                                    .filter(i -> (i <= 57 || i >= 65) && (i <= 90))
+                                    .limit(8)
+                                    .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                                    .toString();
+                            try {
+                                Conn.finishRegistration(uname, password, fname, lname, "", false, true);
+                                Student student = StudentMap.getByEmail(uname);
+                                student.cids.put(competition.template.cid, entry);
+                                entry.uids.put(student.uid, UILEntry.StudentType.PRIMARY);
+                            } catch (SQLException e) {
+                                e.printStackTrace();
+                            }
+                        } catch(Exception e) {
+                            continue;
+                        }
+                    }
+                    entry.updateUIDS();
+                });
+                competition.template.updateScoreboard();
+                send("{\"action\":\"rosterUploaded\"}");
             } else if(action.equals("publishGradedFRQ")) {  // Makes the result of an frq submission available to the team that submitted it
                 int id = data.get(1).getAsInt();
                 FRQSubmission submission = competition.frqSubmissions.get(id);
@@ -669,10 +730,11 @@ public class CompetitionSocket {
                 MCTest mcTest = new MCTest(true, sdf.format(now), competition.template.mcTest.KEY,
                         competition.template.mcTest.CORRECT_PTS, competition.template.mcTest.INCORRECT_PTS,
                         competition.template.mcTest.INSTRUCTIONS, competition.template.mcTest.TEST_LINK,
-                        competition.template.mcTest.TIME, competition.template.mcTest.AUTO_GRADE,competition.template.mcTest.graded);
+                        competition.template.mcTest.TIME, competition.template.mcTest.AUTO_GRADE,competition.template.mcTest.graded,
+                        competition.template.mcTest.NUM_SCORES_TO_KEEP);
                 try {
                     competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
-                            competition.numNonAlts, competition.template.name, competition.template.description,
+                            competition.teamSize, competition.template.name, competition.template.description,
                             mcTest, competition.template.frqTest, competition.getJudges(), competition.template.showScoreboard);
                     competition.template.updateScoreboard();
                 } catch (SQLException e) {
@@ -683,10 +745,11 @@ public class CompetitionSocket {
                 MCTest mcTest = new MCTest(true, data.get(1).getAsString(), competition.template.mcTest.KEY,
                         competition.template.mcTest.CORRECT_PTS, competition.template.mcTest.INCORRECT_PTS,
                         competition.template.mcTest.INSTRUCTIONS, competition.template.mcTest.TEST_LINK,
-                        competition.template.mcTest.TIME, competition.template.mcTest.AUTO_GRADE, competition.template.mcTest.graded);
+                        competition.template.mcTest.TIME, competition.template.mcTest.AUTO_GRADE, competition.template.mcTest.graded,
+                        competition.template.mcTest.NUM_SCORES_TO_KEEP);
                 try {
                     competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
-                            competition.numNonAlts, competition.template.name, competition.template.description,
+                            competition.teamSize, competition.template.name, competition.template.description,
                             mcTest, competition.template.frqTest, competition.getJudges(), competition.template.showScoreboard);
                     competition.template.updateScoreboard();
                 } catch (SQLException e) {
@@ -698,10 +761,10 @@ public class CompetitionSocket {
                 FRQTest oldFRQ = competition.template.frqTest;
                 FRQTest frqTest = new FRQTest(true, sdf.format(now), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
                         oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE,
-                        oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET);
+                        oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET, oldFRQ.LANGUAGES);
                 try {
                     competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
-                            competition.numNonAlts, competition.template.name, competition.template.description,
+                            competition.teamSize, competition.template.name, competition.template.description,
                             competition.template.mcTest, frqTest, competition.getJudges(), competition.template.showScoreboard);
                     competition.template.updateScoreboard();
                 } catch (SQLException e) {
@@ -712,10 +775,10 @@ public class CompetitionSocket {
                 FRQTest oldFRQ = competition.template.frqTest;
                 FRQTest frqTest = new FRQTest(true, data.get(1).getAsString(), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
                         oldFRQ.PROBLEM_MAP, oldFRQ.STUDENT_PACKET, oldFRQ.JUDGE_PACKET, oldFRQ.TIME, oldFRQ.AUTO_GRADE,
-                        oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET);
+                        oldFRQ.DRYRUN_EXISTS, oldFRQ.DRYRUN_STUDENT_PACKET, oldFRQ.LANGUAGES);
                 try {
                     competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
-                            competition.numNonAlts, competition.template.name, competition.template.description,
+                            competition.teamSize, competition.template.name, competition.template.description,
                             competition.template.mcTest, frqTest, competition.getJudges(), competition.template.showScoreboard);
                     competition.template.updateScoreboard();
                 } catch (SQLException e) {
@@ -785,6 +848,18 @@ public class CompetitionSocket {
                     e.printStackTrace();
                 }*/
 
+                broadcast("{\"action\":\"reload\"}");
+            } else if(action.equals("resetSubmissions")) {
+                competition.frqSubmissions.clear();
+                for(UILEntry entry: competition.entries.allEntries) {
+                    entry.mc = new HashMap<>();
+                    entry.frqResponses = new Pair[competition.template.frqTest.PROBLEM_MAP.length];
+                    for(int i=0;i<competition.template.frqTest.PROBLEM_MAP.length;i++) {
+                        entry.frqResponses[i] = new Pair<>((short) 0, new ArrayList<>());
+                    }
+                    entry.update();
+                }
+                competition.template.updateScoreboard();
                 broadcast("{\"action\":\"reload\"}");
             }
         }

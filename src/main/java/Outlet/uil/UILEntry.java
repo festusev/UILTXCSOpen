@@ -1,10 +1,7 @@
 package Outlet.uil;
 
 import Outlet.*;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 
 import java.io.IOException;
 import java.sql.*;
@@ -14,8 +11,7 @@ import static Outlet.Conn.getConnection;
 
 public class UILEntry {
     public String tname;
-    public Set<Short> uids; // The uids of all students, including the alternate
-    public short altUID;  // The uid of the alternate. -1 if there is no alternate
+    public HashMap<Short, StudentType> uids; // The uids of all students, including the alternate
     public short tid;
     public String school = "";  // Specified by the students
     public String password;
@@ -28,6 +24,12 @@ public class UILEntry {
     public short frqScore;
     public Competition competition;
     private static Gson gson = new Gson();
+
+    enum StudentType {
+        PRIMARY,
+        WRITTEN_SPECIALIST,
+        ALTERNATE
+    }
 
     /***
      * Used when creating a new team.
@@ -44,9 +46,9 @@ public class UILEntry {
         if(this.school.isEmpty()) this.school = "No School";
         this.password = hashedPassword;
         this.competition = competition;
-        uids = new HashSet<>();
-        uids.add(student.uid);
-        altUID = -1;
+        uids = new HashMap<>();
+        uids.put(student.uid, StudentType.PRIMARY);
+
         mc = new HashMap<>();
         frqResponses = new Pair[competition.template.frqTest.PROBLEM_MAP.length];
         for(int i=0;i<competition.template.frqTest.PROBLEM_MAP.length;i++) {
@@ -69,9 +71,8 @@ public class UILEntry {
 
         this.password = hashedPassword;
         this.competition = competition;
-        uids = new HashSet<>();
-        altUID = -1;
-        altUID = -1;
+        uids = new HashMap<>();
+
         mc = new HashMap<>();
         frqResponses = new Pair[competition.template.frqTest.PROBLEM_MAP.length];
         for(int i=0;i<competition.template.frqTest.PROBLEM_MAP.length;i++) {
@@ -90,11 +91,8 @@ public class UILEntry {
         individual = rs.getBoolean("individual");
 
         setUids(rs.getString("uids"));
-        altUID = rs.getShort("altUID");
-
 
         mc = new HashMap<>();
-
         if(comp.template.mcTest.exists) {
             JsonObject column = JsonParser.parseString(rs.getString("mc")).getAsJsonObject();
             Set<String> keys = column.keySet();
@@ -115,26 +113,39 @@ public class UILEntry {
         }
     }
 
-    public void setUids(short[] temp) {
-        uids = new HashSet<>();
-        // boolean schoolSet = false;
-        for(short uid: temp) {
-            uids.add(uid);
-
-            /*Student student = StudentMap.getByUID(uid);
-            Teacher teacher = TeacherMap.getByUID(student.uid);
-            if(teacher != null && !teacher.school.isEmpty() && !schoolSet) {
-                schoolSet = true;
-                this.school = teacher.school;
-            }*/
+    public String getEscapedTname() {
+        String name = tname;
+        if(individual) {
+            short uid = 0;
+            for(short u: uids.keySet()) uid = u;
+            Student student = StudentMap.getByUID(uid);
+            name = student.getName();
         }
-        //if(!schoolSet) {
-        this.school = "No School";
-        //}
+
+        return StringEscapeUtils.escapeHtml4(name);
     }
+
     public void setUids(String s) {
-        short[] temp = gson. fromJson(s, short[].class);
-        setUids(temp);
+        JsonArray obj = JsonParser.parseString(s).getAsJsonArray();
+
+        uids = new HashMap<>();
+        for(JsonElement element: obj) {
+            JsonArray arr = element.getAsJsonArray();
+            uids.put(arr.get(0).getAsShort(), StudentType.valueOf(arr.get(1).getAsString()));
+        }
+    }
+
+    public JsonArray jsonifyUIDs() {
+        JsonArray array = new JsonArray();
+
+        for(short uid: uids.keySet()) {
+            JsonArray arr = new JsonArray();
+            arr.add(uid);
+            arr.add(uids.get(uid).toString());
+            array.add(arr);
+        }
+
+        return array;
     }
 
     /***
@@ -150,17 +161,14 @@ public class UILEntry {
     public int leaveTeam(Student u ) {
         // They don't belong to this team
         UILEntry tempEntry = u.cids.get(competition.template.cid);
-        if(tempEntry == null || tempEntry.tid != tid || !uids.contains(u.uid))
+        if(tempEntry == null || tempEntry.tid != tid || !uids.containsKey(u.uid))
             return -2;
         // if(notStarted()) return -3;   // Cannot leave team unless before the competition has started
 
         uids.remove(u.uid);
-        if(altUID == u.uid) altUID = -1;
 
         int status = 0;
-
         u.cids.remove(competition.template.cid);
-
 
         if(individual && uids.size() == 0) {    // This is an individual team and the team is empty, so delete this team
             competition.template.deleteEntry(this);
@@ -242,10 +250,9 @@ public class UILEntry {
     public int updateUIDS() {
         Connection conn = Conn.getConnection();
         try {
-            PreparedStatement stmt = conn.prepareStatement("UPDATE `c"+competition.template.cid+"` SET uids=?, altUID = ? WHERE tid=?");
-            stmt.setString(1, gson.toJson(uids));
-            stmt.setShort(2, altUID);
-            stmt.setShort(3, tid);
+            PreparedStatement stmt = conn.prepareStatement("UPDATE `c"+competition.template.cid+"` SET uids=? WHERE tid=?");
+            stmt.setString(1, jsonifyUIDs().toString());
+            stmt.setShort(2, tid);
             stmt.executeUpdate();
             return 0;
         } catch (SQLException e) {
@@ -257,23 +264,22 @@ public class UILEntry {
     public int updateAll() {
         Connection conn = Conn.getConnection();
         try {
-            PreparedStatement stmt = conn.prepareStatement("UPDATE `c"+competition.template.cid+"` SET uids=?,altUID=?," +
+            PreparedStatement stmt = conn.prepareStatement("UPDATE `c"+competition.template.cid+"` SET uids=?," +
                     "mc=?,frqResponses=?,individual=? WHERE tid=?");
 
-            stmt.setString(1, gson.toJson(uids));
-            stmt.setShort(2, altUID);
+            stmt.setString(1, jsonifyUIDs().toString());
             if(competition.template.mcTest.exists) {
-                stmt.setString(3, stringifyMC());
+                stmt.setString(2, stringifyMC());
             } else {
-                stmt.setString(3, "{}");
+                stmt.setString(2, "{}");
             }
             if(competition.template.frqTest.exists) {
-                stmt.setString(4, FRQSubmission.stringifyList(frqResponses));
+                stmt.setString(3, FRQSubmission.stringifyList(frqResponses));
             } else {
-                stmt.setString(4, "[]");
+                stmt.setString(3, "[]");
             }
-            stmt.setBoolean(5, individual);
-            stmt.setShort(6, tid);
+            stmt.setBoolean(4, individual);
+            stmt.setShort(5, tid);
             stmt.executeUpdate();
 
             return 0;
@@ -290,26 +296,25 @@ public class UILEntry {
     public int insert(){
         Connection conn = Conn.getConnection();
         try {
-            String statement = "INSERT INTO `c"+competition.template.cid+"` (name, password, uids, altUID, mc, frqResponses," +
-                    "individual) VALUES (?,?,?,?,?,?,?)";
+            String statement = "INSERT INTO `c"+competition.template.cid+"` (name, password, uids, mc, frqResponses," +
+                    "individual) VALUES (?,?,?,?,?,?)";
 
             PreparedStatement stmt = conn.prepareStatement(statement);
             stmt.setString(1, tname);
             stmt.setString(2, password);
-            stmt.setString(3, gson.toJson(uids));
-            stmt.setShort(4, altUID);
+            stmt.setString(3, jsonifyUIDs().toString());
 
             if(competition.template.mcTest.exists) {
-                stmt.setString(5, stringifyMC());
+                stmt.setString(4, stringifyMC());
+            } else {
+                stmt.setString(4, "{}");
+            }
+            if(competition.template.frqTest.exists) {
+                stmt.setString(5, FRQSubmission.stringifyList(frqResponses));
             } else {
                 stmt.setString(5, "{}");
             }
-            if(competition.template.frqTest.exists) {
-                stmt.setString(6, FRQSubmission.stringifyList(frqResponses));
-            } else {
-                stmt.setString(6, "{}");
-            }
-            stmt.setBoolean(7,individual);
+            stmt.setBoolean(6,individual);
             stmt.executeUpdate();
 
             stmt = conn.prepareStatement("SELECT tid FROM `c"+competition.template.cid+"` WHERE name=?");
@@ -336,17 +341,6 @@ public class UILEntry {
             if(submission != null) obj.add(""+key, submission.serialize());
         }
         return obj.toString();
-
-        /*String mcStringified = "{";
-        Set<Short> keys = mc.keySet();
-        int i = 0;
-        for (short key : keys) {
-            mcStringified += key + ":" + mc.get(key).serialize();
-            if (i < keys.size() - 1) mcStringified += ",";
-            i++;
-        }
-        mcStringified += "}";
-        return mcStringified;*/
     }
 
     /**
@@ -426,49 +420,35 @@ public class UILEntry {
         if(!competition.template.mcTest.exists) return 0;
 
         int score = 0;
+        ArrayList<Short> scores = new ArrayList<>();
+        this.mc.forEach((uid,submission) -> {
+            if(uids.get(uid) == StudentType.ALTERNATE) return;
 
-        if(mc.size() <= competition.numNonAlts) {   // In this case, just add up everyone's scores.
-            for(short i: mc.keySet()){
-                MCSubmission submission = mc.get(i);
-                if(submission != null) score += submission.scoringReport[0];
-            }
-        } else {    // In this case, just drop the lowest score
-            int uidOfLowest = 0;
-            int lowest = Integer.MAX_VALUE;
-            for(short uid: mc.keySet()) {
-                MCSubmission submission = mc.get(uid);
-                if(submission == null) continue;
+            scores.add(submission.scoringReport[0]);
+        });
 
-                short thisScore = submission.scoringReport[0];
-                if(thisScore < lowest) {
-                    uidOfLowest = uid;
-                    lowest = thisScore;
-                }
-            }
+        Collections.sort(scores);
 
-            for(short uid: mc.keySet()) {
-                MCSubmission submission = mc.get(uid);
-                if(submission == null) continue;
-
-                if(uid != uidOfLowest) score += submission.scoringReport[0];
-            }
+        for(int i=scores.size()-1,j=scores.size()-competition.template.mcTest.NUM_SCORES_TO_KEEP-1;i>j&&i>=0;i--) {
+            score += scores.get(i);
         }
+
+
         return score;
     }
 
-    // Returns a JSON list of objects formatted: {tid: tid, nonAlts: [["name", uid, [mcNumCorrect, mcNumIncorrect]]],
-    // alt: ["name",uid,[mcNumCorrect, mcNumIncorrect]]}. if there is no mcTest, there is no mcScore
-    public JsonObject getStudentJSON() {
-        JsonObject obj = new JsonObject();
+    // Returns a JSON list of objects formatted: {tid: tid, students: [["name", uid, type, [mcNumCorrect, mcNumIncorrect]]]}. if there is no mcTest, there is no mcScore
+    // type is the StudentType name
+    public JsonArray getStudentJSON() {
 
         JsonArray array = new JsonArray();
-        for(short uid: uids) {
-            if(uid == altUID) continue; // This is the alt
-
+        for(short uid: uids.keySet()) {
+            // if(uid == altUID) continue; // This is the alt
             Student student = StudentMap.getByUID(uid);
             if(student == null) continue;
 
             JsonArray studentData = student.getJSON();
+            studentData.add(uids.get(uid).toString());
 
             if(competition.template.mcTest.exists && mc.containsKey(uid)) {
                 MCSubmission submission = mc.get(uid);
@@ -481,9 +461,8 @@ public class UILEntry {
             }
             array.add(studentData);
         }
-        obj.add("nonAlts", array);
 
-        if(altUID >= 0 && competition.template.frqTest.exists) {    // Alternates exist and this team has one
+        /*if(altUID >= 0 && competition.template.frqTest.exists) {    // Alternates exist and this team has one
             Student student = StudentMap.getByUID(altUID);
             if(student != null) {
                 JsonArray studentData = student.getJSON();
@@ -500,9 +479,9 @@ public class UILEntry {
 
                 obj.add("alt", studentData);
             }
-        }
+        }*/
 
-        return obj;
+        return array;
     }
 
     public JsonArray getFRQJSON() {
@@ -534,7 +513,7 @@ public class UILEntry {
         obj.addProperty("action", "updateFRQProblems");
         obj.addProperty("html", competition.template.getFRQProblems(this));
         String response = obj.toString();
-        for (short uid : uids) {
+        for (short uid : uids.keySet()) {
             CompetitionSocket socket = CompetitionSocket.connected.get(uid);
             System.out.println("Looking at uid=" + uid);
             if (socket != null) {

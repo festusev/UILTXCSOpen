@@ -12,10 +12,7 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
 import java.util.*;
-
-import static Outlet.Conn.getConnection;
 
 /**
  * An html template for each UIL page. Just instantiate it, specify the needed parameters, and then each time someone
@@ -160,6 +157,8 @@ public class Template {
                 "<link rel='stylesheet' href='/css/console/console.css'>" +
                 "<link rel='stylesheet' href='/css/console/uil_template.css'>" +
                 "<script src='/js/console/uil.js'></script>" +
+                "<script src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/jszip.js' async defer></script>" +
+                "<script src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/xlsx.js' async defer></script>" +
                 "</head><body>";
     }
 
@@ -256,9 +255,9 @@ public class Template {
                     written += "<p id='writtenAverage'>" + Math.round(submissionAverage) + " average</p>";
                 } else {
                     UILEntry entry = ((Student)uData).cids.get(cid);
-                    written += "<h2>Team</h2><p style='overflow:hidden'>"+StringEscapeUtils.escapeHtml4(entry.tname)+
+                    written += "<h2>Team</h2><p style='overflow:hidden'>"+entry.getEscapedTname()+
                             "</p><h2>Team Code</h2><p>"+entry.password+"</p><h2>Test</h2>";
-                    for(short uid: entry.uids) {
+                    for(short uid: entry.uids.keySet()) {
                         Student student = StudentMap.getByUID(uid);
                         short score = 0;
                         if(entry.mc.containsKey(uid)) {
@@ -338,7 +337,10 @@ public class Template {
             actMessage = "<h3 class='subtitle'>Teacher's can't compete</h3>";
         } else if(userStatus.signedUp) { // If they are already signed up for this competition
             actMessage = "<h3 class='subtitle'>You have signed up for this competition</h3>";
+        } else if(userStatus.alternate) {
+            actMessage = "<h3 class='subtitle'>You are an alternate</h3>";
         }
+
         Teacher teacher = competition.teacher;
         String school = "";
         if(!teacher.school.isEmpty()) school = "<h2>School</h2><p>"+StringEscapeUtils.escapeHtml4(teacher.school)+"</p>";
@@ -383,7 +385,7 @@ public class Template {
 
     public String getTeamMembers(User u, UILEntry team) {
         String html = "";
-        for(short uid: team.uids) {
+        for(short uid: team.uids.keySet()) {
             Student student = StudentMap.getByUID(uid);
             html += "<li style='list-style-type:none;'>" + StringEscapeUtils.escapeHtml4(student.getName());
             if (uid == u.uid && team.notStarted()) html += "<span onclick='leaveTeam()' id='leaveTeam'>Leave</span>";
@@ -396,7 +398,7 @@ public class Template {
         if(!userStatus.signedUp) return "";    // They don't belong to a team
 
         UILEntry team = ((Student)u).cids.get(cid);
-        String html = "<div id='teamColumn' class='column' style='display:none;'><p id='teamName'>"+StringEscapeUtils.escapeHtml4(team.tname)+"<span>"+
+        String html = "<div id='teamColumn' class='column' style='display:none;'><p id='teamName'>"+team.getEscapedTname()+"<span>"+
                 ordinal(sortedTeams.indexOf(team.tid)+1)+"</span></p>" +
                 "<p id='teamJoinCode'>Join Code: "+team.password+"</p><div><b>Members:</b><ul id='teamMembers'>";
         html += getTeamMembers(u, team);
@@ -409,7 +411,7 @@ public class Template {
     }
     public String getSmallMC(Student student, UILEntry entry, MCSubmission submission) {
         return "<tr onclick='showMCSubmission("+student.uid+");'><td>" + StringEscapeUtils.escapeHtml4(student.getName()) +
-                "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td><td>" + submission.scoringReport[0] +
+                "</td><td>" + entry.getEscapedTname() + "</td><td>" + submission.scoringReport[0] +
                 "</td></tr>";
     }
     public String getMCHTML(User u, UserStatus userStatus, CompetitionStatus competitionStatus){
@@ -585,12 +587,13 @@ public class Template {
     }
 
     public String getSmallFRQ(int i, FRQSubmission submission) {
-        String timeStamp = new SimpleDateFormat("MM/dd HH:mm").format(submission.submittedTime);
+        // String timeStamp = new SimpleDateFormat("MM/dd HH:mm").format(submission.submittedTime);
         return "<tr onclick='showFRQSubmission(this,"+i+")'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber].name) +
-                "</td><td>" + StringEscapeUtils.escapeHtml4(submission.entry.tname) + "</td><td class='"+
+                "</td><td>" + submission.entry.getEscapedTname() + "</td><td class='"+
                 (submission.graded?"graded":"")+"' id='showFRQSubmissionGraded"+i+"'>"+
                 submission.graded+"</td><td id='showFRQSubmission"+i+"'>" + submission.getResultString() +
-                "</td><td>"+timeStamp+"</td></tr>";
+                "</td><td id='"+submission.submittedTime+"_"+submission.problemNumber+"'><script>setTime("+submission.submittedTime+",'"+
+                submission.submittedTime+"_"+submission.problemNumber+"');</script></td></tr>";
     }
 
     public String getFRQHTML(User u, UserStatus userStatus, CompetitionStatus competitionStatus) {
@@ -614,7 +617,8 @@ public class Template {
                 String rows = "";
                 for(int i=competition.frqSubmissions.size()-1; i>=0; i--) {
                     FRQSubmission submission = competition.frqSubmissions.get(i);
-                    rows += getSmallFRQ(i, submission);
+                    if(frqTest.dryRunMode && submission.problemNumber == 0) rows += getSmallFRQ(i, submission);
+                    else if(!frqTest.dryRunMode && submission.problemNumber > 0) rows += getSmallFRQ(i, submission);
                 }
                 html += rows + "</table></div></div></div>";
 
@@ -636,7 +640,7 @@ public class Template {
             if (competitionStatus.frqFinished) {
                 return getFinishedFRQ(entry);
             } else if (competitionStatus.frqDuring) {
-                if(userStatus.alt) {
+                if(userStatus.writtenSpecialist) {
                     return "<div id='frqColumn' class='column' style='display:none;'>" +
                             "<h1 class='forbiddenPage'>Written specialists cannot compete in the Hands-On.</h1>" +
                             "</div>";
@@ -727,7 +731,7 @@ public class Template {
                 if(asker != null) {
                     UILEntry entry = asker.cids.get(cid);
                     if(entry != null) {
-                        askerName = " - " + entry.tname;
+                        askerName = " - " + entry.getEscapedTname();
                     }
                 }
                 if(clarification.responded) {  // Only show responded clarifications to non creators
@@ -780,7 +784,12 @@ public class Template {
                     else postfix += "<p onclick='startDryRun()'>Start Dry Run</p>";
                 }
             }
-            postfix += "</div></li>";
+            postfix += "</div></li><img id='resetSubmissions' onclick='showResetSubmissions()' class='creatorOnly' src='/res/reset-update.svg'>" +
+                    "<div id='resetConfirmationCnt'><div class='center'><h1>Reset submissions?</h1><p>This will permanently " +
+                    "reset your competition. All hands-on and written submissions will be cleared.</p>" +
+                    "<button onclick='resetSubmissions()'>Yes, Reset</button>" +
+                    "<button onclick='closeResetSubmissions()'>Cancel</button>" +
+                    "</div></div>";
         }
 
         if((!frqTest.exists || competitionStatus.frqBefore) && (!mcTest.exists || competitionStatus.mcBefore)) {
@@ -835,7 +844,7 @@ public class Template {
         return scoreboardHTML;
     }
 
-    public void updateScoreboard(){
+    public synchronized void updateScoreboard(){
         /*try {
             allTeams = competition.getAllEntries();
         } catch (SQLException e) {
@@ -884,7 +893,7 @@ public class Template {
             if(frqTest.exists && mcTest.exists) teamList += "<td class='right'>" + (entry.frqScore + mcScore) + "</td></tr>";*/
 
             JsonObject entryJSON = new JsonObject();
-            entryJSON.addProperty("tname", entry.tname);
+            entryJSON.addProperty("tname", entry.getEscapedTname());
             entryJSON.addProperty("school", entry.school);
             entryJSON.addProperty("tid", entry.tid);
             entryJSON.add("students", entry.getStudentJSON());
@@ -896,7 +905,7 @@ public class Template {
 
             scoreboardData.add(entryJSON);
             teamCodeData.add(entry.password);
-            for(short uid: entry.uids) {
+            for(short uid: entry.uids.keySet()) {
                 Student student = StudentMap.getByUID(uid);
                 if(student.temp) {
                     JsonArray tempJSON = new JsonArray();
@@ -910,6 +919,7 @@ public class Template {
 
         // create HTML
         scoreboardHTML = "<div class='column' id='scoreboardColumn' style='display:none;'>" +
+                "<div id='uploadRosterBox' style='display:none' class='creatorOnly'>Uploading roster...</div>" +
                 "<div id='signUpBox' style='display:none'><div class='center'><h1>Create Team</h1>" +
                 "<img src='/res/close.svg' id='signUpClose' onclick='hideSignup()'/>" +
                 "<p id='errorBoxERROR'></p><p class='instruction'>Team Name</p><input name='teamCode' id='teamCode' maxlength='25' class='creatingTeam'>" +
@@ -946,6 +956,7 @@ public class Template {
                 "<button id='createTeam' onclick='showSignup()' class='creatorOnly chngButton'>Create Team</button>" +
                 "<a id='downloadScoreboard' onclick='downloadScoreboard()' class='creatorOnly'>Download Scoreboard</a>" +
                 "<a id='downloadRoster' onclick='downloadRoster()' class='creatorOnly'>Download Roster</a>" +
+                "<img id='uploadRoster' src='/res/upload.svg' class='creatorOnly' onclick='uploadRosterProxy()'/><input id='uploadRosterProxy' type='file' style='display:none' onchange='uploadRoster()'/>" +
                 "<div id='generalScoreboard'><table id='teamList'></table></div>";
         if(mcTest.exists) scoreboardHTML += "<div id='writtenScoreboard'><table id='writtenScoreboardTable'></table></div>";
         if(frqTest.exists) scoreboardHTML += "<div id='handsOnScoreboard'><table id='handsOnScoreboardTable'></table></div>";
@@ -956,13 +967,8 @@ public class Template {
                 "<br><span class='label'>Individual:</span><span><input type='checkbox' id='openTeamIsIndividual'></span></p>";
         if(mcTest.exists) scoreboardHTML += "<p><span class='label'>Written:</span><span id='openTeamWritten'></span></p>";
         if(frqTest.exists) scoreboardHTML += "<p><span class='label'>Hands-On:</span><span id='openTeamHandsOn'></span>";
-        scoreboardHTML += "<h3>Primaries";
-        if(mcTest.exists) scoreboardHTML += "<span style='float:right'>Written</span>";
-        scoreboardHTML += "</h3><table id='openPrimariesList'></table><button id='addPrimaryCompetitor' " +
-                "class='addCompetitor' onclick='Team.addPrimaryCompetitor()'>+</button>";
-        if(competition.alternateExists) scoreboardHTML += "<h3>Written Specialist</h3><table id='openAlternateList'>" +
-                "</table><button id='addAlternateCompetitor' class='addCompetitor' onclick='Team.addAlternateCompetitor()'>+</button>";
-        scoreboardHTML += "</div></div>";
+        scoreboardHTML += "<h3>Competitors</h3><table id='openPrimariesList'></table><button id='addPrimaryCompetitor' " +
+                "class='addCompetitor' onclick='Team.addPrimaryCompetitor()'>+</button></div></div>";
     }
 
     /***
@@ -980,7 +986,7 @@ public class Template {
             stmt.executeUpdate();
 
             // Now, update all of the students who are signed up for this team
-            for(short uid: entry.uids) {
+            for(short uid: entry.uids.keySet()) {
                 Student s = StudentMap.getByUID(uid);
                 s.cids.remove(cid);
                 if(s.temp) {
@@ -994,7 +1000,7 @@ public class Template {
                     }
                 }
             }
-            entry.uids = new HashSet<>();
+            entry.uids = new HashMap<>();
             competition.entries.delEntry(entry);
 
             // Remove frq submissions
@@ -1016,21 +1022,23 @@ class UpdateScoreboard extends TimerTask {
 
 class UserStatus {
     boolean signedUp;
-    boolean alt;    // if they are the alternate
+    boolean writtenSpecialist;    // if they are the written specialist
     boolean teacher;
     boolean admin;  // If they administrate this competition
     boolean creator;
     boolean judging;
     boolean finishedMC; // Whether or not they finished the MC. If they aren't signed up, this is always false.
+    boolean alternate;  // If they are an alternate
 
-    UserStatus(boolean signedUp, boolean alt, boolean teacher, boolean creator, boolean judging, boolean finishedMC) {
+    UserStatus(boolean signedUp, boolean writtenSpecialist, boolean teacher, boolean creator, boolean judging, boolean finishedMC, boolean alternate) {
         this.signedUp = signedUp;
-        this.alt = alt;
+        this.writtenSpecialist = writtenSpecialist;
         this.teacher = teacher;
         this.admin = creator || judging;
         this.creator = creator;
         this.judging = judging;
         this.finishedMC = finishedMC;
+        this.alternate = alternate;
     }
 
     public static UserStatus getCompeteStatus(User u, Competition competition) {
@@ -1040,6 +1048,7 @@ class UserStatus {
         boolean creator = false;
         boolean judge = false;
         boolean finishedMC = false;
+        boolean alternate = false;
 
         if(u.teacher) {
             signedUp = false;
@@ -1053,14 +1062,19 @@ class UserStatus {
             signedUp = false;
         } else {
             UILEntry entry = ((Student)u).cids.get(competition.template.cid);
-            finishedMC = entry.finishedMC(u.uid);
+            if(entry.uids.get(u.uid) == UILEntry.StudentType.ALTERNATE) {
+                signedUp = false;
+                alternate = true;
+            } else {
+                finishedMC = entry.finishedMC(u.uid);
 
-            if(entry.altUID == u.uid) { // They are this team's alternate
-                alt = true;
+                if (entry.uids.get(u.uid) == UILEntry.StudentType.WRITTEN_SPECIALIST) { // They are this team's written specialist
+                    alt = true;
+                }
             }
         }
 
-        return new UserStatus(signedUp, alt, teacher, creator, judge, finishedMC);
+        return new UserStatus(signedUp, alt, teacher, creator, judge, finishedMC, alternate);
     }
 }
 

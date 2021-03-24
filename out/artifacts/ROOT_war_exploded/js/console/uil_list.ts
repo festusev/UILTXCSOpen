@@ -36,15 +36,16 @@ const config = {
             writtenExists: true,
             handsOnExists: true,
 
-            alternateExists: true,
-            numNonAlts: 3,
+            writtenSpecialistExists: true,
+            teamSize: 6,
 
             written: {
                 numProblems : 40,
                 correctPoints: 6,
                 incorrectPoints: -2,
                 instructions: "You have 45 minutes to complete the 40 question written portion. You will be quized on computer science principles, syntax, and more.",
-                time: 45
+                time: 45,
+                numScoresToKeep : 3
             },
 
             handsOn: {
@@ -58,15 +59,15 @@ const config = {
             writtenExists: true,
             handsOnExists: false,
 
-            alternateExists: false,
-            numNonAlts: 3,
-
+            writtenSpecialistExists: false,
+            teamSize: 3,
             written: {
                 numProblems : 80,
                 correctPoints: 1,
                 incorrectPoints: 0,
                 instructions: "You have 10 minutes to complete this 80 question mental math test covering all high school mathematics courses.",
-                time: 10
+                time: 10,
+                numScoresToKeep : 3
             },
 
             handsOn: {
@@ -80,15 +81,16 @@ const config = {
             writtenExists: true,
             handsOnExists: false,
 
-            alternateExists: false,
-            numNonAlts: 3,
+            writtenSpecialistExists: false,
+            teamSize: 3,
 
             written: {
                 numProblems : 70,
                 correctPoints: 1,
                 incorrectPoints: 0,
                 instructions: "You have 30 minutes to complete this 70 question mathematics test. You may use a handheld calculator.",
-                time: 30
+                time: 30,
+                numScoresToKeep : 3
             },
 
             handsOn: {
@@ -102,15 +104,16 @@ const config = {
             writtenExists: true,
             handsOnExists: false,
 
-            alternateExists: false,
-            numNonAlts: 3,
+            writtenSpecialistExists: false,
+            teamSize: 3,
 
             written: {
                 numProblems : 60,
                 correctPoints: 1,
                 incorrectPoints: 0,
                 instructions: "You have 40 minutes to complete this 60 question mathematics test, testing knowledge from algebra 1 to elementary calculus.",
-                time: 40
+                time: 40,
+                numScoresToKeep : 3
             },
 
             handsOn: {
@@ -215,15 +218,16 @@ interface Template {
     writtenExists: boolean;
     handsOnExists: boolean;
 
-    alternateExists: boolean;
-    numNonAlts: number;
+    writtenSpecialistExists: boolean;
+    teamSize: number;
 
     written:{
         numProblems:number,
         correctPoints:number,
         incorrectPoints:number,
         instructions:string,
-        time:number
+        time:number,
+        numScoresToKeep:number
     };
 
     handsOn:{
@@ -296,7 +300,8 @@ class Competition {
         testLink: string,
         answersLink: string,
         time: number,
-        autoGrade : boolean
+        autoGrade : boolean,
+        numScoresToKeep: number
     } = {
         opens: "",
         key: [],
@@ -306,7 +311,8 @@ class Competition {
         testLink:"",
         answersLink:"",
         time:0,
-        autoGrade : true
+        autoGrade : true,
+        numScoresToKeep : 0
     };
 
     handsOn: {
@@ -319,7 +325,8 @@ class Competition {
         time: number,
         autoGrade: boolean,
         dryRunExists : boolean,
-        dryRunStudentPacket : string
+        dryRunStudentPacket : string,
+        languages : string[]
     } = {
         opens:"",
         maxPoints:0,
@@ -330,7 +337,8 @@ class Competition {
         time:0,
         autoGrade: null,
         dryRunExists : false,
-        dryRunStudentPacket : ""
+        dryRunStudentPacket : "",
+        languages : []
     };
 
     dom: {
@@ -357,6 +365,7 @@ class Competition {
 
         altExists : HTMLInputElement,
         numNonAlts : HTMLInputElement,
+        teamSize : HTMLInputElement,
 
         writtenSection: HTMLSpanElement,
         writtenOpen: HTMLInputElement,
@@ -369,6 +378,7 @@ class Competition {
         writtenPointsPerIncorrect : HTMLInputElement,
         writtenCheckbox : HTMLInputElement,
         writtenAutoGradeCheckbox : HTMLInputElement,
+        writtenNumScoresToKeep : HTMLInputElement,
 
         handsOnSection: HTMLSpanElement,
         handsOnStart : HTMLInputElement,
@@ -382,7 +392,10 @@ class Competition {
         handsOnAutoGrade : HTMLInputElement,
         dryrun : HTMLElement,
         list_dryrun : HTMLElement,
-        dryRunStudentLink : HTMLInputElement
+        dryRunStudentLink : HTMLInputElement,
+        handsOnJava : HTMLInputElement,
+        handsOnPython : HTMLInputElement,
+        handsOnCPP : HTMLInputElement
     } = {
         form: null,
         comp_head: null,
@@ -404,7 +417,7 @@ class Competition {
         rules : null,
 
         altExists : null,
-        numNonAlts : null,
+        teamSize : null,
 
         writtenSection: null,
         writtenOpen: null,
@@ -417,6 +430,7 @@ class Competition {
         writtenPointsPerIncorrect : null,
         writtenCheckbox : null,
         writtenAutoGradeCheckbox : null,
+        writtenNumScoresToKeep : null,
 
         handsOnSection: null,
         handsOnStart : null,
@@ -430,7 +444,10 @@ class Competition {
         handsOnAutoGrade : null,
         dryrun : null,
         list_dryrun : null,
-        dryRunStudentLink : null
+        dryRunStudentLink : null,
+        handsOnJava : null,
+        handsOnPython : null,
+        handsOnCPP : null
     };
 
     constructor(cid: string, published: boolean, isPublic: boolean, showScoreboard: boolean, name:string,
@@ -467,6 +484,7 @@ class Competition {
             this.written.answersLink = writtenObj.answersLink;
             this.written.time = writtenObj.time;
             this.written.autoGrade = writtenObj.autoGrade;
+            this.written.numScoresToKeep = writtenObj.numScoresToKeep;
         }
 
         if(this.handsOnExists) {    /* HandsOn exists */
@@ -479,6 +497,7 @@ class Competition {
             this.handsOn.autoGrade = handsOnObj.autoGrade;
             this.handsOn.dryRunExists = handsOnObj.dryRunExists;
             this.handsOn.dryRunStudentPacket = handsOnObj.dryRunStudentPacket;
+            this.handsOn.languages = handsOnObj.languages;
         }
     }
 
@@ -547,7 +566,7 @@ class Competition {
     }
 
     applyTemplate(template: Template) {
-        this.dom.numNonAlts.value = "" + template.numNonAlts;
+        this.dom.numNonAlts.value = "" + template.teamSize;
 
         if(template.handsOnExists != this.handsOnExists) {
             this.toggleHandsOnTest();
@@ -558,7 +577,7 @@ class Competition {
             this.dom.writtenCheckbox.checked = this.writtenExists;
         }
 
-        if(template.handsOnExists) this.dom.altExists.checked = template.alternateExists;
+        if(template.handsOnExists) this.dom.altExists.checked = template.writtenSpecialistExists;
 
         this.handsOn.incorrectPenalty = template.handsOn.incorrectPenalty;
         this.dom.handsOnIncorrectPenalty.value = "" + template.handsOn.incorrectPenalty;
@@ -586,6 +605,9 @@ class Competition {
 
         this.written.time = template.written.time;
         this.dom.writtenTime.value = "" + template.written.time;
+
+        this.written.numScoresToKeep = template.written.numScoresToKeep;
+        this.dom.writtenNumScoresToKeep.value = "" + template.written.numScoresToKeep;
 
         if(this.written.key.length < template.written.numProblems) {
             for(let i=this.written.key.length+1,j=template.written.numProblems;i<=j;i++) {
@@ -633,6 +655,8 @@ class Competition {
             formData.append("mcInstructions", this.dom.writtenInstructionCnt.value);
             formData.append("mcTestLink", this.dom.writtenTestLink.value);
             formData.append("mcAnswersLink", "");   // TODO: Add this
+            formData.append("mcNumScoresToKeep", this.dom.writtenNumScoresToKeep.value);
+
             let answers:[string,string][] = [];
             let oldIndices:number[] = [];
             for(let answer of this.written.key) {
@@ -670,8 +694,15 @@ class Competition {
                     formData.append("fo:"+i, problem.dom.output.files[0]);
                 }
             }
+
             formData.append("frqProblemMap", JSON.stringify(problems));
             formData.append("frqIndices", JSON.stringify(problemIndices));
+
+            let languages:string[] = [];
+            if(this.dom.handsOnJava.checked) languages.push("JAVA");
+            if(this.dom.handsOnCPP.checked) languages.push("CPP");
+            if(this.dom.handsOnPython.checked) languages.push("PYTHON");
+            formData.append("frqLanguages", JSON.stringify(languages));
         }
         return formData;
     }
@@ -1129,6 +1160,36 @@ list_handsOn_changeproblems.appendChild(li);
             if(thisComp.written.autoGrade) autoGrade_toggle_input.checked = true;
             autoGrade_toggle.appendChild(autoGrade_toggle_input);
             thisComp.dom.writtenAutoGradeCheckbox = autoGrade_toggle_input;
+            /* CLOSE */
+
+            /* OPEN */
+            let numScoresKeep_header = document.createElement("div");
+            makeHalf(numScoresKeep_header);
+            body.appendChild(numScoresKeep_header);
+
+            let h2_numScoresKeep_header = document.createElement("h3");
+            h2_numScoresKeep_header.innerHTML = "# Scores to Keep";
+            numScoresKeep_header.appendChild(h2_numScoresKeep_header);
+            /* CLOSE */
+
+            /* OPEN */
+            let numScoresKeep_header_input = document.createElement("div");
+            makeHalf(numScoresKeep_header_input);
+            body.appendChild(numScoresKeep_header_input);
+
+            let numScoresKeep_input = document.createElement("input");
+            numScoresKeep_input.name = "numScoresKeep";
+            numScoresKeep_input.type = "number";
+            numScoresKeep_input.value = ""+thisComp.written.numScoresToKeep;
+            numScoresKeep_input.min = "1";
+            numScoresKeep_input.max = "127";
+            /*numNonAlts_input.oninput = function() {
+                numberInputCheckMaxValue(numNonAlts_input, 1, 127);
+            };*/
+
+            numScoresKeep_header_input.appendChild(numScoresKeep_input);
+            thisComp.dom.writtenNumScoresToKeep = numScoresKeep_input;
+            /* CLOSE */
 
             /* OPEN */
             let written_open = document.createElement("div");
@@ -1410,6 +1471,78 @@ list_handsOn_changeproblems.appendChild(li);
             /* CLOSE */
 
             /* OPEN */
+            let java_header = document.createElement("div");
+            makeHalf(java_header);
+            handsOn_section.appendChild(java_header);
+
+            let h2_java_header = document.createElement("h3");
+            h2_java_header.innerHTML = "Allow Java";
+            java_header.appendChild(h2_java_header);
+            /* CLOSE */
+
+            /* OPEN */
+            let java_toggle = document.createElement("div");
+            handsOn_section.appendChild(java_toggle);
+
+            let java_toggle_input = document.createElement("input");
+            java_toggle_input.classList.add("checkbox");
+            java_toggle_input.type = "checkbox";
+            java_toggle_input.name = "javaExists";
+
+            if(thisComp.handsOn.languages.includes("JAVA")) java_toggle_input.checked = true;
+            java_toggle.appendChild(java_toggle_input);
+            thisComp.dom.handsOnJava = java_toggle_input;
+            /* CLOSE */
+
+            /* OPEN */
+            let cpp_header = document.createElement("div");
+            makeHalf(cpp_header);
+            handsOn_section.appendChild(cpp_header);
+
+            let h2_cpp_header = document.createElement("h3");
+            h2_cpp_header.innerHTML = "Allow C++";
+            cpp_header.appendChild(h2_cpp_header);
+            /* CLOSE */
+
+            /* OPEN */
+            let cpp_toggle = document.createElement("div");
+            handsOn_section.appendChild(cpp_toggle);
+
+            let cpp_toggle_input = document.createElement("input");
+            cpp_toggle_input.classList.add("checkbox");
+            cpp_toggle_input.type = "checkbox";
+            cpp_toggle_input.name = "cppExists";
+
+            if(thisComp.handsOn.languages.includes("CPP")) cpp_toggle_input.checked = true;
+            cpp_toggle.appendChild(cpp_toggle_input);
+            thisComp.dom.handsOnCPP = cpp_toggle_input;
+            /* CLOSE */
+
+            /* OPEN */
+            let python_header = document.createElement("div");
+            makeHalf(python_header);
+            handsOn_section.appendChild(python_header);
+
+            let h2_python_header = document.createElement("h3");
+            h2_python_header.innerHTML = "Allow Python";
+            python_header.appendChild(h2_python_header);
+            /* CLOSE */
+
+            /* OPEN */
+            let python_toggle = document.createElement("div");
+            handsOn_section.appendChild(python_toggle);
+
+            let python_toggle_input = document.createElement("input");
+            python_toggle_input.classList.add("checkbox");
+            python_toggle_input.type = "checkbox";
+            python_toggle_input.name = "pythonExists";
+
+            if(thisComp.handsOn.languages.includes("PYTHON")) python_toggle_input.checked = true;
+            python_toggle.appendChild(python_toggle_input);
+            thisComp.dom.handsOnPython = python_toggle_input;
+            /* CLOSE */
+
+            /* OPEN */
             let handsOn_start = document.createElement("div");
             makeFull(handsOn_start);
             handsOn_start.innerHTML = "<h3>Start</h3>";
@@ -1542,7 +1675,7 @@ list_handsOn_changeproblems.appendChild(li);
                     handsOnProblemMap[0][1], handsOnProblemMap[0][2], true);
                 list_dryrun.appendChild(data[0]);
             } else {
-                let data: [HTMLLIElement, HandsOnProblem] = thisComp.addHandsOnProblem(0, "", "", "", true);
+                let data: [HTMLLIElement, HandsOnProblem] = thisComp.addHandsOnProblem(-1, "", "", "", true);
                 list_dryrun.appendChild(data[0]);
             }
             /* CLOSE */
@@ -1880,7 +2013,7 @@ list_handsOn_changeproblems.appendChild(li);
         body.appendChild(numNonAlts_header);
 
         let h2_numNonAlts_header = document.createElement("h3");
-        h2_numNonAlts_header.innerHTML = "Team Size (excluding alts)";
+        h2_numNonAlts_header.innerHTML = "Team Size (including alts)";
         numNonAlts_header.appendChild(h2_numNonAlts_header);
         /* CLOSE */
 
@@ -2163,7 +2296,7 @@ function addErrorBox(parentBox:HTMLElement, error:string, timeout: boolean, erro
                 errorBox.style.display = "none";
             } catch (e) {
             }
-        }, 5000);
+        }, 10000);
     }
 
     return errorBox;
@@ -2184,7 +2317,7 @@ function addSuccessBox(parentBox:HTMLElement, success: string, timeout: boolean,
             try{
                 successBox.style.display = "none";
             } catch(e) {}
-        }, 5000);
+        }, 10000);
     }
 
     return successBox;

@@ -74,14 +74,15 @@ var config = {
         cs: {
             writtenExists: true,
             handsOnExists: true,
-            alternateExists: true,
-            numNonAlts: 3,
+            writtenSpecialistExists: true,
+            teamSize: 6,
             written: {
                 numProblems: 40,
                 correctPoints: 6,
                 incorrectPoints: -2,
                 instructions: "You have 45 minutes to complete the 40 question written portion. You will be quized on computer science principles, syntax, and more.",
-                time: 45
+                time: 45,
+                numScoresToKeep: 3
             },
             handsOn: {
                 maxPoints: 60,
@@ -93,14 +94,15 @@ var config = {
         numbersense: {
             writtenExists: true,
             handsOnExists: false,
-            alternateExists: false,
-            numNonAlts: 3,
+            writtenSpecialistExists: false,
+            teamSize: 3,
             written: {
                 numProblems: 80,
                 correctPoints: 1,
                 incorrectPoints: 0,
                 instructions: "You have 10 minutes to complete this 80 question mental math test covering all high school mathematics courses.",
-                time: 10
+                time: 10,
+                numScoresToKeep: 3
             },
             handsOn: {
                 maxPoints: 60,
@@ -112,14 +114,15 @@ var config = {
         calculatorapplications: {
             writtenExists: true,
             handsOnExists: false,
-            alternateExists: false,
-            numNonAlts: 3,
+            writtenSpecialistExists: false,
+            teamSize: 3,
             written: {
                 numProblems: 70,
                 correctPoints: 1,
                 incorrectPoints: 0,
                 instructions: "You have 30 minutes to complete this 70 question mathematics test. You may use a handheld calculator.",
-                time: 30
+                time: 30,
+                numScoresToKeep: 3
             },
             handsOn: {
                 maxPoints: 60,
@@ -131,14 +134,15 @@ var config = {
         mathematics: {
             writtenExists: true,
             handsOnExists: false,
-            alternateExists: false,
-            numNonAlts: 3,
+            writtenSpecialistExists: false,
+            teamSize: 3,
             written: {
                 numProblems: 60,
                 correctPoints: 1,
                 incorrectPoints: 0,
                 instructions: "You have 40 minutes to complete this 60 question mathematics test, testing knowledge from algebra 1 to elementary calculus.",
-                time: 40
+                time: 40,
+                numScoresToKeep: 3
             },
             handsOn: {
                 maxPoints: 60,
@@ -281,7 +285,8 @@ var Competition = /** @class */ (function () {
             testLink: "",
             answersLink: "",
             time: 0,
-            autoGrade: true
+            autoGrade: true,
+            numScoresToKeep: 0
         };
         this.handsOn = {
             opens: "",
@@ -293,7 +298,8 @@ var Competition = /** @class */ (function () {
             time: 0,
             autoGrade: null,
             dryRunExists: false,
-            dryRunStudentPacket: ""
+            dryRunStudentPacket: "",
+            languages: []
         };
         this.dom = {
             form: null,
@@ -313,7 +319,7 @@ var Competition = /** @class */ (function () {
             description: null,
             rules: null,
             altExists: null,
-            numNonAlts: null,
+            teamSize: null,
             writtenSection: null,
             writtenOpen: null,
             writtenTime: null,
@@ -325,6 +331,7 @@ var Competition = /** @class */ (function () {
             writtenPointsPerIncorrect: null,
             writtenCheckbox: null,
             writtenAutoGradeCheckbox: null,
+            writtenNumScoresToKeep: null,
             handsOnSection: null,
             handsOnStart: null,
             handsOnTime: null,
@@ -337,7 +344,10 @@ var Competition = /** @class */ (function () {
             handsOnAutoGrade: null,
             dryrun: null,
             list_dryrun: null,
-            dryRunStudentLink: null
+            dryRunStudentLink: null,
+            handsOnJava: null,
+            handsOnPython: null,
+            handsOnCPP: null
         };
         competitions.push(this);
         this.cid = cid;
@@ -368,6 +378,7 @@ var Competition = /** @class */ (function () {
             this.written.answersLink = writtenObj.answersLink;
             this.written.time = writtenObj.time;
             this.written.autoGrade = writtenObj.autoGrade;
+            this.written.numScoresToKeep = writtenObj.numScoresToKeep;
         }
         if (this.handsOnExists) { /* HandsOn exists */
             this.handsOn.opens = handsOnObj.opens;
@@ -379,6 +390,7 @@ var Competition = /** @class */ (function () {
             this.handsOn.autoGrade = handsOnObj.autoGrade;
             this.handsOn.dryRunExists = handsOnObj.dryRunExists;
             this.handsOn.dryRunStudentPacket = handsOnObj.dryRunStudentPacket;
+            this.handsOn.languages = handsOnObj.languages;
         }
     }
     Competition.prototype.toggleWrittenKey = function (h2) {
@@ -444,7 +456,7 @@ var Competition = /** @class */ (function () {
         }
     };
     Competition.prototype.applyTemplate = function (template) {
-        this.dom.numNonAlts.value = "" + template.numNonAlts;
+        this.dom.numNonAlts.value = "" + template.teamSize;
         if (template.handsOnExists != this.handsOnExists) {
             this.toggleHandsOnTest();
             this.dom.handsOnCheckbox.checked = this.handsOnExists;
@@ -454,7 +466,7 @@ var Competition = /** @class */ (function () {
             this.dom.writtenCheckbox.checked = this.writtenExists;
         }
         if (template.handsOnExists)
-            this.dom.altExists.checked = template.alternateExists;
+            this.dom.altExists.checked = template.writtenSpecialistExists;
         this.handsOn.incorrectPenalty = template.handsOn.incorrectPenalty;
         this.dom.handsOnIncorrectPenalty.value = "" + template.handsOn.incorrectPenalty;
         this.handsOn.maxPoints = template.handsOn.maxPoints;
@@ -474,6 +486,8 @@ var Competition = /** @class */ (function () {
         this.dom.writtenPointsPerIncorrect.value = "" + template.written.incorrectPoints;
         this.written.time = template.written.time;
         this.dom.writtenTime.value = "" + template.written.time;
+        this.written.numScoresToKeep = template.written.numScoresToKeep;
+        this.dom.writtenNumScoresToKeep.value = "" + template.written.numScoresToKeep;
         if (this.written.key.length < template.written.numProblems) {
             for (var i = this.written.key.length + 1, j = template.written.numProblems; i <= j; i++) {
                 this.addWrittenQuestion(null);
@@ -514,6 +528,7 @@ var Competition = /** @class */ (function () {
             formData.append("mcInstructions", this.dom.writtenInstructionCnt.value);
             formData.append("mcTestLink", this.dom.writtenTestLink.value);
             formData.append("mcAnswersLink", ""); // TODO: Add this
+            formData.append("mcNumScoresToKeep", this.dom.writtenNumScoresToKeep.value);
             var answers = [];
             var oldIndices = [];
             for (var _b = 0, _c = this.written.key; _b < _c.length; _b++) {
@@ -551,6 +566,14 @@ var Competition = /** @class */ (function () {
             }
             formData.append("frqProblemMap", JSON.stringify(problems));
             formData.append("frqIndices", JSON.stringify(problemIndices));
+            var languages = [];
+            if (this.dom.handsOnJava.checked)
+                languages.push("JAVA");
+            if (this.dom.handsOnCPP.checked)
+                languages.push("CPP");
+            if (this.dom.handsOnPython.checked)
+                languages.push("PYTHON");
+            formData.append("frqLanguages", JSON.stringify(languages));
         }
         return formData;
     };
@@ -983,6 +1006,31 @@ list_handsOn_changeproblems.appendChild(li);
                 autoGrade_toggle_input.checked = true;
             autoGrade_toggle.appendChild(autoGrade_toggle_input);
             thisComp.dom.writtenAutoGradeCheckbox = autoGrade_toggle_input;
+            /* CLOSE */
+            /* OPEN */
+            var numScoresKeep_header = document.createElement("div");
+            makeHalf(numScoresKeep_header);
+            body.appendChild(numScoresKeep_header);
+            var h2_numScoresKeep_header = document.createElement("h3");
+            h2_numScoresKeep_header.innerHTML = "# Scores to Keep";
+            numScoresKeep_header.appendChild(h2_numScoresKeep_header);
+            /* CLOSE */
+            /* OPEN */
+            var numScoresKeep_header_input = document.createElement("div");
+            makeHalf(numScoresKeep_header_input);
+            body.appendChild(numScoresKeep_header_input);
+            var numScoresKeep_input = document.createElement("input");
+            numScoresKeep_input.name = "numScoresKeep";
+            numScoresKeep_input.type = "number";
+            numScoresKeep_input.value = "" + thisComp.written.numScoresToKeep;
+            numScoresKeep_input.min = "1";
+            numScoresKeep_input.max = "127";
+            /*numNonAlts_input.oninput = function() {
+                numberInputCheckMaxValue(numNonAlts_input, 1, 127);
+            };*/
+            numScoresKeep_header_input.appendChild(numScoresKeep_input);
+            thisComp.dom.writtenNumScoresToKeep = numScoresKeep_input;
+            /* CLOSE */
             /* OPEN */
             var written_open = document.createElement("div");
             makeFull(written_open);
@@ -1230,6 +1278,66 @@ list_handsOn_changeproblems.appendChild(li);
             thisComp.dom.handsOnAutoGrade = autoGrade_toggle_input;
             /* CLOSE */
             /* OPEN */
+            var java_header = document.createElement("div");
+            makeHalf(java_header);
+            handsOn_section.appendChild(java_header);
+            var h2_java_header = document.createElement("h3");
+            h2_java_header.innerHTML = "Allow Java";
+            java_header.appendChild(h2_java_header);
+            /* CLOSE */
+            /* OPEN */
+            var java_toggle = document.createElement("div");
+            handsOn_section.appendChild(java_toggle);
+            var java_toggle_input = document.createElement("input");
+            java_toggle_input.classList.add("checkbox");
+            java_toggle_input.type = "checkbox";
+            java_toggle_input.name = "javaExists";
+            if (thisComp.handsOn.languages.includes("JAVA"))
+                java_toggle_input.checked = true;
+            java_toggle.appendChild(java_toggle_input);
+            thisComp.dom.handsOnJava = java_toggle_input;
+            /* CLOSE */
+            /* OPEN */
+            var cpp_header = document.createElement("div");
+            makeHalf(cpp_header);
+            handsOn_section.appendChild(cpp_header);
+            var h2_cpp_header = document.createElement("h3");
+            h2_cpp_header.innerHTML = "Allow C++";
+            cpp_header.appendChild(h2_cpp_header);
+            /* CLOSE */
+            /* OPEN */
+            var cpp_toggle = document.createElement("div");
+            handsOn_section.appendChild(cpp_toggle);
+            var cpp_toggle_input = document.createElement("input");
+            cpp_toggle_input.classList.add("checkbox");
+            cpp_toggle_input.type = "checkbox";
+            cpp_toggle_input.name = "cppExists";
+            if (thisComp.handsOn.languages.includes("CPP"))
+                cpp_toggle_input.checked = true;
+            cpp_toggle.appendChild(cpp_toggle_input);
+            thisComp.dom.handsOnCPP = cpp_toggle_input;
+            /* CLOSE */
+            /* OPEN */
+            var python_header = document.createElement("div");
+            makeHalf(python_header);
+            handsOn_section.appendChild(python_header);
+            var h2_python_header = document.createElement("h3");
+            h2_python_header.innerHTML = "Allow Python";
+            python_header.appendChild(h2_python_header);
+            /* CLOSE */
+            /* OPEN */
+            var python_toggle = document.createElement("div");
+            handsOn_section.appendChild(python_toggle);
+            var python_toggle_input = document.createElement("input");
+            python_toggle_input.classList.add("checkbox");
+            python_toggle_input.type = "checkbox";
+            python_toggle_input.name = "pythonExists";
+            if (thisComp.handsOn.languages.includes("PYTHON"))
+                python_toggle_input.checked = true;
+            python_toggle.appendChild(python_toggle_input);
+            thisComp.dom.handsOnPython = python_toggle_input;
+            /* CLOSE */
+            /* OPEN */
             var handsOn_start = document.createElement("div");
             makeFull(handsOn_start);
             handsOn_start.innerHTML = "<h3>Start</h3>";
@@ -1354,7 +1462,7 @@ list_handsOn_changeproblems.appendChild(li);
                 list_dryrun.appendChild(data[0]);
             }
             else {
-                var data = thisComp.addHandsOnProblem(0, "", "", "", true);
+                var data = thisComp.addHandsOnProblem(-1, "", "", "", true);
                 list_dryrun.appendChild(data[0]);
             }
             /* CLOSE */
@@ -1654,7 +1762,7 @@ list_handsOn_changeproblems.appendChild(li);
         makeHalf(numNonAlts_header);
         body.appendChild(numNonAlts_header);
         var h2_numNonAlts_header = document.createElement("h3");
-        h2_numNonAlts_header.innerHTML = "Team Size (excluding alts)";
+        h2_numNonAlts_header.innerHTML = "Team Size (including alts)";
         numNonAlts_header.appendChild(h2_numNonAlts_header);
         /* CLOSE */
         /* OPEN */
@@ -1914,7 +2022,7 @@ function addErrorBox(parentBox, error, timeout, errorBox) {
             }
             catch (e) {
             }
-        }, 5000);
+        }, 10000);
     }
     return errorBox;
 }
@@ -1936,7 +2044,7 @@ function addSuccessBox(parentBox, success, timeout, successBox) {
                 successBox.style.display = "none";
             }
             catch (e) { }
-        }, 5000);
+        }, 10000);
     }
     return successBox;
 }

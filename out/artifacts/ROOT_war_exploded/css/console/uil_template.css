@@ -174,6 +174,15 @@
 #sectionControls:hover #sectionControlsButton {
     background-color: var(--light-gray);
 }
+#resetSubmissions {
+    height: 1.4rem;
+    float:right;
+    margin:0.5rem 1rem;
+    cursor: pointer;
+}
+#resetConfirmationCnt {
+
+}
 #scoreboardColumn {
     display: flex;
 }
@@ -202,7 +211,7 @@
 #teamList .right {
     width: 14%;
 }
-#selectStudent, #selectGlobalTeam, #deleteConfirmationCnt {
+#selectStudent, #selectGlobalTeam, #deleteConfirmationCnt, #resetConfirmationCnt {
     position: absolute;
     left: 0;
     top: 0;
@@ -213,7 +222,7 @@
     display: none;
     overflow: auto;
 }
-#selectStudent .center, #selectGlobalTeam .center, #deleteConfirmationCnt .center {
+#selectStudent .center, #selectGlobalTeam .center, #deleteConfirmationCnt .center, #resetConfirmationCnt .center {
     background-color: white;
     box-shadow: var(--shadow);
     width: 50rem;
@@ -363,25 +372,28 @@
     float: right;
     cursor: pointer;
 }
-#deleteConfirmationCnt .center {
+#deleteConfirmationCnt .center, #resetConfirmationCnt .center {
     height:unset;
     width: 25rem;
     top:50%;
     transform: translateX(-50%) translateY(-100%);
+    position: relative;
+    display: block;
+    margin: 0;
 }
-#deleteMessage {
+#deleteMessage, #resetConfirmationCnt h1 {
     text-align: center;
     color: var(--sec-col);
     font-weight: bold;
 }
-#deleteConfirmationCnt button {
+#deleteConfirmationCnt button, #resetConfirmationCnt button {
     width: 100%;
     background-color: white;
     margin-top: 1rem;
     border: none;
     cursor: pointer;
 }
-#deleteConfirmationCnt #deleteButton {
+#deleteConfirmationCnt #deleteButton,  #resetConfirmationCnt button:first-of-type {
     padding: 0.7rem 0;
     background-color: var(--warn-col);
     color: white;
@@ -624,7 +636,7 @@
     padding-left:10px;
     margin-top:-37px;
 }
-#signUpBox {
+#signUpBox, #uploadRosterBox {
     position:fixed;
     left:0;
     top:0;
@@ -632,6 +644,11 @@
     height:100vh;
     background-color:rgba(255,255,255,0.95);
     z-index: 2;
+}
+#uploadRosterBox {
+    font-size: 2rem;
+    text-align:center;
+    padding-top: 20rem;
 }
 #signUpBox .center{
     position: absolute;
@@ -740,6 +757,7 @@
     padding: 3rem 4rem;
     border-radius: var(--radius);
     overflow: auto;
+    margin-bottom: 5rem;
 }
 #frqSubmissions table{
     width:100%;
@@ -817,7 +835,7 @@
     display: inline-block;
     height: 1rem;
 }
-.frqSubmissionEditor .inputCnt b, .frqSubmissionEditor .outputCnt b{
+.frqSubmissionEditor .inputCnt b, .frqSubmissionEditor .outputCnt b, .frqHalf b {
     display: block;
     margin-bottom: 10px;
 }
@@ -986,6 +1004,20 @@
     cursor: pointer;
     color: var(--prim-dark);
     white-space: nowrap;
+}
+#uploadRoster{
+    height: 1.5rem;
+    float: right;
+    cursor: pointer;
+    margin-right: 2rem;
+    background-color: white;
+    padding: 0.7rem;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    transform: translateY(-200%);
+}
+#uploadRoster:hover {
+    background-color:rgb(251,251,251);
 }
 #handsOnScoreboard, #writtenScoreboard, #generalScoreboard {
     display: none;

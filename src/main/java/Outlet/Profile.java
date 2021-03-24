@@ -41,7 +41,7 @@ public class Profile extends HttpServlet{
         }
 
         compJ.add("judges", judges);
-        compJ.addProperty("numNonAlts", competition.numNonAlts);
+        compJ.addProperty("numNonAlts", competition.teamSize);
         compJ.addProperty("alternateExists", competition.alternateExists);
 
         if(competition.template.mcTest.exists) {
@@ -62,6 +62,7 @@ public class Profile extends HttpServlet{
             writtenJ.addProperty("testLink",competition.template.mcTest.TEST_LINK);
             writtenJ.addProperty("correctPoints", competition.template.mcTest.CORRECT_PTS);
             writtenJ.addProperty("incorrectPoints", competition.template.mcTest.INCORRECT_PTS);
+            writtenJ.addProperty("numScoresToKeep", competition.template.mcTest.NUM_SCORES_TO_KEEP);
             compJ.add("written", writtenJ);
         }
         if(competition.template.frqTest.exists) {
@@ -88,6 +89,7 @@ public class Profile extends HttpServlet{
                 handsOnJ.add("dryRun", competition.template.frqTest.PROBLEM_MAP[0].stringify());
             }
             handsOnJ.addProperty("dryRunStudentPacket", competition.template.frqTest.DRYRUN_STUDENT_PACKET);
+            handsOnJ.add("languages", FRQTest.serializeLanguages(competition.template.frqTest.LANGUAGES));
             compJ.add("handsOn", handsOnJ);
         }
 

@@ -25,8 +25,6 @@ public class MCTest {
     public final char[] options = new char[]{'a', 'b', 'c', 'd', 'e'};
     public long TIME;  // The length of time in milliseconds that they have to test
     public String TEST_LINK;  // The url to the test
-    // public String ANSWERS;    // Either a url to an answer packet or a text list of the answers for each question.
-    // public boolean ANSWERS_LINK;  // True if the ANSWERS variable is a link
 
     public boolean AUTO_GRADE;  // If this is off, automatically release graded written tests when the mc closes
     public boolean graded;  // If this is true, we have released the graded written tests to the students
@@ -34,16 +32,19 @@ public class MCTest {
     public Countdown opens; // The time that this opens
     public Countdown closes;
 
+    public short NUM_SCORES_TO_KEEP;    // The number of mc scores that are used in calculating the mcScore
+
     public static String SKIP_CODE = "jieKYL";  // The code entered to signify a skipped problem
 
     public MCTest() {
         exists = false;KEY= new String[0][];NUM_PROBLEMS = 0; CORRECT_PTS =0;INCORRECT_PTS=0;
-        TIME_TEXT = ""; INSTRUCTIONS = ""; TIME = 0; MAX_POINTS=0;TEST_LINK="";AUTO_GRADE = true;graded = true;
+        TIME_TEXT = ""; INSTRUCTIONS = ""; TIME = 0; MAX_POINTS=0;TEST_LINK="";AUTO_GRADE = true;graded = true;NUM_SCORES_TO_KEEP=0;
     }
 
 
     public MCTest (boolean published, String opensString, String[][] key, short c, short incorrectPoints, String instructions,
-                   String testLink, long time, boolean autoGrade, boolean graded) {
+                   String testLink, long time, boolean autoGrade, boolean graded, short numScoresToKeep) {
+        NUM_SCORES_TO_KEEP = numScoresToKeep;
         if(published) {
             opens = new Countdown(opensString, "countdown");NUM_PROBLEMS = (short)key.length; CORRECT_PTS = c; INCORRECT_PTS = incorrectPoints; exists = true;
             TIME_TEXT = (time/(1000*60)) + " minutes";INSTRUCTIONS = instructions;TEST_LINK=testLink;this.TIME = time;MAX_POINTS = (short)(NUM_PROBLEMS*CORRECT_PTS);

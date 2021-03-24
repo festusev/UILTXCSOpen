@@ -1,8 +1,6 @@
 package Outlet.uil;
 import Outlet.*;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonParser;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,8 +16,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
-
-import static Outlet.Conn.getConnection;
 
 /***
  * Manages all of the public and private competitions. Serves up a competition based on a cid passed through the url.
@@ -68,7 +64,7 @@ public class UIL extends HttpServlet{
                         rs.getShort("mcCorrectPoints"),
                         rs.getShort("mcIncorrectPoints"),rs.getString("mcInstructions"),
                         rs.getString("mcTestLink"), rs.getLong("mcTime"), rs.getBoolean("mcAutoGrade"),
-                        rs.getBoolean("mcGraded"));
+                        rs.getBoolean("mcGraded"), rs.getShort("mcNumScoresToKeep"));
             }
             short cid = rs.getShort("cid");
             short uid = rs.getShort("uid");
@@ -80,7 +76,8 @@ public class UIL extends HttpServlet{
                         FRQProblem.fromJsonArray(rs.getString("frqProblemMap")),
                         rs.getString("frqStudentPack"),rs.getString("frqJudgePacket"),
                         rs.getLong("frqTime"), rs.getBoolean("frqAutoGrade"),
-                        rs.getBoolean("dryRunExists"), rs.getString("dryRunStudentPacket"));
+                        rs.getBoolean("dryRunExists"), rs.getString("dryRunStudentPacket"),
+                        FRQTest.deserializeLanguages(rs.getString("frqLanguages")));
             }
 
             Competition comp = new Competition(cid, published,
@@ -250,7 +247,6 @@ public class UIL extends HttpServlet{
         }*/
     }
     public static void deleteCompetition(Competition comp){
-        comp.delete();
         if(!initialized) {
             try {
                 initialize();
@@ -259,11 +255,9 @@ public class UIL extends HttpServlet{
                 return;
             }
         }
-        /*running.remove(comp.template.cid);
-        archived.remove(comp.template.cid);
-        upcoming.remove(comp.template.cid);*/
         published.remove(comp.template.cid);
         unpublished.remove(comp.template.cid);
+        comp.delete();
     }
     public static void unPublish(Competition comp) {
         /*running.remove(comp.template.cid);
@@ -478,11 +472,26 @@ public class UIL extends HttpServlet{
                 return false;
             }
 
+            short mcNumScoresToKeep;
+            try {
+                mcNumScoresToKeep = Short.parseShort(request.getParameter("mcNumScoresToKeep"));
+                if(mcNumScoresToKeep <= 0) {
+                    writer.write("{\"error\":\"Written # scores to keep can't be less than 1.\"}");
+                    return false;
+                } else if(mcNumScoresToKeep > numNonAlts) {
+                    writer.write("{\"error\":\"Written # scores to keep can't be larger than the team size.\"}");
+                    return false;
+                }
+            } catch(Exception e) {
+                writer.write("{\"error\":\"Specify # written scores to keep.\"}");
+                return false;
+            }
+
             boolean mcAutoGrade = request.getParameter("mcAutoGrade").equals("true");
             mcTest = new MCTest(true, mcOpensString, mcAnswers, mcCorrectPoints,
                     mcIncorrectPoints,request.getParameter("mcInstructions"),
                     request.getParameter("mcTestLink"),
-                    mcTime, mcAutoGrade, mcAutoGrade);
+                    mcTime, mcAutoGrade, mcAutoGrade, mcNumScoresToKeep);
         }
 
         boolean alternateExists = false;
@@ -586,10 +595,15 @@ public class UIL extends HttpServlet{
                 return false;
             }
 
+            Set<FRQTest.Language> languages = FRQTest.deserializeLanguages(request.getParameter("frqLanguages"));
+            if(languages.size() <= 0) {
+                writer.write("{\"error\":\"Hands-On must allow at least one language.\"}");
+                return false;
+            }
             frqTest = new FRQTest(true, frqOpensString, frqMaxPoints, frqIncorrectPenalty, frqProblemMap,
                     request.getParameter("frqStudentPacket"), request.getParameter("frqJudgePacket"), frqTime,
                     request.getParameter("frqAutoGrade").equals("true"), request.getParameter("dryRunExists").equals("true"),
-                    request.getParameter("dryRunStudentPacket"));
+                    request.getParameter("dryRunStudentPacket"), languages);
         }
 
         if(!mcTest.exists && !frqTest.exists) {
@@ -645,7 +659,7 @@ public class UIL extends HttpServlet{
             } else if(competition.alternateExists && !alternateExists && competition.entries.allEntries.size() > 0) {
                 writer.write("{\"error\":\"You can't delete alternates while teams are signed up.\"}");
                 return false;
-            } else if(competition.numNonAlts > numNonAlts && competition.entries.allEntries.size() > 0) {
+            } else if(competition.teamSize > numNonAlts && competition.entries.allEntries.size() > 0) {
                 writer.write("{\"error\":\"You can't reduce the team size while teams are signed up.\"}");
                 return false;
             }
@@ -897,7 +911,7 @@ public class UIL extends HttpServlet{
             }
 
             PrintWriter writer = response.getWriter();
-            if(action.equals("saveCompetition") && u.teacher) {
+                            if(action.equals("saveCompetition") && u.teacher) {
                 cidS = request.getParameter("op_cid");
                 Teacher teacher = (Teacher) u;
 
@@ -912,7 +926,7 @@ public class UIL extends HttpServlet{
                             return;
                         }
                     } catch (Exception e) {
-                        System.out.println(e.getStackTrace());
+                        e.printStackTrace();
                         return;
                     }
                 } catch(Exception e) {}
@@ -977,10 +991,26 @@ public class UIL extends HttpServlet{
                     mcTime = Long.parseLong(request.getParameter("mcTime"))*1000*60;
 
                     boolean mcAutoGrade = request.getParameter("mcAutoGrade").equals("true");
+
+                    short mcNumScoresToKeep;
+                    try {
+                        mcNumScoresToKeep = Short.parseShort(request.getParameter("mcNumScoresToKeep"));
+                        if(mcNumScoresToKeep <= 0) {
+                            writer.write("{\"error\":\"Written # scores to keep can't be less than 1.\"}");
+                            return;
+                        } else if(mcNumScoresToKeep > numNonAlts) {
+                            writer.write("{\"error\":\"Written # scores to keep can't be larger than the team size.\"}");
+                            return;
+                        }
+                    } catch(Exception e) {
+                        writer.write("{\"error\":\"Specify # written scores to keep.\"}");
+                        return;
+                    }
+
                     mcTest = new MCTest(false, mcOpensString, mcAnswers, mcCorrectPoints,
                             mcIncorrectPoints,request.getParameter("mcInstructions"),
                             request.getParameter("mcAnswersLink"),
-                            mcTime, mcAutoGrade, mcAutoGrade);
+                            mcTime, mcAutoGrade, mcAutoGrade, mcNumScoresToKeep);
                 }
 
                 if(!handsOnExists) {   // No FRQ Test
@@ -1008,7 +1038,7 @@ public class UIL extends HttpServlet{
                     frqTest = new FRQTest(false, frqOpensString, frqMaxPoints, frqIncorrectPenalty, frqProblemMap,
                             request.getParameter("frqStudentPacket"), request.getParameter("frqJudgePacket"), frqTime,
                             request.getParameter("frqAutoGrade").equals("true"), request.getParameter("dryRunExists").equals("true"),
-                            request.getParameter("dryRunStudentPacket"));
+                            request.getParameter("dryRunStudentPacket"), FRQTest.deserializeLanguages(request.getParameter("frqLanguages")));
                 }
 
                 boolean creatingComp = cidS==null || cidS.isEmpty();

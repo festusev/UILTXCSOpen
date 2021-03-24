@@ -12,8 +12,9 @@ let pageState = {
     frqMaxPoints : 0,
     frqIncorrectPenalty : 0,
     frqProblemMap: [],
-    alternateExists : false,
-    numNonAlts : 1,
+    writtenSpecialistExists : false,
+    teamSize : 1,
+    mcNumScoresToKeep : 0,
     openTeam : null, // The team object that is currently open in "#teamCnt"
     editingTeam : false,   // Whether or not we are editing the currently open team
     addingAlt: false,    // If the user has clicked the "+" button for alternates on a team. If false, they are adding a primary
@@ -24,7 +25,8 @@ let pageState = {
     existingTeam : null, // the existing team that we are currently adding. needed so that the createTeam function can work properly
     existingGlobalTeacher : null,    // The teacher of 'existingTeam'
     isDeletingTeam : false, // If we are deleting a team. If false, we are deleting the student
-    deletingObject : null   // The object we are deleting
+    deletingObject : null,   // The object we are deleting
+    saveTeamCallbacks: []   // A list of functions as callbacks to saving a team. Each time a "scoreboardOpenTeamFeedback" message comes back, it calls the first item in this queue
 };
 
 const config = {
@@ -73,10 +75,8 @@ const config = {
         openTeamWritten : "openTeamWritten",
         openTeamHandsOn : "openTeamHandsOn",
         openPrimariesList : "openPrimariesList",
-        openAlternateList : "openAlternateList",
         editSaveTeam : "editSaveTeam",
         addPrimaryCompetitor : "addPrimaryCompetitor",
-        addAlternateCompetitor : "addAlternateCompetitor",
         openTeamFeedbackCnt : "openTeamFeedbackCnt",
         openTeamCode : "openTeamCode",
         openTeamIsIndividual : "openTeamIsIndividual",
@@ -116,14 +116,21 @@ const config = {
 
         playBell : "playBell",
         downloadScoreboard : "downloadScoreboard",
-        frqSubmissions : "frqSubmissions"
+        frqSubmissions : "frqSubmissions",
+        frqTextfile : "frqTextfile",
+
+        uploadFileProxy : "uploadFileProxy",
+        uploadRosterProxy : "uploadRosterProxy",
+        uploadRosterBox:"uploadRosterBox",
+
+        resetConfirmationCnt : "resetConfirmationCnt"
     },
     CLASSES: {
         columns : "column",
         secondNavItem : 'secondNavItem'
     },
     RESULTS: ["Correct", "Incorrect", "Server Error", "Compile time Error", "Runtime Error",  "Empty File",
-        "Time Limit Exceeded", "Unclear File Type", "Package Error", "Wrong Output Format"],
+        "Time Limit Exceeded", "File Type Not Allowed", "Package Error", "Wrong Output Format"],
 
     SOCKET_FUNCTIONS: { // The functions that can be called when the server sends a message using the web socket.
         "reload": function(response: {}) {
@@ -141,8 +148,11 @@ const config = {
             template.innerHTML = html;
 
             let row = dom.frqSubmissionsTable.insertRow(1);
-            row.replaceWith(template.content.firstChild);
+            let firstChild = template.content.firstChild;
+            row.replaceWith(firstChild);
             dom.playBell.play();
+
+            eval(firstChild.lastChild.textContent);
         }, "updateTeam": function (response: { [k: string]: any }) {
             dom.teamMembers.innerHTML = response["html"];
         }, "competitionDeleted": function (response: string[]) {   // The competition was deleted, so go to the uil list
@@ -217,10 +227,11 @@ const config = {
 
             clarification_list.insertBefore(clarification, clarification_list.firstChild);
         }, "loadScoreboard": function (response: {
-            isCreator: boolean, mcExists: boolean, frqExists: boolean, alternateExists: boolean, numNonAlts: number, frqMaxPoints?: number,
+            isCreator: boolean, mcExists: boolean, frqExists: boolean, alternateExists: boolean, teamSize: number, mcNumScoresToKeep?:number,
+            frqMaxPoints?: number,
             frqIncorrectPenalty?: number, frqProblemMap?: string[], mcCorrectPoints?: number, mcIncorrectPoints?:number,
-            teams: {tname: string, school: string, tid: number, students: { nonAlts: [string,number,[number,number]?][],
-                    alt?: [string,number,[number,number]?]}, frq?: number, frqResponses?: number[], individual: boolean}[],
+            teams: {tname: string, school: string, tid: number, students: [string,number,string,[number,number]?][], frq?: number,
+            frqResponses?: number[], individual: boolean}[],
             numHandsOnSubmitted?: number, teamCodes? : string[], individual?: boolean[], studentsInClass? : [string,number][],
             tempUsers?: {[uid:string]:[string,string]}, tid?: number}) {
             let newToggleTeam: Team = null;  // The new team object that we are toggling open
@@ -238,8 +249,9 @@ const config = {
             pageState.frqIncorrectPenalty = response.frqIncorrectPenalty;
             pageState.frqMaxPoints = response.frqMaxPoints;
             pageState.frqProblemMap = response.frqProblemMap;
-            pageState.alternateExists = response.alternateExists;
-            pageState.numNonAlts = response.numNonAlts;
+            pageState.writtenSpecialistExists = response.alternateExists;
+            pageState.teamSize = response.teamSize;
+            pageState.mcNumScoresToKeep = response.mcNumScoresToKeep;
 
             // If they are the creator, display the "#editSaveTeam" image
             if (pageState.isCreator) {
@@ -301,7 +313,7 @@ const config = {
                     numStudents++;
                 }
 
-                if (pageState.alternateExists && team.alt) {
+                /*if (pageState.writtenSpecialistExists) {
                     let tr = document.createElement("tr");
                     tr.classList.add("_"+team.alt.uid);
                     tr.onclick = function () {
@@ -315,7 +327,7 @@ const config = {
                         writtenSum += team.alt.mcScore;
                     }
                     numStudents++;
-                }
+                }*/
 
                 handsOnSum += team.frqScore;
             }
@@ -391,7 +403,8 @@ const config = {
                 for(let classStudent of response.studentsInClass) {
                     let student:Student = Student.students[""+classStudent[1]];
                     if(student == null) {
-                        student = new Student(classStudent);
+                        classStudent.push(StudentType[StudentType.PRIMARY]);
+                        student = new Student(<[string,number,string]><unknown>classStudent);
                     }
 
                     let tr = document.createElement("tr");
@@ -411,12 +424,19 @@ const config = {
             }
 
             Team.toggleTeam(newToggleTeam, false);
+
+            if(pageState.editingTeam) Team.editSaveTeam();
         }, "scoreboardOpenTeamFeedback": function (response: { isError: boolean, msg: string }) { // When there is an error or a success that has to do with editing a team
+            let callback:Function = pageState.saveTeamCallbacks.pop();
+
             if (response.isError) addErrorBox(dom.openTeamFeedbackCnt, response.msg, true);
-            else addSuccessBox(dom.openTeamFeedbackCnt, response.msg, true);
+            else {
+                if(callback) callback();
+                else addSuccessBox(dom.openTeamFeedbackCnt, response.msg, true);
+            }
         },
-        // Add in the results for the student search. The student objects are in the form [name, uid, mcScore]
-        "ssearch" : function (response: {students: [string, number, [number,number]?][]}) {
+        // Add in the results for the student search. The student objects are in the form [name, uid, student type, mcScore]
+        "ssearch" : function (response: {students: [string, number, string, [number,number]?][]}) {
             let fragment = document.createDocumentFragment();
             for(let student of response.students) {
                 let data:Student = Student.students[""+student[1]];
@@ -465,23 +485,23 @@ const config = {
             }
         },
         // Adds a new temporary student to the team
-        "addTempStudent" : function(response: {name: string, uname: string, password: string, isAlt:boolean, uid: number, tid:number}) {
+        "addTempStudent" : function(response: {name: string, uname: string, password: string, uid: number, tid:number}) {
             addSuccessBox(dom.openTeamFeedbackCnt, "Team saved successfully.", true);
+
             let team: Team = teams["" + response.tid];  // The team they are in
-            let student: Student = new Student([response.name,response.uid], team);
+            let student: Student = new Student([response.name,response.uid, StudentType[StudentType.PRIMARY]], team);
             student.render();
             if(pageState.mcExists) dom.writtenScoreboardTable.appendChild(student.dom.tr);
 
             student.temp = true;
             student.uname = response.uname;
             student.password = response.password;
-            if(response.isAlt) {
-                team.alt = student;
-            } else {
-                team.students.push(student);
-            }
+
+            team.students.push(student);
+
             if(pageState.openTeam.tid == team.tid) {
                 Team.renderOpenTeam(team);
+                Team.editSaveTeam();
             }
         },
         "updateFRQSubmission" : function(response: {submissionID: number, newOutput: string, outputFile?: string}) {
@@ -498,6 +518,9 @@ const config = {
 
                 addSuccessBox(document.getElementById("frqSubmissionEditorResponse"), "Regraded submission.", true)
             }
+        },
+        "rosterUploaded" : function(response: {}) {
+            dom.uploadRosterBox.style.display = "none";
         }
     }
 };
@@ -544,10 +567,8 @@ let dom = {
     get openTeamWritten() {return this.getHelper(config.IDs.openTeamWritten)},
     get openTeamHandsOn() {return this.getHelper(config.IDs.openTeamHandsOn)},
     get openPrimariesList() {return this.getHelper(config.IDs.openPrimariesList)},
-    get openAlternateList() {return this.getHelper(config.IDs.openAlternateList)},
     get editSaveTeam() {return this.getHelper(config.IDs.editSaveTeam)},
     get addPrimaryCompetitor() {return this.getHelper(config.IDs.addPrimaryCompetitor)},
-    get addAlternateCompetitor() {return this.getHelper(config.IDs.addAlternateCompetitor)},
     get selectStudent() {return this.getHelper(config.IDs.selectStudent)},
     get selectStudentList() {return this.getHelper(config.IDs.selectStudentList)},
     get openTeamFeedbackCnt() {return this.getHelper(config.IDs.openTeamFeedbackCnt)},
@@ -582,6 +603,11 @@ let dom = {
     get handsOnScoreboardTable() {return this.getHelper(config.IDs.handsOnScoreboardTable)},
     get playBell() {return this.getHelper(config.IDs.playBell)},
     get frqSubmissions() {return this.getHelper(config.IDs.frqSubmissions)},
+    get frqTextfile() {return this.getHelper(config.IDs.frqTextfile)},
+    get uploadFileProxy(){return this.getHelper(config.IDs.uploadFileProxy)},
+    get uploadRosterProxy(){return this.getHelper(config.IDs.uploadRosterProxy)},
+    get uploadRosterBox(){return this.getHelper(config.IDs.uploadRosterBox)},
+    get resetConfirmationCnt() {return this.getHelper(config.IDs.resetConfirmationCnt)},
 
     classes : {
         cached: {},    // DOM objects that have already been accessed
@@ -697,6 +723,11 @@ class GlobalTeacher {
     }
 }
 
+enum StudentType {
+    PRIMARY,
+    WRITTEN_SPECIALIST,
+    ALTERNATE
+}
 
 class Student {
     temp: boolean = false;  // If they are a temporary user
@@ -708,19 +739,36 @@ class Student {
     mcNumCorrect:number;
     mcNumIncorrect:number;
     team: Team;
-    dom : {tr: HTMLTableRowElement} = {tr: null};
+    type: StudentType;
+
+    dom : {
+        tr: HTMLTableRowElement,
+        changeRole : HTMLSelectElement
+    } = {tr: null, changeRole: null};
     static students: {[key:string]:Student} = {};
 
-    constructor(data: [string,number,[number,number]?], team?: Team) {
+    constructor(data: [string,number,string,[number,number]?], team?: Team) {
         this.name = data[0];
         this.uid = data[1];
+
+        switch(data[2]) {
+            case "PRIMARY":
+                this.type = StudentType.PRIMARY;
+                break;
+            case "WRITTEN_SPECIALIST":
+                this.type = StudentType.WRITTEN_SPECIALIST;
+                break;
+            default:
+                this.type = StudentType.ALTERNATE;
+                break;
+        }
 
         this.team = team;
         Student.students[""+this.uid] = this;
 
-        if(data[2]) {
-            this.mcNumCorrect = data[2][0];
-            this.mcNumIncorrect = data[2][1];
+        if(data[3]) {
+            this.mcNumCorrect = data[3][0];
+            this.mcNumIncorrect = data[3][1];
 
             this.mcScore = Math.abs(pageState.mcCorrectPoints)*this.mcNumCorrect - Math.abs(pageState.mcIncorrectPoints)*this.mcNumIncorrect;
         } else {
@@ -776,10 +824,8 @@ class Team {
     tname: string;
     school: string;
     tid: number;
-    // First element is if they are a temporary user, second is their name, third is their uid, last is their mcScore.
-    // If they are a temporary user, the fourth is their username, and the fifth is their password
+
     students: Student[];
-    alt : Student;
     mcScore : number;
     frqScore: number;
     code : string;
@@ -795,10 +841,9 @@ class Team {
     } = {tr: null, mcTD: null, frqTR: null};
 
 
-    constructor(data: {tname: string, school: string, tid: number, students: {nonAlts: [string,number,[number,number]?][],
-            alt?: [string,number,[number,number]?]}, frq?: number, frqResponses?: number[], individual:boolean},
-                tempData?:{[uid:string]:[string,string]}) {
-        function createStudent(data:[string,number,[number,number]?]):Student {
+    constructor(data: {tname: string, school: string, tid: number, students: [string,number,string,[number,number]?][],
+                frq?: number, frqResponses?: number[], individual:boolean}, tempData?:{[uid:string]:[string,string]}) {
+        function createStudent(data:[string,number,string,[number,number]?]):Student {
             let student: Student = new Student(data, thisTeam);
             student.render();
             if(pageState.isCreator) {   // If they are the creator, check if this student is a temporary user
@@ -822,45 +867,29 @@ class Team {
 
         if(pageState.frqExists && !this.individual) handsOnScoreboard.push(this);
 
-        for(let studentData of data.students.nonAlts) {
+        for(let studentData of data.students) {
             this.students.push(createStudent(studentData));
         }
-        this.alt = null;
-        if(data.students.alt) {
-            this.alt = createStudent(data.students.alt);
-        }
+
         if(pageState.frqExists) this.frqScore = data.frq;
         else this.frqScore = 0;
         this.mcScore = 0;
 
         if(pageState.mcExists) {
-            let indexOfLowest = 0;
-            let numSubmittedMCs = 0;    // The number of mc tests that this team has submitted
-            let lowest = Number.MAX_VALUE;
+            let scores: number[] = [];  // A list of sorted scores
             for(let i=0;i<this.students.length;i++) {
-                let thisScore = this.students[i].mcScore;
-                if(thisScore) {
-                    if (thisScore < lowest) {
-                        indexOfLowest = i;
-                        lowest = thisScore;
-                    }
-                    numSubmittedMCs++;
-                    this.mcScore += thisScore;
+                let student:Student = this.students[i];
+                if(student.type == StudentType.ALTERNATE) continue;
+
+                if(student.mcScore) {
+                    scores.push(student.mcScore);
                 }
             }
 
-            if(pageState.alternateExists && this.alt && this.alt.mcScore) {  // This team has an alt that has submitted an mc test
-                let thisScore = this.alt.mcScore;
-                numSubmittedMCs++;
+            scores.sort();
 
-                if(thisScore >= lowest || numSubmittedMCs <= pageState.numNonAlts) {    // The alternate is not the lowest score or we are adding all of the scores
-                    this.mcScore += thisScore;
-                } else
-                    numSubmittedMCs --;
-            }
-
-            if(numSubmittedMCs > pageState.numNonAlts) {   // In this case, remove the lowest score
-                this.mcScore -= this.students[indexOfLowest].mcScore;
+            for(let i=scores.length - 1,j=scores.length-pageState.mcNumScoresToKeep-1; i>j && i >= 0;i--) {
+                this.mcScore += scores[i];
             }
         }
 
@@ -945,25 +974,23 @@ class Team {
     }
 
     // Save the team and copy over the temporary information to the official information
-    save() {
-        function getTeamData(team: Team):{tid:number, nonAlts:number[], alt:number, individual: boolean} {
-            let nonAltUIDs = [];
+    save(callback?: Function) {
+        function getTeamData(team: Team):{tid:number, students:[number,string][], individual: boolean} {
+            let students = [];
             for(let student of team.students) {
-                nonAltUIDs.push(student.uid);
+                students.push([student.uid,StudentType[student.type]]);
             }
-            let alt;
-            if(team.alt) alt = team.alt.uid;
-            else alt = -1;
-            return {tid: team.tid, nonAlts: nonAltUIDs, alt: alt, individual:dom.openTeamIsIndividual.checked};
+            return {tid: team.tid, students: students, individual:dom.openTeamIsIndividual.checked};
         }
 
-        let data: [string, {tid:number, nonAlts:number[], alt:number, individual:boolean}] = ["saveTeam", getTeamData(this)];
+        let data: [string, {tid:number, students:[number, string][],individual:boolean}] = ["saveTeam", getTeamData(this)];
 
         /*for(let team of pageState.saveTeamList) {
             data[1].push(getTeamData(team));
         }*/
 
         // pageState.saveTeamList.length = 0;
+        pageState.saveTeamCallbacks.push(callback);
         ws.send(JSON.stringify(data));
         pageState.openTeam.editedSinceLastSave = false;
         addSuccessBox(dom.openTeamFeedbackCnt, "Saving team...", false);
@@ -1011,9 +1038,8 @@ class Team {
             if(this.students[i].uid == student.uid) this.students.splice(i,1);
         }
 
-        if(pageState.alternateExists && this.alt != null && this.alt.uid == student.uid) this.alt = null;
-
         Team.renderOpenTeam(this);
+        Team.editSaveTeam();
         this.save();
 
         // ws.send("[\"deleteStudent\","+this.tid+","+student.uid+"]");
@@ -1035,12 +1061,6 @@ class Team {
         dom.selectStudent.style.display = "block";
     }
 
-    static addAlternateCompetitor() {
-        if(!pageState.isCreator) return;
-        pageState.addingAlt = true;
-        dom.selectStudent.style.display = "block";
-    }
-
     static closeSelectStudent() {
         dom.selectStudent.style.display = "none";
     }
@@ -1049,20 +1069,15 @@ class Team {
         if(!pageState.isCreator) return;
 
         let openTeam: Team = pageState.openTeam;
-        if(!((pageState.alternateExists && pageState.addingAlt && !openTeam.alt) || (!pageState.addingAlt && openTeam.students.length < pageState.numNonAlts)))return;
 
         // This must come first, so that if the student is already in this team, this works
         // If team is null, they are adding a student from their class.
         if(student.team != null) {
-            if(student.team.alt && student.uid==student.team.alt.uid) student.team.alt = null;
-            else {
-                let newStudentsList:Student[] = [];
-                for(let s of student.team.students) {
-                    if(s.uid != student.uid) newStudentsList.push(s);
-                }
-                student.team.students = newStudentsList;
+            let newStudentsList:Student[] = [];
+            for(let s of student.team.students) {
+                if(s.uid != student.uid) newStudentsList.push(s);
             }
-            // pageState.saveTeamList.push(teamData.team);
+            student.team.students = newStudentsList;
         }
         student.team = openTeam;
         student.render();
@@ -1070,20 +1085,17 @@ class Team {
             dom.writtenScoreboardTable.appendChild(student.dom.tr);
         }
 
-        if(pageState.alternateExists && pageState.addingAlt && !openTeam.alt) {
-            openTeam.alt = student;
-        } else if(!pageState.addingAlt && openTeam.students.length < pageState.numNonAlts) {
-            let alreadyInTeam: boolean = false;
-            for(let s of openTeam.students) {
-                if(student.uid == s.uid) {
-                    alreadyInTeam = true;
-                    break;
-                }
-            }
-            if(!alreadyInTeam) {
-                pageState.openTeam.students.push(student);
+        let alreadyInTeam: boolean = false;
+        for(let s of openTeam.students) {
+            if(student.uid == s.uid) {
+                alreadyInTeam = true;
+                break;
             }
         }
+        if(!alreadyInTeam) {
+            pageState.openTeam.students.push(student);
+        }
+
         Team.renderOpenTeam(openTeam);
         Team.editSaveTeam();
         Team.closeSelectStudent();
@@ -1119,13 +1131,49 @@ class Team {
             }
             tr.appendChild(nameTD);
 
-            if(pageState.mcExists) {
+            let changeRoleTd = document.createElement("td");
+            let changeRole = document.createElement("select");
+            student.dom.changeRole = changeRole;
+            changeRole.disabled = true;
+            changeRoleTd.appendChild(changeRole);
+
+            // @ts-ignore
+            Object.values(StudentType).forEach((value) => {
+                let option = document.createElement("option");
+
+                let asString:string;
+                switch(value) {
+                    case StudentType.PRIMARY:
+                        asString = "Primary";
+                        break;
+                    case StudentType.ALTERNATE:
+                        asString = "Alternate";
+                        break;
+                    case StudentType.WRITTEN_SPECIALIST:
+                        asString = "Written Specialist";
+                        break;
+                    default:
+                        return;
+                }
+                option.innerText = asString;
+                option.onclick = function(){
+                    student.type = value;
+                };
+                if(value == student.type) {
+                    option.selected = true;
+                }
+                changeRole.appendChild(option);
+            });
+
+            tr.appendChild(changeRoleTd);
+
+            /* if(pageState.mcExists) {
                 let mcTD = document.createElement("td");
                 mcTD.classList.add("right");
                 if(student.mcScore != null) mcTD.innerText = student.mcScore + "pts";
                 else mcTD.innerText = "Not taken";
                 tr.appendChild(mcTD);
-            }
+            }*/
 
             let deleteTD = document.createElement("td");
             deleteTD.classList.add("editTeam");
@@ -1146,8 +1194,6 @@ class Team {
         dom.teamCnt.classList.remove("editing");
         dom.addPrimaryCompetitor.style.display = "none";
 
-        if(pageState.alternateExists) dom.addAlternateCompetitor.style.display = "none";
-
         dom.teamCnt.style.display = "block";
         dom.openTeamName.innerText = team.tname;
         if(pageState.isCreator) {
@@ -1167,13 +1213,6 @@ class Team {
 
         dom.openPrimariesList.innerHTML = "";
         dom.openPrimariesList.appendChild(fragment);
-
-        // Add in the alternate
-        if(pageState.alternateExists) {
-            dom.openAlternateList.innerHTML = "";
-            if(team.alt) dom.openAlternateList.appendChild(getStudentTR(team.alt));
-        }
-        // dom.openAlternateList.appendChild(getStudentTR(team.))
 
         pageState.openTeam = team;
         pageState.editingTeam = false;
@@ -1220,7 +1259,6 @@ class Team {
                 for(let student of team.students) {
                     student.dom.tr.classList.add("selected");
                 }
-                if(team.alt) team.alt.dom.tr.classList.add("selected");
             }
             if(pageState.frqExists) team.dom.frqTR.classList.add("selected");
 
@@ -1247,8 +1285,11 @@ class Team {
                 dom.teamCnt.classList.add("editing");
 
                 dom.openTeamIsIndividual.disabled = false;
-                if (pageState.openTeam.students.length < pageState.numNonAlts) dom.addPrimaryCompetitor.style.display = "block";
-                if (pageState.alternateExists && !pageState.openTeam.alt) dom.addAlternateCompetitor.style.display = "block";
+                dom.addPrimaryCompetitor.style.display = "block";
+
+                for(let student of pageState.openTeam.students) {
+                    (<Student>student).dom.changeRole.disabled = false;
+                }
             }
         }
     }
@@ -1483,7 +1524,7 @@ function toggleCreateTeam(event:Event) {
         dom.signUpBox.querySelector(".instruction").innerHTML = "Enter team join code:";
         dom.signUpBox.querySelector("input").value = "";
 
-        if(pageState.alternateExists || pageState.alternateExists == null) {    // If alternates exist or the scoreboard hasn't loaded
+        if(pageState.writtenSpecialistExists || pageState.writtenSpecialistExists == null) {    // If alternates exist or the scoreboard hasn't loaded
             dom.signUpIsAlternateCnt.style.display = "block";
         }
 
@@ -1501,6 +1542,43 @@ function toggleCreateTeam(event:Event) {
     event.stopPropagation();
 }
 
+function createTeamHelper(tname:string, showErrors:boolean, callback?:Function) {
+    $.ajax({
+        url: window.location.href,
+        method: "POST",
+        data: {"action": "createteam", "cid": cid, "tname": tname},
+        success: function (result) {
+            if (result == null || result["status"] === "error" && showErrors)
+                addErrorBox(dom.errorBoxERROR, result["error"], true);
+            else if (result["status"] === "success") {
+                if (pageState.isCreator) {   // If they are the creator, add in the new team
+                    let newTeam: Team;
+                    if(pageState.frqExists) {
+                        let frqResponses: number[] = [];
+                        frqResponses.length = pageState.frqProblemMap.length;
+                        frqResponses.fill(0);
+
+                        newTeam = new Team({
+                            tname: result["tname"], school: "", tid: result["tid"],
+                            students: [], frq: 0, frqResponses: frqResponses,individual:false
+                        });
+                    } else {
+                        newTeam = new Team({
+                            tname: result["tname"], school: "", tid: result["tid"],
+                            students: [], frq: 0,individual:false
+                        });
+                    }
+                    newTeam.code = result["code"];
+                    dom.teamList.appendChild(newTeam.dom.tr);
+                    if(pageState.frqExists) dom.handsOnScoreboardTable.appendChild(newTeam.dom.frqTR);
+
+                    if(callback) callback(newTeam);
+                } else location.reload();
+            }
+        }
+    });
+}
+
 function createTeam(){
     addSuccessBox(dom.errorBoxERROR, "Creating team...", false);
     let data;
@@ -1508,40 +1586,9 @@ function createTeam(){
         let data = ["addExistingTeam", dom.teamCode.value, pageState.existingGlobalTeacher.teacher.uid, pageState.existingTeam.tid];
         ws.send(JSON.stringify(data));
     } else {
-        $.ajax({
-            url: window.location.href,
-            method: "POST",
-            data: {"action": "createteam", "cid": cid, "tname": $("#teamCode").val()},
-            success: function (result) {
-                if (result == null || result["status"] === "error")
-                    addErrorBox(dom.errorBoxERROR, result["error"], true);
-                if (result["status"] === "success") {
-                    if (pageState.isCreator) {   // If they are the creator, add in the new team
-                        let newTeam: Team;
-                        if(pageState.frqExists) {
-                            let frqResponses: number[] = [];
-                            frqResponses.length = pageState.frqProblemMap.length;
-                            frqResponses.fill(0);
-
-                            newTeam = new Team({
-                                tname: result["tname"], school: "", tid: result["tid"],
-                                students: {nonAlts: [], alt: null}, frq: 0, frqResponses: frqResponses,individual:false
-                            });
-                        } else {
-                            newTeam = new Team({
-                                tname: result["tname"], school: "", tid: result["tid"],
-                                students: {nonAlts: [], alt: null}, frq: 0,individual:false
-                            });
-                        }
-                        newTeam.code = result["code"];
-                        dom.teamList.appendChild(newTeam.dom.tr);
-                        if(pageState.frqExists) dom.handsOnScoreboardTable.appendChild(newTeam.dom.frqTR);
-
-                        Team.toggleTeam(newTeam);
-                        hideSignup();
-                    } else location.reload();
-                }
-            }
+        createTeamHelper($("#teamCode").val(), true, function(team:Team) {
+            Team.toggleTeam(team);
+            hideSignup();
         });
     }
 }
@@ -1718,7 +1765,7 @@ function addErrorBox(box, error, timeout: boolean){
                 box.removeChild(errorBox)
             } catch (e) {
             }
-        }, 5000);
+        }, 10000);
     }
 }
 function addSuccessBox(box:HTMLElement, success:string, timeout: boolean){
@@ -1740,7 +1787,7 @@ function addSuccessBox(box:HTMLElement, success:string, timeout: boolean){
                 box.removeChild(errorBox)
             } catch (e) {
             }
-        }, 5000);
+        }, 10000);
     }
 }
 var box = null;
@@ -1772,10 +1819,12 @@ function submitFRQ(){
     xhr.open('POST', window.location.href, true);
     // xhr.setRequestHeader('Content-type', 'multipart/form-data');
     var formData = new FormData();
-    formData.append("textfile", (<HTMLInputElement>document.getElementById("frqTextfile")).files[0]);
+    formData.append("textfile", (<HTMLInputElement>dom.frqTextfile).files[0]);
     formData.append("probNum", probId);
     formData.append("action", "submitFRQ");
     xhr.send(formData);
+
+    (<HTMLInputElement>dom.frqTextfile).value = "";
     return false;
 }
 function finishFRQ(){
@@ -1995,6 +2044,7 @@ function showFRQSubmission(row:HTMLTableRowElement, submissionId: number) {
 
                     result_cnt_changeJudgement.appendChild(option);
                 }
+
                 /*if(!standardResult) {
                     let option = document.createElement("option");
                     option.value = "3";
@@ -2036,12 +2086,12 @@ function showFRQSubmission(row:HTMLTableRowElement, submissionId: number) {
 
                         let output_cnt = document.createElement("div");
                         output_cnt.classList.add("outputCnt");
-                        output_cnt.classList.add("frqHalf")
+                        output_cnt.classList.add("frqHalf");
                         output_cnt.innerHTML = "<b>Team</b><pre>"+outputString+"</pre>";
                         div.appendChild(output_cnt);
 
                         let judge_cnt = document.createElement("div");
-                        judge_cnt.classList.add("frqHalf")
+                        judge_cnt.classList.add("frqHalf");
                         judge_cnt.innerHTML = "<b>Judge</b><pre>"+outputFile+"</pre>";
                         div.appendChild(judge_cnt);
                         // .replace(/\r\n/g, "<br>")
@@ -2185,65 +2235,81 @@ function searchForStudent(input: HTMLInputElement) {
     ws.send(JSON.stringify(data));
 }
 
-/* Makes a download url for the scoreboard */
-let url:string = null;
-function makeDownloadURL(csv:string):void {
-    if (url != null) window.URL.revokeObjectURL(url);
-    let data: Blob = new Blob([csv], {type: 'text/plain'});   /* Makes a blob out of the editor's value. This will be encoded into the url. */
+function parseExcel(file: File) {
+    let reader = new FileReader();
 
-    dom.downloadScoreboard.href = window.URL.createObjectURL(data);
-    dom.downloadScoreboard.download = "scoreboard.csv";
+     reader.onload = function(e) {
+        let data:string = <string>e.target.result;
+
+        let lines:string[] = data.split("\r\n");
+
+        // The first three lines are useless
+        lines.shift();
+        lines.shift();
+        lines.shift();
+
+        let teams: {[tname:string]:[string,string][]} = {};
+        let numTeams: number = 0;
+        for(let line of lines) {
+            try {
+                let cols = line.split("\t");
+
+                let tname = cols[1].split(",")[0].trim();
+                if (!teams[tname]) {
+                    numTeams++;
+                    teams[tname] = [];
+                }
+
+                let splitName: string[] = cols[2].split("."); // last name, first name
+                teams[tname].push([splitName[1].trim(), splitName[0].trim()]);
+            } catch(e) {}
+        }
+
+        let json = ["uploadRoster", teams];
+        ws.send(JSON.stringify(json));
+
+        /*let i=0;
+        for(let tname in teams) {
+            dom.uploadRosterBox.innerText = "Creating team '" + tname + "'";
+
+            createTeamHelper(tname,false, function(team:Team) {
+                // Now, add in all of the student temporary accounts
+                for(let c=0,j=teams[tname].length;c<j;c++) {
+                    let student = teams[tname][c];
+                    let data = ["createTempStudent", student[0], student[1], "", team.tid];
+                    ws.send(JSON.stringify(data));
+                    dom.uploadRosterBox.innerText = "Creating student '" + student[0] + " " + student[1] + "'";
+
+                    console.log("c="+c+",i="+i+",numTeams="+numTeams+",j="+j);
+                    if(c==j-1 && i==numTeams) {
+                        console.log("-----");
+                        dom.uploadRosterBox.innerText = "Uploading Roster...";
+                        dom.uploadRosterBox.style.display = "none";
+                    }
+                }
+            });
+            i++;
+        }*/
+    };
+
+    reader.onerror = function(ex) {
+        console.log(ex);
+    };
+
+    reader.readAsBinaryString(file);
+    return reader;
 }
-
-
-// Downloads the scoreboard
-/*function downloadScoreboard() {
-    function processRow(row) {
-        let finalVal = '';
-        for (let j = 0; j < row.length; j++) {
-            let innerValue = row[j] === null ? '' : row[j].toString();
-            if (row[j] instanceof Date) {
-                innerValue = row[j].toLocaleString();
-            }
-            let result = innerValue.replace(/"/g, '""');
-            if (result.search(/("|,|\n)/g) >= 0)
-                result = '"' + result + '"';
-            if (j > 0)
-                finalVal += ',';
-            finalVal += result;
-        }
-        return finalVal + '\n';
-    }
-
-    let csvFile = '';
-    for (var i = 0; i < rows.length; i++) {
-        csvFile += processRow(rows[i]);
-    }
-
-    let blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
-    if (navigator.msSaveBlob) { // IE 10+
-        navigator.msSaveBlob(blob, "scoreboard");
-    } else {
-        if (dom.downloadScoreboard.download !== undefined) { // feature detection
-            // Browsers that support HTML5 download attribute
-            let url = URL.createObjectURL(blob);
-            dom.downloadScoreboard.setAttribute("href", url);
-            dom.downloadScoreboard.setAttribute("download", filename);
-            dom.downloadScoreboard.style.visibility = 'hidden';
-            dom.downloadScoreboard.click();
-        }
-    }
-}*/
 
 // Sends the temporary student data to the server
 function createTempStudent() {
-    let openTeam = <Team>pageState.openTeam;
-    openTeam.save();
-
-    let data = ["createTempStudent", dom.fnameTemp.value, dom.lnameTemp.value, dom.inputSchool.value, openTeam.tid, pageState.addingAlt];
-    addSuccessBox(dom.openTeamFeedbackCnt, "Saving team...", false);
-    ws.send(JSON.stringify(data));
     Team.closeSelectStudent();
+
+    let openTeam = <Team>pageState.openTeam;
+    openTeam.save(function() {
+        let data = ["createTempStudent", dom.fnameTemp.value, dom.lnameTemp.value, dom.inputSchool.value, openTeam.tid];
+        addSuccessBox(dom.openTeamFeedbackCnt, "Saving team...", false);
+        ws.send(JSON.stringify(data));
+    });
 }
 
 
@@ -2361,71 +2427,6 @@ function downloadScoreboard() {
     }
 
     exportCSV(data, ",", "scoreboard");
-
-
-    /*let doc = new jspdf.jsPDF();
-    doc.setFont("times");
-    let pageCount:{count:number, row: number} = {count: 1, row: 20};
-
-    // First, add in the general scoreboard
-    doc.setFontSize(20);
-    writeToPDF(doc, "Scoreboard",  20, pageCount);
-    pageCount.row += 10;
-
-    doc.setFontSize(12);
-    writeToPDF(doc, "Name", 20, pageCount, 30);
-    if(pageState.mcExists) {
-        writeToPDF(doc, "Written", 60, pageCount, 30);
-    }
-    if(pageState.frqExists) {
-        writeToPDF(doc, "Hands-On", 120, pageCount, 30);
-    }
-    writeToPDF(doc, "Total",160,pageCount,30);
-    pageCount.row += 10;
-
-    for(let tid in teams) {
-        let team = teams[tid];
-        writeToPDF(doc, team.tname, 20, pageCount, 30);
-        let totalScore:number = 0;
-        if(pageState.mcExists) {
-            totalScore += team.mcScore;
-            writeToPDF(doc, ""+team.mcScore, 60, pageCount, 30);
-        }
-        if(pageState.frqExists) {
-            totalScore += team.frqScore;
-            writeToPDF(doc, ""+team.frqScore, 120, pageCount, 30);
-        }
-        writeToPDF(doc, ""+totalScore,160,pageCount,30);
-        pageCount.row += 10 * Math.ceil(team.tname.length/9);
-    }
-
-    if(pageState.mcExists) {
-        pageCount.row += 10;
-        doc.setFontSize(20);
-        writeToPDF(doc, "Written Scoreboard", 20, pageCount);
-        pageCount.row += 10;
-
-        doc.setFontSize(12);
-        writeToPDF(doc, "Name", 20, pageCount, 30);
-        writeToPDF(doc, "Team", 60, pageCount, 80);
-        writeToPDF(doc, "Total", 150, pageCount, 30);
-        pageCount.row += 10;
-
-        for (let student of writtenTestScoreboard) {
-            writeToPDF(doc, student.name, 20, pageCount, 30);
-            writeToPDF(doc, student.team.tname, 60, pageCount, 80);
-            let mcScoreString = "Not Taken";
-            if(student.mcScore) mcScoreString = "" + student.mcScore;
-            writeToPDF(doc, mcScoreString, 150, pageCount, 30);
-
-            let marginModifier:number = student.team.tname.length;
-            if(student.name.length > marginModifier) marginModifier = student.name.length;
-
-            pageCount.row += 10 * Math.ceil(marginModifier/9);
-        }
-    }
-
-    doc.save("scoreboard.pdf");*/
 }
 
 // Creates a pdf of the roster and downloads it
@@ -2446,67 +2447,8 @@ function downloadRoster() {
             }
             data.push(studentData);
         }
-
-        if(team.alt) {
-            let studentData = [];
-            studentData.push(team.tname.replace(/[^a-zA-Z0-9 ]/g, ''));
-            studentData.push(team.alt.name.replace(/[^a-zA-Z0-9 ]/g, ''));
-            if(team.alt.temp) {
-                studentData.push(team.alt.uname.replace(/[^a-zA-Z0-9 ]/g, ''));
-                studentData.push(team.alt.password);
-            }
-            data.push(studentData);
-        }
     }
     exportCSV(data, ",", "roster");
-
-    /*let doc = new jspdf.jsPDF();
-    doc.setFont("times");
-    let pageCount:{count:number, row: number} = {count: 1, row: 20};
-
-    for(let tid in teams) {
-        let team = teams[tid];
-
-        doc.setFontSize(20);
-        writeToPDF(doc, "Team: " + team.tname,  20, pageCount);
-        pageCount.row += 10;
-
-        doc.setFontSize(14);
-        writeToPDF(doc, "Primaries", 20, pageCount);
-
-        pageCount.row += 10;
-        doc.setFontSize(12);
-        writeToPDF(doc, "Name", 20,pageCount, 50);
-        writeToPDF(doc, "Username", 80,pageCount, 50);
-        writeToPDF(doc, "Password", 140,pageCount, 50);
-
-        pageCount.row += 10;
-
-        for(let student of team.students) {
-            writeToPDF(doc, student.name, 20,pageCount, 50);
-            if(student.temp) {
-                writeToPDF(doc, student.uname, 80, pageCount,50);
-                writeToPDF(doc, student.password, 140, pageCount, 50);
-            }
-            pageCount.row += 10 * Math.ceil(student.name.length/17);
-        }
-
-        if(team.alt) {
-            doc.setFontSize(14);
-            writeToPDF(doc, "Written Specialist", 20, pageCount);
-            pageCount.row += 10;
-
-            doc.setFontSize(12);
-            writeToPDF(doc, team.alt.name, 20, pageCount,50);
-            if(team.alt.temp) {
-                writeToPDF(doc, team.alt.uname, 80, pageCount, 50);
-                writeToPDF(doc, team.alt.password, 140, pageCount, 50);
-            }
-        }
-
-        pageCount.row += 10;
-    }
-    doc.save("roster.pdf");*/
 }
 
 function showGeneralScoreboard() {
@@ -2575,4 +2517,34 @@ function hideMCScore(element: HTMLElement) {
         releaseMCScores(element);
     };
     ws.send("[\"hideMCScores\"]");
+}
+
+function setTime(timestamp: number, id: string) {
+    let date = new Date(timestamp);
+    document.getElementById(id).innerHTML ="" + date.getMonth() + "/" + (""+date.getDate()).padStart(2,'0') + " " + date.getHours() + ":" + (""+date.getMinutes()).padStart(2, '0');
+}
+
+// Reads in the roster file and creates teams accordingly
+function uploadRoster() {
+    dom.uploadRosterBox.style.display = "block";
+    parseExcel(dom.uploadRosterProxy.files[0]);
+}
+
+// Clicks the upload roster file input
+function uploadRosterProxy() {
+    dom.uploadRosterProxy.click();
+}
+
+// Deletes all submissions
+function resetSubmissions() {
+    ws.send("[\"resetSubmissions\"]");
+    closeResetSubmissions();
+}
+
+function showResetSubmissions() {
+    dom.resetConfirmationCnt.style.display = "block";
+}
+
+function closeResetSubmissions() {
+    dom.resetConfirmationCnt.style.display = "none";
 }

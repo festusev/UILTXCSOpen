@@ -73,7 +73,7 @@ public class FRQSubmission {
             case EXCEEDED_TIME_LIMIT:
                 return "Time Limit Exceeded";
             case UNCLEAR_FILE_TYPE:
-                return "Unclear File Type";
+                return "File Type Not Allowed";
             case FORMAT_ERROR:
                 return "Wrong Output Format";
             case PACKAGE_ERROR:

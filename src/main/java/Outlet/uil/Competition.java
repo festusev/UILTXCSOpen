@@ -31,7 +31,7 @@ public class Competition {
     public boolean published;
     public boolean isPublic;
     public boolean alternateExists; // If teams can have alternates
-    public short numNonAlts;    // The maximum number of non alternate competitors on each team
+    public short teamSize;    // The maximum number of non alternate competitors on each team
 
     public EntryMap entries;
     ArrayList<FRQSubmission> frqSubmissions = new ArrayList<>();
@@ -50,13 +50,13 @@ public class Competition {
     }
 
     public Competition(short cid, boolean published, boolean isPublic, String name, String description,
-                       boolean alternateExists, short numNonAlts, MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications,
+                       boolean alternateExists, short teamSize, MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications,
                        short[] judges, boolean showScoreboard) {
         this.teacher = null;
         this.published = published;
         this.isPublic = isPublic;
         this.alternateExists = alternateExists;
-        this.numNonAlts = numNonAlts;
+        this.teamSize = teamSize;
         this.judges = judges;
 
         entries = new EntryMap();
@@ -67,9 +67,9 @@ public class Competition {
     }
 
     public Competition(Teacher teacher, short cid, boolean published, boolean isPublic, String name, String description,
-                       boolean alternateExists, short numNonAlts, MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications,
+                       boolean alternateExists, short teamSize, MCTest mc, FRQTest frq, ArrayList<Clarification> clarifications,
                        short[] judges, boolean showScoreboard) {
-        this(cid, published, isPublic, name, description, alternateExists, numNonAlts, mc, frq,clarifications, judges, showScoreboard);
+        this(cid, published, isPublic, name, description, alternateExists, teamSize, mc, frq,clarifications, judges, showScoreboard);
         setTeacher(teacher);
     }
 
@@ -93,8 +93,8 @@ public class Competition {
                 "alternateExists, numNonAlts, mcKey, mcCorrectPoints, mcIncorrectPoints, mcInstructions, mcTestLink," +
                 "mcOpens, mcTime, frqMaxPoints, frqIncorrectPenalty, frqProblemMap, frqStudentPack," +
                 "frqJudgePacket, frqOpens, frqTime, type, published, clarifications,judges, showScoreboard, frqAutoGrade," +
-                        "dryRunExists,dryRunStudentPacket,mcAutoGrade,mcGraded) " +
-                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]',?,?,?,?,?,?,?)",
+                        "dryRunExists,dryRunStudentPacket,mcAutoGrade,mcGraded,frqLanguages,mcNumScoresToKeep) " +
+                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'[]',?,?,?,?,?,?,?,?,?)",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -158,6 +158,8 @@ public class Competition {
         stmt.setString(27, frqTest.DRYRUN_STUDENT_PACKET);
         stmt.setBoolean(28, mcTest.AUTO_GRADE);
         stmt.setBoolean(29, mcTest.graded);
+        stmt.setString(30, FRQTest.serializeLanguages(frqTest.LANGUAGES).toString());
+        stmt.setShort(31, mcTest.NUM_SCORES_TO_KEEP);
 
         System.out.println(stmt);
         stmt.execute();
@@ -175,7 +177,6 @@ public class Competition {
                     "`name` VARCHAR(25) NOT NULL UNIQUE," +
                     "`password` CHAR(153) NOT NULL," +
                     "`uids` TINYTEXT NOT NULL," +
-                    "`altUID` SMALLINT NOT NULL," +
                     "`mc` TEXT NOT NULL," +
                     "`frqResponses` MEDIUMTEXT NOT NULL," +
                     "`individual` BOOLEAN NOT NULL DEFAULT FALSE," +
@@ -203,7 +204,7 @@ public class Competition {
                         "alternateExists=?, numNonAlts=?, mcKey=?, mcCorrectPoints=?, mcIncorrectPoints=?, mcInstructions=?, mcTestLink=?," +
                         "mcOpens=?, mcTime=?, frqMaxPoints=?, frqIncorrectPenalty=?, frqProblemMap=?, frqStudentPack=?," +
                         "frqJudgePacket=?, frqOpens=?, frqTime=?, type=?, published=?, clarifications=?, judges=?, showScoreboard=?, " +
-                        "frqAutoGrade=?, dryRunExists=?, dryRunStudentPacket=?, mcAutoGrade=?, mcGraded=? WHERE cid=?",
+                        "frqAutoGrade=?, dryRunExists=?, dryRunStudentPacket=?, mcAutoGrade=?, mcGraded=?, frqLanguages=?, mcNumScoresToKeep = ? WHERE cid=?",
                 Statement.RETURN_GENERATED_KEYS);
         stmt.setShort(1, teacher.uid);
         stmt.setString(2, name);
@@ -267,12 +268,14 @@ public class Competition {
         stmt.setString(28, frqTest.DRYRUN_STUDENT_PACKET);
         stmt.setBoolean(29, mcTest.AUTO_GRADE);
         stmt.setBoolean(30, mcTest.graded);
-        stmt.setShort(31, template.cid);
+        stmt.setString(31, FRQTest.serializeLanguages(frqTest.LANGUAGES).toString());
+        stmt.setShort(32, mcTest.NUM_SCORES_TO_KEEP);
+        stmt.setShort(33, template.cid);
         stmt.executeUpdate();
     }
 
     public void update() throws SQLException {
-        updateDB(template.name, template.description, alternateExists,numNonAlts, template.mcTest, template.frqTest, judges,
+        updateDB(template.name, template.description, alternateExists, teamSize, template.mcTest, template.frqTest, judges,
                 template.showScoreboard);
     }
 
@@ -287,7 +290,7 @@ public class Competition {
         this.isPublic = isPublic;
 
         this.alternateExists = alternateExists;
-        this.numNonAlts = numNonAlts;
+        this.teamSize = numNonAlts;
         this.setJudges(judges);
         setTemplate(published, mcTest, frqTest, name, description, template.cid, showScoreboard);
     }
@@ -341,7 +344,7 @@ public class Competition {
                         FRQProblem problem = template.frqTest.PROBLEM_MAP[submission.problemNumber];
                         JsonObject compJ = new JsonObject();
                         compJ.addProperty("name", StringEscapeUtils.escapeHtml4(problem.name));
-                        compJ.addProperty("team", StringEscapeUtils.escapeHtml4(submission.entry.tname));
+                        compJ.addProperty("team", submission.entry.getEscapedTname());
                         compJ.addProperty("result", submission.getResultString());
 
                         if (submission.showInput())
@@ -445,7 +448,7 @@ public class Competition {
                         if(submission == null || !submission.finished) return;
 
                         compJ.addProperty("user", StringEscapeUtils.escapeHtml4(student.getName()));
-                        compJ.addProperty("team", StringEscapeUtils.escapeHtml4(entry.tname));
+                        compJ.addProperty("team", entry.getEscapedTname());
                         compJ.addProperty("answers", template.getFinishedMCHelper(submission, uid, true, competitionStatus));
                         compJ.addProperty("scoringReport", gson.toJson(submission.scoringReport));
 
@@ -476,7 +479,7 @@ public class Competition {
                             System.out.println("SCORING REPORT="+gson.toJson(submission.scoringReport));
                             template.updateScoreboard();
 
-                            for(short teamMemberUID: entry.uids) {
+                            for(short teamMemberUID: entry.uids.keySet()) {
                                 CompetitionSocket socket = CompetitionSocket.connected.get(teamMemberUID);
                                 if(socket != null)
                                     socket.send("[\"reScoreMC\",\""+uid+"\",\""+submission.scoringReport[0]+"\"]");
@@ -490,12 +493,9 @@ public class Competition {
                         return;
                     }
                     try {
-
-                        for(UILEntry entry: entries.allEntries) {
-                            if(entry.tname.equals(tname)) {
-                                writer.write("{\"status\":\"error\",\"error\":\"Team name is taken.\"}");
-                                return;
-                            }
+                        if(entries.nameMap.containsKey(tname)) {
+                            writer.write("{\"status\":\"error\",\"error\":\"Team name is taken.\"}");
+                            return;
                         }
 
                         int leftLimit = 48; // numeral '0'
@@ -545,7 +545,7 @@ public class Competition {
 
                 }
             } else if(!competitionStatus.frqBefore && action.equals("grabFRQProblems")) {
-                if(temp.altUID == user.uid) writer.write("{\"frqProblemsHTML\":\"\"}");
+                if(temp.uids.get(user.uid) == UILEntry.StudentType.WRITTEN_SPECIALIST) writer.write("{\"frqProblemsHTML\":\"\"}");
                 else writer.write("{\"frqProblemsHTML\":\""+template.getFRQProblems(temp)+"\"}");
             } else if (action.equals("submitMC")) {
                 if(competitionStatus.mcDuring || competitionStatus.mcOverflow) {    // submissions are open
@@ -578,7 +578,7 @@ public class Competition {
                 }
                 return;
             } else if(action.equals("submitFRQ")) {
-                if(temp.altUID != user.uid && (competitionStatus.frqDuring || competitionStatus.frqOverflow)) {
+                if(temp.uids.get(user.uid) != UILEntry.StudentType.WRITTEN_SPECIALIST && (competitionStatus.frqDuring || competitionStatus.frqOverflow)) {
                     short probNum = Short.parseShort(request.getParameter("probNum"));
 
                     if(template.frqTest.dryRunMode && probNum >= 1) { // It is in the dry run mode and they are submitting a non dry run
@@ -672,27 +672,28 @@ public class Competition {
                 writer.write("{\"status\":\"error\",\"error\":\"Team code must be 6 characters.\"}");
                 return;
             }
-            boolean isAlternate = request.getParameter("isAlternate").equals("true");
+            boolean isWrittenSpecialist = request.getParameter("isAlternate").equals("true");
             try {
                 UILEntry entry = entries.getByPassword(code);
                 if(entry != null) {
-                    if(entry.uids.size() > (numNonAlts + (alternateExists?1:0)) || entry.individual && entry.uids.size() >= 1) {    // This team is full
+                    if(entry.uids.size() >= teamSize) {    // This team is full
                         writer.write("{\"status\":\"error\",\"error\":\"Team is full.\"}");
                         return;
-                    } else if(alternateExists && isAlternate && entry.altUID > 0) { // They are trying to sign up as the alternate and this team already has one
+                    } /*else if(alternateExists && isAlternate && entry.altUID > 0) {     // They are trying to sign up as the alternate and this team already has one
                         writer.write("{\"status\":\"error\",\"error\":\"This team already has an alternate.\"}");
                         return;
-                    }
+                    }*/
 
                     user.cids.put(this.template.cid, entry);
-                    entry.uids.add(user.uid);
-                    if(alternateExists && isAlternate) entry.altUID = user.uid;
+                    if(isWrittenSpecialist) entry.uids.put(user.uid, UILEntry.StudentType.WRITTEN_SPECIALIST);
+                    else entry.uids.put(user.uid, UILEntry.StudentType.PRIMARY);
+
                     entry.updateUIDS();
                     template.updateScoreboard();
                     writer.write("{\"status\":\"success\",\"reload\":\"/uil\"}");
 
                     // Tell the existing team members to get a new html
-                    for(short uid: entry.uids) {
+                    for(short uid: entry.uids.keySet()) {
                         if(uid == user.uid) continue;
 
                         CompetitionSocket socket = CompetitionSocket.connected.get(uid);
@@ -798,7 +799,7 @@ public class Competition {
         while(rs.next()) {
             UILEntry entry = new UILEntry(rs, this);
             try {
-                for(short uid: entry.uids) {
+                for(short uid: entry.uids.keySet()) {
                     StudentMap.getByUID(uid).cids.put(template.cid, entry);
                 }
             } catch(Exception e) {
@@ -821,7 +822,7 @@ public class Competition {
 
         Collection<UILEntry> values = entries.tidMap.values();
         for(UILEntry entry: values) {
-            for(short uid: entry.uids) {
+            for(short uid: entry.uids.keySet()) {
                 Student s = StudentMap.getByUID(uid);
                 s.cids.remove(this.template.cid);
                 if(s.temp) {
@@ -876,6 +877,7 @@ class EntryMap {
     public ArrayList<UILEntry> allEntries = new ArrayList<>();
     public HashMap<Short, UILEntry> tidMap = new HashMap<>();    // Maps a teams tid to its UILEntry
     public HashMap<String, UILEntry> passwordMap = new HashMap<>();    // Maps a teams password to its UILEntry
+    public HashMap<String, UILEntry> nameMap = new HashMap<>();
 
     public UILEntry getByTid(short tid) {
         return tidMap.get(tid);
@@ -889,12 +891,14 @@ class EntryMap {
         allEntries.add(entry);
         tidMap.put(entry.tid, entry);
         passwordMap.put(entry.password.toUpperCase(), entry);
+        nameMap.put(entry.tname, entry);
     }
 
     public void delEntry(UILEntry entry) {
         allEntries.remove(entry);
         tidMap.remove(entry.tid, entry);
         passwordMap.remove(entry.password, entry);
+        nameMap.remove(entry.tname);
     }
 }
 
