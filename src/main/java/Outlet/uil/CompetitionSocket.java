@@ -207,6 +207,7 @@ public class CompetitionSocket {
                     // Relay the clarification to all of the people who are connected to this competition and signed up
                     ArrayList<CompetitionSocket> sockets = competitions.get(competition.template.cid);
                     for (CompetitionSocket socket : sockets) {
+                        if(socket.user == null) continue;
                         UserStatus socketStatus = UserStatus.getCompeteStatus(socket.user, competition);
 
                         if (socketStatus.signedUp || socketStatus.admin) socket.send(stringified);
