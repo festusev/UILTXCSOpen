@@ -214,6 +214,7 @@ public class CompetitionSocket {
                 try {
                     competition.update();
                 } catch (Exception ignored) {
+                    ignored.printStackTrace();
                 }
             } else if (action.equals("saveTeam")) {
                 System.out.println("Saving team");
