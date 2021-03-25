@@ -111,6 +111,11 @@
     position: relative;
     height: calc(36px + 1.5rem);
     box-sizing: border-box;
+    display: grid;
+    grid-column-start: 1;
+    grid-column-end: 3;
+    color: var(--font-col);
+    text-decoration: none;
 }
 .comp_head span, .competition.published .publishCompetition {
     line-height: calc(26px + 1.5rem);
@@ -167,10 +172,6 @@
 }
 .checkbox {
     cursor: pointer;
-}
-.comp_head {
-    grid-column-start: 1;
-    grid-column-end: 3;
 }
 .writtenSection, .handsOnSection{
     grid-column-start: 1;

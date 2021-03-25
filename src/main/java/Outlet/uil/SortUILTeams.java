@@ -13,15 +13,19 @@ public class SortUILTeams implements Comparator<UILEntry> {
                 int t1FRQ = t1.frqScore;
                 if(t2FRQ != t1FRQ) return t2FRQ - t1FRQ;
             }
+
             // Next, compare their written scores including the alternate
             if(competition.template.mcTest.exists) {
                 int t2MC = 0;
                 for(short i: t2.mc.keySet()){
+                    if(t2.uids.get(i) == UILEntry.StudentType.ALTERNATE) continue;
                     MCSubmission submission = t2.mc.get(i);
                     if(submission != null) t2MC += submission.scoringReport[0];
                 }
                 int t1MC = 0;
                 for(short i: t1.mc.keySet()){
+                    if(t1.uids.get(i) == UILEntry.StudentType.ALTERNATE) continue;
+
                     MCSubmission submission = t1.mc.get(i);
                     if(submission != null) t1MC += submission.scoringReport[0];
                 }

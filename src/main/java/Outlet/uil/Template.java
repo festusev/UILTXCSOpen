@@ -149,7 +149,7 @@ public class Template {
             frqHTML += "</select>" +
                     "<input type='file' accept='.java,.cpp,.py' id='frqTextfile'/>" +
                     "<button id='submitBtn' class='chngButton'>Submit</button>" +
-                    "</form><p id='advice'>Confused? Review the <a href='#' class='link' target='_blank' onclick='showAbout();'>rules</a>.</p>";
+                    "</form>";
         }
 
         HEADERS = "<html><head><title>" + name + " - TXCSOpen</title>" +
@@ -256,17 +256,20 @@ public class Template {
                 } else {
                     UILEntry entry = ((Student)uData).cids.get(cid);
                     written += "<h2>Team</h2><p style='overflow:hidden'>"+entry.getEscapedTname()+
-                            "</p><h2>Team Code</h2><p>"+entry.password+"</p><h2>Test</h2>";
-                    for(short uid: entry.uids.keySet()) {
-                        Student student = StudentMap.getByUID(uid);
-                        short score = 0;
-                        if(entry.mc.containsKey(uid)) {
-                            MCSubmission submission = entry.mc.get(uid);
-                            if(submission!=null) score = submission.scoringReport[0];
+                            "</p><h2>Team Code</h2><p>"+entry.password+"</p>";
+                    if(mcTest.graded) {
+                        written += "<h2>Test</h2>";
+                        for (short uid : entry.uids.keySet()) {
+                            Student student = StudentMap.getByUID(uid);
+                            short score = 0;
+                            if (entry.mc.containsKey(uid)) {
+                                MCSubmission submission = entry.mc.get(uid);
+                                if (submission != null) score = submission.scoringReport[0];
+                            }
+                            written += "<p>" + StringEscapeUtils.escapeHtml4(student.fname != null ? student.fname : "") +
+                                    " <span id='" + student.uid + "writtenScore'>" +
+                                    score + "</span>pts</p>";
                         }
-                        written += "<p>" + StringEscapeUtils.escapeHtml4(student.fname!=null?student.fname:"") +
-                                " <span id='"+student.uid+"writtenScore'>" +
-                                score + "</span>pts</p>";
                     }
                 }
                 written += "</div>";
@@ -282,11 +285,19 @@ public class Template {
                     int wrong = 0;
                     int untried = 0;
 
-                    UILEntry entry = ((Student)uData).cids.get(cid);
-                    for(Pair<Short, ArrayList<FRQSubmission>> problem: entry.frqResponses) {
-                        if(problem.key == 0) untried++;
-                        else if(problem.key > 0) solved++;
+                    UILEntry entry = ((Student) uData).cids.get(cid);
+                    if(frqTest.dryRunMode) {
+                        Pair<Short, ArrayList<FRQSubmission>> problem =  entry.frqResponses[0];
+                        if (problem.key == 0) untried++;
+                        else if (problem.key > 0) solved++;
                         else wrong++;
+                    } else {
+                        for (int i=1;i<entry.frqResponses.length;i++) {
+                            Pair<Short, ArrayList<FRQSubmission>> problem =  entry.frqResponses[i];
+                            if (problem.key == 0) untried++;
+                            else if (problem.key > 0) solved++;
+                            else wrong++;
+                        }
                     }
 
                     handsOn += "<p id='handsOnSolved'>" + solved + " solved</p>" +
@@ -1130,7 +1141,7 @@ class CompetitionStatus {
         }
 
         if(frqTest.exists) {
-            if (!frqTest.opens.done()) {
+            if (!frqTest.opens.done() && !frqTest.dryRunMode) {
                 frqBefore = true;
                 frqDuring = false;
                 frqOverflow = false;

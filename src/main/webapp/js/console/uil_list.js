@@ -1260,7 +1260,7 @@ list_handsOn_changeproblems.appendChild(li);
             makeHalf(autoGrade_header);
             handsOn_section.appendChild(autoGrade_header);
             var h2_autoGrade_header = document.createElement("h3");
-            h2_autoGrade_header.innerHTML = "Auto Grade";
+            h2_autoGrade_header.innerHTML = "Auto-Release Scores";
             autoGrade_header.appendChild(h2_autoGrade_header);
             /* CLOSE */
             /* OPEN */

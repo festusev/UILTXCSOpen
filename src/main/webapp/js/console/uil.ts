@@ -308,7 +308,6 @@ const config = {
                 let team: Team = new Team(teamData, response.tempUsers);
 
                 if(team.tid == oldOpenTeamTID) newToggleTeam = team;
-
                 if(response.tid && team.tid == response.tid) bottomRank = i+1;
 
                 if(pageState.isCreator) {
@@ -325,11 +324,13 @@ const config = {
                     tr.innerHTML = "<td>" + student.name + "</td>";
                     selectStudentFragment.appendChild(tr);
 
-                    if(student.mcScore) {
-                        numWrittenSubmitted++;
-                        writtenSum += student.mcScore;
+                    if(student.type != StudentType.ALTERNATE) {
+                        if (student.mcScore) {
+                            numWrittenSubmitted++;
+                            writtenSum += student.mcScore;
+                        }
+                        numStudents++;
                     }
-                    numStudents++;
                 }
 
                 /*if (pageState.writtenSpecialistExists) {
@@ -366,6 +367,7 @@ const config = {
                 });
                 let writtenTestFragment = document.createDocumentFragment();
                 for(let student of writtenTestScoreboard) {
+                    if(student.type == StudentType.ALTERNATE) continue;
                     writtenTestFragment.appendChild(student.dom.tr);
                 }
                 dom.writtenScoreboardTable.innerHTML = "<tr><th>Name</th><th>Team</th><th>Correct</th><th>Incorrect</th><th>% Correct</th><th>Total</th></tr>";
@@ -526,17 +528,13 @@ const config = {
         },
         "updateFRQSubmission" : function(response: {submissionID: number, newOutput: string, outputFile?: string}) {
             if(submissionMap[response.submissionID]) {
-                let div:HTMLElement = submissionMap[response.submissionID];
-                let element:HTMLElement = div.querySelector(".outputCnt");
+                let div:HTMLElement = submissionMap[response.submissionID].div;
+                try {div.removeChild(div.querySelector(".frqUpdateWrapper"));} catch(e){}
+                addFRQOutputHTML(submissionMap[response.submissionID].input, response.newOutput, response.outputFile,
+                    submissionMap[response.submissionID].result, div);
+                // let element:HTMLElement = div.querySelector(".outputCnt");
 
-                let output = "";
-                if(response.outputFile) {
-                    output = htmldiff(response.newOutput, response.outputFile);
-                } else output = response.newOutput;
-
-                element.innerHTML = "<b>Output</b><pre>"+output+"</pre>";
-
-                addSuccessBox(document.getElementById("frqSubmissionEditorResponse"), "Regraded submission.", true)
+                addSuccessBox(document.getElementById("frqSubmissionEditorResponse"), "Regraded submission.", true);
             }
         },
         "rosterUploaded" : function(response: {}) {
@@ -1183,8 +1181,6 @@ class Team {
                 changeRole.appendChild(option);
             });
             changeRole.onchange = function(){
-                console.log(changeRole.selectedOptions[0].value);
-
                 let selected = changeRole.selectedOptions[0].value;
                 if(selected == "0") student.type = StudentType.PRIMARY;
                 else if(selected == "1") student.type = StudentType.WRITTEN_SPECIALIST;
@@ -1961,7 +1957,7 @@ function hideFRQSubmission() {
  * submission information, and displays it.
  * @param submissionId
  */
-let submissionMap : object = {};
+let submissionMap : {[submissionID:number]:{div:HTMLElement,result:string,input:string}} = {};
 let showingFRQSubmission:HTMLElement = null;
 // let showingFRQSubmissionTR:HTMLTableRowElement = null;  // The table row element they clicked on to show this frq submission
 function showFRQSubmission(row:HTMLTableRowElement, submissionId: number) {
@@ -1986,7 +1982,7 @@ function showFRQSubmission(row:HTMLTableRowElement, submissionId: number) {
     }
 
     if(submissionMap[submissionId] != null) {
-        add(submissionMap[submissionId]);
+        add(submissionMap[submissionId].div);
         return;
     }
 
@@ -2059,7 +2055,6 @@ function showFRQSubmission(row:HTMLTableRowElement, submissionId: number) {
                 let standardResult:boolean = false; // If the result is just "Correct" or "Incorrect"
                 for(let i=0,j = config.RESULTS.length; i<j;i++) {
                     let text = config.RESULTS[i];
-                    console.log(text + " " + result);
                     let option = document.createElement("option");
                     option.value = ""+i;
                     option.innerText = text;
@@ -2081,131 +2076,140 @@ function showFRQSubmission(row:HTMLTableRowElement, submissionId: number) {
                 }*/
                 result_cnt.appendChild(result_cnt_changeJudgement);
 
-                let input = response["input"];
-                if(input) {
-                    let input_cnt = document.createElement("div");
-                    input_cnt.classList.add("inputCnt");
-                    div.appendChild(input_cnt);
-
-                    let b_input = document.createElement("b");
-                    b_input.innerText = "Input";
-                    input_cnt.appendChild(b_input);
-
-                    let span_input = document.createElement("span");
-                    span_input.style.display = "none";
-                    span_input.innerHTML = input.replace(/\r\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>");
-
-                    let viewingInput:boolean = false;
-                    b_input.onclick = function() {
-                        if(viewingInput) span_input.style.display = "none";
-                        else span_input.style.display = "block";
-                        viewingInput = !viewingInput;
-                    };
-                    input_cnt.appendChild(span_input);
-
-                    let output = response["output"];
-                    let outputFile:string = response["outputFile"];
-                    if(output) {
-                        let outputDiv = document.createElement("div");
-                        let inputLines:HTMLPreElement[] = [];
-                        if(result == "Correct" || result == "Incorrect") {
-                            let lines:string[] = htmldiff(output, outputFile).split("<br>");
-                            for(let line of lines) {
-                                let pre = document.createElement("pre");
-                                pre.innerText = line;
-                                outputDiv.appendChild(pre);
-
-                                inputLines.push(pre);
-                            }
-                        } else outputDiv.innerText = output;
-
-                        let output_cnt = document.createElement("div");
-                        output_cnt.classList.add("outputCnt");
-                        output_cnt.classList.add("frqHalf");
-                        output_cnt.innerHTML = "<b>Team</b>";
-                        output_cnt.appendChild(outputDiv);
-                        div.appendChild(output_cnt);
-
-                        let selectedLine:HTMLElement = null;   // the line that is selected
-
-                        let outputFileDiv = document.createElement("div");
-                        let lines:string[] = outputFile.split("<br>");
-                        for(let i=0,j=lines.length;i<j;i++) {
-                            let line = lines[i];
-                            let pre = document.createElement("pre");
-                            pre.innerText = line;
-                            outputFileDiv.appendChild(pre);
-
-                            let inputLine:HTMLPreElement = inputLines[i];
-
-                            pre.onclick = function () {
-                                let removedSelected: boolean = false;   // If we are clicking an item we have already clicked
-                                if(selectedLine) {
-                                    if(selectedLine == pre || selectedLine == inputLine) {
-                                        removedSelected = true;
-                                        pre.classList.remove("selected");
-                                        if(inputLine) inputLine.classList.remove("selected");
-                                    } else selectedLine.click();
-                                }
-                                if(removedSelected) {
-                                    selectedLine = null;
-                                } else {
-                                    pre.classList.add("selected");
-                                    if (inputLine) {
-                                        inputLine.classList.add("selected");
-                                    }
-                                    selectedLine = pre;
-                                }
-                            };
-
-                            if(inputLine) {
-                                inputLine.onclick = function () {
-                                    pre.click();
-                                }
-                            }
-                        }
-
-                        for(let i=lines.length;i<inputLines.length;i++) {   // Now add in the onclicks for input rows that don't have an output
-                            let inputLine:HTMLPreElement = inputLines[i];
-
-                            inputLine.onclick = function () {
-                                let removedSelected: boolean = false;   // If we are clicking an item we have already clicked
-                                if(selectedLine) {
-                                    if(selectedLine == inputLine || selectedLine == inputLine) {
-                                        removedSelected = true;
-                                        inputLine.classList.remove("selected");
-                                    } else selectedLine.click();
-                                }
-                                if(removedSelected) {
-                                    selectedLine = null;
-                                } else {
-                                    inputLine.classList.add("selected");
-                                    if (inputLine) {
-                                        inputLine.classList.add("selected");
-                                    }
-                                    selectedLine = inputLine;
-                                }
-                            }
-                        }
-
-                        let judge_cnt = document.createElement("div");
-                        judge_cnt.classList.add("frqHalf");
-                        judge_cnt.innerHTML = "<b>Judge</b>";
-                        judge_cnt.appendChild(outputFileDiv);
-
-                        div.appendChild(judge_cnt);
-                        // .replace(/\r\n/g, "<br>")
-                        //                             .replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>")
-                    }
-                }
+                addFRQOutputHTML(response["input"], response["output"], response["outputFile"], result, div);
                 add(div);
-                submissionMap[submissionId] = div;
+                submissionMap[submissionId] = {div:div,result:result,input:response["input"]};
             }
         }
     };
     xhr.open('POST', "/console/competitions", true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send("cid="+cid+"&action=showFRQSubmission&id="+submissionId);
+}
+
+function escapeHtml(html):string {
+    let text = document.createTextNode(html);
+    let p = document.createElement('p');
+    p.appendChild(text);
+    return p.innerHTML;
+}
+
+function addFRQOutputHTML(input:string, output:string, outputFile:string, result:string, div_wrapper: HTMLElement) {
+    let div = document.createElement("span");
+    div.classList.add("frqUpdateWrapper");
+    if(input) {
+        let input_cnt = document.createElement("div");
+        input_cnt.classList.add("inputCnt");
+        div.appendChild(input_cnt);
+
+        let b_input = document.createElement("b");
+        b_input.innerText = "Input";
+        input_cnt.appendChild(b_input);
+
+        let span_input = document.createElement("span");
+        span_input.style.display = "none";
+        span_input.innerHTML = input.replace(/\r\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>");
+
+        let viewingInput:boolean = false;
+        b_input.onclick = function() {
+            if(viewingInput) span_input.style.display = "none";
+            else span_input.style.display = "block";
+            viewingInput = !viewingInput;
+        };
+        input_cnt.appendChild(span_input);
+
+        if(output) {
+            let outputDiv = document.createElement("div");
+            let inputLines:HTMLPreElement[] = [];
+            if(result == "Correct" || result == "Incorrect") {
+                let lines:string[] = htmldiff(output, outputFile).split("<br>");
+                for(let line of lines) {
+                    let pre = document.createElement("pre");
+                    pre.innerHTML = line;
+                    outputDiv.appendChild(pre);
+
+                    inputLines.push(pre);
+                }
+            } else outputDiv.innerText = output;
+
+            let output_cnt = document.createElement("div");
+            output_cnt.classList.add("outputCnt");
+            output_cnt.classList.add("frqHalf");
+            output_cnt.innerHTML = "<b>Team</b>";
+            output_cnt.appendChild(outputDiv);
+            div.appendChild(output_cnt);
+
+            let selectedLine:HTMLElement = null;   // the line that is selected
+
+            let outputFileDiv = document.createElement("div");
+            let lines:string[] = outputFile.split("<br>");
+            for(let i=0,j=lines.length;i<j;i++) {
+                let line = lines[i];
+                let pre = document.createElement("pre");
+                pre.innerText = line;
+                outputFileDiv.appendChild(pre);
+
+                let inputLine:HTMLPreElement = inputLines[i];
+
+                pre.onclick = function () {
+                    let removedSelected: boolean = false;   // If we are clicking an item we have already clicked
+                    if(selectedLine) {
+                        if(selectedLine == pre || selectedLine == inputLine) {
+                            removedSelected = true;
+                            pre.classList.remove("selected");
+                            if(inputLine) inputLine.classList.remove("selected");
+                        } else selectedLine.click();
+                    }
+                    if(removedSelected) {
+                        selectedLine = null;
+                    } else {
+                        pre.classList.add("selected");
+                        if (inputLine) {
+                            inputLine.classList.add("selected");
+                        }
+                        selectedLine = pre;
+                    }
+                };
+
+                if(inputLine) {
+                    inputLine.onclick = function () {
+                        pre.click();
+                    }
+                }
+            }
+
+            for(let i=lines.length;i<inputLines.length;i++) {   // Now add in the onclicks for input rows that don't have an output
+                let inputLine:HTMLPreElement = inputLines[i];
+
+                inputLine.onclick = function () {
+                    let removedSelected: boolean = false;   // If we are clicking an item we have already clicked
+                    if(selectedLine) {
+                        if(selectedLine == inputLine || selectedLine == inputLine) {
+                            removedSelected = true;
+                            inputLine.classList.remove("selected");
+                        } else selectedLine.click();
+                    }
+                    if(removedSelected) {
+                        selectedLine = null;
+                    } else {
+                        inputLine.classList.add("selected");
+                        if (inputLine) {
+                            inputLine.classList.add("selected");
+                        }
+                        selectedLine = inputLine;
+                    }
+                }
+            }
+
+            let judge_cnt = document.createElement("div");
+            judge_cnt.classList.add("frqHalf");
+            judge_cnt.innerHTML = "<b>Judge</b>";
+            judge_cnt.appendChild(outputFileDiv);
+
+            div.appendChild(judge_cnt);
+        }
+    }
+    div_wrapper.appendChild(div);
 }
 
 
@@ -2282,7 +2286,7 @@ function showMCSubmission(uid: number) {
                 submission_cnt.innerHTML = test;
                 div.appendChild(submission_cnt);
                 add(div);
-                submissionMap[uid] = div;
+                mcSubmissionMap[uid] = div;
             }
         }
     };
@@ -2539,6 +2543,8 @@ function downloadRoster() {
     for(let tid in teams) {
         let team = teams[tid];
         for(let student of team.students) {
+            if(student.type == StudentType.ALTERNATE) continue;
+
             let studentData = [];
             studentData.push(team.tname.replace(/[^a-zA-Z0-9 ]/g, ''));
             studentData.push(student.name.replace(/[^a-zA-Z0-9 ]/g, ''));

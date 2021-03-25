@@ -1451,7 +1451,7 @@ list_handsOn_changeproblems.appendChild(li);
             handsOn_section.appendChild(autoGrade_header);
 
             let h2_autoGrade_header = document.createElement("h3");
-            h2_autoGrade_header.innerHTML = "Auto Grade";
+            h2_autoGrade_header.innerHTML = "Auto-Release Scores";
             autoGrade_header.appendChild(h2_autoGrade_header);
             /* CLOSE */
 

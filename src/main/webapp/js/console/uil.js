@@ -312,11 +312,13 @@ var config = {
                     };
                     tr.innerHTML = "<td>" + student.name + "</td>";
                     selectStudentFragment.appendChild(tr);
-                    if (student.mcScore) {
-                        numWrittenSubmitted++;
-                        writtenSum += student.mcScore;
+                    if (student.type != StudentType.ALTERNATE) {
+                        if (student.mcScore) {
+                            numWrittenSubmitted++;
+                            writtenSum += student.mcScore;
+                        }
+                        numStudents++;
                     }
-                    numStudents++;
                 };
                 for (var _i = 0, _a = team.students; _i < _a.length; _i++) {
                     var student = _a[_i];
@@ -360,6 +362,8 @@ var config = {
                 var writtenTestFragment = document.createDocumentFragment();
                 for (var _b = 0, writtenTestScoreboard_1 = writtenTestScoreboard; _b < writtenTestScoreboard_1.length; _b++) {
                     var student = writtenTestScoreboard_1[_b];
+                    if (student.type == StudentType.ALTERNATE)
+                        continue;
                     writtenTestFragment.appendChild(student.dom.tr);
                 }
                 dom.writtenScoreboardTable.innerHTML = "<tr><th>Name</th><th>Team</th><th>Correct</th><th>Incorrect</th><th>% Correct</th><th>Total</th></tr>";
@@ -520,15 +524,13 @@ var config = {
         },
         "updateFRQSubmission": function (response) {
             if (submissionMap[response.submissionID]) {
-                var div = submissionMap[response.submissionID];
-                var element = div.querySelector(".outputCnt");
-                var output = "";
-                if (response.outputFile) {
-                    output = htmldiff(response.newOutput, response.outputFile);
+                var div = submissionMap[response.submissionID].div;
+                try {
+                    div.removeChild(div.querySelector(".frqUpdateWrapper"));
                 }
-                else
-                    output = response.newOutput;
-                element.innerHTML = "<b>Output</b><pre>" + output + "</pre>";
+                catch (e) { }
+                addFRQOutputHTML(submissionMap[response.submissionID].input, response.newOutput, response.outputFile, submissionMap[response.submissionID].result, div);
+                // let element:HTMLElement = div.querySelector(".outputCnt");
                 addSuccessBox(document.getElementById("frqSubmissionEditorResponse"), "Regraded submission.", true);
             }
         },
@@ -1088,7 +1090,6 @@ var Team = /** @class */ (function () {
                 changeRole.appendChild(option);
             });
             changeRole.onchange = function () {
-                console.log(changeRole.selectedOptions[0].value);
                 var selected = changeRole.selectedOptions[0].value;
                 if (selected == "0")
                     student.type = StudentType.PRIMARY;
@@ -1860,7 +1861,7 @@ function showFRQSubmission(row, submissionId) {
         showingFRQSubmissionTR.classList.add("selected");*/
     }
     if (submissionMap[submissionId] != null) {
-        add(submissionMap[submissionId]);
+        add(submissionMap[submissionId].div);
         return;
     }
     var xhr = new XMLHttpRequest();
@@ -1924,7 +1925,6 @@ function showFRQSubmission(row, submissionId) {
                 var standardResult = false; // If the result is just "Correct" or "Incorrect"
                 for (var i = 0, j = config.RESULTS.length; i < j; i++) {
                     var text = config.RESULTS[i];
-                    console.log(text + " " + result);
                     var option = document.createElement("option");
                     option.value = "" + i;
                     option.innerText = text;
@@ -1943,134 +1943,141 @@ function showFRQSubmission(row, submissionId) {
                     result_cnt_changeJudgement.appendChild(option);
                 }*/
                 result_cnt.appendChild(result_cnt_changeJudgement_1);
-                var input = response["input"];
-                if (input) {
-                    var input_cnt = document.createElement("div");
-                    input_cnt.classList.add("inputCnt");
-                    div.appendChild(input_cnt);
-                    var b_input = document.createElement("b");
-                    b_input.innerText = "Input";
-                    input_cnt.appendChild(b_input);
-                    var span_input_1 = document.createElement("span");
-                    span_input_1.style.display = "none";
-                    span_input_1.innerHTML = input.replace(/\r\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>");
-                    var viewingInput_1 = false;
-                    b_input.onclick = function () {
-                        if (viewingInput_1)
-                            span_input_1.style.display = "none";
-                        else
-                            span_input_1.style.display = "block";
-                        viewingInput_1 = !viewingInput_1;
-                    };
-                    input_cnt.appendChild(span_input_1);
-                    var output = response["output"];
-                    var outputFile = response["outputFile"];
-                    if (output) {
-                        var outputDiv = document.createElement("div");
-                        var inputLines = [];
-                        if (result == "Correct" || result == "Incorrect") {
-                            var lines_2 = htmldiff(output, outputFile).split("<br>");
-                            for (var _i = 0, lines_1 = lines_2; _i < lines_1.length; _i++) {
-                                var line = lines_1[_i];
-                                var pre = document.createElement("pre");
-                                pre.innerText = line;
-                                outputDiv.appendChild(pre);
-                                inputLines.push(pre);
-                            }
-                        }
-                        else
-                            outputDiv.innerText = output;
-                        var output_cnt = document.createElement("div");
-                        output_cnt.classList.add("outputCnt");
-                        output_cnt.classList.add("frqHalf");
-                        output_cnt.innerHTML = "<b>Team</b>";
-                        output_cnt.appendChild(outputDiv);
-                        div.appendChild(output_cnt);
-                        var selectedLine_1 = null; // the line that is selected
-                        var outputFileDiv = document.createElement("div");
-                        var lines = outputFile.split("<br>");
-                        var _loop_5 = function (i, j) {
-                            var line = lines[i];
-                            var pre = document.createElement("pre");
-                            pre.innerText = line;
-                            outputFileDiv.appendChild(pre);
-                            var inputLine = inputLines[i];
-                            pre.onclick = function () {
-                                var removedSelected = false; // If we are clicking an item we have already clicked
-                                if (selectedLine_1) {
-                                    if (selectedLine_1 == pre || selectedLine_1 == inputLine) {
-                                        removedSelected = true;
-                                        pre.classList.remove("selected");
-                                        if (inputLine)
-                                            inputLine.classList.remove("selected");
-                                    }
-                                    else
-                                        selectedLine_1.click();
-                                }
-                                if (removedSelected) {
-                                    selectedLine_1 = null;
-                                }
-                                else {
-                                    pre.classList.add("selected");
-                                    if (inputLine) {
-                                        inputLine.classList.add("selected");
-                                    }
-                                    selectedLine_1 = pre;
-                                }
-                            };
-                            if (inputLine) {
-                                inputLine.onclick = function () {
-                                    pre.click();
-                                };
-                            }
-                        };
-                        for (var i = 0, j = lines.length; i < j; i++) {
-                            _loop_5(i, j);
-                        }
-                        var _loop_6 = function (i) {
-                            var inputLine = inputLines[i];
-                            inputLine.onclick = function () {
-                                var removedSelected = false; // If we are clicking an item we have already clicked
-                                if (selectedLine_1) {
-                                    if (selectedLine_1 == inputLine || selectedLine_1 == inputLine) {
-                                        removedSelected = true;
-                                        inputLine.classList.remove("selected");
-                                    }
-                                    else
-                                        selectedLine_1.click();
-                                }
-                                if (removedSelected) {
-                                    selectedLine_1 = null;
-                                }
-                                else {
-                                    inputLine.classList.add("selected");
-                                    if (inputLine) {
-                                        inputLine.classList.add("selected");
-                                    }
-                                    selectedLine_1 = inputLine;
-                                }
-                            };
-                        };
-                        for (var i = lines.length; i < inputLines.length; i++) {
-                            _loop_6(i);
-                        }
-                        var judge_cnt = document.createElement("div");
-                        judge_cnt.classList.add("frqHalf");
-                        judge_cnt.innerHTML = "<b>Judge</b>";
-                        judge_cnt.appendChild(outputFileDiv);
-                        div.appendChild(judge_cnt);
-                        // .replace(/\r\n/g, "<br>")
-                        //                             .replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>")
-                    }
-                }
+                addFRQOutputHTML(response["input"], response["output"], response["outputFile"], result, div);
                 add(div);
-                submissionMap[submissionId] = div;
+                submissionMap[submissionId] = { div: div, result: result, input: response["input"] };
             }
         }
     };
     xhr.open('POST', "/console/competitions", true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhr.send("cid=" + cid + "&action=showFRQSubmission&id=" + submissionId);
+}
+function escapeHtml(html) {
+    var text = document.createTextNode(html);
+    var p = document.createElement('p');
+    p.appendChild(text);
+    return p.innerHTML;
+}
+function addFRQOutputHTML(input, output, outputFile, result, div_wrapper) {
+    var div = document.createElement("span");
+    div.classList.add("frqUpdateWrapper");
+    if (input) {
+        var input_cnt = document.createElement("div");
+        input_cnt.classList.add("inputCnt");
+        div.appendChild(input_cnt);
+        var b_input = document.createElement("b");
+        b_input.innerText = "Input";
+        input_cnt.appendChild(b_input);
+        var span_input_1 = document.createElement("span");
+        span_input_1.style.display = "none";
+        span_input_1.innerHTML = input.replace(/\r\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>");
+        var viewingInput_1 = false;
+        b_input.onclick = function () {
+            if (viewingInput_1)
+                span_input_1.style.display = "none";
+            else
+                span_input_1.style.display = "block";
+            viewingInput_1 = !viewingInput_1;
+        };
+        input_cnt.appendChild(span_input_1);
+        if (output) {
+            var outputDiv = document.createElement("div");
+            var inputLines = [];
+            if (result == "Correct" || result == "Incorrect") {
+                var lines_2 = htmldiff(output, outputFile).split("<br>");
+                for (var _i = 0, lines_1 = lines_2; _i < lines_1.length; _i++) {
+                    var line = lines_1[_i];
+                    var pre = document.createElement("pre");
+                    pre.innerHTML = line;
+                    outputDiv.appendChild(pre);
+                    inputLines.push(pre);
+                }
+            }
+            else
+                outputDiv.innerText = output;
+            var output_cnt = document.createElement("div");
+            output_cnt.classList.add("outputCnt");
+            output_cnt.classList.add("frqHalf");
+            output_cnt.innerHTML = "<b>Team</b>";
+            output_cnt.appendChild(outputDiv);
+            div.appendChild(output_cnt);
+            var selectedLine_1 = null; // the line that is selected
+            var outputFileDiv = document.createElement("div");
+            var lines = outputFile.split("<br>");
+            var _loop_5 = function (i, j) {
+                var line = lines[i];
+                var pre = document.createElement("pre");
+                pre.innerText = line;
+                outputFileDiv.appendChild(pre);
+                var inputLine = inputLines[i];
+                pre.onclick = function () {
+                    var removedSelected = false; // If we are clicking an item we have already clicked
+                    if (selectedLine_1) {
+                        if (selectedLine_1 == pre || selectedLine_1 == inputLine) {
+                            removedSelected = true;
+                            pre.classList.remove("selected");
+                            if (inputLine)
+                                inputLine.classList.remove("selected");
+                        }
+                        else
+                            selectedLine_1.click();
+                    }
+                    if (removedSelected) {
+                        selectedLine_1 = null;
+                    }
+                    else {
+                        pre.classList.add("selected");
+                        if (inputLine) {
+                            inputLine.classList.add("selected");
+                        }
+                        selectedLine_1 = pre;
+                    }
+                };
+                if (inputLine) {
+                    inputLine.onclick = function () {
+                        pre.click();
+                    };
+                }
+            };
+            for (var i = 0, j = lines.length; i < j; i++) {
+                _loop_5(i, j);
+            }
+            var _loop_6 = function (i) {
+                var inputLine = inputLines[i];
+                inputLine.onclick = function () {
+                    var removedSelected = false; // If we are clicking an item we have already clicked
+                    if (selectedLine_1) {
+                        if (selectedLine_1 == inputLine || selectedLine_1 == inputLine) {
+                            removedSelected = true;
+                            inputLine.classList.remove("selected");
+                        }
+                        else
+                            selectedLine_1.click();
+                    }
+                    if (removedSelected) {
+                        selectedLine_1 = null;
+                    }
+                    else {
+                        inputLine.classList.add("selected");
+                        if (inputLine) {
+                            inputLine.classList.add("selected");
+                        }
+                        selectedLine_1 = inputLine;
+                    }
+                };
+            };
+            for (var i = lines.length; i < inputLines.length; i++) {
+                _loop_6(i);
+            }
+            var judge_cnt = document.createElement("div");
+            judge_cnt.classList.add("frqHalf");
+            judge_cnt.innerHTML = "<b>Judge</b>";
+            judge_cnt.appendChild(outputFileDiv);
+            div.appendChild(judge_cnt);
+        }
+    }
+    div_wrapper.appendChild(div);
 }
 // Tell the server to rerun the frq
 function regradeFRQ(submissionID) {
@@ -2136,7 +2143,7 @@ function showMCSubmission(uid) {
                 submission_cnt.innerHTML = test;
                 div.appendChild(submission_cnt);
                 add(div);
-                submissionMap[uid] = div;
+                mcSubmissionMap[uid] = div;
             }
         }
     };
@@ -2356,6 +2363,8 @@ function downloadRoster() {
         var team = teams[tid];
         for (var _i = 0, _a = team.students; _i < _a.length; _i++) {
             var student = _a[_i];
+            if (student.type == StudentType.ALTERNATE)
+                continue;
             var studentData = [];
             studentData.push(team.tname.replace(/[^a-zA-Z0-9 ]/g, ''));
             studentData.push(student.name.replace(/[^a-zA-Z0-9 ]/g, ''));
