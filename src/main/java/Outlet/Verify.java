@@ -126,19 +126,33 @@ public class Verify extends HttpServlet{
                 User u = UserMap.getUserByEmail(email);
                 try {
                     u.changePassword(Conn.getHashedFull(pass));
-                    Cookie tokenCookie = new Cookie("token", u.token.toString(Character.MAX_RADIX));
-                    tokenCookie.setMaxAge(60*60*48);    // Set 2 Days before they must login again
-                    tokenCookie.setPath("/");   // This path must stay the same so that logging out is fluid.
-                    response.addCookie(tokenCookie);
-                    writer.write("{\"reload\":\""+request.getContextPath() + "/console/competitions\"}");
+
+                    BigInteger token = Conn.Login(u, pass);
 
                     // Finally, delete the entry from the 'reset_password' database
-                    Connection conn = Conn.getConnection();
-                    PreparedStatement stmt = conn.prepareStatement("DELETE FROM reset_password WHERE code = ? AND email = ?");
-                    stmt.setString(1,code);
-                    stmt.setString(2,email);
-                    stmt.executeUpdate();
-                } catch (NoSuchAlgorithmException | SQLException e) {
+                    try {
+                        Connection conn = Conn.getConnection();
+                        PreparedStatement stmt = conn.prepareStatement("DELETE FROM reset_password WHERE code = ? AND email = ?");
+                        stmt.setString(1, code);
+                        stmt.setString(2, email);
+                        stmt.executeUpdate();
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    if(token.compareTo(BigInteger.valueOf(0)) >= 0) {   // The login was successful
+                        Cookie tokenCookie = new Cookie("token", token.toString(Character.MAX_RADIX));
+                        tokenCookie.setMaxAge(60*60*48);    // Set 2 Days before they must login again
+                        tokenCookie.setPath("/");   // Necessary for logging out fluidly
+                        response.addCookie(tokenCookie);
+                        writer.write("{\"reload\":\""+request.getContextPath() + "/console/competitions\"}");
+                        return;
+                    }
+                    if(token.compareTo(BigInteger.valueOf(-1)) == 0) {   // If a server error occurred
+                        writer.write("{\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
+                        return;
+                    }
+                } catch (Exception e) {
                     e.printStackTrace();
                     writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
                 }

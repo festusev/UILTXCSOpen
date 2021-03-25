@@ -586,13 +586,15 @@ public class CompetitionSocket {
                     return;
                 }
 
-                String unameBase = (fname + lname).toLowerCase();
+                String unameBase = (fname + lname).toLowerCase().replaceAll("[^a-zA-Z0-9]", "");
                 String uname = unameBase;
                 int x = 2;
                 while (StudentMap.getByEmail(uname) != null) {
                     uname = unameBase + x;
                     x++;
                 }
+
+                uname = uname;
 
                 int leftLimit = 48; // numeral '0'
                 int rightLimit = 90; // letter 'Z'
@@ -665,13 +667,15 @@ public class CompetitionSocket {
                                 continue;
                             }
 
-                            String unameBase = (fname + lname).toLowerCase();
+                            String unameBase = (fname + lname).toLowerCase().replaceAll("[^a-zA-Z0-9]", "");
                             String uname = unameBase;
                             int x = 2;
                             while (StudentMap.getByEmail(uname) != null) {
                                 uname = unameBase + x;
                                 x++;
                             }
+
+                            uname = uname;
 
                             leftLimit = 48; // numeral '0'
                             rightLimit = 90; // letter 'Z'

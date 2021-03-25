@@ -830,6 +830,7 @@ public class Competition {
         for(UILEntry entry: values) {
             for(short uid: entry.uids.keySet()) {
                 Student s = StudentMap.getByUID(uid);
+                if(s == null) continue;
                 s.cids.remove(this.template.cid);
                 if(s.temp) {
                     Connection conn = getConnection();
