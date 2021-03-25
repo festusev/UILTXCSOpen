@@ -129,7 +129,7 @@ const config = {
         columns : "column",
         secondNavItem : 'secondNavItem'
     },
-    RESULTS: ["Correct", "Incorrect", "Server Error", "Compile time Error", "Runtime Error",  "Empty File",
+    RESULTS: ["Correct", "Incorrect", "Server Error", "Compile-time Error", "Runtime Error",  "Empty File",
         "Time Limit Exceeded", "File Type Not Allowed", "Package Error", "Wrong Output Format"],
 
     SOCKET_FUNCTIONS: { // The functions that can be called when the server sends a message using the web socket.
@@ -194,6 +194,25 @@ const config = {
 
             clarification_list.insertBefore(clarification, clarification_list.firstChild);
             dom.playBell.play();
+        }, "judgeClarification" : function(response: { [k: string]: any }) {
+            let clarification_list: HTMLElement = dom.clarificationColumn.querySelector(".clarification_group");
+            if (clarification_list.innerHTML == "There are no clarifications.") {
+                clarification_list.innerHTML = "";
+            }
+
+            let clarification = document.createElement("div");
+            clarification.id = "clarification_"+response["index"];
+            clarification.classList.add("clarification");
+
+            let clarificationQuestionH3 = document.createElement("h3");
+            clarificationQuestionH3.innerText = "Judge Clarification";
+            clarification.appendChild(clarificationQuestionH3);
+
+            let clarificationQuestion = document.createElement("span");
+            clarificationQuestion.innerText = response["question"];
+            clarification.appendChild(clarificationQuestion);
+
+            clarification_list.insertBefore(clarification, clarification_list.firstChild);
         }, "ac": function (response: { [k: string]: any }) { // Add in a new clarification with a response
             let clarification_list: HTMLElement = dom.clarificationColumn.querySelector(".clarification_group");
             if (clarification_list.innerHTML == "There are no clarifications.") {
@@ -2040,6 +2059,7 @@ function showFRQSubmission(row:HTMLTableRowElement, submissionId: number) {
                 let standardResult:boolean = false; // If the result is just "Correct" or "Incorrect"
                 for(let i=0,j = config.RESULTS.length; i<j;i++) {
                     let text = config.RESULTS[i];
+                    console.log(text + " " + result);
                     let option = document.createElement("option");
                     option.value = ""+i;
                     option.innerText = text;
@@ -2086,19 +2106,93 @@ function showFRQSubmission(row:HTMLTableRowElement, submissionId: number) {
                     let output = response["output"];
                     let outputFile:string = response["outputFile"];
                     if(output) {
-                        let outputString:string = "";
-                        if(result == "Correct" || result == "Incorrect") outputString = htmldiff(output, outputFile);
-                        else outputString = output;
+                        let outputDiv = document.createElement("div");
+                        let inputLines:HTMLPreElement[] = [];
+                        if(result == "Correct" || result == "Incorrect") {
+                            let lines:string[] = htmldiff(output, outputFile).split("<br>");
+                            for(let line of lines) {
+                                let pre = document.createElement("pre");
+                                pre.innerText = line;
+                                outputDiv.appendChild(pre);
+
+                                inputLines.push(pre);
+                            }
+                        } else outputDiv.innerText = output;
 
                         let output_cnt = document.createElement("div");
                         output_cnt.classList.add("outputCnt");
                         output_cnt.classList.add("frqHalf");
-                        output_cnt.innerHTML = "<b>Team</b><pre>"+outputString+"</pre>";
+                        output_cnt.innerHTML = "<b>Team</b>";
+                        output_cnt.appendChild(outputDiv);
                         div.appendChild(output_cnt);
+
+                        let selectedLine:HTMLElement = null;   // the line that is selected
+
+                        let outputFileDiv = document.createElement("div");
+                        let lines:string[] = outputFile.split("<br>");
+                        for(let i=0,j=lines.length;i<j;i++) {
+                            let line = lines[i];
+                            let pre = document.createElement("pre");
+                            pre.innerText = line;
+                            outputFileDiv.appendChild(pre);
+
+                            let inputLine:HTMLPreElement = inputLines[i];
+
+                            pre.onclick = function () {
+                                let removedSelected: boolean = false;   // If we are clicking an item we have already clicked
+                                if(selectedLine) {
+                                    if(selectedLine == pre || selectedLine == inputLine) {
+                                        removedSelected = true;
+                                        pre.classList.remove("selected");
+                                        if(inputLine) inputLine.classList.remove("selected");
+                                    } else selectedLine.click();
+                                }
+                                if(removedSelected) {
+                                    selectedLine = null;
+                                } else {
+                                    pre.classList.add("selected");
+                                    if (inputLine) {
+                                        inputLine.classList.add("selected");
+                                    }
+                                    selectedLine = pre;
+                                }
+                            };
+
+                            if(inputLine) {
+                                inputLine.onclick = function () {
+                                    pre.click();
+                                }
+                            }
+                        }
+
+                        for(let i=lines.length;i<inputLines.length;i++) {   // Now add in the onclicks for input rows that don't have an output
+                            let inputLine:HTMLPreElement = inputLines[i];
+
+                            inputLine.onclick = function () {
+                                let removedSelected: boolean = false;   // If we are clicking an item we have already clicked
+                                if(selectedLine) {
+                                    if(selectedLine == inputLine || selectedLine == inputLine) {
+                                        removedSelected = true;
+                                        inputLine.classList.remove("selected");
+                                    } else selectedLine.click();
+                                }
+                                if(removedSelected) {
+                                    selectedLine = null;
+                                } else {
+                                    inputLine.classList.add("selected");
+                                    if (inputLine) {
+                                        inputLine.classList.add("selected");
+                                    }
+                                    selectedLine = inputLine;
+                                }
+                            }
+                        }
 
                         let judge_cnt = document.createElement("div");
                         judge_cnt.classList.add("frqHalf");
-                        judge_cnt.innerHTML = "<b>Judge</b><pre>"+outputFile+"</pre>";
+                        judge_cnt.innerHTML = "<b>Judge</b>";
+                        judge_cnt.appendChild(outputFileDiv);
+
                         div.appendChild(judge_cnt);
                         // .replace(/\r\n/g, "<br>")
                         //                             .replace(/\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>")
@@ -2228,6 +2322,7 @@ function sendClarification(): void {
     }
     dom.clarification_input.value = "";
 }
+
 
 function inputMaxLength(element: {value: string, maxLength: number}) {
     if(element.value.length > element.maxLength) {

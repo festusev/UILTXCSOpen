@@ -816,8 +816,27 @@
 .outputCnt {
     margin-right: 1rem;
     margin-left: 0;
+    margin-bottom: 4rem;
 }
-.frqHalf pre {
+.outputCnt pre, .frqHalf pre {
+    cursor: pointer;
+}
+.outputCnt, .frqHalf {
+    counter-reset: line;
+}
+.frqHalf div pre {
+    counter-increment: line;
+}
+.frqHalf pre.selected {
+    background-color: var(--sec-light);
+}
+.frqHalf pre:before {
+    content: counter(line);
+    min-width: 2rem;
+    display: inline-block;
+    color: var(--prim-dark);
+    border-right: 1px solid lightgray;
+    margin-right: 1rem;
 }
 .frqSubmissionEditor .half{
     width:50%;

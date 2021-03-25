@@ -1039,12 +1039,10 @@ list_handsOn_changeproblems.appendChild(li);
             h2_written_open.innerText = "Start";
             written_open.appendChild(h2_written_open);
             var input_written_open = document.createElement("input");
-            input_written_open.type = "datetime-local";
-            // input_written_open.value = (thisComp.written.opens?thisComp.written.opens:"");
+            // input_written_open.type = "datetime-local";
             input_written_open.name = "mcOpens";
             input_written_open.classList.add("start");
             written_open.appendChild(input_written_open);
-            // thisComp.dom.writtenOpen = input_written_open;
             var curDate = new Date();
             var defaultDate; // = curDate;
             if (thisComp.written.opens)
@@ -1559,14 +1557,8 @@ list_handsOn_changeproblems.appendChild(li);
         var form = document.createElement("div");
         form.classList.add("competition");
         this.dom.form = form;
-        var header = document.createElement("div");
-        header.onclick = function (event) {
-            event.stopPropagation();
-            if (thisComp.published)
-                window.location.href = "/console/competitions?cid=" + thisComp.cid;
-            // toggleEditCompetition(thisComp);
-            // if(thisComp.published) window.location.href = "/console/competitions?cid="+thisComp.cid;
-        };
+        var header = document.createElement("a");
+        header.href = "/console/competitions?cid=" + thisComp.cid;
         header.classList.add("comp_head");
         form.appendChild(header);
         this.dom.comp_head = header;
@@ -1585,8 +1577,10 @@ list_handsOn_changeproblems.appendChild(li);
         var controls_edit = document.createElement("div");
         controls_edit.classList.add("tooltip-cnt");
         controls_edit.classList.add("competition_edit");
-        controls_edit.onclick = function () {
+        controls_edit.onclick = function (event) {
+            event.preventDefault();
             toggleEditCompetition(thisComp);
+            return false;
         };
         controls_edit.innerHTML = "<img src='/res/console/edit.svg'/><p class='tooltip'>Edit</p>";
         this.dom.controlsEdit = controls_edit;

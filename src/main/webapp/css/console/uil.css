@@ -122,9 +122,11 @@
 }
 .competition.published .comp_head {
     cursor: pointer;
+    display: block;
+    color: var(--font-col);
 }
-.competition.published .comp_head: hover{
-    color: var(--prim-light);
+.competition.published .comp_head:hover{
+    color: var(--prim-dark);
 }
 #Competitions .comp_edit {
     display:grid;

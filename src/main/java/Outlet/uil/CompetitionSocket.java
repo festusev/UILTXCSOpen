@@ -59,7 +59,13 @@ public class CompetitionSocket {
         }
         response.add("teams", competition.template.scoreboardData);
         if(status.admin) {
-            response.addProperty("numHandsOnSubmitted", competition.frqSubmissions.size());
+            int numHandsOnSubmitted = 0;
+            for(int i=competition.frqSubmissions.size()-1; i>=0; i--) {
+                FRQSubmission submission = competition.frqSubmissions.get(i);
+                if(competition.template.frqTest.dryRunMode && submission.problemNumber == 0) numHandsOnSubmitted++;
+                else if(!competition.template.frqTest.dryRunMode && submission.problemNumber > 0) numHandsOnSubmitted++;
+            }
+            response.addProperty("numHandsOnSubmitted", numHandsOnSubmitted);
             response.add("teamCodes", competition.template.teamCodeData);
 
             JsonArray studentsInClass = StudentMap.getJSONByTeacher(user.uid);
@@ -109,53 +115,59 @@ public class CompetitionSocket {
         JsonArray data = JsonParser.parseString(message).getAsJsonArray();
         String action = data.get(0).getAsString();
         if(action.equals("nc")) {
-            if (!user.teacher && status.signedUp) {   // They are asking a new clarification
+            if (status.admin || status.signedUp) {   // They are asking a new clarification
                 System.out.println("New Clarification");
-                Clarification clarification = new Clarification(user.uid, data.get(1).getAsString(), "", false);
+                Clarification clarification;
+                if(status.signedUp) clarification = new Clarification(user.uid, data.get(1).getAsString(), "", false);
+                else clarification = new Clarification(user.uid, data.get(1).getAsString(), "", true);
 
                 int index = competition.clarifications.size();  // The index of this clarification in the list
                 competition.clarifications.add(clarification);
 
-                String askerName = "";
-                Student asker = StudentMap.getByUID(clarification.uid);
-                if(asker != null) {
-                    UILEntry entry = asker.cids.get(competition.template.cid);
-                    if(entry != null) {
-                        askerName = " - " + entry.getEscapedTname();
-                    }
-                }
+                JsonObject object = new JsonObject();
+                object.addProperty("index", clarification.index);
+                object.addProperty("question", clarification.question);
+                object.addProperty("id", index);
 
-                CompetitionSocket teacherSocket = connected.get(competition.teacher.uid);
-                if(teacherSocket != null) {
-                    JsonObject object = new JsonObject();
+                if(status.signedUp) {
+                    String askerName = "";
+                    Student asker = StudentMap.getByUID(clarification.uid);
+                    if (asker != null) {
+                        UILEntry entry = asker.cids.get(competition.template.cid);
+                        if (entry != null) {
+                            askerName = " - " + entry.getEscapedTname();
+                        }
+                    }
 
                     object.addProperty("action", "nc");
-                    object.addProperty("index", clarification.index);
                     object.addProperty("name", askerName);
-                    object.addProperty("question", clarification.question);
-                    object.addProperty("id", index);
 
-                    teacherSocket.send(object.toString());
+
+                    CompetitionSocket teacherSocket = connected.get(competition.teacher.uid);
+                    if(teacherSocket != null) {
+                        teacherSocket.send(object.toString());
+                    }
+
+                    // Update the judges as well
+                    short[] judges = competition.getJudges();
+                    for(short judgeUID: judges) {
+                        CompetitionSocket competitionSocket = connected.get(judgeUID);
+                        if(competitionSocket != null) {
+                            competitionSocket.send(object.toString());
+                        }
+                    }
                 }
-
-                // Update the judges as well
-                short[] judges = competition.getJudges();
-                for(short judgeUID: judges) {
-                    CompetitionSocket competitionSocket = connected.get(judgeUID);
-                    if(competitionSocket != null) {
-                        JsonObject object = new JsonObject();
-
-                        object.addProperty("action", "nc");
-                        object.addProperty("index", clarification.index);
-                        object.addProperty("name", askerName);
-                        object.addProperty("question", clarification.question);
-                        object.addProperty("id", index);
-
-                        competitionSocket.send(object.toString());
+                else {
+                    object.addProperty("action", "judgeClarification");
+                    for(short uid: connected.keySet()) {
+                        CompetitionSocket socket = connected.get(uid);
+                        socket.send(object.toString());
                     }
                 }
 
-                try {competition.update();} catch(Exception ignored) {
+                try {
+                    competition.update();
+                } catch(Exception ignored) {
                     ignored.printStackTrace();
                 }
             }

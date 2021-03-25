@@ -113,6 +113,7 @@ h1 {
 }
 .tooltip-cnt {
     position: relative;
+    display: block;
 }
 .tooltip-cnt .tooltip {
     display: none;
@@ -129,6 +130,9 @@ h1 {
     color: white;
     padding: 5px 10px;
     border-radius: 3px;
+}
+.flatpickr-current-month {
+    width: 80% !important;
 }
 @media only screen and (max-width: 1200px) {
     .tooltip-cnt:hover .tooltip {

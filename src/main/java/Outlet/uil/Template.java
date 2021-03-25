@@ -604,9 +604,7 @@ public class Template {
                 String studentPacket = frqTest.STUDENT_PACKET;
                 if(frqTest.dryRunMode) studentPacket = frqTest.DRYRUN_STUDENT_PACKET;
                 String html =  "<div id='frqColumn' class='column frqSubmissionList' style='display:none;'>" +
-                        "<div style='flex-grow:1' id='frqSubmissions'><div class='row head-row'>" +
-                        "<h1>Hands-On</h1>" +
-                        "</div>" +
+                        "<div style='flex-grow:1' id='frqSubmissions'><div class='row head-row'><h1>Hands-On</h1></div>" +
                         "<div class='row'><audio src='/blip.mp3' preload='auto' controls='none' style='display:none' id='playBell'></audio>" +
                         "<p>Test Packet: <a class='link' target='_blank' href='" +
                         StringEscapeUtils.escapeHtml4(studentPacket) + "'>link</a></p>" +
@@ -716,7 +714,10 @@ public class Template {
                 (competitionStatus.mcDuring || competitionStatus.mcFinished)) {
             String html = "<div id='clarificationsColumn' class='column' style='display:none;'><h1>Clarifications</h1>";
 
-            if (!user.teacher) {
+            if(user.teacher) {
+                html += "<textarea maxlength='255' oninput='inputMaxLength(this)' id='clarification_input' " +
+                        "placeholder='Send a clarification.'></textarea><button onclick='sendClarification()' class='chngButton'>Send Clarification</button>";
+            } else {
                 html += "<textarea maxlength='255' oninput='inputMaxLength(this)' id='clarification_input' " +
                         "placeholder='Ask a question.'></textarea><button onclick='sendClarification()' class='chngButton'>Send Clarification</button>";
             }
@@ -726,27 +727,34 @@ public class Template {
             boolean noClarifications = true;
             for (int i=competition.clarifications.size()-1;i>=0;i--) {
                 Clarification clarification = competition.clarifications.get(i);
-                String askerName = "";
-                Student asker = StudentMap.getByUID(clarification.uid);
-                if(asker != null) {
-                    UILEntry entry = asker.cids.get(cid);
-                    if(entry != null) {
+                User asker = UserMap.getUserByUID(clarification.uid);
+                if(asker == null) continue;
+
+                if(asker.teacher) {
+                    html += "<div class='clarification' id='clarification_" + clarification.index + "'><h3>Judge Clarification</h3><span>" +
+                            StringEscapeUtils.escapeHtml4(clarification.question) + "</span></div>";
+                    noClarifications = false;
+                } else {
+                    String askerName = "";
+                    UILEntry entry = ((Student)asker).cids.get(cid);
+                    if (entry != null) {
                         askerName = " - " + entry.getEscapedTname();
                     }
-                }
-                if(clarification.responded) {  // Only show responded clarifications to non creators
-                    html += "<div class='clarification' id='clarification_"+clarification.index+"'><h3>Question"+
-                            askerName+"</h3><span>" +
-                            StringEscapeUtils.escapeHtml4(clarification.question) +
-                            "</span><h3>Answer</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.response) + "</span></div>";
-                    noClarifications = false;
-                } else if (userStatus.admin) {    // Not yet responded, so add in the response textarea
-                    html += "<div class='clarification' id='clarification_"+clarification.index+"'><h3>Question"+
-                            askerName+"</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.question) +
-                            "</span><h3>Answer</h3><span><textarea maxlength='255' oninput='inputMaxLength(this)' placeholder='Send a response.'></textarea><button " +
-                            "onclick='answerClarification(this, "+i+")' class='chngButton'>Send</button></span></div>";
 
-                    noClarifications = false;
+                    if (clarification.responded) {  // Only show responded clarifications to non creators
+                        html += "<div class='clarification' id='clarification_" + clarification.index + "'><h3>Question" +
+                                askerName + "</h3><span>" +
+                                StringEscapeUtils.escapeHtml4(clarification.question) +
+                                "</span><h3>Answer</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.response) + "</span></div>";
+                        noClarifications = false;
+                    } else if (userStatus.admin) {    // Not yet responded, so add in the response textarea
+                        html += "<div class='clarification' id='clarification_" + clarification.index + "'><h3>Question" +
+                                askerName + "</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.question) +
+                                "</span><h3>Answer</h3><span><textarea maxlength='255' oninput='inputMaxLength(this)' placeholder='Send a response.'></textarea><button " +
+                                "onclick='answerClarification(this, " + i + ")' class='chngButton'>Send</button></span></div>";
+
+                        noClarifications = false;
+                    }
                 }
             }
 
