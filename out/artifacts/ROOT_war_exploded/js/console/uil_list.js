@@ -1570,6 +1570,7 @@ list_handsOn_changeproblems.appendChild(li);
         var controls = document.createElement("div");
         controls.classList.add("competition_controls");
         controls.onclick = function (event) {
+            event.preventDefault();
             event.stopPropagation();
         };
         this.dom.controls = controls;
@@ -1578,7 +1579,6 @@ list_handsOn_changeproblems.appendChild(li);
         controls_edit.classList.add("tooltip-cnt");
         controls_edit.classList.add("competition_edit");
         controls_edit.onclick = function (event) {
-            event.preventDefault();
             toggleEditCompetition(thisComp);
             return false;
         };
@@ -1593,7 +1593,6 @@ list_handsOn_changeproblems.appendChild(li);
         var controls_save = document.createElement("div");
         controls_save.classList.add('tooltip-cnt');
         controls_save.onclick = function () {
-            event.stopPropagation();
             thisComp.saveCompetition();
         };
         controls_save.style.display = "none";
@@ -1604,7 +1603,6 @@ list_handsOn_changeproblems.appendChild(li);
         controls_delete.classList.add("tooltip-cnt");
         controls_delete.innerHTML = "<img src='/res/console/delete.svg'/><p class='tooltip'>Delete</p>";
         controls_delete.onclick = function (event) {
-            event.stopPropagation();
             thisComp.delete();
         };
         controls_delete.style.display = "none";
@@ -1632,6 +1630,7 @@ list_handsOn_changeproblems.appendChild(li);
             var blockPublication_1 = false; // Whether or not this is currently publishing, so block the publication
             publishCompetition.onclick = function (event) {
                 event.stopPropagation();
+                event.preventDefault();
                 if (blockPublication_1)
                     return;
                 blockPublication_1 = true;

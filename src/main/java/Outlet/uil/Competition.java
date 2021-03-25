@@ -339,26 +339,31 @@ public class Competition {
             if(userStatus.admin) {
                 if(action.equals("showFRQSubmission")) {
                     int id = Integer.parseInt(request.getParameter("id"));
-                    if (frqSubmissions.size() > id) {
-                        FRQSubmission submission = frqSubmissions.get(id);
-                        FRQProblem problem = template.frqTest.PROBLEM_MAP[submission.problemNumber];
-                        JsonObject compJ = new JsonObject();
-                        compJ.addProperty("name", StringEscapeUtils.escapeHtml4(problem.name));
-                        compJ.addProperty("team", submission.entry.getEscapedTname());
-                        compJ.addProperty("result", submission.getResultString());
+                    System.out.println("Showing frq submission");
+                    try {
+                        if (frqSubmissions.size() > id) {
+                            FRQSubmission submission = frqSubmissions.get(id);
+                            FRQProblem problem = template.frqTest.PROBLEM_MAP[submission.problemNumber];
+                            JsonObject compJ = new JsonObject();
+                            compJ.addProperty("name", StringEscapeUtils.escapeHtml4(problem.name));
+                            compJ.addProperty("team", submission.entry.getEscapedTname());
+                            compJ.addProperty("result", submission.getResultString());
 
-                        if (submission.showInput())
-                            compJ.addProperty("input", StringEscapeUtils.escapeHtml4(submission.input).replaceAll("\r?\n","<br>"));
-                        if (submission.showOutput()) {
-                            compJ.addProperty("output", StringEscapeUtils.escapeHtml4(submission.output).replaceAll("\r?\n", "<br>"));
-                            if(problem.outputFile == null) {
-                                template.frqTest.loadOutputFile(submission.problemNumber, problem);
+                            if (submission.showInput())
+                                compJ.addProperty("input", StringEscapeUtils.escapeHtml4(submission.input).replaceAll("\r?\n", "<br>"));
+                            if (submission.showOutput()) {
+                                compJ.addProperty("output", StringEscapeUtils.escapeHtml4(submission.output).replaceAll("\r?\n", "<br>"));
+                                if (problem.outputFile == null) {
+                                    template.frqTest.loadOutputFile(submission.problemNumber, problem);
+                                }
+                                compJ.addProperty("outputFile", problem.outputFile.replaceAll("\r?\n", "<br>"));
                             }
-                            compJ.addProperty("outputFile", problem.outputFile.replaceAll("\r?\n", "<br>"));
-                        }
 
-                        compJ.addProperty("graded", submission.graded);
-                        writer.write(new Gson().toJson(compJ));
+                            compJ.addProperty("graded", submission.graded);
+                            writer.write(new Gson().toJson(compJ));
+                        }
+                    } catch(Exception e) {
+                        e.printStackTrace();
                     }
                 } else if(action.equals("changeFRQJudgement")) {
                     int id = Integer.parseInt(request.getParameter("id"));
