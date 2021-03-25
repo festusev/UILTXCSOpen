@@ -115,6 +115,11 @@ public class FRQTest {
                 if(problem.outputFname.isEmpty() && pair.value != null) {   // Delete the file if the output fname is set to null
                     pair.value.delete();
                     pair.value = null;
+                } else {
+                    InputStream inputStream = new FileInputStream(pair.value);
+                    byte[] bytes = new byte[inputStream.available()];
+                    inputStream.read(bytes);
+                    problem.outputFile = new String(bytes);
                 }
             }
         } catch (Exception var1) {
