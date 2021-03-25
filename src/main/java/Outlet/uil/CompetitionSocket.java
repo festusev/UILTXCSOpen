@@ -195,20 +195,24 @@ public class CompetitionSocket {
                     }
                 }
 
-                JsonObject object = new JsonObject();
-                object.addProperty("action", "ac");
-                object.addProperty("index", clarification.index);
-                object.addProperty("name", askerName);
-                object.addProperty("question", clarification.question);
-                object.addProperty("answer", clarification.response);
-                String stringified = object.toString();
+                try {
+                    JsonObject object = new JsonObject();
+                    object.addProperty("action", "ac");
+                    object.addProperty("index", clarification.index);
+                    object.addProperty("name", askerName);
+                    object.addProperty("question", clarification.question);
+                    object.addProperty("answer", clarification.response);
+                    String stringified = object.toString();
 
-                // Relay the clarification to all of the people who are connected to this competition and signed up
-                ArrayList<CompetitionSocket> sockets = competitions.get(competition.template.cid);
-                for (CompetitionSocket socket : sockets) {
-                    UserStatus socketStatus = UserStatus.getCompeteStatus(socket.user, competition);
+                    // Relay the clarification to all of the people who are connected to this competition and signed up
+                    ArrayList<CompetitionSocket> sockets = competitions.get(competition.template.cid);
+                    for (CompetitionSocket socket : sockets) {
+                        UserStatus socketStatus = UserStatus.getCompeteStatus(socket.user, competition);
 
-                    if (socketStatus.signedUp || socketStatus.admin) socket.send(stringified);
+                        if (socketStatus.signedUp || socketStatus.admin) socket.send(stringified);
+                    }
+                } catch(Exception e) {
+                    e.printStackTrace();
                 }
 
                 try {

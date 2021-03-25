@@ -199,6 +199,7 @@ public class Competition {
 
     public void updateDB(String name, String description, boolean alternateExists, short numNonAlts, MCTest mcTest,
                          FRQTest frqTest, short[] judges, boolean showScoreboard) throws SQLException {
+        System.out.println("Updating competition cid="+template.cid);
         Connection conn = Conn.getConnection();
         PreparedStatement stmt = conn.prepareStatement("UPDATE competitions SET uid=?, name=?, isPublic=?, description=?, " +
                         "alternateExists=?, numNonAlts=?, mcKey=?, mcCorrectPoints=?, mcIncorrectPoints=?, mcInstructions=?, mcTestLink=?," +
