@@ -808,6 +808,8 @@ public class CompetitionSocket {
                     FRQTest oldFRQ = competition.template.frqTest;
                     if(oldFRQ.dryRunMode || !oldFRQ.DRYRUN_EXISTS) return;
 
+                    oldFRQ.initializeFiles();
+
                     // Now update the scoreboard. frq scores now only include the dry run score
                     ArrayList<UILEntry> entries = competition.entries.allEntries;
                     for(UILEntry entry: entries) {

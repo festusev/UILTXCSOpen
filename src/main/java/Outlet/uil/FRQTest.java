@@ -505,11 +505,11 @@ public class FRQTest {
         long currentTime = System.currentTimeMillis();
 
         if (cntWhitespace) {
-            return new FRQSubmission(probNum,FRQSubmission.Result.EMPTY_FILE, fPath,"", "", currentTime, AUTO_GRADE);
+            return new FRQSubmission(probNum,FRQSubmission.Result.EMPTY_FILE, fPath, new String(bytes), "", currentTime, AUTO_GRADE);
         } else {
             int i = givenFName.lastIndexOf(46);
             if (i < 0) {
-                return new FRQSubmission(probNum,FRQSubmission.Result.UNCLEAR_FILE_TYPE, fPath,"", "", currentTime, AUTO_GRADE);
+                return new FRQSubmission(probNum,FRQSubmission.Result.UNCLEAR_FILE_TYPE, fPath,new String(bytes), "", currentTime, AUTO_GRADE);
             } else {
                 String givenName = givenFName.substring(0, i);
                 if (i > 0) {

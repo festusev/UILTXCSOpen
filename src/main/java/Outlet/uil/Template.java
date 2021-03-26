@@ -659,11 +659,13 @@ public class Template {
         }
     }
     public String getRunningFRQ(UILEntry entry){
+        String timer = "<div id='frqTimer'>"+frqTest.getTimer()+"</div>";
+        if(frqTest.dryRunMode) timer = "";
         return /*"<script>grabFRQProblemsTimer = setInterval(function() { QProblems()}, 1000*10);</script>" +*/
                 "<div id='frqColumn' class='column' style='display:none'><div class='row head-row running-frq'>" +
                 "<div id='frqSelection'>" +
                 "<h1>"+StringEscapeUtils.escapeHtml4(frqTest.NAME)+"</h1>" +
-                "<div id='frqTimer'>"+frqTest.getTimer()+"</div>"+
+                timer +
                 frqHTML+"</div>"+
                 getFRQProblems(entry)+"</div></div>";
     }
