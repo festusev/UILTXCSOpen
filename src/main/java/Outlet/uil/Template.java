@@ -608,7 +608,7 @@ public class Template {
     }
 
     public String getFRQHTML(User u, UserStatus userStatus, CompetitionStatus competitionStatus) {
-        if(!frqTest.exists || competitionStatus.frqBefore) return "";
+        if(!frqTest.exists || (competitionStatus.frqBefore && competition.frqSubmissions.size() == 0)) return "";
 
         if(userStatus.teacher) {
             if(userStatus.admin) {   // This is the teacher who created this competition
@@ -646,15 +646,15 @@ public class Template {
             }
         } else {
             UILEntry entry = ((Student) u).cids.get(cid);
-            if (competitionStatus.frqFinished) {
-                return getFinishedFRQ(entry);
-            } else if (competitionStatus.frqDuring) {
+            if (competitionStatus.frqDuring) {
                 if(userStatus.writtenSpecialist) {
                     return "<div id='frqColumn' class='column' style='display:none;'>" +
                             "<h1 class='forbiddenPage'>Written specialists cannot compete in the Hands-On.</h1>" +
                             "</div>";
                 }
                 else return getRunningFRQ(entry);
+            } else if (competitionStatus.frqFinished || competition.frqSubmissions.size() > 0) {
+                return getFinishedFRQ(entry);
             } else return "";   // This shouldn't happen
         }
     }
@@ -676,7 +676,8 @@ public class Template {
     public String getFRQProblems(UILEntry entry){
         String problems = "<div id='frqProblems'><b>Problems - " + entry.frqScore +"pts</b>";
         String submissionList = "<b>Response Feed</b><ul id='frqResponseFeed'>";
-        if(frqTest.dryRunMode) {
+        CompetitionStatus status = new CompetitionStatus(mcTest, frqTest);
+        if(frqTest.dryRunMode || status.frqBefore) {
             problems+="<p>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[0].name) + " - ";
             Pair<Short, ArrayList<FRQSubmission>> problem = entry.frqResponses[0];
             if(problem.key > 0) {
@@ -723,61 +724,57 @@ public class Template {
     public String getClarificationHTML(User user, UserStatus userStatus, CompetitionStatus competitionStatus) {
         // System.out.println("SignedUp="+userStatus.signedUp+", Creator="+userStatus.creator+", FRQDuring="+competitionStatus.frqDuring+
         //        ", FRQFinished="+competitionStatus.frqFinished+", MCDuring="+competitionStatus.mcDuring+", MCFinished="+competitionStatus.mcFinished);
-        if ((userStatus.signedUp || userStatus.admin) && (competitionStatus.frqDuring || competitionStatus.frqFinished) &&
-                (competitionStatus.mcDuring || competitionStatus.mcFinished)) {
-            String html = "<div id='clarificationsColumn' class='column' style='display:none;'><h1>Clarifications</h1>";
+        String html = "<div id='clarificationsColumn' class='column' style='display:none;'><h1>Clarifications</h1>";
 
-            if(user.teacher) {
-                html += "<textarea maxlength='255' oninput='inputMaxLength(this)' id='clarification_input' " +
-                        "placeholder='Send a clarification.'></textarea><button onclick='sendClarification()' class='chngButton'>Send Clarification</button>";
+        if(user.teacher) {
+            html += "<textarea maxlength='255' oninput='inputMaxLength(this)' id='clarification_input' " +
+                    "placeholder='Send a clarification.'></textarea><button onclick='sendClarification()' class='chngButton'>Send Clarification</button>";
+        } else {
+            html += "<textarea maxlength='255' oninput='inputMaxLength(this)' id='clarification_input' " +
+                    "placeholder='Ask a question.'></textarea><button onclick='sendClarification()' class='chngButton'>Send Clarification</button>";
+        }
+
+        html += "<div class='clarification_group'>";
+
+        boolean noClarifications = true;
+        for (int i=competition.clarifications.size()-1;i>=0;i--) {
+            Clarification clarification = competition.clarifications.get(i);
+            User asker = UserMap.getUserByUID(clarification.uid);
+            if(asker == null) continue;
+
+            if(asker.teacher) {
+                html += "<div class='clarification' id='clarification_" + clarification.index + "'><h3>Judge Clarification</h3><span>" +
+                        StringEscapeUtils.escapeHtml4(clarification.question) + "</span></div>";
+                noClarifications = false;
             } else {
-                html += "<textarea maxlength='255' oninput='inputMaxLength(this)' id='clarification_input' " +
-                        "placeholder='Ask a question.'></textarea><button onclick='sendClarification()' class='chngButton'>Send Clarification</button>";
-            }
+                String askerName = "";
+                UILEntry entry = ((Student)asker).cids.get(cid);
+                if (entry != null) {
+                    askerName = " - " + entry.getEscapedTname();
+                }
 
-            html += "<div class='clarification_group'>";
-
-            boolean noClarifications = true;
-            for (int i=competition.clarifications.size()-1;i>=0;i--) {
-                Clarification clarification = competition.clarifications.get(i);
-                User asker = UserMap.getUserByUID(clarification.uid);
-                if(asker == null) continue;
-
-                if(asker.teacher) {
-                    html += "<div class='clarification' id='clarification_" + clarification.index + "'><h3>Judge Clarification</h3><span>" +
-                            StringEscapeUtils.escapeHtml4(clarification.question) + "</span></div>";
+                if (clarification.responded) {  // Only show responded clarifications to non creators
+                    html += "<div class='clarification' id='clarification_" + clarification.index + "'><h3>Question" +
+                            askerName + "</h3><span>" +
+                            StringEscapeUtils.escapeHtml4(clarification.question) +
+                            "</span><h3>Answer</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.response) + "</span></div>";
                     noClarifications = false;
-                } else {
-                    String askerName = "";
-                    UILEntry entry = ((Student)asker).cids.get(cid);
-                    if (entry != null) {
-                        askerName = " - " + entry.getEscapedTname();
-                    }
+                } else if (userStatus.admin) {    // Not yet responded, so add in the response textarea
+                    html += "<div class='clarification' id='clarification_" + clarification.index + "'><h3>Question" +
+                            askerName + "</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.question) +
+                            "</span><h3>Answer</h3><span><textarea maxlength='255' oninput='inputMaxLength(this)' placeholder='Send a response.'></textarea><button " +
+                            "onclick='answerClarification(this, " + i + ")' class='chngButton'>Send</button></span></div>";
 
-                    if (clarification.responded) {  // Only show responded clarifications to non creators
-                        html += "<div class='clarification' id='clarification_" + clarification.index + "'><h3>Question" +
-                                askerName + "</h3><span>" +
-                                StringEscapeUtils.escapeHtml4(clarification.question) +
-                                "</span><h3>Answer</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.response) + "</span></div>";
-                        noClarifications = false;
-                    } else if (userStatus.admin) {    // Not yet responded, so add in the response textarea
-                        html += "<div class='clarification' id='clarification_" + clarification.index + "'><h3>Question" +
-                                askerName + "</h3><span>" + StringEscapeUtils.escapeHtml4(clarification.question) +
-                                "</span><h3>Answer</h3><span><textarea maxlength='255' oninput='inputMaxLength(this)' placeholder='Send a response.'></textarea><button " +
-                                "onclick='answerClarification(this, " + i + ")' class='chngButton'>Send</button></span></div>";
-
-                        noClarifications = false;
-                    }
+                    noClarifications = false;
                 }
             }
-
-            if(noClarifications) {
-                html += "There are no clarifications.";
-            }
-
-            return html + "</div></div>";
         }
-        return "";
+
+        if(noClarifications) {
+            html += "There are no clarifications.";
+        }
+
+        return html + "</div></div>";
     }
 
     public String getNavBarHTML(UserStatus userStatus, CompetitionStatus competitionStatus) {
@@ -814,14 +811,16 @@ public class Template {
         }
 
         if((!frqTest.exists || competitionStatus.frqBefore) && (!mcTest.exists || competitionStatus.mcBefore)) {
+            if (frqTest.exists && (competition.frqSubmissions.size() > 0)) nav += FRQ_HEADER;
+            nav += "<li id='clarificationNav' onclick='showClarifications()' class='secondNavItem'>Clarifications</li>";
+
             if(mcFirst) return nav + postfix + "<li id='countdownCnt'>Written opens in <p id='countdown'>" + mcTest.opens + "</p></li></ul>";
             else return nav + postfix + "<li id='countdownCnt'>Hands-On opens in <p id='countdown'>" + frqTest.opens + "</p></li></ul>";
         } else {
             if(userStatus.signedUp || userStatus.admin) {
                 if (mcTest.exists && !competitionStatus.mcBefore) nav += MC_HEADER;
-                if (frqTest.exists && !competitionStatus.frqBefore) nav += FRQ_HEADER;
-                if((competitionStatus.frqDuring || competitionStatus.frqFinished) && (competitionStatus.mcDuring || competitionStatus.mcFinished))
-                    nav += "<li id='clarificationNav' onclick='showClarifications()' class='secondNavItem'>Clarifications</li>";
+                if (frqTest.exists && (!competitionStatus.frqBefore || competition.frqSubmissions.size() > 0)) nav += FRQ_HEADER;
+                nav += "<li id='clarificationNav' onclick='showClarifications()' class='secondNavItem'>Clarifications</li>";
             }
 
             if (competitionStatus.mcDuring && !competitionStatus.frqDuring) {
