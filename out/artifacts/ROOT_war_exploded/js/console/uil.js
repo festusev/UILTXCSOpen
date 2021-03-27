@@ -1739,11 +1739,8 @@ function submitFRQ() {
                 }
                 // grabFRQProblems();
             }
-            else if (xhr.status == 408) {
+            else {
                 addSuccessBox(box, "SUCCESS: " + filename + " has been submitted.", true);
-            }
-            else { // A server error occurred. Show an error message
-                addErrorBox(box, "Whoops! A server error occurred. Contact an admin if the problem continues.", true);
             }
         }
     };
