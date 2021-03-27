@@ -2455,7 +2455,7 @@ function hideMCScore(element) {
 }
 function setTime(timestamp, id) {
     var date = new Date(timestamp);
-    document.getElementById(id).innerHTML = "" + date.getMonth() + "/" + ("" + date.getDate()).padStart(2, '0') + " " + date.getHours() + ":" + ("" + date.getMinutes()).padStart(2, '0');
+    document.getElementById(id).innerHTML = "" + (date.getMonth() + 1) + "/" + ("" + date.getDate()).padStart(2, '0') + " " + date.getHours() + ":" + ("" + date.getMinutes()).padStart(2, '0');
 }
 // Reads in the roster file and creates teams accordingly
 function uploadRoster() {

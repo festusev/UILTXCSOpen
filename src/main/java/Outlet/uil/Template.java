@@ -621,7 +621,7 @@ public class Template {
                         StringEscapeUtils.escapeHtml4(studentPacket) + "'>link</a></p>" +
                         "<p><b>Submissions:</b></p>";
 
-                html += "<table id='frqSubmissionsTable'><tr id='frqSubmissionsTr'><th>Problem</th><th>Team</th><th>Graded</th><th>Result</th><th>Timestamp</th></tr>";
+                html += "<table id='frqSubmissionsTable'><colgroup><col><col><col style='width:13%'><col><col></colgroup><tr id='frqSubmissionsTr'><th>Problem</th><th>Team</th><th>Graded</th><th>Result</th><th>Timestamp</th></tr>";
 
                 String rows = "";
                 for(int i=competition.frqSubmissions.size()-1; i>=0; i--) {
