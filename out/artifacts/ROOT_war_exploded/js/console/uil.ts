@@ -159,15 +159,9 @@ const config = {
             let element:HTMLElement = document.getElementById("clarification_"+response.id);
             element.innerHTML = html;
             eval(element.lastChild.textContent);
-            // let template = document.createElement('template');
-            // template.innerHTML = response.html;
-            // let firstChild = template.firstChild;
-            // element.replaceWith(firstChild);
 
-            let showingSubmission = submissionMap[response.id];
             submissionMap[response.id] = null;
             if(showingFRQSubmission.id == "subEditor_"+response.id) {
-                dom.frq.removeChild(showingSubmission);
                 showFRQSubmission(<HTMLTableRowElement>element, response.id);
             }
         }, "updateTeam": function (response: { [k: string]: any }) {
@@ -1833,8 +1827,18 @@ function submitFRQ(){
     if(!box) box = document.getElementById("submit");
     addSuccessBox(box, "Scoring...", false);
 
-    var probSelector = <HTMLSelectElement>document.getElementById("frqProblem");
-    var probId = probSelector.options[probSelector.selectedIndex].value;
+    let probSelector = <HTMLSelectElement>document.getElementById("frqProblem");
+    let probId = probSelector.options[probSelector.selectedIndex].value;
+
+    let fullPath = (<HTMLInputElement>dom.frqTextfile).value;
+    let filename;
+    if (fullPath) {
+        let startIndex = (fullPath.indexOf('\\') >= 0 ? fullPath.lastIndexOf('\\') : fullPath.lastIndexOf('/'));
+        filename = fullPath.substring(startIndex);
+        if (filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) {
+            filename = filename.substring(1);
+        }
+    }
 
     let xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function(){
@@ -1847,8 +1851,9 @@ function submitFRQ(){
                 } else {
                     addErrorBox(box, response["error"], true);
                 }
-
                 // grabFRQProblems();
+            } else if(xhr.status == 408) {
+                addSuccessBox(box, "SUCCESS: "+filename+" has been submitted.", true);
             } else {    // A server error occurred. Show an error message
                 addErrorBox(box, "Whoops! A server error occurred. Contact an admin if the problem continues.", true);
             }
@@ -1965,7 +1970,7 @@ function changeMCJudgement(element: HTMLSelectElement, uid: number, probNum: num
 
 function hideFRQSubmission() {
     showingFRQSubmission.style.display = "none";
-    // showingFRQSubmissionTR.classList.remove("selected");
+    showingFRQSubmission = null;
     dom.frqSubmissions.style.display = "block";
 }
 
@@ -2016,6 +2021,7 @@ function showFRQSubmission(row:HTMLTableRowElement, submissionId: number) {
                 let div = document.createElement("div");
                 div.classList.add("frqSubmissionEditor");
                 div.innerHTML = "<img src='/res/close.svg' onclick='hideFRQSubmission()' class='hideFRQSubmission'>";
+                div.id = "subEditor_"+submissionId;
 
                 let probName_cnt = document.createElement("div");
                 probName_cnt.innerHTML = "<b>Problem</b><h2>"+name+"</h2>";

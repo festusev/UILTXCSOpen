@@ -785,14 +785,16 @@
     max-width:0;
 }
 #frqSubmissions .graded {
-    background-color: var(--success-dark);
-    color: white;
-    padding-left: 1rem;
+    padding: 0 1rem;
 }
 #frqSubmissions .notGraded {
     background-color: var(--warn-col);
     color: white;
-    padding-left: 1rem;
+    width: 1px;
+    padding: 0 1rem;
+}
+#frqSubmissions tr th:nth-last-child(3) {
+    padding: 0 1rem;
 }
 .frqSubmissionEditor {
     overflow: auto;
