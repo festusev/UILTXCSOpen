@@ -313,6 +313,36 @@ public class Competition {
         return judges;
     }
 
+    public void sendUpdatedHandsOnSubmission(FRQSubmission submission, int id) {
+        JsonObject object = new JsonObject();
+        object.addProperty("action", "updateSmallFRQ");
+        object.addProperty("id", id);
+        object.addProperty("html", template.getSmallFRQ(id, submission));
+
+        // THIS HAS OUT OF BOUNDS ERRORS
+        CompetitionSocket teacherSocket = CompetitionSocket.connected.get(teacher.uid);
+        if(teacherSocket != null) {
+            try {
+                teacherSocket.send(object.toString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Update the judges as well
+        short[] judges = getJudges();
+        for(short judgeUID: judges) {
+            CompetitionSocket competitionSocket = CompetitionSocket.connected.get(judgeUID);
+            if(competitionSocket != null) {
+                try {
+                    competitionSocket.send(object.toString());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     public void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         template.render(request,response);
@@ -374,9 +404,7 @@ public class Competition {
                         FRQSubmission submission = frqSubmissions.get(id);
 
                         boolean oldShowOutput = submission.showOutput();
-                        //boolean oldTakePenalty = submission.takePenalty();
-                        //boolean oldTakeNoPenalty = submission.noPenalty();
-                        //FRQSubmission.Result oldResult = submission.result;
+
                         switch (newResultId) {
                             case 0:
                                 submission.result = FRQSubmission.Result.CORRECT;
@@ -440,6 +468,7 @@ public class Competition {
                             submission.entry.socketSendFRQProblems();
                             template.updateScoreboard();
                         }
+                        sendUpdatedHandsOnSubmission(submission, id);
                     }
                 } else if(action.equals("showMCSubmission")) {
                     short uid = Short.parseShort(request.getParameter("uid"));

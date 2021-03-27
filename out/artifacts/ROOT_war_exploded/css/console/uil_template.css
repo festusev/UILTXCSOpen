@@ -443,10 +443,10 @@
     background-color: rgb(251,251,251);
 }
 .creatorOnly {
-    display: none;
+    display: none!important;
 }
 .isCreator .creatorOnly {
-    display: initial;
+    display: initial!important;
 }
 #createTeam {
     margin-left: 1rem;
@@ -783,6 +783,16 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width:0;
+}
+#frqSubmissions .graded {
+    background-color: var(--success-dark);
+    color: white;
+    padding-left: 1rem;
+}
+#frqSubmissions .notGraded {
+    background-color: var(--warn-col);
+    color: white;
+    padding-left: 1rem;
 }
 .frqSubmissionEditor {
     overflow: auto;

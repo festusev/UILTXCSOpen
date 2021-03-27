@@ -172,6 +172,21 @@ var config = {
             row.replaceWith(firstChild);
             dom.playBell.play();
             eval(firstChild.lastChild.textContent);
+        }, "updateSmallFRQ": function (response) {
+            var html = response.html.slice(response.html.indexOf(">") + 1, -1);
+            var element = document.getElementById("clarification_" + response.id);
+            element.innerHTML = html;
+            eval(element.lastChild.textContent);
+            // let template = document.createElement('template');
+            // template.innerHTML = response.html;
+            // let firstChild = template.firstChild;
+            // element.replaceWith(firstChild);
+            var showingSubmission = submissionMap[response.id];
+            submissionMap[response.id] = null;
+            if (showingFRQSubmission.id == "subEditor_" + response.id) {
+                dom.frq.removeChild(showingSubmission);
+                showFRQSubmission(element, response.id);
+            }
         }, "updateTeam": function (response) {
             dom.teamMembers.innerHTML = response["html"];
         }, "competitionDeleted": function (response) {
@@ -1896,6 +1911,8 @@ function showFRQSubmission(row, submissionId) {
                         frqIsGraded_1.innerHTML = "Graded Sent";
                         var graded = document.getElementById("showFRQSubmissionGraded" + submissionId);
                         graded.innerText = "true";
+                        graded.classList.remove("notGraded");
+                        graded.classList.add("graded");
                         ws.send("[\"publishGradedFRQ\"," + submissionId + "]");
                     };
                     frqIsGradedButton.innerText = "Send Graded";
@@ -1995,7 +2012,7 @@ function addFRQOutputHTML(input, output, outputFile, result, div_wrapper) {
                 }
             }
             else
-                outputDiv.innerText = output;
+                outputDiv.innerHTML = output;
             var output_cnt = document.createElement("div");
             output_cnt.classList.add("outputCnt");
             output_cnt.classList.add("frqHalf");

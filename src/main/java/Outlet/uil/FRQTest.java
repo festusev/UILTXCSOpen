@@ -377,33 +377,35 @@ public class FRQTest {
 
         System.out.println("--Executing command '" + run_cmd + "'");
         Process r = null;
+        InputStream stdout;
+        InputStream stderr;
+
         try {
             r = Runtime.getRuntime().exec(new String[]{"bash", "-c", run_cmd});
-            r.waitFor();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "","", "", currentTime, AUTO_GRADE);
-        }
-        InputStream stdout = r.getInputStream();
-        InputStream stderr = r.getErrorStream();
-        long a = System.currentTimeMillis();
-        boolean var16 = false;
+            stdout = r.getInputStream();
+            stderr = r.getErrorStream();
 
-        int xcode;
-        try {
             if (!r.waitFor(60L, TimeUnit.SECONDS)) {
                 System.out.println("Time limit exceeded");
                 r.destroyForcibly();
                 close(stdout, stderr);
                 return new FRQSubmission(problemNum, FRQSubmission.Result.EXCEEDED_TIME_LIMIT, "","", "", currentTime, AUTO_GRADE);
             }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return new FRQSubmission(problemNum, FRQSubmission.Result.SERVER_ERROR, "","", "", currentTime, AUTO_GRADE);
+        }
 
+        long a = System.currentTimeMillis();
+
+        int xcode = r.exitValue();
+        /*try {
             xcode = r.waitFor();
         } catch (InterruptedException var31) {
             var31.printStackTrace();
             close(stdout, stderr);
             return new FRQSubmission(problemNum, FRQSubmission.Result.RUNTIME_ERROR, "","", "", currentTime, AUTO_GRADE);
-        }
+        }*/
 
         long b = System.currentTimeMillis();
         ByteArrayOutputStream error_bytes = new ByteArrayOutputStream();

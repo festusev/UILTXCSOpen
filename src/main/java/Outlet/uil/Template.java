@@ -599,9 +599,9 @@ public class Template {
 
     public String getSmallFRQ(int i, FRQSubmission submission) {
         // String timeStamp = new SimpleDateFormat("MM/dd HH:mm").format(submission.submittedTime);
-        return "<tr onclick='showFRQSubmission(this,"+i+")'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber].name) +
+        return "<tr onclick='showFRQSubmission(this,"+i+")' id='clarification_"+i+"'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber].name) +
                 "</td><td>" + submission.entry.getEscapedTname() + "</td><td class='"+
-                (submission.graded?"graded":"")+"' id='showFRQSubmissionGraded"+i+"'>"+
+                (submission.graded?"graded":"notGraded")+"' id='showFRQSubmissionGraded"+i+"'>"+
                 submission.graded+"</td><td id='showFRQSubmission"+i+"'>" + submission.getResultString() +
                 "</td><td id='"+submission.submittedTime+"_"+submission.problemNumber+"'><script>setTime("+submission.submittedTime+",'"+
                 submission.submittedTime+"_"+submission.problemNumber+"');</script></td></tr>";
@@ -939,7 +939,7 @@ public class Template {
 
         // create HTML
         scoreboardHTML = "<div class='column' id='scoreboardColumn' style='display:none;'>" +
-                "<div id='uploadRosterBox' style='display:none' class='creatorOnly'>Uploading roster...</div>" +
+                "<div id='uploadRosterBox' style='display:none'>Uploading roster...</div>" +
                 "<div id='signUpBox' style='display:none'><div class='center'><h1>Create Team</h1>" +
                 "<img src='/res/close.svg' id='signUpClose' onclick='hideSignup()'/>" +
                 "<p id='errorBoxERROR'></p><p class='instruction'>Team Name</p><input name='teamCode' id='teamCode' maxlength='25' class='creatingTeam'>" +
@@ -976,7 +976,7 @@ public class Template {
                 "<button id='createTeam' onclick='showSignup()' class='creatorOnly chngButton'>Create Team</button>" +
                 "<a id='downloadScoreboard' onclick='downloadScoreboard()' class='creatorOnly'>Download Scoreboard</a>" +
                 "<a id='downloadRoster' onclick='downloadRoster()' class='creatorOnly'>Download Roster</a>" +
-                "<p id='uploadRoster'><span>Upload Roster</span><img src='/res/upload.svg' class='creatorOnly' onclick='uploadRosterProxy()'/></p><input id='uploadRosterProxy' type='file' style='display:none' onchange='uploadRoster()'/>" +
+                "<p id='uploadRoster' class='creatorOnly'><span>Upload Roster</span><img src='/res/upload.svg' onclick='uploadRosterProxy()'/></p><input id='uploadRosterProxy' type='file' style='display:none' onchange='uploadRoster()'/>" +
                 "<div id='generalScoreboard'><table id='teamList'></table></div>";
         if(mcTest.exists) scoreboardHTML += "<div id='writtenScoreboard'><table id='writtenScoreboardTable'></table></div>";
         if(frqTest.exists) scoreboardHTML += "<div id='handsOnScoreboard'><table id='handsOnScoreboardTable'></table></div>";

@@ -84,6 +84,8 @@ public class CompetitionSocket {
         }
     }
 
+
+
     @OnOpen
     public void onOpen(Session session, @PathParam("cid") String cidS) {
         try{
@@ -141,7 +143,6 @@ public class CompetitionSocket {
 
                     object.addProperty("action", "nc");
                     object.addProperty("name", askerName);
-
 
                     CompetitionSocket teacherSocket = connected.get(competition.teacher.uid);
                     if(teacherSocket != null) {
@@ -710,6 +711,8 @@ public class CompetitionSocket {
                 submission.entry.update();
                 submission.entry.socketSendFRQProblems();
                 competition.template.updateScoreboard();
+
+                competition.sendUpdatedHandsOnSubmission(submission, id);
             } else if(action.equals("regradeFRQ")) {    // Re-run an frq submission
                 int id = data.get(1).getAsInt();
                 FRQSubmission submission = competition.frqSubmissions.get(id);
@@ -722,10 +725,8 @@ public class CompetitionSocket {
                 output.addProperty("submissionID", id);
                 output.addProperty("newOutput", StringEscapeUtils.escapeHtml4(submission.output).replaceAll("\r?\n","<br>"));
 
-                if(newSubmission.result == FRQSubmission.Result.CORRECT || newSubmission.result == FRQSubmission.Result.INCORRECT) {
-                    output.addProperty("outputFile", StringEscapeUtils.escapeHtml4(
-                            competition.template.frqTest.PROBLEM_MAP[submission.problemNumber].outputFile).replaceAll("\r?\n","<br>"));
-                }
+                //if(newSubmission.result == FRQSubmission.Result.CORRECT || newSubmission.result == FRQSubmission.Result.INCORRECT) {
+                output.addProperty("outputFile", StringEscapeUtils.escapeHtml4(competition.template.frqTest.PROBLEM_MAP[submission.problemNumber].outputFile).replaceAll("\r?\n","<br>"));
 
                 send(output.toString());
             } else if(action.equals("releaseMCScores")) {
