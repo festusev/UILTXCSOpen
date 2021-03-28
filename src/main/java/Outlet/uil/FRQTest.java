@@ -339,7 +339,17 @@ public class FRQTest {
             if (ret != 0) {
                 System.out.println("Program exited with code: " + ret);
                 System.out.println("Compilation failure");
-                return new FRQSubmission(problemNum, FRQSubmission.Result.COMPILETIME_ERROR, "","", "", currentTime, AUTO_GRADE);
+                InputStream stderr = p.getErrorStream();
+
+                ByteArrayOutputStream error_bytes = new ByteArrayOutputStream();
+                byte[] buffer = new byte[1024];
+
+                int length;
+                while((length = stderr.read(buffer)) != -1) {
+                    error_bytes.write(buffer, 0, length);
+                }
+
+                return new FRQSubmission(problemNum, FRQSubmission.Result.COMPILETIME_ERROR, "","", new String(buffer), currentTime, AUTO_GRADE);
             }
 
             System.out.println("Compilation success");

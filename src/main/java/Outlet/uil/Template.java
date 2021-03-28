@@ -902,7 +902,6 @@ public class Template {
         for (UILEntry entry : competition.entries.allEntries) {
             sortedTeams.add(entry.tid);
 
-
             // entry.getMCScore();
 
             /*teamList += "<tr><td>" + rank + "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td>";

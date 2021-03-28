@@ -915,7 +915,9 @@ class Team {
                 }
             }
 
-            scores.sort();
+            scores.sort(function(a, b) {
+                return a - b;
+            });
 
             for(let i=scores.length - 1,j=scores.length-pageState.mcNumScoresToKeep-1; i>j && i >= 0;i--) {
                 this.mcScore += scores[i];
@@ -2507,6 +2509,8 @@ function downloadScoreboard() {
         data.push(["Name","Team","Correct","Incorrect","% Correct","Total"]);
 
         for (let student of writtenTestScoreboard) {
+            if(student.type == StudentType.ALTERNATE) continue;
+
             let mcCorrect = "";
             let mcIncorrect = "";
             let mcPercentCorrect = "";
