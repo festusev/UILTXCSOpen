@@ -784,17 +784,21 @@
     white-space: nowrap;
     max-width:0;
 }
-#frqSubmissions .graded {
-    padding: 0 1rem;
-}
 #frqSubmissions .notGraded {
     background-color: var(--warn-col);
     color: white;
     width: 1px;
     padding: 0 1rem;
 }
-#frqSubmissions tr th:nth-last-child(3) {
-    padding: 0 1rem;
+#frqSubmissions tr.blocked:not(#frqSubmissionsTr) {
+    background-color: lightgray;
+}
+#frqSubmissions tr img {
+    height: 1rem;
+    margin-left: 1rem;
+}
+#frqSubmissions th {
+    cursor: pointer;
 }
 .frqSubmissionEditor {
     overflow: auto;
@@ -883,6 +887,19 @@
     margin-top: -2rem;
     color: var(--warn-col);
     text-align: right;
+}
+#inputOutputTabCnt b {
+    display: inline-block;
+    padding: 0.31rem;
+    border: 1px solid lightgray;
+    border-bottom: 0;
+    margin-right: 1rem;
+    cursor: pointer;
+    border-radius: 10px 10px 0 0;
+}
+#inputOutputTabCnt b.selected {
+    background-color: var(--sec-col);
+    color: white;
 }
 #aboutColumn .head-row{
     border-bottom: 1px solid lightgray;

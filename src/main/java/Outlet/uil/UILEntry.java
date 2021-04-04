@@ -11,6 +11,7 @@ import static Outlet.Conn.getConnection;
 
 public class UILEntry {
     public String tname;
+    public Division division;
     public HashMap<Short, StudentType> uids; // The uids of all students, including the alternate
     public short tid;
     public String school = "";  // Specified by the students
@@ -31,6 +32,15 @@ public class UILEntry {
         ALTERNATE
     }
 
+    enum Division {
+        A1,
+        A2,
+        A3,
+        A4,
+        A5,
+        A6
+    }
+
     /***
      * Used when creating a new team.
      * @param name
@@ -40,6 +50,7 @@ public class UILEntry {
      */
     public UILEntry(String name, String hashedPassword, Competition competition, Student student) {
         this.tname =  name;
+        this.division = Division.A6;
         if(student.teacherId >=0) {
             this.school = TeacherMap.getByUID(student.teacherId).school;
         }
@@ -68,6 +79,7 @@ public class UILEntry {
     public UILEntry(String name, String hashedPassword, Competition competition) {
         this.tname =  name;
         this.school = "No School";
+        this.division = Division.A6;
 
         this.password = hashedPassword;
         this.competition = competition;
@@ -85,6 +97,7 @@ public class UILEntry {
 
     public UILEntry(ResultSet rs, Competition comp) throws SQLException {
         tname = rs.getString("name");
+        division = Division.valueOf(rs.getString("division"));
         tid = rs.getShort("tid");
         competition = comp;
         password = rs.getString("password");
@@ -113,7 +126,7 @@ public class UILEntry {
         }
     }
 
-    public String getEscapedTname() {
+    public String getTname() {
         String name = tname;
         if(individual) {
             short uid = 0;
@@ -121,8 +134,11 @@ public class UILEntry {
             Student student = StudentMap.getByUID(uid);
             name = student.getName();
         }
+        return name;
+    }
 
-        return StringEscapeUtils.escapeHtml4(name);
+    public String getEscapedTname() {
+        return StringEscapeUtils.escapeHtml4(getTname());
     }
 
     public void setUids(String s) {
@@ -172,10 +188,9 @@ public class UILEntry {
 
         mc.remove(u.uid);
 
-        CompetitionSocket socket = CompetitionSocket.connected.get(u.uid);
-        if(socket != null && u.temp && socket.user.uid == u.uid) {    // They are a temporary user, and this is their socket
+        if(u.temp) {    // They are a temporary user
             try {
-                socket.send("[\"action\":\"competitionDeleted\"]");
+                CompetitionSocket.sendToUser(competition.template.cid, u.uid, "[\"action\":\"competitionDeleted\"]");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -220,10 +235,9 @@ public class UILEntry {
             }
         }
 
-        CompetitionSocket socket = CompetitionSocket.connected.get(u.uid);
-        if(u.temp && socket.user.uid == u.uid) {    // They are a temporary user, and this is their socket
+        if(u.temp) {    // They are a temporary user, and this is their socket
             try {
-                socket.send("[\"action\":\"competitionDeleted\"]");
+                CompetitionSocket.sendToUser(competition.template.cid, u.uid, "[\"action\":\"competitionDeleted\"]");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -304,7 +318,7 @@ public class UILEntry {
         Connection conn = Conn.getConnection();
         try {
             PreparedStatement stmt = conn.prepareStatement("UPDATE `c"+competition.template.cid+"` SET uids=?," +
-                    "mc=?,frqResponses=?,individual=? WHERE tid=?");
+                    "mc=?,frqResponses=?,individual=?,division=? WHERE tid=?");
 
             stmt.setString(1, jsonifyUIDs().toString());
             if(competition.template.mcTest.exists) {
@@ -318,7 +332,8 @@ public class UILEntry {
                 stmt.setString(3, "[]");
             }
             stmt.setBoolean(4, individual);
-            stmt.setShort(5, tid);
+            stmt.setString(5, division.toString());
+            stmt.setShort(6, tid);
             stmt.executeUpdate();
 
             return 0;
@@ -336,7 +351,7 @@ public class UILEntry {
         Connection conn = Conn.getConnection();
         try {
             String statement = "INSERT INTO `c"+competition.template.cid+"` (name, password, uids, mc, frqResponses," +
-                    "individual) VALUES (?,?,?,?,?,?)";
+                    "individual,division) VALUES (?,?,?,?,?,?,?)";
 
             PreparedStatement stmt = conn.prepareStatement(statement);
             stmt.setString(1, tname);
@@ -354,6 +369,7 @@ public class UILEntry {
                 stmt.setString(5, "{}");
             }
             stmt.setBoolean(6,individual);
+            stmt.setString(7,division.toString());
             stmt.executeUpdate();
 
             stmt = conn.prepareStatement("SELECT tid FROM `c"+competition.template.cid+"` WHERE name=?");
@@ -479,7 +495,6 @@ public class UILEntry {
     // Returns a JSON list of objects formatted: {tid: tid, students: [["name", uid, type, [mcNumCorrect, mcNumIncorrect]]]}. if there is no mcTest, there is no mcScore
     // type is the StudentType name
     public JsonArray getStudentJSON() {
-
         JsonArray array = new JsonArray();
         for(short uid: uids.keySet()) {
             // if(uid == altUID) continue; // This is the alt
@@ -553,16 +568,10 @@ public class UILEntry {
         obj.addProperty("html", competition.template.getFRQProblems(this));
         String response = obj.toString();
         for (short uid : uids.keySet()) {
-            CompetitionSocket socket = CompetitionSocket.connected.get(uid);
-            System.out.println("Looking at uid=" + uid);
-            if (socket != null) {
-                System.out.println("Socket != null for uid=" + uid);
-
-                try {
-                    socket.send(response);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            try {
+                CompetitionSocket.sendToUser(competition.template.cid, uid, response);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }

@@ -180,6 +180,7 @@ public class Competition {
                     "`mc` TEXT NOT NULL," +
                     "`frqResponses` MEDIUMTEXT NOT NULL," +
                     "`individual` BOOLEAN NOT NULL DEFAULT FALSE," +
+                    "`division` CHAR(2) NOT NULL DEFAULT 'A6'," +
                     "PRIMARY KEY (`tid`))");
             System.out.println(stmt);
             stmt.executeUpdate();
@@ -316,29 +317,21 @@ public class Competition {
     public void sendUpdatedHandsOnSubmission(FRQSubmission submission, int id) {
         JsonObject object = new JsonObject();
         object.addProperty("action", "updateSmallFRQ");
-        object.addProperty("id", id);
-        object.addProperty("html", template.getSmallFRQ(id, submission));
+        object.add("submission", submission.getJSON(id));
 
-        // THIS HAS OUT OF BOUNDS ERRORS
-        CompetitionSocket teacherSocket = CompetitionSocket.connected.get(teacher.uid);
-        if(teacherSocket != null) {
-            try {
-                teacherSocket.send(object.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        try {
+            CompetitionSocket.sendToUser(template.cid, teacher.uid, object.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         // Update the judges as well
         short[] judges = getJudges();
         for(short judgeUID: judges) {
-            CompetitionSocket competitionSocket = CompetitionSocket.connected.get(judgeUID);
-            if(competitionSocket != null) {
-                try {
-                    competitionSocket.send(object.toString());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            try {
+                CompetitionSocket.sendToUser(template.cid, judgeUID, object.toString());
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -379,7 +372,11 @@ public class Competition {
                             compJ.addProperty("name", StringEscapeUtils.escapeHtml4(problem.name));
                             compJ.addProperty("team", submission.entry.getEscapedTname());
                             compJ.addProperty("result", submission.getResultString());
+                            compJ.addProperty("blocked", submission.blocked);
 
+                            System.out.println(submission.input);
+                            System.out.println("");
+                            System.out.println(submission.output);
                             if (submission.showInput())
                                 compJ.addProperty("input", StringEscapeUtils.escapeHtml4(submission.input).replaceAll("\r?\n", "<br>"));
                             if (submission.showOutput()) {
@@ -387,7 +384,7 @@ public class Competition {
                                 if (problem.outputFile == null) {
                                     template.frqTest.loadOutputFile(submission.problemNumber, problem);
                                 }
-                                compJ.addProperty("outputFile", problem.outputFile.replaceAll("\r?\n", "<br>"));
+                                compJ.addProperty("outputFile", StringEscapeUtils.escapeHtml4(problem.outputFile).replaceAll("\r?\n", "<br>"));
                             }
 
                             compJ.addProperty("graded", submission.graded);
@@ -515,9 +512,7 @@ public class Competition {
                             template.updateScoreboard();
 
                             for(short teamMemberUID: entry.uids.keySet()) {
-                                CompetitionSocket socket = CompetitionSocket.connected.get(teamMemberUID);
-                                if(socket != null)
-                                    socket.send("[\"reScoreMC\",\""+uid+"\",\""+submission.scoringReport[0]+"\"]");
+                                CompetitionSocket.sendToUser(template.cid, teamMemberUID, "[\"reScoreMC\",\""+uid+"\",\""+submission.scoringReport[0]+"\"]");
                             }
                         }
                     }
@@ -590,23 +585,15 @@ public class Competition {
                     temp.update();
                     template.updateScoreboard();
 
+                    JsonObject obj = new JsonObject();
+                    obj.addProperty("action", "addSmallMC");
+                    obj.addProperty("html", template.getSmallMC(user, temp, submission));
+
                     // Send it to the teacher and judges
-                    CompetitionSocket socket = CompetitionSocket.connected.get(teacher.uid);
-                    if (socket != null) {
-                        JsonObject obj = new JsonObject();
-                        obj.addProperty("action", "addSmallMC");
-                        obj.addProperty("html", template.getSmallMC(user, temp, submission));
-                        socket.send(gson.toJson(obj));
-                    }
+                    CompetitionSocket.sendToUser(template.cid, teacher.uid, obj.toString());
 
                     for(short judgeUID: judges) {
-                        socket = CompetitionSocket.connected.get(judgeUID);
-                        if (socket != null) {
-                            JsonObject obj = new JsonObject();
-                            obj.addProperty("action", "addSmallMC");
-                            obj.addProperty("html", template.getSmallMC(user, temp, submission));
-                            socket.send(gson.toJson(obj));
-                        }
+                        CompetitionSocket.sendToUser(template.cid, judgeUID, obj.toString());
                     }
                 } else {    // Submissions are closed
                     writer.write("{\"mcHTML\":\"" + template.getMCHTML(user,UserStatus.getCompeteStatus(user, this), competitionStatus) + "\"}");
@@ -622,7 +609,7 @@ public class Competition {
                     } else if(!template.frqTest.dryRunMode && probNum <= 0) { // It isn't in the dry run mode and they are submitting a dry run
                         writer.write("{\"status\":\"error\",\"error\":\"The dry run has closed.\"}");
                         return;
-                    } else if (temp.frqResponses[probNum].key > 0) {
+                    } else if (probNum > 0 && temp.frqResponses[probNum].key > 0) { // Don't block them from submitting the dry run again
                         writer.write("{\"status\":\"error\",\"error\":\"You've already gotten this problem.\"}");
                         return;
                     }
@@ -676,23 +663,15 @@ public class Competition {
 
                     writer.write("{\"status\":\"success\",\"scored\":\""+fname+" has been submitted.\"}");
 
+                    JsonObject obj = new JsonObject();
+                    obj.addProperty("action", "addSmallFRQ");
+                    obj.add("submission", submission.getJSON(frqSubmissions.size()-1));
+
                     // Send it to the teacher and the judges
-                    CompetitionSocket socket = CompetitionSocket.connected.get(teacher.uid);
-                    if (socket != null) {
-                        JsonObject obj = new JsonObject();
-                        obj.addProperty("action", "addSmallFRQ");
-                        obj.addProperty("html", template.getSmallFRQ(frqSubmissions.indexOf(submission), submission));
-                        socket.send(gson.toJson(obj));
-                    }
+                    CompetitionSocket.sendToUser(template.cid, teacher.uid, obj.toString());
 
                     for(short judgeUID: judges) {
-                        socket = CompetitionSocket.connected.get(judgeUID);
-                        if (socket != null) {
-                            JsonObject obj = new JsonObject();
-                            obj.addProperty("action", "addSmallFRQ");
-                            obj.addProperty("html", template.getSmallFRQ(frqSubmissions.indexOf(submission), submission));
-                            socket.send(gson.toJson(obj));
-                        }
+                        CompetitionSocket.sendToUser(template.cid, judgeUID, obj.toString());
                     }
                 } else {
                     writer.write("{\"status\":\"error\",\"error\":\"FRQ submissions are closed.\"}");
@@ -731,17 +710,11 @@ public class Competition {
                     for(short uid: entry.uids.keySet()) {
                         if(uid == user.uid) continue;
 
-                        CompetitionSocket socket = CompetitionSocket.connected.get(uid);
-                        if (socket != null) {
-                            JsonObject obj = new JsonObject();
-                            obj.addProperty("action","updateTeam");
-                            obj.addProperty("html", template.getTeamMembers(StudentMap.getByUID(uid), entry));
-                            try {
-                                socket.send(gson.toJson(obj));
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
+                        JsonObject obj = new JsonObject();
+                        obj.addProperty("action","updateTeam");
+                        obj.addProperty("html", template.getTeamMembers(StudentMap.getByUID(uid), entry));
+
+                        CompetitionSocket.sendToUser(template.cid, uid, obj.toString());
                     }
 
                     return;
@@ -894,18 +867,7 @@ public class Competition {
         if(template.frqTest.exists) template.frqTest.deleteDirectory(new File(template.frqTest.testcaseDirPath));
 
         // Finally, tell all of the people viewing this competition to stop viewing it
-        ArrayList<CompetitionSocket> sockets = CompetitionSocket.competitions.get(template.cid);
-        if(sockets != null) {
-            for (CompetitionSocket socket : sockets) {
-                JsonObject obj = new JsonObject();
-                obj.addProperty("action", "competitionDeleted");
-                try {
-                    socket.send(gson.toJson(obj));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+        CompetitionSocket.broadcast(template.cid, "[\"action\":\"competitionDeleted\"]");
     }
 }
 

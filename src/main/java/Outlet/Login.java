@@ -62,7 +62,7 @@ public class Login extends HttpServlet{
         response.setCharacterEncoding("UTF-8");
         PrintWriter writer = response.getWriter();
         if(Conn.isLoggedIn(request)){
-            writer.write("{\"success\":\"" +request.getContextPath() + "/console/profile\"}");
+            writer.write("{\"success\":\"" +request.getContextPath() + "/console/competitions\"}");
             return;
         }
 
@@ -128,7 +128,7 @@ public class Login extends HttpServlet{
                 tokenCookie.setMaxAge(60*60*48);    // Set 2 Days before they must login again
                 tokenCookie.setPath("/");   // Necessary for logging out fluidly
                 response.addCookie(tokenCookie);
-                writer.write("{\"success\":\"" +request.getContextPath() + "/console/profile\"}");
+                writer.write("{\"success\":\"" +request.getContextPath() + "/console/competitions\"}");
                 return;
             }
             if(token.compareTo(BigInteger.valueOf(-1)) == 0) {   // If a server error occurred

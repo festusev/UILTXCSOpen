@@ -599,7 +599,7 @@ public class Template {
 
     public String getSmallFRQ(int i, FRQSubmission submission) {
         // String timeStamp = new SimpleDateFormat("MM/dd HH:mm").format(submission.submittedTime);
-        return "<tr onclick='showFRQSubmission(this,"+i+")' id='clarification_"+i+"'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber].name) +
+        return "<tr onclick='showFRQSubmission(this,"+i+")' id='frq_"+i+"' class='"+(submission.blocked?"blocked":"")+"'><td>" + StringEscapeUtils.escapeHtml4(frqTest.PROBLEM_MAP[submission.problemNumber].name) +
                 "</td><td>" + submission.entry.getEscapedTname() + "</td><td class='"+
                 (submission.graded?"graded":"notGraded")+"' id='showFRQSubmissionGraded"+i+"'>"+
                 submission.graded+"</td><td id='showFRQSubmission"+i+"'>" + submission.getResultString() +
@@ -621,15 +621,31 @@ public class Template {
                         StringEscapeUtils.escapeHtml4(studentPacket) + "'>link</a></p>" +
                         "<p><b>Submissions:</b></p>";
 
-                html += "<table id='frqSubmissionsTable'><colgroup><col><col><col style='width:13%'><col><col></colgroup><tr id='frqSubmissionsTr'><th>Problem</th><th>Team</th><th>Graded</th><th>Result</th><th>Timestamp</th></tr>";
+                html += "<table><colgroup><col><col><col style='width:13%'><col><col></colgroup><tbody id='frqSubmissionsTable'>" +
+                        "</tbody></table></div></div></div>";
 
-                String rows = "";
                 for(int i=competition.frqSubmissions.size()-1; i>=0; i--) {
                     FRQSubmission submission = competition.frqSubmissions.get(i);
-                    if(frqTest.dryRunMode && submission.problemNumber == 0) rows += getSmallFRQ(i, submission);
-                    else if(!frqTest.dryRunMode && submission.problemNumber > 0) rows += getSmallFRQ(i, submission);
+                    if(submission.viewedBy != null && submission.viewedBy.uid == u.uid) {
+                        String out = "{\"action\":\"unblockFRQ\",\"submissionID\":"+i+"}";
+                        try {
+                            CompetitionSocket.sendToUser(competition.template.cid, competition.teacher.uid, out);
+
+                            // Update the judges as well
+                            short[] judges = competition.getJudges();
+                            for(short judgeUID: judges) {
+                                CompetitionSocket.sendToUser(competition.template.cid, judgeUID, out);
+                            }
+
+                            submission.blocked = false;
+                            submission.viewedBy = null;
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    // if(frqTest.dryRunMode && submission.problemNumber == 0) rows += getSmallFRQ(i, submission);
+                    // else if(!frqTest.dryRunMode && submission.problemNumber > 0) rows += getSmallFRQ(i, submission);
                 }
-                html += rows + "</table></div></div></div>";
 
                 return html;
             } else return "<div id='frqColumn' class='column' style='display:none;'><h1 class='forbiddenPage'>Teachers cannot compete.</h1></div>";
@@ -878,12 +894,19 @@ public class Template {
             task.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    ArrayList<CompetitionSocket> sockets = CompetitionSocket.competitions.get(cid);
-                    if(sockets == null) return;
+                    HashMap<Short, ArrayList<CompetitionSocket>> maps = CompetitionSocket.competitions.get(cid);
+                    if(maps == null) return;
 
-                    for(CompetitionSocket socket: sockets) {
-                        UserStatus status = UserStatus.getCompeteStatus(socket.user, competition);
-                        socket.sendLoadScoreboardData(status, socket.user, competition);
+                    for(short uid: maps.keySet()) {
+                        ArrayList<CompetitionSocket> sockets = maps.get(uid);
+                        if(sockets == null || sockets.size() <= 0) continue;
+
+                        User user = UserMap.getUserByUID(uid);
+                        UserStatus status = UserStatus.getCompeteStatus(user, competition);
+
+                        for(CompetitionSocket socket: sockets) {
+                            socket.sendLoadScoreboardData(status, user, competition);
+                        }
                     }
                     scoreboardSocketScheduled = false;
                     task.cancel();
@@ -912,11 +935,12 @@ public class Template {
             if(frqTest.exists && mcTest.exists) teamList += "<td class='right'>" + (entry.frqScore + mcScore) + "</td></tr>";*/
 
             JsonObject entryJSON = new JsonObject();
-            entryJSON.addProperty("tname", entry.getEscapedTname());
+            entryJSON.addProperty("tname", entry.getTname());
             entryJSON.addProperty("school", entry.school);
             entryJSON.addProperty("tid", entry.tid);
             entryJSON.add("students", entry.getStudentJSON());
             entryJSON.addProperty("individual", entry.individual);
+            entryJSON.addProperty("division", entry.division.toString());
             if(frqTest.exists) {
                 entryJSON.addProperty("frq", entry.frqScore);
                 entryJSON.add("frqResponses", entry.getFRQJSON());
@@ -982,6 +1006,8 @@ public class Template {
         scoreboardHTML += "</div><div id='teamCnt'><h1 id='openTeamName'></h1>" +
                 "<div id='teamControls'><img class='creatorOnly editTeam' id='deleteTeam' onclick='Team.showDeleteConfirmation()' src='/res/console/delete.svg'>" +
                 "<img class='creatorOnly' id='editSaveTeam' onclick='Team.editSaveTeam()' src='/res/console/edit.svg'></div>" +
+                "<select id='teamDivision'><option value='A1'>1A</option><option value='A2'>2A</option><option value='A3'>3A</option>" +
+                "<option value='A4'>4A</option><option value='A5'>5A</option><option value='A6'>6A</option></select>" +
                 "<div id='openTeamFeedbackCnt'></div><p class='creatorOnly'><span class='label'>Code:</span><span id='openTeamCode'></span>" +
                 "<br><span class='label'>Individual:</span><span><input type='checkbox' id='openTeamIsIndividual'></span></p>";
         if(mcTest.exists) scoreboardHTML += "<p><span class='label'>Written:</span><span id='openTeamWritten'></span></p>";

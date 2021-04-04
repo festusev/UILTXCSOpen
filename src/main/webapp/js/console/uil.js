@@ -59,7 +59,8 @@ var pageState = {
     existingGlobalTeacher: null,
     isDeletingTeam: false,
     deletingObject: null,
-    saveTeamCallbacks: [] // A list of functions as callbacks to saving a team. Each time a "scoreboardOpenTeamFeedback" message comes back, it calls the first item in this queue
+    saveTeamCallbacks: [],
+    frqSortMethod: null // The sort method
 };
 var config = {
     TEXT: {
@@ -115,6 +116,7 @@ var config = {
         deleteSubtitle: "deleteSubtitle",
         deleteTeam: "deleteTeam",
         studentSearchTable: "studentSearchTable",
+        teamDivision: "teamDivision",
         generalScoreboard: "generalScoreboard",
         writtenScoreboard: "writtenScoreboard",
         writtenScoreboardTable: "writtenScoreboardTable",
@@ -164,22 +166,15 @@ var config = {
             template.innerHTML = html;
             dom.mcSubmissions.firstChild.insertBefore(template.content.firstChild, dom.mcSubmissionsTr.nextSibling);
         }, "addSmallFRQ": function (response) {
-            var html = response["html"];
-            var template = document.createElement('template');
-            template.innerHTML = html;
-            var row = dom.frqSubmissionsTable.insertRow(1);
-            var firstChild = template.content.firstChild;
-            row.replaceWith(firstChild);
             dom.playBell.play();
-            eval(firstChild.lastChild.textContent);
+            new FRQSubmission(response.submission);
+            pageState.frqSortMethod();
         }, "updateSmallFRQ": function (response) {
-            var html = response.html.slice(response.html.indexOf(">") + 1, -1);
-            var element = document.getElementById("clarification_" + response.id);
-            element.innerHTML = html;
-            eval(element.lastChild.textContent);
-            submissionMap[response.id] = null;
-            if (showingFRQSubmission.id == "subEditor_" + response.id) {
-                showFRQSubmission(element, response.id);
+            var submission = frqSubmissionMap[response.submission[5]];
+            submission.update(response.submission);
+            pageState.frqSortMethod();
+            if (showingFRQSubmission.submissionId == submission.submissionId) {
+                showFRQSubmission(submission);
             }
         }, "updateTeam": function (response) {
             dom.teamMembers.innerHTML = response["html"];
@@ -257,6 +252,142 @@ var config = {
             clarificationAnswer.innerText = response["answer"];
             clarification.appendChild(clarificationAnswer);
             clarification_list.insertBefore(clarification, clarification_list.firstChild);
+        }, "loadFRQSubmissions": function (response) {
+            function resetSort(type) {
+                if (type != 0) {
+                    problemSortMode = 0;
+                    problemImg.src = "/res/unsorted.svg";
+                }
+                if (type != 1) {
+                    teamSortMode = 0;
+                    teamImg.src = "/res/unsorted.svg";
+                }
+                if (type != 2) {
+                    gradedSortMode = 0;
+                    gradedImg.src = "/res/unsorted.svg";
+                }
+                if (type != 3) {
+                    resultSortMode = 0;
+                    resultImg.src = "/res/unsorted.svg";
+                }
+                if (type != 4) {
+                    timestampSortMode = 0;
+                    timestampImg.src = "/res/unsorted.svg";
+                }
+            }
+            // returns the new sortMode based on the old sortMode, and sets the image appropriately
+            function manageClick(sortMode, img) {
+                if (sortMode == 1) { // Switch to ascending
+                    img.src = "/res/ascending.svg";
+                    return 2;
+                }
+                else { // Switch to descending
+                    img.src = "/res/descending.svg";
+                    return 1;
+                }
+            }
+            frqSubmissions = [];
+            frqSubmissionMap = {};
+            var tr = document.createElement("tr");
+            tr.id = "frqSubmissionsTr";
+            var problemTH = document.createElement("th");
+            problemTH.innerText = "Problem";
+            var problemSortMode = 0; // 0 is unsorted, 1 is descending, 2 is ascending
+            var problemImg = document.createElement("img");
+            problemImg.src = "/res/unsorted.svg";
+            problemTH.appendChild(problemImg);
+            var problemSortFunction = function () {
+                sortFRQSubmissions(function (f1, f2) {
+                    return f1.problemName.localeCompare(f2.problemName);
+                }, problemSortMode == 1);
+            };
+            problemTH.onclick = function () {
+                resetSort(0);
+                problemSortMode = manageClick(problemSortMode, problemImg);
+                problemSortFunction();
+                pageState.frqSortMethod = problemSortFunction;
+            };
+            tr.appendChild(problemTH);
+            var teamTH = document.createElement("th");
+            teamTH.innerText = "Team";
+            var teamSortMode = 0; // 0 is unsorted, 1 is descending, 2 is ascending
+            var teamImg = document.createElement("img");
+            teamImg.src = "/res/unsorted.svg";
+            teamTH.appendChild(teamImg);
+            var teamSortFunction = function () {
+                sortFRQSubmissions(function (f1, f2) {
+                    return f1.tname.localeCompare(f2.tname);
+                }, teamSortMode == 1);
+            };
+            teamTH.onclick = function () {
+                resetSort(1);
+                teamSortMode = manageClick(teamSortMode, teamImg);
+                teamSortFunction();
+                pageState.frqSortMethod = teamSortFunction;
+            };
+            tr.appendChild(teamTH);
+            var gradedTH = document.createElement("th");
+            gradedTH.innerText = "Graded";
+            var gradedSortMode = 0; // 0 is unsorted, 1 is descending, 2 is ascending
+            var gradedImg = document.createElement("img");
+            gradedImg.src = "/res/unsorted.svg";
+            gradedTH.appendChild(gradedImg);
+            var gradedSortFunction = function () {
+                sortFRQSubmissions(function (f1, f2) {
+                    if (f1.graded && !f2.graded)
+                        return 1;
+                    return -1;
+                }, gradedSortMode == 1);
+            };
+            gradedTH.onclick = function () {
+                resetSort(2);
+                gradedSortMode = manageClick(gradedSortMode, gradedImg);
+                gradedSortFunction();
+                pageState.frqSortMethod = gradedSortFunction;
+            };
+            tr.appendChild(gradedTH);
+            var resultTH = document.createElement("th");
+            resultTH.innerText = "Result";
+            var resultSortMode = 0; // 0 is unsorted, 1 is descending, 2 is ascending
+            var resultImg = document.createElement("img");
+            resultImg.src = "/res/unsorted.svg";
+            resultTH.appendChild(resultImg);
+            var resultSortFunction = function () {
+                sortFRQSubmissions(function (f1, f2) {
+                    return f1.result.localeCompare(f2.result);
+                }, resultSortMode == 1);
+            };
+            resultTH.onclick = function () {
+                resetSort(3);
+                resultSortMode = manageClick(resultSortMode, resultImg);
+                resultSortFunction();
+                pageState.frqSortMethod = resultSortFunction;
+            };
+            tr.appendChild(resultTH);
+            var timestampTH = document.createElement("th");
+            timestampTH.innerText = "Timestamp";
+            var timestampSortMode = 1; // 0 is unsorted, 1 is descending, 2 is ascending
+            var timestampImg = document.createElement("img");
+            timestampImg.src = "/res/descending.svg";
+            timestampTH.appendChild(timestampImg);
+            var timestampSortFunction = function () {
+                sortFRQSubmissions(function (f1, f2) {
+                    return f2.timestamp - f1.timestamp;
+                }, timestampSortMode == 1);
+            };
+            pageState.frqSortMethod = timestampSortMode;
+            timestampTH.onclick = function () {
+                resetSort(4);
+                timestampSortMode = manageClick(timestampSortMode, timestampImg);
+                timestampSortFunction();
+                pageState.frqSortMethod = timestampSortFunction;
+            };
+            tr.appendChild(timestampTH);
+            dom.frqSubmissionsTable.appendChild(tr);
+            for (var _i = 0, _a = response.frqSubmissions; _i < _a.length; _i++) {
+                var frqSubmission = _a[_i];
+                new FRQSubmission(frqSubmission);
+            }
         }, "loadScoreboard": function (response) {
             var newToggleTeam = null; // The new team object that we are toggling open
             var oldOpenTeamTID = -1; // The tid of the old open team
@@ -265,6 +396,7 @@ var config = {
             teams = {};
             writtenTestScoreboard = [];
             handsOnScoreboard = [];
+            teamScoreboard = [];
             pageState.isCreator = response.isCreator;
             pageState.mcExists = response.mcExists;
             pageState.mcCorrectPoints = response.mcCorrectPoints;
@@ -532,19 +664,33 @@ var config = {
             }
         },
         "updateFRQSubmission": function (response) {
-            if (submissionMap[response.submissionID]) {
-                var div = submissionMap[response.submissionID].div;
+            if (frqSubmissionMap[response.submissionID]) {
+                var div = frqSubmissionMap[response.submissionID].dom.div;
                 try {
                     div.removeChild(div.querySelector(".frqUpdateWrapper"));
                 }
                 catch (e) { }
-                addFRQOutputHTML(submissionMap[response.submissionID].input, response.newOutput, response.outputFile, submissionMap[response.submissionID].result, div);
+                addFRQOutputHTML(frqSubmissionMap[response.submissionID].input, response.newOutput, response.outputFile, frqSubmissionMap[response.submissionID].result, div);
                 // let element:HTMLElement = div.querySelector(".outputCnt");
                 addSuccessBox(document.getElementById("frqSubmissionEditorResponse"), "Regraded submission.", true);
             }
         },
         "rosterUploaded": function (response) {
             dom.uploadRosterBox.style.display = "none";
+        },
+        "blockFRQ": function (response) {
+            var submission = frqSubmissionMap[response.submissionID];
+            if (submission) {
+                submission.dom.tr.classList.add("blocked");
+                submission.blocked = true;
+            }
+        },
+        "unblockFRQ": function (response) {
+            var submission = frqSubmissionMap[response.submissionID];
+            if (submission) {
+                submission.dom.tr.classList.remove("blocked");
+                submission.blocked = false;
+            }
         }
     }
 };
@@ -630,6 +776,7 @@ var dom = {
     get uploadRosterProxy() { return this.getHelper(config.IDs.uploadRosterProxy); },
     get uploadRosterBox() { return this.getHelper(config.IDs.uploadRosterBox); },
     get resetConfirmationCnt() { return this.getHelper(config.IDs.resetConfirmationCnt); },
+    get teamDivision() { return this.getHelper(config.IDs.teamDivision); },
     classes: {
         cached: {},
         getHelper: function (className) {
@@ -803,8 +950,83 @@ var Student = /** @class */ (function () {
     Student.students = {};
     return Student;
 }());
+var Division;
+(function (Division) {
+    Division[Division["A1"] = 0] = "A1";
+    Division[Division["A2"] = 1] = "A2";
+    Division[Division["A3"] = 2] = "A3";
+    Division[Division["A4"] = 3] = "A4";
+    Division[Division["A5"] = 4] = "A5";
+    Division[Division["A6"] = 5] = "A6";
+})(Division || (Division = {}));
+var frqSubmissions = [];
+var frqSubmissionMap = {};
+var FRQSubmission = /** @class */ (function () {
+    function FRQSubmission(frqSubmission) {
+        this.dom = {
+            tr: null,
+            pNameTD: null,
+            tNameTD: null,
+            gradedTD: null,
+            resultTD: null,
+            timeTD: null,
+            div: null
+        };
+        this.update(frqSubmission);
+        frqSubmissions.push(this);
+        frqSubmissionMap[this.submissionId] = this;
+    }
+    FRQSubmission.prototype.update = function (frqSubmission) {
+        this.problemName = frqSubmission[0];
+        this.tname = frqSubmission[1];
+        this.graded = frqSubmission[2];
+        this.result = frqSubmission[3];
+        this.timestamp = frqSubmission[4];
+        this.submissionId = frqSubmission[5];
+        this.blocked = frqSubmission[6];
+        this.render();
+    };
+    FRQSubmission.prototype.render = function () {
+        var thisSubmission = this;
+        if (!this.dom.tr) {
+            this.dom.tr = dom.frqSubmissionsTable.insertRow(1);
+            this.dom.tr.onclick = function () {
+                showFRQSubmission(thisSubmission);
+            };
+            this.dom.tr.id = "frq_" + this.submissionId;
+            if (this.blocked)
+                this.dom.tr.classList.add("blocked");
+        }
+        else { // The tr has already been initialized, so delete its contents
+            this.dom.tr.innerHTML = "";
+        }
+        this.dom.pNameTD = document.createElement("td");
+        this.dom.pNameTD.innerText = this.problemName;
+        this.dom.tr.appendChild(this.dom.pNameTD);
+        this.dom.tNameTD = document.createElement("td");
+        this.dom.tNameTD.innerText = this.tname;
+        this.dom.tr.appendChild(this.dom.tNameTD);
+        this.dom.gradedTD = document.createElement("td");
+        this.dom.gradedTD.innerText = "" + this.graded;
+        if (this.graded)
+            this.dom.gradedTD.classList.add("graded");
+        else
+            this.dom.gradedTD.classList.add("notGraded");
+        // gradedTD.id = "showFRQSubmissionGraded" + this.submissionId;
+        this.dom.tr.appendChild(this.dom.gradedTD);
+        this.dom.resultTD = document.createElement("td");
+        this.dom.resultTD.innerText = this.result;
+        this.dom.tr.appendChild(this.dom.resultTD);
+        this.dom.timeTD = document.createElement("td");
+        this.dom.timeTD.innerText = getTime(this.timestamp);
+        this.dom.tr.appendChild(this.dom.timeTD);
+        return this.dom.tr;
+    };
+    return FRQSubmission;
+}());
 var writtenTestScoreboard = []; // The list of students sorted by their mc score
 var handsOnScoreboard = []; // The list of teams sorted by their hands-on score
+var teamScoreboard = [];
 var teams = {}; // Maps tids to their team
 var Team = /** @class */ (function () {
     function Team(data, tempData) {
@@ -831,6 +1053,7 @@ var Team = /** @class */ (function () {
         this.school = data.school;
         this.tid = data.tid;
         this.students = [];
+        this.division = Division[data.division];
         if (pageState.frqExists && !this.individual)
             handsOnScoreboard.push(this);
         for (var _i = 0, _a = data.students; _i < _a.length; _i++) {
@@ -860,6 +1083,7 @@ var Team = /** @class */ (function () {
             }
         }
         this.frqResponses = data.frqResponses;
+        teamScoreboard.push(this);
         teams["" + this.tid] = this;
         this.render();
     }
@@ -943,7 +1167,7 @@ var Team = /** @class */ (function () {
             }
             return { tid: team.tid, students: students, individual: dom.openTeamIsIndividual.checked };
         }
-        var data = ["saveTeam", getTeamData(this)];
+        var data = ["saveTeam", dom.teamDivision.value, getTeamData(this)];
         /*for(let team of pageState.saveTeamList) {
             data[1].push(getTeamData(team));
         }*/
@@ -1140,7 +1364,9 @@ var Team = /** @class */ (function () {
             dom.openTeamIsIndividual.checked = team.individual;
             dom.openTeamIsIndividual.onclick = null;
             dom.openTeamIsIndividual.disabled = true;
+            dom.teamDivision.disabled = true;
         }
+        dom.teamDivision.options[team.division.valueOf()].selected = true;
         if (pageState.mcExists)
             dom.openTeamWritten.innerText = team.mcScore + " pts";
         if (pageState.frqExists)
@@ -1230,6 +1456,7 @@ var Team = /** @class */ (function () {
                 dom.teamCnt.classList.add("editing");
                 dom.openTeamIsIndividual.disabled = false;
                 dom.addPrimaryCompetitor.style.display = "block";
+                dom.teamDivision.disabled = false;
                 for (var _i = 0, _a = pageState.openTeam.students; _i < _a.length; _i++) {
                     var student = _a[_i];
                     student.dom.changeRole.disabled = false;
@@ -1317,6 +1544,7 @@ function requestLoadScoreboard() {
                     return [3 /*break*/, 0];
                 case 2:
                     ws.send("[\"loadScoreboard\"]");
+                    ws.send("[\"loadFRQSubmissions\"]");
                     return [2 /*return*/];
             }
         });
@@ -1341,6 +1569,19 @@ function getCookie(cname) {
         }
     }
     return "";
+}
+function sortFRQSubmissions(compare, ascending) {
+    frqSubmissions.sort(function (f1, f2) {
+        if (ascending)
+            return compare(f1, f2);
+        else
+            return -compare(f1, f2);
+    });
+    var table = dom.frqSubmissionsTable;
+    var rows = table.rows;
+    for (var i = 0; i < frqSubmissions.length; i++) {
+        table.insertBefore(frqSubmissions[i].dom.tr, rows[i + 1]);
+    }
 }
 function deleteTeamOrStudent() {
     if (pageState.isDeletingTeam) {
@@ -1485,13 +1726,13 @@ function createTeamHelper(tname, showErrors, callback) {
                         frqResponses.fill(0);
                         newTeam = new Team({
                             tname: result["tname"], school: "", tid: result["tid"],
-                            students: [], frq: 0, frqResponses: frqResponses, individual: false
+                            students: [], frq: 0, frqResponses: frqResponses, individual: false, division: "A6"
                         });
                     }
                     else {
                         newTeam = new Team({
                             tname: result["tname"], school: "", tid: result["tid"],
-                            students: [], frq: 0, individual: false
+                            students: [], frq: 0, individual: false, division: "A6"
                         });
                     }
                     newTeam.code = result["code"];
@@ -1848,7 +2089,8 @@ function changeMCJudgement(element, uid, probNum) {
     // document.getElementById("showFRQSubmission"+submissionId).innerText = result_cnt_changeJudgement.options[result_cnt_changeJudgement.selectedIndex].text;
 }
 function hideFRQSubmission() {
-    showingFRQSubmission.style.display = "none";
+    ws.send("[\"unblockFRQ\"," + showingFRQSubmission.submissionId + "]");
+    showingFRQSubmission.dom.div.style.display = "none";
     showingFRQSubmission = null;
     dom.frqSubmissions.style.display = "block";
 }
@@ -1857,31 +2099,33 @@ function hideFRQSubmission() {
  * submission information, and displays it.
  * @param submissionId
  */
-var submissionMap = {};
 var showingFRQSubmission = null;
 // let showingFRQSubmissionTR:HTMLTableRowElement = null;  // The table row element they clicked on to show this frq submission
-function showFRQSubmission(row, submissionId) {
+function showFRQSubmission(submission) {
     function add(element) {
         if (!showingFRQSubmission) {
             dom.frq.appendChild(element);
         }
         else {
             try {
-                showingFRQSubmission.replaceWith(element);
+                showingFRQSubmission.dom.div.replaceWith(element);
             }
             catch (e) {
                 dom.frq.appendChild(element);
             }
         }
-        showingFRQSubmission = element;
+        showingFRQSubmission = submission;
         dom.frqSubmissions.style.display = "none";
         element.style.display = "block";
+        ws.send("[\"blockFRQ\"," + submission.submissionId + "]");
         /*if(showingFRQSubmissionTR) showingFRQSubmissionTR.classList.remove("selected");
         showingFRQSubmissionTR = row;
         showingFRQSubmissionTR.classList.add("selected");*/
     }
-    if (submissionMap[submissionId] != null) {
-        add(submissionMap[submissionId].div);
+    if (frqSubmissionMap[submission.submissionId].blocked)
+        return;
+    if (frqSubmissionMap[submission.submissionId].dom.div != null) {
+        add(frqSubmissionMap[submission.submissionId].dom.div);
         return;
     }
     var xhr = new XMLHttpRequest();
@@ -1892,11 +2136,13 @@ function showFRQSubmission(row, submissionId) {
                 var name_1 = response["name"];
                 var team = response["team"];
                 var result = response["result"];
-                var graded = response["graded"];
+                var graded_1 = response["graded"];
+                var blocked = response["blocked"];
                 var div = document.createElement("div");
                 div.classList.add("frqSubmissionEditor");
                 div.innerHTML = "<img src='/res/close.svg' onclick='hideFRQSubmission()' class='hideFRQSubmission'>";
-                div.id = "subEditor_" + submissionId;
+                div.id = "subEditor_" + submission.submissionId;
+                div.dataset.id = "" + submission.submissionId;
                 var probName_cnt = document.createElement("div");
                 probName_cnt.innerHTML = "<b>Problem</b><h2>" + name_1 + "</h2>";
                 probName_cnt.classList.add("half");
@@ -1905,46 +2151,26 @@ function showFRQSubmission(row, submissionId) {
                 teamName_cnt.innerHTML = "<b>Team</b><h2>" + team + "</h2>";
                 teamName_cnt.classList.add("half");
                 div.appendChild(teamName_cnt);
-                var frqIsGraded_1 = document.createElement("div");
-                frqIsGraded_1.classList.add("frqIsGraded");
-                if (graded) {
-                    frqIsGraded_1.innerText = "Graded Sent";
-                }
-                else {
-                    var frqIsGradedButton = document.createElement("button");
-                    frqIsGradedButton.classList.add("chngButton");
-                    frqIsGradedButton.onclick = function () {
-                        frqIsGraded_1.innerHTML = "Graded Sent";
-                        var graded = document.getElementById("showFRQSubmissionGraded" + submissionId);
-                        graded.innerText = "true";
-                        graded.classList.remove("notGraded");
-                        graded.classList.add("graded");
-                        ws.send("[\"publishGradedFRQ\"," + submissionId + "]");
-                    };
-                    frqIsGradedButton.innerText = "Send Graded";
-                    frqIsGraded_1.appendChild(frqIsGradedButton);
-                }
-                div.appendChild(frqIsGraded_1);
+                var frqIsGraded = document.createElement("div");
+                frqIsGraded.classList.add("frqIsGraded");
+                var frqIsGradedButton = document.createElement("button");
+                frqIsGradedButton.classList.add("chngButton");
+                frqIsGradedButton.innerText = "Send Graded";
+                frqIsGraded.appendChild(frqIsGradedButton);
+                div.appendChild(frqIsGraded);
                 var regradeButton = document.createElement("button");
                 regradeButton.classList.add("chngButton");
                 regradeButton.classList.add("secButton");
                 regradeButton.innerText = "Regrade";
-                regradeButton.onclick = function () { regradeFRQ(submissionId); };
+                regradeButton.onclick = function () { regradeFRQ(submission.submissionId); };
                 div.appendChild(regradeButton);
                 var result_cnt = document.createElement("p");
                 result_cnt.id = "frqSubmissionEditorResponse";
-                addSuccessBox(result_cnt, "Running...", false);
+                // addSuccessBox(result_cnt, "Running...", false);
                 result_cnt.classList.add("resultCnt");
                 result_cnt.innerHTML = "<b>Judgement:</b>";
                 div.appendChild(result_cnt);
                 var result_cnt_changeJudgement_1 = document.createElement("select");
-                result_cnt_changeJudgement_1.onchange = function () {
-                    var xhr = new XMLHttpRequest();
-                    xhr.open('POST', "/console/competitions", true);
-                    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-                    xhr.send("cid=" + cid + "&action=changeFRQJudgement&id=" + submissionId + "&judgeId=" + result_cnt_changeJudgement_1.value);
-                    document.getElementById("showFRQSubmission" + submissionId).innerText = result_cnt_changeJudgement_1.options[result_cnt_changeJudgement_1.selectedIndex].text;
-                };
                 var standardResult = false; // If the result is just "Correct" or "Incorrect"
                 for (var i = 0, j = config.RESULTS.length; i < j; i++) {
                     var text = config.RESULTS[i];
@@ -1957,24 +2183,33 @@ function showFRQSubmission(row, submissionId) {
                     }
                     result_cnt_changeJudgement_1.appendChild(option);
                 }
-                /*if(!standardResult) {
-                    let option = document.createElement("option");
-                    option.value = "3";
-                    option.innerText = result;
-                    option.selected = true;
-                    option.disabled = true;
-                    result_cnt_changeJudgement.appendChild(option);
-                }*/
+                frqIsGradedButton.onclick = function () {
+                    if (!graded_1) { // In this case, tell the team that they can view the graded submission
+                        submission.dom.gradedTD.innerText = "true";
+                        submission.dom.gradedTD.classList.remove("notGraded");
+                        submission.dom.gradedTD.classList.add("graded");
+                        graded_1 = true;
+                        ws.send("[\"publishGradedFRQ\"," + submission.submissionId + "]");
+                    }
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', "/console/competitions", true);
+                    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+                    xhr.send("cid=" + cid + "&action=changeFRQJudgement&id=" + submission.submissionId + "&judgeId=" + result_cnt_changeJudgement_1.value);
+                    submission.dom.resultTD.innerText = result_cnt_changeJudgement_1.options[result_cnt_changeJudgement_1.selectedIndex].text;
+                    hideFRQSubmission();
+                };
                 result_cnt.appendChild(result_cnt_changeJudgement_1);
                 addFRQOutputHTML(response["input"], response["output"], response["outputFile"], result, div);
-                add(div);
-                submissionMap[submissionId] = { div: div, result: result, input: response["input"] };
+                submission.dom.div = div;
+                submission.input = response["input"];
+                if (!blocked)
+                    add(div);
             }
         }
     };
     xhr.open('POST', "/console/competitions", true);
     xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.send("cid=" + cid + "&action=showFRQSubmission&id=" + submissionId);
+    xhr.send("cid=" + cid + "&action=showFRQSubmission&id=" + submission.submissionId);
 }
 function escapeHtml(html) {
     var text = document.createTextNode(html);
@@ -1986,25 +2221,37 @@ function addFRQOutputHTML(input, output, outputFile, result, div_wrapper) {
     var div = document.createElement("span");
     div.classList.add("frqUpdateWrapper");
     if (input) {
+        var inputOutputTabCnt = document.createElement("div");
+        inputOutputTabCnt.id = "inputOutputTabCnt";
+        div.appendChild(inputOutputTabCnt);
         var input_cnt = document.createElement("div");
         input_cnt.classList.add("inputCnt");
         div.appendChild(input_cnt);
-        var b_input = document.createElement("b");
-        b_input.innerText = "Input";
-        input_cnt.appendChild(b_input);
+        var b_input_1 = document.createElement("b");
+        b_input_1.innerText = "Input";
+        inputOutputTabCnt.appendChild(b_input_1);
         var span_input_1 = document.createElement("span");
-        span_input_1.style.display = "none";
-        span_input_1.innerHTML = input.replace(/\r\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>");
+        // span_input.innerHTML = input.replace(/\r\n/g, "<br>").replace(/\t/g, "<div class='tab'></div>");
+        var codeLines = input.split("<br>");
+        for (var i = 0, j = codeLines.length; i < j; i++) {
+            var line = codeLines[i];
+            var pre = document.createElement("pre");
+            pre.innerHTML = line;
+            span_input_1.appendChild(pre);
+        }
         var viewingInput_1 = false;
-        b_input.onclick = function () {
-            if (viewingInput_1)
-                span_input_1.style.display = "none";
-            else
-                span_input_1.style.display = "block";
-            viewingInput_1 = !viewingInput_1;
-        };
         input_cnt.appendChild(span_input_1);
-        if (output) {
+        if (!output) {
+            b_input_1.classList.add("selected");
+        }
+        else {
+            span_input_1.style.display = "none";
+            var b_output_1 = document.createElement("b");
+            b_output_1.innerText = "Output";
+            b_output_1.classList.add("selected");
+            inputOutputTabCnt.appendChild(b_output_1);
+            var span_output_1 = document.createElement("span");
+            div.appendChild(span_output_1);
             var outputDiv = document.createElement("div");
             var inputLines = [];
             if (result == "Correct" || result == "Incorrect") {
@@ -2019,19 +2266,37 @@ function addFRQOutputHTML(input, output, outputFile, result, div_wrapper) {
             }
             else
                 outputDiv.innerHTML = output;
+            b_input_1.onclick = function () {
+                if (!viewingInput_1) {
+                    b_output_1.classList.remove("selected");
+                    span_output_1.style.display = "none";
+                    span_input_1.style.display = "block";
+                    b_input_1.classList.add("selected");
+                    viewingInput_1 = !viewingInput_1;
+                }
+            };
+            b_output_1.onclick = function () {
+                if (viewingInput_1) {
+                    b_output_1.classList.add("selected");
+                    span_output_1.style.display = "block";
+                    span_input_1.style.display = "none";
+                    b_input_1.classList.remove("selected");
+                    viewingInput_1 = !viewingInput_1;
+                }
+            };
             var output_cnt = document.createElement("div");
             output_cnt.classList.add("outputCnt");
             output_cnt.classList.add("frqHalf");
             output_cnt.innerHTML = "<b>Team</b>";
             output_cnt.appendChild(outputDiv);
-            div.appendChild(output_cnt);
+            span_output_1.appendChild(output_cnt);
             var selectedLine_1 = null; // the line that is selected
             var outputFileDiv = document.createElement("div");
             var lines = outputFile.split("<br>");
             var _loop_5 = function (i, j) {
                 var line = lines[i];
                 var pre = document.createElement("pre");
-                pre.innerText = line;
+                pre.innerHTML = line;
                 outputFileDiv.appendChild(pre);
                 var inputLine = inputLines[i];
                 pre.onclick = function () {
@@ -2097,7 +2362,7 @@ function addFRQOutputHTML(input, output, outputFile, result, div_wrapper) {
             judge_cnt.classList.add("frqHalf");
             judge_cnt.innerHTML = "<b>Judge</b>";
             judge_cnt.appendChild(outputFileDiv);
-            div.appendChild(judge_cnt);
+            span_output_1.appendChild(judge_cnt);
         }
     }
     div_wrapper.appendChild(div);
@@ -2223,13 +2488,15 @@ function parseExcel(file) {
             var line = lines_3[_i];
             try {
                 var cols = line.split("\t");
-                var tname = cols[1].split(",")[0].replace(" H S", " HS").trim();
+                var tname = cols[1].split(",")[0].replace(" H S", " HS").replace(/["']/g, "").trim();
                 if (!teams[tname]) {
                     numTeams++;
-                    teams[tname] = [];
+                    var division = cols[0].split(" ")[0]; // Like 6A
+                    var divisionReversed = "" + division.charAt(1) + division.charAt(0); // Like A6
+                    teams[tname] = { division: divisionReversed, students: [] };
                 }
                 var splitName = cols[2].split("."); // last name, first name
-                teams[tname].push([splitName[1].trim(), splitName[0].trim()]);
+                teams[tname].students.push([splitName[1].trim(), splitName[0].trim()]);
             }
             catch (e) { }
         }
@@ -2311,8 +2578,8 @@ function downloadScoreboard() {
     if (!pageState.isCreator)
         return;
     var data = [["Name", "Written", "Hands-On", "Total"]];
-    for (var tid in teams) {
-        var team = teams[tid];
+    for (var _i = 0, teamScoreboard_1 = teamScoreboard; _i < teamScoreboard_1.length; _i++) {
+        var team = teamScoreboard_1[_i];
         var totalScore = 0;
         var teamData = [team.tname.replace(/[^a-zA-Z0-9 ]/g, '')];
         if (pageState.mcExists) {
@@ -2330,8 +2597,8 @@ function downloadScoreboard() {
     if (pageState.mcExists) {
         data.push(["Written Scoreboard"]);
         data.push(["Name", "Team", "Correct", "Incorrect", "% Correct", "Total"]);
-        for (var _i = 0, writtenTestScoreboard_2 = writtenTestScoreboard; _i < writtenTestScoreboard_2.length; _i++) {
-            var student = writtenTestScoreboard_2[_i];
+        for (var _a = 0, writtenTestScoreboard_2 = writtenTestScoreboard; _a < writtenTestScoreboard_2.length; _a++) {
+            var student = writtenTestScoreboard_2[_a];
             if (student.type == StudentType.ALTERNATE)
                 continue;
             var mcCorrect = "";
@@ -2353,16 +2620,16 @@ function downloadScoreboard() {
     if (pageState.frqExists) {
         data.push(["Hands-On Scoreboard"]);
         var frqHeader = ["", "Total"];
-        for (var _a = 0, _b = pageState.frqProblemMap; _a < _b.length; _a++) {
-            var problem = _b[_a];
+        for (var _b = 0, _c = pageState.frqProblemMap; _b < _c.length; _b++) {
+            var problem = _c[_b];
             frqHeader.push(problem);
         }
         data.push(frqHeader);
-        for (var tid in teams) {
-            var team = teams[tid];
+        for (var _d = 0, handsOnScoreboard_2 = handsOnScoreboard; _d < handsOnScoreboard_2.length; _d++) {
+            var team = handsOnScoreboard_2[_d];
             var frqTeamData = [team.tname.replace(/[^a-zA-Z0-9 ]/g, ''), "" + team.frqScore];
-            for (var _c = 0, _d = team.frqResponses; _c < _d.length; _c++) {
-                var frqResponse = _d[_c];
+            for (var _e = 0, _f = team.frqResponses; _e < _f.length; _e++) {
+                var frqResponse = _f[_e];
                 if (frqResponse > 0) {
                     frqTeamData.push("" + (Math.abs(pageState.frqMaxPoints) - Math.abs(frqResponse - 1) * Math.abs(pageState.frqIncorrectPenalty)));
                 }
@@ -2457,9 +2724,9 @@ function hideMCScore(element) {
     };
     ws.send("[\"hideMCScores\"]");
 }
-function setTime(timestamp, id) {
+function getTime(timestamp) {
     var date = new Date(timestamp);
-    document.getElementById(id).innerHTML = "" + (date.getMonth() + 1) + "/" + ("" + date.getDate()).padStart(2, '0') + " " + date.getHours() + ":" + ("" + date.getMinutes()).padStart(2, '0');
+    return "" + (date.getMonth() + 1) + "/" + ("" + date.getDate()).padStart(2, '0') + " " + date.getHours() + ":" + ("" + date.getMinutes()).padStart(2, '0');
 }
 // Reads in the roster file and creates teams accordingly
 function uploadRoster() {

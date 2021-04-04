@@ -1,5 +1,6 @@
 package Outlet.uil;
 
+import Outlet.Teacher;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -31,6 +32,9 @@ public class FRQSubmission {
     public Result result;
     short problemNumber;    // If 0, then this is a dry run submission
     long submittedTime;  // Time in milliseconds when it was submitted
+
+    boolean blocked = false;    // If a judge is looking at this submission
+    Teacher viewedBy = null;    // The teacher who is looking at this submission
 
     UILEntry entry;
 
@@ -84,6 +88,19 @@ public class FRQSubmission {
         }
     }
 
+    // Gets the json that will be sent to the client
+    public JsonArray getJSON(int id) {
+        JsonArray submissionJ = new JsonArray();
+        submissionJ.add(entry.competition.template.frqTest.PROBLEM_MAP[this.problemNumber].name);
+        submissionJ.add(entry.tname);
+        submissionJ.add(graded);
+        submissionJ.add(getResultString());
+        submissionJ.add(submittedTime);
+        submissionJ.add(id);
+        submissionJ.add(blocked);
+
+        return submissionJ;
+    }
 
     /**
      * The json is in the following format:

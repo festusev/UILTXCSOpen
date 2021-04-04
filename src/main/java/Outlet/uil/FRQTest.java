@@ -190,6 +190,7 @@ public class FRQTest {
             // Loop through each current problem and add a new entry for the problem in newFRQSubmissions.
             // If the problem already existed, it's problemIndices[i] is >=0, and we retrieve the old submission list at
             // problemIndices[i] and add it to the new submission list
+            System.out.println(entry.tname);
             for(int i=0,j=problemIndices.length;i<j;i++) {
                 Pair<Short, ArrayList<FRQSubmission>> problem;
                 if(problemIndices[i] >= 0) problem = entry.frqResponses[problemIndices[i]];

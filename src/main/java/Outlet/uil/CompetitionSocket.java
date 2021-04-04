@@ -22,11 +22,23 @@ public class CompetitionSocket {
     public User user;
     private Competition competition;    // The competition they are viewing
 
-    public static HashMap<Short, CompetitionSocket> connected = new HashMap<>();    // Maps uid to socket
-    public static HashMap<Short, ArrayList<CompetitionSocket>> competitions = new HashMap<>(); // Maps cid to a list of CompetitionSockets
+    public static HashMap<Short, HashMap<Short, ArrayList<CompetitionSocket>>> competitions = new HashMap<>(); // Maps cid to a map that maps uids to a list of competition sockets
     SimpleDateFormat sdf = new SimpleDateFormat(Countdown.DATETIME_FORMAT);
 
     private static Gson gson = new Gson();
+
+    // Sends it to all of the user's connected sockets for this competition
+    public static void sendToUser(short cid, short uid, String data) throws IOException {
+        HashMap<Short, ArrayList<CompetitionSocket>> map = competitions.get(cid);
+        if(map == null) return;
+
+        ArrayList<CompetitionSocket> connected = map.get(uid);
+        if(connected == null) return;
+
+        for(CompetitionSocket socket: connected) {
+            socket.send(data);
+        }
+    }
 
     public void sendLoadScoreboardData(UserStatus status, User user, Competition competition) {
         if(!competition.template.showScoreboard && !status.admin) { // If we aren't showing the scoreboard and this user isn't an admin, don't send the scoreboard
@@ -84,16 +96,13 @@ public class CompetitionSocket {
         }
     }
 
-
-
     @OnOpen
     public void onOpen(Session session, @PathParam("cid") String cidS) {
+        short cid = Short.parseShort(cidS);
         try{
-            short cid = Short.parseShort(cidS);
             competition = UIL.getCompetition(cid);
 
-            if(!competitions.containsKey(cid) || competitions.get(cid) == null) competitions.put(cid, new ArrayList<>());
-            competitions.get(cid).add(this);
+            if(!competitions.containsKey(cid) || competitions.get(cid) == null) competitions.put(cid, new HashMap<Short, ArrayList<CompetitionSocket>>());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -102,7 +111,15 @@ public class CompetitionSocket {
         if(session.getUserProperties().containsKey("user")) {
             User u = (User) session.getUserProperties().get("user");
             user = u;
-            if (u != null) connected.put(u.uid, this);
+
+            HashMap<Short, ArrayList<CompetitionSocket>> list = competitions.get(cid);
+            ArrayList<CompetitionSocket> sockets = list.get(user.uid);
+            if(sockets == null) {
+                sockets = new ArrayList<>();
+                list.put(user.uid, sockets);
+            }
+
+            sockets.add(this);
         }
     }
 
@@ -144,25 +161,23 @@ public class CompetitionSocket {
                     object.addProperty("action", "nc");
                     object.addProperty("name", askerName);
 
-                    CompetitionSocket teacherSocket = connected.get(competition.teacher.uid);
-                    if(teacherSocket != null) {
-                        teacherSocket.send(object.toString());
-                    }
+                    String out = object.toString();
+
+                    sendToUser(competition.template.cid, competition.teacher.uid, out);
 
                     // Update the judges as well
                     short[] judges = competition.getJudges();
                     for(short judgeUID: judges) {
-                        CompetitionSocket competitionSocket = connected.get(judgeUID);
-                        if(competitionSocket != null) {
-                            competitionSocket.send(object.toString());
-                        }
+                        CompetitionSocket.sendToUser(competition.template.cid, judgeUID, out);
                     }
                 }
                 else {
                     object.addProperty("action", "judgeClarification");
-                    for(short uid: connected.keySet()) {
-                        CompetitionSocket socket = connected.get(uid);
-                        socket.send(object.toString());
+                    String out = object.toString();
+
+                    HashMap<Short, ArrayList<CompetitionSocket>> map = competitions.get(competition.template.cid);
+                    for(short uid: map.keySet()) {
+                        CompetitionSocket.sendToUser(competition.template.cid, uid, out);
                     }
                 }
 
@@ -205,14 +220,7 @@ public class CompetitionSocket {
                     object.addProperty("answer", clarification.response);
                     String stringified = object.toString();
 
-                    // Relay the clarification to all of the people who are connected to this competition and signed up
-                    ArrayList<CompetitionSocket> sockets = competitions.get(competition.template.cid);
-                    for (CompetitionSocket socket : sockets) {
-                        if(socket.user == null) continue;
-                        UserStatus socketStatus = UserStatus.getCompeteStatus(socket.user, competition);
-
-                        if (socketStatus.signedUp || socketStatus.admin) socket.send(stringified);
-                    }
+                    broadcast(competition.template.cid, stringified);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -225,7 +233,8 @@ public class CompetitionSocket {
             } else if (action.equals("saveTeam")) {
                 System.out.println("Saving team");
 
-                JsonObject team = data.get(1).getAsJsonObject(); // A team of the format: {tid: number, students:number[], individual: boolean}
+                String division = data.get(1).getAsString();
+                JsonObject team = data.get(2).getAsJsonObject(); // A team of the format: {tid: number, students:number[], individual: boolean}
                 JsonArray students = team.get("students").getAsJsonArray(); // A list of objects like: ["sname", "student type"]
 
                 /*JsonElement alt = team.get("alt");
@@ -250,6 +259,7 @@ public class CompetitionSocket {
                 }
 
                 entry.individual = individual;
+                entry.division = UILEntry.Division.valueOf(division);
 
                 HashMap<Short, MCSubmission> newMC = new HashMap<>();
 
@@ -649,13 +659,16 @@ public class CompetitionSocket {
 
                     UILEntry entry = new UILEntry(tname, code, competition);
                     try {
-                        entry.insert();
                         competition.entries.addEntry(entry);
                     } catch(Exception e) {
                         return;
                     }
 
-                    JsonArray students = teams.get(tname).getAsJsonArray();
+                    // {[tname:string]:{division:string, students:[string,string][]}}
+                    JsonObject teamData = teams.get(tname).getAsJsonObject();
+                    String division = teamData.get("division").getAsString();
+
+                    JsonArray students = teamData.get("students").getAsJsonArray();
                     for(JsonElement studentE: students) {
                         try {
                             JsonArray studentA = studentE.getAsJsonArray();
@@ -698,7 +711,8 @@ public class CompetitionSocket {
                             continue;
                         }
                     }
-                    entry.updateUIDS();
+                    entry.division = UILEntry.Division.valueOf(division);
+                    entry.insert();
                 });
                 competition.template.updateScoreboard();
                 send("{\"action\":\"rosterUploaded\"}");
@@ -731,7 +745,7 @@ public class CompetitionSocket {
                 send(output.toString());
             } else if(action.equals("releaseMCScores")) {
                 competition.template.mcTest.graded = true;
-                broadcast("{\"action\":\"reload\"}");
+                broadcast(competition.template.cid, "{\"action\":\"reload\"}");
                 try {
                     competition.update();
                 } catch (SQLException e) {
@@ -739,7 +753,7 @@ public class CompetitionSocket {
                 }
             } else if(action.equals("hideMCScores")) {
                 competition.template.mcTest.graded = false;
-                broadcast("{\"action\":\"reload\"}");
+                broadcast(competition.template.cid, "{\"action\":\"reload\"}");
                 try {
                     competition.update();
                 } catch (SQLException e) {
@@ -760,7 +774,7 @@ public class CompetitionSocket {
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
-                broadcast("{\"action\":\"reload\"}");
+                broadcast(competition.template.cid, "{\"action\":\"reload\"}");
             } else if(action.equals("startWritten")) {
                 MCTest mcTest = new MCTest(true, data.get(1).getAsString(), competition.template.mcTest.KEY,
                         competition.template.mcTest.CORRECT_PTS, competition.template.mcTest.INCORRECT_PTS,
@@ -775,7 +789,7 @@ public class CompetitionSocket {
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
-                broadcast("{\"action\":\"reload\"}");
+                broadcast(competition.template.cid, "{\"action\":\"reload\"}");
             } else if(action.equals("stopHandsOn")) {
                 Date now = new Date(1); // Date at epoch
                 FRQTest oldFRQ = competition.template.frqTest;
@@ -790,7 +804,7 @@ public class CompetitionSocket {
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
-                broadcast("{\"action\":\"reload\"}");
+                broadcast(competition.template.cid, "{\"action\":\"reload\"}");
             } else if(action.equals("startHandsOn")) {
                 FRQTest oldFRQ = competition.template.frqTest;
                 FRQTest frqTest = new FRQTest(true, data.get(1).getAsString(), oldFRQ.MAX_POINTS, oldFRQ.INCORRECT_PENALTY,
@@ -804,7 +818,7 @@ public class CompetitionSocket {
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
-                broadcast("{\"action\":\"reload\"}");
+                broadcast(competition.template.cid, "{\"action\":\"reload\"}");
             } else if(action.equals("startDryRun")) {
                     FRQTest oldFRQ = competition.template.frqTest;
                     if(oldFRQ.dryRunMode || !oldFRQ.DRYRUN_EXISTS) return;
@@ -836,7 +850,7 @@ public class CompetitionSocket {
                         }
                     }*/
 
-                    broadcast("{\"action\":\"reload\"}");
+                    broadcast(competition.template.cid, "{\"action\":\"reload\"}");
             } else if(action.equals("stopDryRun")) {
                 FRQTest oldFRQ = competition.template.frqTest;
                 if(!oldFRQ.dryRunMode || !oldFRQ.DRYRUN_EXISTS) return;
@@ -870,7 +884,7 @@ public class CompetitionSocket {
                     e.printStackTrace();
                 }*/
 
-                broadcast("{\"action\":\"reload\"}");
+                broadcast(competition.template.cid, "{\"action\":\"reload\"}");
             } else if(action.equals("resetSubmissions")) {
                 competition.frqSubmissions.clear();
                 for(UILEntry entry: competition.entries.allEntries) {
@@ -888,7 +902,51 @@ public class CompetitionSocket {
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
-                broadcast("{\"action\":\"reload\"}");
+                broadcast(competition.template.cid, "{\"action\":\"reload\"}");
+            } else if(action.equals("blockFRQ")) {  // Tells all admins to block opening the frq submission
+                int submissionID = data.get(1).getAsInt();
+
+                FRQSubmission submission = competition.frqSubmissions.get(submissionID);
+                submission.blocked = true;
+                submission.viewedBy = (Teacher)user;
+
+                String out = "{\"action\":\"blockFRQ\",\"submissionID\":"+submissionID+"}";
+                sendToUser(competition.template.cid, competition.teacher.uid, out);
+
+                // Update the judges as well
+                short[] judges = competition.getJudges();
+                for(short judgeUID: judges) {
+                    CompetitionSocket.sendToUser(competition.template.cid, judgeUID, out);
+                }
+            } else if(action.equals("unblockFRQ")) {
+                int submissionID = data.get(1).getAsInt();
+
+                FRQSubmission submission = competition.frqSubmissions.get(submissionID);
+                submission.blocked = false;
+                submission.viewedBy = null;
+
+                String out = "{\"action\":\"unblockFRQ\",\"submissionID\":"+submissionID+"}";
+                sendToUser(competition.template.cid, competition.teacher.uid, out);
+
+                // Update the judges as well
+                short[] judges = competition.getJudges();
+                for(short judgeUID: judges) {
+                    CompetitionSocket.sendToUser(competition.template.cid, judgeUID, out);
+                }
+            } else if(action.equals("loadFRQSubmissions")) {
+                // {frqSubmissions: [string, string, boolean, string, number, number, boolean][]}
+
+                JsonObject object = new JsonObject();
+                object.addProperty("action", "loadFRQSubmissions");
+
+                JsonArray submissionsJ = new JsonArray();
+                for(int i=0;i<competition.frqSubmissions.size();i++) {
+                    FRQSubmission submission = competition.frqSubmissions.get(i);
+                    submissionsJ.add(submission.getJSON(i));
+                }
+                object.add("frqSubmissions", submissionsJ);
+
+                CompetitionSocket.sendToUser(competition.template.cid, user.uid, object.toString());
             }
         }
     }
@@ -896,8 +954,10 @@ public class CompetitionSocket {
     @OnClose
     public void onClose(Session session) throws IOException {
         // System.out.println("Closing session");
-        if(this.user != null) connected.remove(this.user.uid);
-        if(competition != null) competitions.get(competition.template.cid).remove(this);
+        if(competition != null) {
+            ArrayList<CompetitionSocket> sockets = competitions.get(competition.template.cid).get(user.uid);
+            sockets.remove(this);
+        }
     }
 
     @OnError
@@ -911,15 +971,16 @@ public class CompetitionSocket {
         session.getBasicRemote().sendText(msg);
     }
 
-    public static void broadcast(String message) {
-        connected.values().forEach(endpoint -> {
-            synchronized (endpoint) {
-                try {
-                    endpoint.send(message);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+    public static void broadcast(short cid, String message) {
+        HashMap<Short, ArrayList<CompetitionSocket>> sockets = competitions.get(cid);
+        if(sockets == null) return;
+
+        for(short uid: sockets.keySet()) {
+            try {
+                CompetitionSocket.sendToUser(cid, uid, message);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        });
+        }
     }
 }
