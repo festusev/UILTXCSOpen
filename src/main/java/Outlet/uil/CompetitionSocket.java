@@ -259,7 +259,7 @@ public class CompetitionSocket {
                 }
 
                 entry.individual = individual;
-                entry.division = UILEntry.Division.valueOf(division);
+                entry.division = division;
 
                 HashMap<Short, MCSubmission> newMC = new HashMap<>();
 
@@ -523,6 +523,7 @@ public class CompetitionSocket {
                 short tid = data.get(1).getAsShort();
                 UILEntry entry = competition.entries.getByTid(tid);
                 competition.template.deleteEntry(entry);
+                competition.template.updateScoreboard();
             } else if (action.equals("deleteStudent")) {
                 short tid = data.get(1).getAsShort();
                 short uid = data.get(2).getAsShort();
@@ -661,6 +662,7 @@ public class CompetitionSocket {
                     try {
                         competition.entries.addEntry(entry);
                     } catch(Exception e) {
+                        e.printStackTrace();
                         return;
                     }
 
@@ -708,10 +710,11 @@ public class CompetitionSocket {
                                 e.printStackTrace();
                             }
                         } catch(Exception e) {
+                            e.printStackTrace();
                             continue;
                         }
                     }
-                    entry.division = UILEntry.Division.valueOf(division);
+                    entry.division = division;
                     entry.insert();
                 });
                 competition.template.updateScoreboard();
@@ -895,6 +898,20 @@ public class CompetitionSocket {
                     }
                     entry.update();
                 }
+                competition.clarifications.clear();
+                competition.template.updateScoreboard();
+                try {
+                    competition.update();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                broadcast(competition.template.cid, "{\"action\":\"reload\"}");
+            } else if(action.equals("deleteAllTeams")) {
+                competition.frqSubmissions.clear();
+                for(int i=competition.entries.allEntries.size()-1;i>=0;i--) {
+                    competition.template.deleteEntry(competition.entries.allEntries.get(0));
+                }
+
                 competition.clarifications.clear();
                 competition.template.updateScoreboard();
                 try {

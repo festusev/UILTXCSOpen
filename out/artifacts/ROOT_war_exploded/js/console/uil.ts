@@ -28,7 +28,8 @@ let pageState = {
     deletingObject : null,   // The object we are deleting
     saveTeamCallbacks: [],   // A list of functions as callbacks to saving a team. Each time a "scoreboardOpenTeamFeedback" message comes back, it calls the first item in this queue
 
-    frqSortMethod : null    // The sort method
+    frqSortMethod : null,    // The sort method
+    viewingDivision : null    // The division we are viewing
 };
 
 const config = {
@@ -126,7 +127,10 @@ const config = {
         uploadRosterProxy : "uploadRosterProxy",
         uploadRosterBox:"uploadRosterBox",
 
-        resetConfirmationCnt : "resetConfirmationCnt"
+        resetConfirmationCnt : "resetConfirmationCnt",
+        divisionSelector : "divisionSelector",
+
+        deleteTeamsConfirmationCnt : "deleteTeamsConfirmationCnt"
     },
     CLASSES: {
         columns : "column",
@@ -292,6 +296,8 @@ const config = {
             frqSubmissions = [];
             frqSubmissionMap = {};
 
+            dom.frqSubmissionsTable.innerHTML = "";
+
             let tr = document.createElement("tr");
             tr.id = "frqSubmissionsTr";
 
@@ -425,9 +431,7 @@ const config = {
             if(pageState.openTeam) oldOpenTeamTID = (<Team>pageState.openTeam).tid;     // The old team that was open. May be null
 
             teams = {};
-            writtenTestScoreboard = [];
-            handsOnScoreboard = [];
-            teamScoreboard = [];
+            divisions = {};
             pageState.isCreator = response.isCreator;
             pageState.mcExists = response.mcExists;
             pageState.mcCorrectPoints = response.mcCorrectPoints;
@@ -445,21 +449,6 @@ const config = {
                 document.body.classList.add("isCreator");
             }
 
-            let generalFragment = document.createDocumentFragment();   // A collection of table row elements for the general table
-            let handsOnFragment = document.createDocumentFragment();    // A collection of table rows for the hands-on table
-
-            dom.teamList.innerHTML = "";
-
-            // First, add in the table headers
-            let headers = "<th>Team</th>";
-            if (pageState.mcExists) headers += "<th class='right'>Written</th>";
-            if (pageState.frqExists) headers += "<th class='right'>Hands-On</th>";
-            headers += "<th class='right'>Total</th>";
-
-            let headerDOM = document.createElement("tr");
-            headerDOM.innerHTML = headers;
-            generalFragment.appendChild(headerDOM);
-
             // These datapoints are displayed on the right bar if the user is an admin
             let numWrittenSubmitted: number = 0;
             let writtenSum: number = 0; // Sum of written scores
@@ -470,9 +459,20 @@ const config = {
             let bottomRank: number = 0; // If they are a signed-up student, response.tid is specified and we calculate their bottom rank
             let bottomOutOf: number = response.teams.length;
 
+            dom.divisionSelector.innerHTML = "";
+            dom.divisionSelector.onchange = function() {
+                selectDivision(dom.divisionSelector.value);
+            };
+
+            let divisionsSorted:HTMLOptionElement[] = [];
             let selectStudentFragment = document.createDocumentFragment();  // The list of students that goes into the select student window
             for (let i=0,j=response.teams.length;i<j;i++) {
                 let teamData = response.teams[i];
+
+                if(!divisions[teamData.division]) {
+                    divisionsSorted.push(addDivision(teamData.division));
+                }
+
                 let team: Team = new Team(teamData, response.tempUsers);
 
                 if(team.tid == oldOpenTeamTID) newToggleTeam = team;
@@ -481,7 +481,7 @@ const config = {
                 if(pageState.isCreator) {
                     team.code = response.teamCodes[i];
                 }
-                if(!team.individual) generalFragment.appendChild(team.dom.tr);
+                if(!team.individual) divisions[team.division].teamDOM.appendChild(team.dom.tr);
 
                 for (let student of team.students) {
                     let tr = document.createElement("tr");
@@ -501,51 +501,49 @@ const config = {
                     }
                 }
 
-                /*if (pageState.writtenSpecialistExists) {
-                    let tr = document.createElement("tr");
-                    tr.classList.add("_"+team.alt.uid);
-                    tr.onclick = function () {
-                        Team.selectStudent(team.alt)
-                    };
-                    tr.innerHTML = "<td>" + team.alt.name + "</td>";
-                    selectStudentFragment.appendChild(tr);
-
-                    if(team.alt.mcScore) {
-                        numWrittenSubmitted++;
-                        writtenSum += team.alt.mcScore;
-                    }
-                    numStudents++;
-                }*/
-
                 handsOnSum += team.frqScore;
             }
 
-            if(pageState.mcExists) {
-                writtenTestScoreboard.sort(function (s1: Student, s2: Student) {
-                    let s1IsUndefined: boolean = s1.mcScore == null; //typeof s1.mcScore == "undefined";
-                    let s2IsUndefined: boolean = s2.mcScore == null; //typeof s2.mcScore == "undefined";
-                    if(s1IsUndefined && s2IsUndefined) return 0;
-                    else if(s1IsUndefined && !s2IsUndefined) return 1;
-                    else if(!s1IsUndefined && s2IsUndefined) return -1;
+            divisionsSorted.sort(function(d1:HTMLOptionElement, d2:HTMLOptionElement) {
+                return d1.value.localeCompare(d2.value);
+            });
 
-                    if (s1.mcScore == s2.mcScore) { // Tiebreak
-                        return s2.mcNumCorrect/(s2.mcNumIncorrect+s2.mcNumCorrect) - s1.mcNumCorrect/(s1.mcNumIncorrect+s1.mcNumCorrect);
-                    } else if (s1.mcScore < s2.mcScore) return 1;
-                    else return -1;
-                });
-                let writtenTestFragment = document.createDocumentFragment();
-                for(let student of writtenTestScoreboard) {
-                    if(student.type == StudentType.ALTERNATE) continue;
-                    writtenTestFragment.appendChild(student.dom.tr);
-                }
-                dom.writtenScoreboardTable.innerHTML = "<tr><th>Name</th><th>Team</th><th>Correct</th><th>Incorrect</th><th>% Correct</th><th>Total</th></tr>";
-                dom.writtenScoreboardTable.appendChild(writtenTestFragment);
+            let firstDivision = divisionsSorted[0]?divisionsSorted[0].value:""; // The first division to show
+            for(let divisionOption of divisionsSorted) {
+                dom.divisionSelector.appendChild(divisionOption);
             }
-            if(pageState.frqExists) {
-                handsOnScoreboard.sort(function(t1: Team, t2: Team) {
-                    return t2.frqScore - t1.frqScore;
-                });
-                for(let team of handsOnScoreboard) handsOnFragment.appendChild(team.dom.frqTR);
+
+            for(let division in divisions) {
+                if (pageState.mcExists) {
+                    divisions[division].writtenScoreboard.sort(function (s1: Student, s2: Student) {
+                        let s1IsUndefined: boolean = s1.mcScore == null; //typeof s1.mcScore == "undefined";
+                        let s2IsUndefined: boolean = s2.mcScore == null; //typeof s2.mcScore == "undefined";
+                        if (s1IsUndefined && s2IsUndefined) return 0;
+                        else if (s1IsUndefined && !s2IsUndefined) return 1;
+                        else if (!s1IsUndefined && s2IsUndefined) return -1;
+
+                        if (s1.mcScore == s2.mcScore) { // Tiebreak
+                            return s2.mcNumCorrect / (s2.mcNumIncorrect + s2.mcNumCorrect) - s1.mcNumCorrect / (s1.mcNumIncorrect + s1.mcNumCorrect);
+                        } else if (s1.mcScore < s2.mcScore) return 1;
+                        else return -1;
+                    });
+
+                    let writtenTestFragment = document.createDocumentFragment();
+                    for (let student of divisions[division].writtenScoreboard) {
+                        if (student.type == StudentType.ALTERNATE) continue;
+                        writtenTestFragment.appendChild(student.dom.tr);
+                    }
+                    divisions[division].writtenDOM.appendChild(writtenTestFragment);
+                }
+                if (pageState.frqExists) {
+                    divisions[division].handsOnScoreboard.sort(function (t1: Team, t2: Team) {
+                        return t2.frqScore - t1.frqScore;
+                    });
+
+                    let handsOnFragment = document.createDocumentFragment();
+                    for (let team of divisions[division].handsOnScoreboard) handsOnFragment.appendChild(team.dom.frqTR);
+                    divisions[division].handsOnDOM.appendChild(handsOnFragment);
+                }
             }
 
             if(response.isCreator) {
@@ -571,20 +569,9 @@ const config = {
             }
 
             dom.teamList.innerHTML = "";
-            dom.teamList.appendChild(generalFragment);
+            dom.writtenScoreboardTable.innerHTML = "";
+            dom.handsOnScoreboardTable.innerHTML = "";
 
-            if(pageState.frqExists) {
-                dom.handsOnScoreboardTable.innerHTML = "";
-                let handsOnHeader = document.createElement("tr");
-                handsOnHeader.innerHTML = "<th></th><th>Total</th>";
-                for(let problem of response.frqProblemMap) {
-                    let problemTH = document.createElement("th");
-                    problemTH.innerText = problem;
-                    handsOnHeader.appendChild(problemTH);
-                }
-                dom.handsOnScoreboardTable.appendChild(handsOnHeader);
-                dom.handsOnScoreboardTable.appendChild(handsOnFragment);
-            }
 
             if(pageState.isCreator) {
                 let selectStudentFromClassFragment = document.createDocumentFragment(); // Add in the students from their class
@@ -611,6 +598,17 @@ const config = {
                 dom.selectSignedUpStudent.innerHTML = "";
                 dom.selectSignedUpStudent.appendChild(selectStudentFragment);
             }
+
+            if(pageState.viewingDivision != null && divisions[pageState.viewingDivision]) {
+                for(let divisionOption of divisionsSorted) {
+                    if(divisionOption.value == pageState.viewingDivision) {
+                        divisionOption.selected = true;
+                        break;
+                    }
+                }
+                selectDivision(pageState.viewingDivision);
+            }
+            else selectDivision(firstDivision);
 
             let oldEditingTeam: boolean = pageState.editingTeam;
             Team.toggleTeam(newToggleTeam, false);
@@ -726,6 +724,55 @@ const config = {
 };
 
 
+function addDivision(division:string):HTMLOptionElement {
+    // First, add in the table headers
+    let headers = "<th>Team</th>";
+    if (pageState.mcExists) headers += "<th class='right'>Written</th>";
+    if (pageState.frqExists) headers += "<th class='right'>Hands-On</th>";
+    headers += "<th class='right'>Total</th>";
+
+    let generalFragment = document.createElement("span");
+    // let generalFragment = document.createDocumentFragment();   // A collection of table row elements for the general table
+    let headerDOM = document.createElement("tr");
+    headerDOM.innerHTML = headers;
+    generalFragment.appendChild(headerDOM);
+
+    divisions[division] = {
+        writtenScoreboard: [],
+        handsOnScoreboard : [],
+        teamScoreboard : [],
+        handsOnDOM : null,
+        writtenDOM : null,
+        teamDOM : generalFragment
+    };
+
+    let divisionOption = document.createElement("option");
+    divisionOption.innerText = division;
+    divisionOption.value = division;
+
+    if(pageState.mcExists) {
+        let writtenTestFragment = document.createElement("span");   // document.createDocumentFragment();
+        let writtenTestTR = document.createElement("tr");
+        writtenTestTR.innerHTML = "<th>Name</th><th>Team</th><th>Correct</th><th>Incorrect</th><th>% Correct</th><th>Total</th>";
+        writtenTestFragment.appendChild(writtenTestTR);
+        divisions[division].writtenDOM = writtenTestFragment;
+    }
+
+    if(pageState.frqExists) {
+        let handsOnFragment = document.createElement("span");   // document.createDocumentFragment();    // A collection of table rows for the hands-on table
+        let handsOnHeader = document.createElement("tr");
+        handsOnHeader.innerHTML = "<th></th><th>Total</th>";
+        for(let problem of pageState.frqProblemMap) {
+            let problemTH = document.createElement("th");
+            problemTH.innerText = problem;
+            handsOnHeader.appendChild(problemTH);
+        }
+        handsOnFragment.appendChild(handsOnHeader);
+        divisions[division].handsOnDOM = handsOnFragment;
+    }
+    return divisionOption;
+}
+
 
 let dom = {
     cached: {},    // DOM objects that have already been accessed
@@ -809,6 +856,8 @@ let dom = {
     get uploadRosterBox(){return this.getHelper(config.IDs.uploadRosterBox)},
     get resetConfirmationCnt() {return this.getHelper(config.IDs.resetConfirmationCnt)},
     get teamDivision() {return this.getHelper(config.IDs.teamDivision)},
+    get divisionSelector() {return this.getHelper(config.IDs.divisionSelector)},
+    get deleteTeamsConfirmationCnt() { return this.getHelper(config.IDs.deleteTeamsConfirmationCnt)},
 
     classes : {
         cached: {},    // DOM objects that have already been accessed
@@ -1018,14 +1067,6 @@ class Student {
     }
 }
 
-enum Division {
-    A1,
-    A2,
-    A3,
-    A4,
-    A5,
-    A6
-}
 
 let frqSubmissions: FRQSubmission[] = [];
 let frqSubmissionMap: {[key:string]:FRQSubmission} = {};
@@ -1119,9 +1160,15 @@ class FRQSubmission {
 }
 
 
-let writtenTestScoreboard: Student[] = [];  // The list of students sorted by their mc score
-let handsOnScoreboard: Team[] = [];     // The list of teams sorted by their hands-on score
-let teamScoreboard: Team[] = [];
+let divisions : {[division:string]:{
+        writtenScoreboard: Student[],
+        handsOnScoreboard : Team[],
+        teamScoreboard : Team[],
+        handsOnDOM : HTMLSpanElement,
+        writtenDOM : HTMLSpanElement,
+        teamDOM : HTMLSpanElement
+    }};
+
 let teams: {[key:string]:Team} = {};    // Maps tids to their team
 class Team {
     tname: string;
@@ -1134,7 +1181,7 @@ class Team {
     code : string;
     frqResponses : number[];    // A list of the frq response indices
     individual : boolean;
-    division: Division;
+    division: string;
 
     editedSinceLastSave : boolean = false;  // If this team has been edited since the last save
 
@@ -1159,7 +1206,9 @@ class Team {
                     student.password = temp[1];
                 }
             }
-            if(pageState.mcExists) writtenTestScoreboard.push(student);
+            if(pageState.mcExists) {
+                divisions[thisTeam.division].writtenScoreboard.push(student);
+            }
             return student;
         }
         let thisTeam:Team = this;
@@ -1169,9 +1218,9 @@ class Team {
         this.school = data.school;
         this.tid = data.tid;
         this.students = [];
-        this.division = Division[data.division];
+        this.division = data.division;
 
-        if(pageState.frqExists && !this.individual) handsOnScoreboard.push(this);
+        if(pageState.frqExists && !this.individual) divisions[thisTeam.division].handsOnScoreboard.push(this);
 
         for(let studentData of data.students) {
             this.students.push(createStudent(studentData));
@@ -1204,7 +1253,7 @@ class Team {
 
         this.frqResponses = data.frqResponses;
 
-        teamScoreboard.push(this);
+        divisions[this.division].teamScoreboard.push(this);
         teams[""+this.tid] = this;
         this.render();
     }
@@ -1517,7 +1566,7 @@ class Team {
             dom.teamDivision.disabled = true;
         }
 
-        (<HTMLSelectElement>dom.teamDivision).options[team.division.valueOf()].selected = true;
+        dom.teamDivision.value = team.division;
 
         if(pageState.mcExists) dom.openTeamWritten.innerText = team.mcScore + " pts";
         if(pageState.frqExists) dom.openTeamHandsOn.innerText = team.frqScore + " pts";
@@ -1685,6 +1734,23 @@ $(document).ready(function(){
 
     getWebSocket(window.location.host + "/console/sockets/c/" + cid, config.SOCKET_FUNCTIONS);
 })();
+
+
+// Shows the scoreboard for a certain division
+function selectDivision(division:string) {
+    if(pageState.openTeam != null) Team.toggleTeam(null, false);
+
+    pageState.viewingDivision = division;
+
+    dom.teamList.innerHTML = "";
+    dom.teamList.appendChild(divisions[division].teamDOM);
+
+    dom.writtenScoreboardTable.innerHTML = "";
+    dom.writtenScoreboardTable.appendChild(divisions[division].writtenDOM);
+
+    dom.handsOnScoreboardTable.innerHTML = "";
+    dom.handsOnScoreboardTable.appendChild(divisions[division].handsOnDOM);
+}
 
 // Starts the load scoreboard
 
@@ -1885,6 +1951,11 @@ function createTeamHelper(tname:string, showErrors:boolean, callback?:Function) 
             else if (result["status"] === "success") {
                 if (pageState.isCreator) {   // If they are the creator, add in the new team
                     let newTeam: Team;
+                    let division:string = pageState.viewingDivision;
+                    if(!division) {
+                        division = "6A";
+                        addDivision("6A");
+                    }
                     if(pageState.frqExists) {
                         let frqResponses: number[] = [];
                         frqResponses.length = pageState.frqProblemMap.length;
@@ -1892,17 +1963,17 @@ function createTeamHelper(tname:string, showErrors:boolean, callback?:Function) 
 
                         newTeam = new Team({
                             tname: result["tname"], school: "", tid: result["tid"],
-                            students: [], frq: 0, frqResponses: frqResponses,individual:false, division : "A6"
+                            students: [], frq: 0, frqResponses: frqResponses,individual:false, division : division
                         });
                     } else {
                         newTeam = new Team({
                             tname: result["tname"], school: "", tid: result["tid"],
-                            students: [], frq: 0,individual:false, division : "A6"
+                            students: [], frq: 0,individual:false, division : division
                         });
                     }
                     newTeam.code = result["code"];
-                    dom.teamList.appendChild(newTeam.dom.tr);
-                    if(pageState.frqExists) dom.handsOnScoreboardTable.appendChild(newTeam.dom.frqTR);
+                    divisions[newTeam.division].teamDOM.appendChild(newTeam.dom.tr);
+                    if(pageState.frqExists) divisions[newTeam.division].handsOnDOM.appendChild(newTeam.dom.frqTR);
 
                     if(callback) callback(newTeam);
                 } else location.reload();
@@ -2825,75 +2896,82 @@ function getPercentageCorrect(correct: number, incorrect: number) {
 function downloadScoreboard() {
     if(!pageState.isCreator) return;
 
-    let data = [["Name", "Written", "Hands-On", "Total"]];
+    let data = [];
 
-    for(let team of teamScoreboard) {
-        let totalScore:number = 0;
-        let teamData = [team.tname.replace(/[^a-zA-Z0-9 ]/g, '')];
+    for(let division in divisions) {
+        data.push([division]);
+        data.push(["Name", "Written", "Hands-On", "Total"]);
+        for(let team of divisions[division].teamScoreboard) {
+            let totalScore:number = 0;
+            let teamData = [team.tname.replace(/[^a-zA-Z0-9 ]/g, '')];
+
+            if(pageState.mcExists) {
+                totalScore += team.mcScore;
+                teamData.push(""+team.mcScore);
+            }
+            if(pageState.frqExists) {
+                totalScore += team.frqScore;
+                teamData.push(""+team.frqScore);
+            }
+            teamData.push(""+totalScore);
+            data.push(teamData);
+        }
+
+        data.push([]);
 
         if(pageState.mcExists) {
-            totalScore += team.mcScore;
-            teamData.push(""+team.mcScore);
-        }
-        if(pageState.frqExists) {
-            totalScore += team.frqScore;
-            teamData.push(""+team.frqScore);
-        }
-        teamData.push(""+totalScore);
-        data.push(teamData);
-    }
+            data.push(["Written Scoreboard"]);
+            data.push(["Name","Team","Correct","Incorrect","% Correct","Total"]);
 
-    data.push([]);
-    if(pageState.mcExists) {
-        data.push(["Written Scoreboard"]);
-        data.push(["Name","Team","Correct","Incorrect","% Correct","Total"]);
+            for (let student of divisions[division].writtenScoreboard) {
+                if (student.type == StudentType.ALTERNATE) continue;
 
-        for (let student of writtenTestScoreboard) {
-            if(student.type == StudentType.ALTERNATE) continue;
+                let mcCorrect = "";
+                let mcIncorrect = "";
+                let mcPercentCorrect = "";
+                let mcScoreString = "Not Taken";
+                if (student.mcScore != null) {
+                    mcCorrect = "" + student.mcNumCorrect;
+                    mcIncorrect = "" + student.mcNumIncorrect;
 
-            let mcCorrect = "";
-            let mcIncorrect = "";
-            let mcPercentCorrect = "";
-            let mcScoreString = "Not Taken";
-            if(student.mcScore != null) {
-                mcCorrect = "" + student.mcNumCorrect;
-                mcIncorrect = "" + student.mcNumIncorrect;
-
-                mcPercentCorrect = "" + getPercentageCorrect(student.mcNumCorrect, student.mcNumIncorrect);
-                mcScoreString = "" + student.mcScore;
-            }
-
-            let studentData = [student.name.replace(/[^a-zA-Z0-9 ]/g, ''),
-                student.team.tname.replace(/[^a-zA-Z0-9 ]/g, ''), mcCorrect, mcIncorrect, mcPercentCorrect, mcScoreString];
-            data.push(studentData);
-        }
-    }
-
-    data.push([]);
-    if(pageState.frqExists) {
-        data.push(["Hands-On Scoreboard"]);
-        let frqHeader = ["", "Total"];
-        for(let problem of pageState.frqProblemMap) {
-            frqHeader.push(problem);
-        }
-        data.push(frqHeader);
-
-        for(let team of handsOnScoreboard) {
-            let frqTeamData = [team.tname.replace(/[^a-zA-Z0-9 ]/g, ''), ""+team.frqScore];
-
-            for(let frqResponse of team.frqResponses) {
-                if(frqResponse > 0) {
-                    frqTeamData.push("" + (Math.abs(pageState.frqMaxPoints) - Math.abs(frqResponse-1)*Math.abs(pageState.frqIncorrectPenalty)));
-                } else if(frqResponse == 0) {
-                    frqTeamData.push("0");
-                } else {
-                    let tries = Math.abs(frqResponse);
-                    frqTeamData.push(""+tries);
+                    mcPercentCorrect = "" + getPercentageCorrect(student.mcNumCorrect, student.mcNumIncorrect);
+                    mcScoreString = "" + student.mcScore;
                 }
+                let studentData = [student.name.replace(/[^a-zA-Z0-9 ]/g, ''),
+                    student.team.tname.replace(/[^a-zA-Z0-9 ]/g, ''), mcCorrect, mcIncorrect, mcPercentCorrect, mcScoreString];
+                data.push(studentData);
             }
-            data.push(frqTeamData);
+        }
+
+        data.push([]);
+        if(pageState.frqExists) {
+            data.push(["Hands-On Scoreboard"]);
+            let frqHeader = ["", "Total"];
+            for(let problem of pageState.frqProblemMap) {
+                frqHeader.push(problem);
+            }
+            data.push(frqHeader);
+
+            for(let team of divisions[division].handsOnScoreboard) {
+                let frqTeamData = [team.tname.replace(/[^a-zA-Z0-9 ]/g, ''), ""+team.frqScore];
+
+                for(let frqResponse of team.frqResponses) {
+                    if(frqResponse > 0) {
+                        frqTeamData.push("" + (Math.abs(pageState.frqMaxPoints) - Math.abs(frqResponse-1)*Math.abs(pageState.frqIncorrectPenalty)));
+                    } else if(frqResponse == 0) {
+                        frqTeamData.push("0");
+                    } else {
+                        let tries = Math.abs(frqResponse);
+                        frqTeamData.push(""+tries);
+                    }
+                }
+                data.push(frqTeamData);
+            }
         }
     }
+
+
+
 
     exportCSV(data, ",", "scoreboard");
 }
@@ -3019,3 +3097,18 @@ function showResetSubmissions() {
 function closeResetSubmissions() {
     dom.resetConfirmationCnt.style.display = "none";
 }
+
+function showDeleteTeams() {
+    dom.deleteTeamsConfirmationCnt.style.display = "block";
+}
+
+function closeDeleteTeams() {
+    dom.deleteTeamsConfirmationCnt.style.display = "none";
+
+}
+
+function deleteTeams() {
+    ws.send("[\"deleteAllTeams\"]");
+    closeDeleteTeams();
+}
+

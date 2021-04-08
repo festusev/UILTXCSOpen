@@ -818,12 +818,20 @@ public class Template {
                     else postfix += "<p onclick='startDryRun()'>Start Dry Run</p>";
                 }
             }
-            postfix += "</div></li><img id='resetSubmissions' onclick='showResetSubmissions()' class='creatorOnly' src='/res/reset-update.svg'>" +
+            postfix += "</div></li><li id='resetDeleteCnt'><img id='resetSubmissions' class='creatorOnly' src='/res/reset-update.svg'>" +
+                    "<div id='resetDeleteDropdown'><p onclick='showResetSubmissions()'>Reset Submissions</p>" +
+                    "<p onclick='showDeleteTeams()'>Delete Teams</p></div>" +
                     "<div id='resetConfirmationCnt'><div class='center'><h1>Reset submissions?</h1><p>This will permanently " +
                     "reset your competition. All hands-on and written submissions will be cleared.</p>" +
                     "<button onclick='resetSubmissions()'>Yes, Reset</button>" +
                     "<button onclick='closeResetSubmissions()'>Cancel</button>" +
-                    "</div></div>";
+                    "</div></div>" +
+                    "<div id='deleteTeamsConfirmationCnt'><div class='center'><h1>Delete all teams?</h1><p>This will permanently " +
+                    "delete all teams from your competition. All hands-on and written submissions will be cleared.</p>" +
+                    "<button onclick='deleteTeams()'>Yes, Delete</button>" +
+                    "<button onclick='closeDeleteTeams()'>Cancel</button>" +
+                    "</div></div>" +
+                    "</li>";
         }
 
         if((!frqTest.exists || competitionStatus.frqBefore) && (!mcTest.exists || competitionStatus.mcBefore)) {
@@ -888,32 +896,20 @@ public class Template {
             return;
         }*/
 
-        if(!scoreboardSocketScheduled) {    // Schedule a timer to send the updated scoreboard to the connected sockets
+        /*if(!scoreboardSocketScheduled) {    // Schedule a timer to send the updated scoreboard to the connected sockets
             scoreboardSocketScheduled = true;
             Timer task = new Timer();
             task.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    HashMap<Short, ArrayList<CompetitionSocket>> maps = CompetitionSocket.competitions.get(cid);
-                    if(maps == null) return;
 
-                    for(short uid: maps.keySet()) {
-                        ArrayList<CompetitionSocket> sockets = maps.get(uid);
-                        if(sockets == null || sockets.size() <= 0) continue;
-
-                        User user = UserMap.getUserByUID(uid);
-                        UserStatus status = UserStatus.getCompeteStatus(user, competition);
-
-                        for(CompetitionSocket socket: sockets) {
-                            socket.sendLoadScoreboardData(status, user, competition);
-                        }
-                    }
-                    scoreboardSocketScheduled = false;
                     task.cancel();
                     task.purge();
                 }
             }, 1000);
-        }
+        }*/
+
+
 
         // This will store the json scoreboard information
         scoreboardData = new JsonArray();
@@ -940,7 +936,7 @@ public class Template {
             entryJSON.addProperty("tid", entry.tid);
             entryJSON.add("students", entry.getStudentJSON());
             entryJSON.addProperty("individual", entry.individual);
-            entryJSON.addProperty("division", entry.division.toString());
+            entryJSON.addProperty("division", entry.division);
             if(frqTest.exists) {
                 entryJSON.addProperty("frq", entry.frqScore);
                 entryJSON.add("frqResponses", entry.getFRQJSON());
@@ -991,7 +987,7 @@ public class Template {
                 "<button id='deleteButton' onclick='deleteTeamOrStudent()'>Yes, Delete</button>" +
                 "<button onclick='closeDeleteConfirmation()'>Cancel</button>" +
                 "</div></div>" +
-                "<div id='teamListCnt' class='showGeneral'><h1>Scoreboard</h1><div id='scoreboardNav'>" +
+                "<div id='teamListCnt' class='showGeneral'><h1>Scoreboard<select id='divisionSelector'></select></h1><div id='scoreboardNav'>" +
                 "<button onclick='showGeneralScoreboard()' id='showGeneralButton'>Teams</button>";
         if(mcTest.exists) scoreboardHTML += "<button onclick='showWrittenScoreboard()' id='showWrittenButton'>Written</button>";
         if(frqTest.exists) scoreboardHTML += "<button onclick='showHandsOnScoreboard()' id='showHandsOnButton'>Hands-On</button>";
@@ -999,21 +995,36 @@ public class Template {
                 "<button id='createTeam' onclick='showSignup()' class='creatorOnly chngButton'>Create Team</button>" +
                 "<a id='downloadScoreboard' onclick='downloadScoreboard()' class='creatorOnly'>Download Scoreboard</a>" +
                 "<a id='downloadRoster' onclick='downloadRoster()' class='creatorOnly'>Download Roster</a>" +
-                "<p id='uploadRoster' class='creatorOnly'><span>Upload Roster</span><img src='/res/upload.svg' onclick='uploadRosterProxy()'/></p><input id='uploadRosterProxy' type='file' style='display:none' onchange='uploadRoster()'/>" +
+                "<p id='uploadRoster' class='creatorOnly'><span>Upload Roster</span><img src='/res/upload.svg' onclick='uploadRosterProxy()'/>" +
+                "</p><input id='uploadRosterProxy' type='file' style='display:none' onchange='uploadRoster()'/>" +
                 "<div id='generalScoreboard'><table id='teamList'></table></div>";
         if(mcTest.exists) scoreboardHTML += "<div id='writtenScoreboard'><table id='writtenScoreboardTable'></table></div>";
         if(frqTest.exists) scoreboardHTML += "<div id='handsOnScoreboard'><table id='handsOnScoreboardTable'></table></div>";
         scoreboardHTML += "</div><div id='teamCnt'><h1 id='openTeamName'></h1>" +
-                "<div id='teamControls'><img class='creatorOnly editTeam' id='deleteTeam' onclick='Team.showDeleteConfirmation()' src='/res/console/delete.svg'>" +
-                "<img class='creatorOnly' id='editSaveTeam' onclick='Team.editSaveTeam()' src='/res/console/edit.svg'></div>" +
-                "<select id='teamDivision'><option value='A1'>1A</option><option value='A2'>2A</option><option value='A3'>3A</option>" +
-                "<option value='A4'>4A</option><option value='A5'>5A</option><option value='A6'>6A</option></select>" +
+                "<div id='teamControls' class='creatorOnly'><img class='editTeam' id='deleteTeam' onclick='Team.showDeleteConfirmation()' src='/res/console/delete.svg'>" +
+                "<img id='editSaveTeam' onclick='Team.editSaveTeam()' src='/res/console/edit.svg'></div>" +
+                "<span class='label'>Division:</span><input id='teamDivision' maxlength='20'></input>" +
                 "<div id='openTeamFeedbackCnt'></div><p class='creatorOnly'><span class='label'>Code:</span><span id='openTeamCode'></span>" +
                 "<br><span class='label'>Individual:</span><span><input type='checkbox' id='openTeamIsIndividual'></span></p>";
         if(mcTest.exists) scoreboardHTML += "<p><span class='label'>Written:</span><span id='openTeamWritten'></span></p>";
         if(frqTest.exists) scoreboardHTML += "<p><span class='label'>Hands-On:</span><span id='openTeamHandsOn'></span>";
         scoreboardHTML += "<h3>Competitors</h3><table id='openPrimariesList'></table><button id='addPrimaryCompetitor' " +
                 "class='addCompetitor' onclick='Team.addPrimaryCompetitor()'>+</button></div></div>";
+
+        HashMap<Short, ArrayList<CompetitionSocket>> maps = CompetitionSocket.competitions.get(cid);
+        if(maps == null) return;
+
+        for(short uid: maps.keySet()) {
+            ArrayList<CompetitionSocket> sockets = maps.get(uid);
+            if(sockets == null || sockets.size() <= 0) continue;
+
+            User user = UserMap.getUserByUID(uid);
+            UserStatus status = UserStatus.getCompeteStatus(user, competition);
+
+            for(CompetitionSocket socket: sockets) {
+                socket.sendLoadScoreboardData(status, user, competition);
+            }
+        }
     }
 
     /***
@@ -1025,6 +1036,9 @@ public class Template {
 
         Connection conn = Conn.getConnection();
         PreparedStatement stmt;
+        if(conn == null) {
+            System.out.println("Error deleting");
+        }
         try {
             stmt = conn.prepareStatement("DELETE FROM `c"+this.cid+"` WHERE tid=?");
             stmt.setShort(1,entry.tid);
@@ -1052,8 +1066,6 @@ public class Template {
             competition.frqSubmissions.removeIf(s -> (s.entry.tid == entry.tid));
         } catch (SQLException e) {
             e.printStackTrace();
-        } finally {
-            updateScoreboard();
         }
     }
 }

@@ -180,7 +180,7 @@ public class Competition {
                     "`mc` TEXT NOT NULL," +
                     "`frqResponses` MEDIUMTEXT NOT NULL," +
                     "`individual` BOOLEAN NOT NULL DEFAULT FALSE," +
-                    "`division` CHAR(2) NOT NULL DEFAULT 'A6'," +
+                    "`division` VARCHAR(20) NOT NULL DEFAULT 'A6'," +
                     "PRIMARY KEY (`tid`))");
             System.out.println(stmt);
             stmt.executeUpdate();

@@ -137,7 +137,7 @@
 }
 
 /* Dropdown Content (Hidden by Default) */
-#sectionControlsList {
+#sectionControlsList, #resetDeleteDropdown {
     display: none;
     position: absolute;
     background-color: #ffffff;
@@ -147,8 +147,21 @@
     margin-top: 8px;
 }
 
+#resetDeleteCnt {
+    box-sizing: border-box;
+}
+
+#resetDeleteDropdown {
+    margin-right: 0;
+    top: 2rem;
+}
+
+#resetDeleteCnt img {
+    margin: 0;
+}
+
 /* Links inside the dropdown */
-#sectionControlsList p {
+#sectionControlsList p, #resetDeleteDropdown p {
     padding: 12px 16px;
     text-decoration: none;
     display: block;
@@ -174,15 +187,20 @@
 #sectionControls:hover #sectionControlsButton {
     background-color: var(--light-gray);
 }
+
+#resetDeleteDropdown p:hover {background-color: var(--light-gray);}
+
+#resetDeleteCnt:hover #resetDeleteDropdown {
+    display: block;
+}
+
 #resetSubmissions {
     height: 1.4rem;
     float:right;
     margin:0.5rem 1rem;
     cursor: pointer;
 }
-#resetConfirmationCnt {
 
-}
 #scoreboardColumn {
     display: flex;
 }
@@ -211,7 +229,11 @@
 #teamList .right {
     width: 14%;
 }
-#selectStudent, #selectGlobalTeam, #deleteConfirmationCnt, #resetConfirmationCnt {
+#teamListCnt table span {
+    width: 100%;
+    display: table;
+}
+#selectStudent, #selectGlobalTeam, #deleteConfirmationCnt, #resetConfirmationCnt, #deleteTeamsConfirmationCnt {
     position: absolute;
     left: 0;
     top: 0;
@@ -222,7 +244,7 @@
     display: none;
     overflow: auto;
 }
-#selectStudent .center, #selectGlobalTeam .center, #deleteConfirmationCnt .center, #resetConfirmationCnt .center {
+#selectStudent .center, #selectGlobalTeam .center, #deleteConfirmationCnt .center, #resetConfirmationCnt .center, #deleteTeamsConfirmationCnt .center {
     background-color: white;
     box-shadow: var(--shadow);
     width: 50rem;
@@ -308,6 +330,12 @@
     font-weight: bold;
     margin-bottom: 5px;
 }
+#divisionSelector {
+    font-size: 1rem;
+    cursor: pointer;
+    margin-left: 1rem;
+    vertical-align: middle;
+}
 #teamListCnt {
     flex-grow: 1;
     display: block;
@@ -349,8 +377,8 @@
     display: inline-block;
 }
 #teamCnt.editing .team .editTeam {
-    display: block;
-    padding-left: 0;
+    display: table-cell;
+    padding-right: 1rem;
 }
 
 #openTeamName {
@@ -372,7 +400,7 @@
     float: right;
     cursor: pointer;
 }
-#deleteConfirmationCnt .center, #resetConfirmationCnt .center {
+#deleteConfirmationCnt .center, #resetConfirmationCnt .center, #deleteTeamsConfirmationCnt .center {
     height:unset;
     width: 25rem;
     top:50%;
@@ -381,26 +409,26 @@
     display: block;
     margin: 0;
 }
-#deleteMessage, #resetConfirmationCnt h1 {
+#deleteMessage, #resetConfirmationCnt h1, #deleteTeamsConfirmationCnt h1 {
     text-align: center;
     color: var(--sec-col);
     font-weight: bold;
 }
-#deleteConfirmationCnt button, #resetConfirmationCnt button {
+#deleteConfirmationCnt button, #resetConfirmationCnt button, #deleteTeamsConfirmationCnt button {
     width: 100%;
     background-color: white;
     margin-top: 1rem;
     border: none;
     cursor: pointer;
 }
-#deleteConfirmationCnt #deleteButton,  #resetConfirmationCnt button:first-of-type {
+#deleteConfirmationCnt #deleteButton,  #resetConfirmationCnt button:first-of-type, #deleteTeamsConfirmationCnt button:first-of-type {
     padding: 0.7rem 0;
     background-color: var(--warn-col);
     color: white;
     font-weight: bold;
 }
 #teamControls {
-    display: inline-block;
+    display: inline-block!important;;
     width: 50%;
     vertical-align: top;
     height: 2.3rem;
@@ -446,7 +474,7 @@
     display: none!important;
 }
 .isCreator .creatorOnly {
-    display: initial!important;
+    display: unset!important;
 }
 #createTeam {
     margin-left: 1rem;
@@ -986,14 +1014,13 @@
     background-color: var(--sec-light) !important;
 }
 #scoreboardColumn th{
-    padding:8px 2rem;
+    padding:8px 5px 8px 2rem;
     text-align: left;
     font-weight:bold;
     white-space: nowrap;
 }
 #scoreboardColumn td{
-    padding:13px 2rem;
-    overflow: hidden;
+    padding:13px 5px 13px 2rem;
     text-overflow: ellipsis;
 }
 #scoreboardColumn .right {

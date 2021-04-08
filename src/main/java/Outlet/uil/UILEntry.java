@@ -11,7 +11,7 @@ import static Outlet.Conn.getConnection;
 
 public class UILEntry {
     public String tname;
-    public Division division;
+    public String division;
     public HashMap<Short, StudentType> uids; // The uids of all students, including the alternate
     public short tid;
     public String school = "";  // Specified by the students
@@ -32,15 +32,6 @@ public class UILEntry {
         ALTERNATE
     }
 
-    enum Division {
-        A1,
-        A2,
-        A3,
-        A4,
-        A5,
-        A6
-    }
-
     /***
      * Used when creating a new team.
      * @param name
@@ -50,7 +41,7 @@ public class UILEntry {
      */
     public UILEntry(String name, String hashedPassword, Competition competition, Student student) {
         this.tname =  name;
-        this.division = Division.A6;
+        this.division = "6A";
         if(student.teacherId >=0) {
             this.school = TeacherMap.getByUID(student.teacherId).school;
         }
@@ -79,7 +70,7 @@ public class UILEntry {
     public UILEntry(String name, String hashedPassword, Competition competition) {
         this.tname =  name;
         this.school = "No School";
-        this.division = Division.A6;
+        this.division = "6A";
 
         this.password = hashedPassword;
         this.competition = competition;
@@ -97,7 +88,7 @@ public class UILEntry {
 
     public UILEntry(ResultSet rs, Competition comp) throws SQLException {
         tname = rs.getString("name");
-        division = Division.valueOf(rs.getString("division"));
+        division = rs.getString("division");
         tid = rs.getShort("tid");
         competition = comp;
         password = rs.getString("password");
@@ -332,7 +323,7 @@ public class UILEntry {
                 stmt.setString(3, "[]");
             }
             stmt.setBoolean(4, individual);
-            stmt.setString(5, division.toString());
+            stmt.setString(5, division);
             stmt.setShort(6, tid);
             stmt.executeUpdate();
 
@@ -369,7 +360,7 @@ public class UILEntry {
                 stmt.setString(5, "{}");
             }
             stmt.setBoolean(6,individual);
-            stmt.setString(7,division.toString());
+            stmt.setString(7,division);
             stmt.executeUpdate();
 
             stmt = conn.prepareStatement("SELECT tid FROM `c"+competition.template.cid+"` WHERE name=?");

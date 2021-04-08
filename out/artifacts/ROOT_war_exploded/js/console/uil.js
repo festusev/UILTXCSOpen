@@ -60,7 +60,8 @@ var pageState = {
     isDeletingTeam: false,
     deletingObject: null,
     saveTeamCallbacks: [],
-    frqSortMethod: null // The sort method
+    frqSortMethod: null,
+    viewingDivision: null // The division we are viewing
 };
 var config = {
     TEXT: {
@@ -148,7 +149,9 @@ var config = {
         uploadFileProxy: "uploadFileProxy",
         uploadRosterProxy: "uploadRosterProxy",
         uploadRosterBox: "uploadRosterBox",
-        resetConfirmationCnt: "resetConfirmationCnt"
+        resetConfirmationCnt: "resetConfirmationCnt",
+        divisionSelector: "divisionSelector",
+        deleteTeamsConfirmationCnt: "deleteTeamsConfirmationCnt"
     },
     CLASSES: {
         columns: "column",
@@ -288,6 +291,7 @@ var config = {
             }
             frqSubmissions = [];
             frqSubmissionMap = {};
+            dom.frqSubmissionsTable.innerHTML = "";
             var tr = document.createElement("tr");
             tr.id = "frqSubmissionsTr";
             var problemTH = document.createElement("th");
@@ -394,9 +398,7 @@ var config = {
             if (pageState.openTeam)
                 oldOpenTeamTID = pageState.openTeam.tid; // The old team that was open. May be null
             teams = {};
-            writtenTestScoreboard = [];
-            handsOnScoreboard = [];
-            teamScoreboard = [];
+            divisions = {};
             pageState.isCreator = response.isCreator;
             pageState.mcExists = response.mcExists;
             pageState.mcCorrectPoints = response.mcCorrectPoints;
@@ -412,19 +414,6 @@ var config = {
             if (pageState.isCreator) {
                 document.body.classList.add("isCreator");
             }
-            var generalFragment = document.createDocumentFragment(); // A collection of table row elements for the general table
-            var handsOnFragment = document.createDocumentFragment(); // A collection of table rows for the hands-on table
-            dom.teamList.innerHTML = "";
-            // First, add in the table headers
-            var headers = "<th>Team</th>";
-            if (pageState.mcExists)
-                headers += "<th class='right'>Written</th>";
-            if (pageState.frqExists)
-                headers += "<th class='right'>Hands-On</th>";
-            headers += "<th class='right'>Total</th>";
-            var headerDOM = document.createElement("tr");
-            headerDOM.innerHTML = headers;
-            generalFragment.appendChild(headerDOM);
             // These datapoints are displayed on the right bar if the user is an admin
             var numWrittenSubmitted = 0;
             var writtenSum = 0; // Sum of written scores
@@ -432,9 +421,17 @@ var config = {
             var numStudents = 0;
             var bottomRank = 0; // If they are a signed-up student, response.tid is specified and we calculate their bottom rank
             var bottomOutOf = response.teams.length;
+            dom.divisionSelector.innerHTML = "";
+            dom.divisionSelector.onchange = function () {
+                selectDivision(dom.divisionSelector.value);
+            };
+            var divisionsSorted = [];
             var selectStudentFragment = document.createDocumentFragment(); // The list of students that goes into the select student window
             for (var i = 0, j = response.teams.length; i < j; i++) {
                 var teamData = response.teams[i];
+                if (!divisions[teamData.division]) {
+                    divisionsSorted.push(addDivision(teamData.division));
+                }
                 var team = new Team(teamData, response.tempUsers);
                 if (team.tid == oldOpenTeamTID)
                     newToggleTeam = team;
@@ -444,7 +441,7 @@ var config = {
                     team.code = response.teamCodes[i];
                 }
                 if (!team.individual)
-                    generalFragment.appendChild(team.dom.tr);
+                    divisions[team.division].teamDOM.appendChild(team.dom.tr);
                 var _loop_1 = function (student) {
                     var tr = document.createElement("tr");
                     tr.classList.add("_" + student.uid);
@@ -465,58 +462,54 @@ var config = {
                     var student = _a[_i];
                     _loop_1(student);
                 }
-                /*if (pageState.writtenSpecialistExists) {
-                    let tr = document.createElement("tr");
-                    tr.classList.add("_"+team.alt.uid);
-                    tr.onclick = function () {
-                        Team.selectStudent(team.alt)
-                    };
-                    tr.innerHTML = "<td>" + team.alt.name + "</td>";
-                    selectStudentFragment.appendChild(tr);
-
-                    if(team.alt.mcScore) {
-                        numWrittenSubmitted++;
-                        writtenSum += team.alt.mcScore;
-                    }
-                    numStudents++;
-                }*/
                 handsOnSum += team.frqScore;
             }
-            if (pageState.mcExists) {
-                writtenTestScoreboard.sort(function (s1, s2) {
-                    var s1IsUndefined = s1.mcScore == null; //typeof s1.mcScore == "undefined";
-                    var s2IsUndefined = s2.mcScore == null; //typeof s2.mcScore == "undefined";
-                    if (s1IsUndefined && s2IsUndefined)
-                        return 0;
-                    else if (s1IsUndefined && !s2IsUndefined)
-                        return 1;
-                    else if (!s1IsUndefined && s2IsUndefined)
-                        return -1;
-                    if (s1.mcScore == s2.mcScore) { // Tiebreak
-                        return s2.mcNumCorrect / (s2.mcNumIncorrect + s2.mcNumCorrect) - s1.mcNumCorrect / (s1.mcNumIncorrect + s1.mcNumCorrect);
-                    }
-                    else if (s1.mcScore < s2.mcScore)
-                        return 1;
-                    else
-                        return -1;
-                });
-                var writtenTestFragment = document.createDocumentFragment();
-                for (var _b = 0, writtenTestScoreboard_1 = writtenTestScoreboard; _b < writtenTestScoreboard_1.length; _b++) {
-                    var student = writtenTestScoreboard_1[_b];
-                    if (student.type == StudentType.ALTERNATE)
-                        continue;
-                    writtenTestFragment.appendChild(student.dom.tr);
-                }
-                dom.writtenScoreboardTable.innerHTML = "<tr><th>Name</th><th>Team</th><th>Correct</th><th>Incorrect</th><th>% Correct</th><th>Total</th></tr>";
-                dom.writtenScoreboardTable.appendChild(writtenTestFragment);
+            divisionsSorted.sort(function (d1, d2) {
+                return d1.value.localeCompare(d2.value);
+            });
+            var firstDivision = divisionsSorted[0] ? divisionsSorted[0].value : ""; // The first division to show
+            for (var _b = 0, divisionsSorted_1 = divisionsSorted; _b < divisionsSorted_1.length; _b++) {
+                var divisionOption = divisionsSorted_1[_b];
+                dom.divisionSelector.appendChild(divisionOption);
             }
-            if (pageState.frqExists) {
-                handsOnScoreboard.sort(function (t1, t2) {
-                    return t2.frqScore - t1.frqScore;
-                });
-                for (var _c = 0, handsOnScoreboard_1 = handsOnScoreboard; _c < handsOnScoreboard_1.length; _c++) {
-                    var team = handsOnScoreboard_1[_c];
-                    handsOnFragment.appendChild(team.dom.frqTR);
+            for (var division in divisions) {
+                if (pageState.mcExists) {
+                    divisions[division].writtenScoreboard.sort(function (s1, s2) {
+                        var s1IsUndefined = s1.mcScore == null; //typeof s1.mcScore == "undefined";
+                        var s2IsUndefined = s2.mcScore == null; //typeof s2.mcScore == "undefined";
+                        if (s1IsUndefined && s2IsUndefined)
+                            return 0;
+                        else if (s1IsUndefined && !s2IsUndefined)
+                            return 1;
+                        else if (!s1IsUndefined && s2IsUndefined)
+                            return -1;
+                        if (s1.mcScore == s2.mcScore) { // Tiebreak
+                            return s2.mcNumCorrect / (s2.mcNumIncorrect + s2.mcNumCorrect) - s1.mcNumCorrect / (s1.mcNumIncorrect + s1.mcNumCorrect);
+                        }
+                        else if (s1.mcScore < s2.mcScore)
+                            return 1;
+                        else
+                            return -1;
+                    });
+                    var writtenTestFragment = document.createDocumentFragment();
+                    for (var _c = 0, _d = divisions[division].writtenScoreboard; _c < _d.length; _c++) {
+                        var student = _d[_c];
+                        if (student.type == StudentType.ALTERNATE)
+                            continue;
+                        writtenTestFragment.appendChild(student.dom.tr);
+                    }
+                    divisions[division].writtenDOM.appendChild(writtenTestFragment);
+                }
+                if (pageState.frqExists) {
+                    divisions[division].handsOnScoreboard.sort(function (t1, t2) {
+                        return t2.frqScore - t1.frqScore;
+                    });
+                    var handsOnFragment = document.createDocumentFragment();
+                    for (var _e = 0, _f = divisions[division].handsOnScoreboard; _e < _f.length; _e++) {
+                        var team = _f[_e];
+                        handsOnFragment.appendChild(team.dom.frqTR);
+                    }
+                    divisions[division].handsOnDOM.appendChild(handsOnFragment);
                 }
             }
             if (response.isCreator) {
@@ -542,20 +535,8 @@ var config = {
                 dom.bottomOutOf.innerText = bottomOutOf;
             }
             dom.teamList.innerHTML = "";
-            dom.teamList.appendChild(generalFragment);
-            if (pageState.frqExists) {
-                dom.handsOnScoreboardTable.innerHTML = "";
-                var handsOnHeader = document.createElement("tr");
-                handsOnHeader.innerHTML = "<th></th><th>Total</th>";
-                for (var _d = 0, _e = response.frqProblemMap; _d < _e.length; _d++) {
-                    var problem = _e[_d];
-                    var problemTH = document.createElement("th");
-                    problemTH.innerText = problem;
-                    handsOnHeader.appendChild(problemTH);
-                }
-                dom.handsOnScoreboardTable.appendChild(handsOnHeader);
-                dom.handsOnScoreboardTable.appendChild(handsOnFragment);
-            }
+            dom.writtenScoreboardTable.innerHTML = "";
+            dom.handsOnScoreboardTable.innerHTML = "";
             if (pageState.isCreator) {
                 var selectStudentFromClassFragment = document.createDocumentFragment(); // Add in the students from their class
                 var _loop_2 = function (classStudent) {
@@ -572,8 +553,8 @@ var config = {
                     tr.innerHTML = "<td>" + student.name + "</td>";
                     selectStudentFromClassFragment.appendChild(tr);
                 };
-                for (var _f = 0, _g = response.studentsInClass; _f < _g.length; _f++) {
-                    var classStudent = _g[_f];
+                for (var _g = 0, _h = response.studentsInClass; _g < _h.length; _g++) {
+                    var classStudent = _h[_g];
                     _loop_2(classStudent);
                 }
                 dom.selectStudentFromClass.innerHTML = "";
@@ -581,6 +562,18 @@ var config = {
                 dom.selectSignedUpStudent.innerHTML = "";
                 dom.selectSignedUpStudent.appendChild(selectStudentFragment);
             }
+            if (pageState.viewingDivision != null && divisions[pageState.viewingDivision]) {
+                for (var _j = 0, divisionsSorted_2 = divisionsSorted; _j < divisionsSorted_2.length; _j++) {
+                    var divisionOption = divisionsSorted_2[_j];
+                    if (divisionOption.value == pageState.viewingDivision) {
+                        divisionOption.selected = true;
+                        break;
+                    }
+                }
+                selectDivision(pageState.viewingDivision);
+            }
+            else
+                selectDivision(firstDivision);
             var oldEditingTeam = pageState.editingTeam;
             Team.toggleTeam(newToggleTeam, false);
             if (oldEditingTeam)
@@ -694,6 +687,52 @@ var config = {
         }
     }
 };
+function addDivision(division) {
+    // First, add in the table headers
+    var headers = "<th>Team</th>";
+    if (pageState.mcExists)
+        headers += "<th class='right'>Written</th>";
+    if (pageState.frqExists)
+        headers += "<th class='right'>Hands-On</th>";
+    headers += "<th class='right'>Total</th>";
+    var generalFragment = document.createElement("span");
+    // let generalFragment = document.createDocumentFragment();   // A collection of table row elements for the general table
+    var headerDOM = document.createElement("tr");
+    headerDOM.innerHTML = headers;
+    generalFragment.appendChild(headerDOM);
+    divisions[division] = {
+        writtenScoreboard: [],
+        handsOnScoreboard: [],
+        teamScoreboard: [],
+        handsOnDOM: null,
+        writtenDOM: null,
+        teamDOM: generalFragment
+    };
+    var divisionOption = document.createElement("option");
+    divisionOption.innerText = division;
+    divisionOption.value = division;
+    if (pageState.mcExists) {
+        var writtenTestFragment = document.createElement("span"); // document.createDocumentFragment();
+        var writtenTestTR = document.createElement("tr");
+        writtenTestTR.innerHTML = "<th>Name</th><th>Team</th><th>Correct</th><th>Incorrect</th><th>% Correct</th><th>Total</th>";
+        writtenTestFragment.appendChild(writtenTestTR);
+        divisions[division].writtenDOM = writtenTestFragment;
+    }
+    if (pageState.frqExists) {
+        var handsOnFragment = document.createElement("span"); // document.createDocumentFragment();    // A collection of table rows for the hands-on table
+        var handsOnHeader = document.createElement("tr");
+        handsOnHeader.innerHTML = "<th></th><th>Total</th>";
+        for (var _i = 0, _a = pageState.frqProblemMap; _i < _a.length; _i++) {
+            var problem = _a[_i];
+            var problemTH = document.createElement("th");
+            problemTH.innerText = problem;
+            handsOnHeader.appendChild(problemTH);
+        }
+        handsOnFragment.appendChild(handsOnHeader);
+        divisions[division].handsOnDOM = handsOnFragment;
+    }
+    return divisionOption;
+}
 var dom = {
     cached: {},
     getHelper: function (id) {
@@ -777,6 +816,8 @@ var dom = {
     get uploadRosterBox() { return this.getHelper(config.IDs.uploadRosterBox); },
     get resetConfirmationCnt() { return this.getHelper(config.IDs.resetConfirmationCnt); },
     get teamDivision() { return this.getHelper(config.IDs.teamDivision); },
+    get divisionSelector() { return this.getHelper(config.IDs.divisionSelector); },
+    get deleteTeamsConfirmationCnt() { return this.getHelper(config.IDs.deleteTeamsConfirmationCnt); },
     classes: {
         cached: {},
         getHelper: function (className) {
@@ -950,15 +991,6 @@ var Student = /** @class */ (function () {
     Student.students = {};
     return Student;
 }());
-var Division;
-(function (Division) {
-    Division[Division["A1"] = 0] = "A1";
-    Division[Division["A2"] = 1] = "A2";
-    Division[Division["A3"] = 2] = "A3";
-    Division[Division["A4"] = 3] = "A4";
-    Division[Division["A5"] = 4] = "A5";
-    Division[Division["A6"] = 5] = "A6";
-})(Division || (Division = {}));
 var frqSubmissions = [];
 var frqSubmissionMap = {};
 var FRQSubmission = /** @class */ (function () {
@@ -1024,9 +1056,7 @@ var FRQSubmission = /** @class */ (function () {
     };
     return FRQSubmission;
 }());
-var writtenTestScoreboard = []; // The list of students sorted by their mc score
-var handsOnScoreboard = []; // The list of teams sorted by their hands-on score
-var teamScoreboard = [];
+var divisions;
 var teams = {}; // Maps tids to their team
 var Team = /** @class */ (function () {
     function Team(data, tempData) {
@@ -1043,8 +1073,9 @@ var Team = /** @class */ (function () {
                     student.password = temp[1];
                 }
             }
-            if (pageState.mcExists)
-                writtenTestScoreboard.push(student);
+            if (pageState.mcExists) {
+                divisions[thisTeam.division].writtenScoreboard.push(student);
+            }
             return student;
         }
         var thisTeam = this;
@@ -1053,9 +1084,9 @@ var Team = /** @class */ (function () {
         this.school = data.school;
         this.tid = data.tid;
         this.students = [];
-        this.division = Division[data.division];
+        this.division = data.division;
         if (pageState.frqExists && !this.individual)
-            handsOnScoreboard.push(this);
+            divisions[thisTeam.division].handsOnScoreboard.push(this);
         for (var _i = 0, _a = data.students; _i < _a.length; _i++) {
             var studentData = _a[_i];
             this.students.push(createStudent(studentData));
@@ -1083,7 +1114,7 @@ var Team = /** @class */ (function () {
             }
         }
         this.frqResponses = data.frqResponses;
-        teamScoreboard.push(this);
+        divisions[this.division].teamScoreboard.push(this);
         teams["" + this.tid] = this;
         this.render();
     }
@@ -1366,7 +1397,7 @@ var Team = /** @class */ (function () {
             dom.openTeamIsIndividual.disabled = true;
             dom.teamDivision.disabled = true;
         }
-        dom.teamDivision.options[team.division.valueOf()].selected = true;
+        dom.teamDivision.value = team.division;
         if (pageState.mcExists)
             dom.openTeamWritten.innerText = team.mcScore + " pts";
         if (pageState.frqExists)
@@ -1528,6 +1559,18 @@ $(document).ready(function () {
     }
     getWebSocket(window.location.host + "/console/sockets/c/" + cid, config.SOCKET_FUNCTIONS);
 })();
+// Shows the scoreboard for a certain division
+function selectDivision(division) {
+    if (pageState.openTeam != null)
+        Team.toggleTeam(null, false);
+    pageState.viewingDivision = division;
+    dom.teamList.innerHTML = "";
+    dom.teamList.appendChild(divisions[division].teamDOM);
+    dom.writtenScoreboardTable.innerHTML = "";
+    dom.writtenScoreboardTable.appendChild(divisions[division].writtenDOM);
+    dom.handsOnScoreboardTable.innerHTML = "";
+    dom.handsOnScoreboardTable.appendChild(divisions[division].handsOnDOM);
+}
 // Starts the load scoreboard
 // @ts-ignore
 function requestLoadScoreboard() {
@@ -1720,25 +1763,30 @@ function createTeamHelper(tname, showErrors, callback) {
             else if (result["status"] === "success") {
                 if (pageState.isCreator) { // If they are the creator, add in the new team
                     var newTeam = void 0;
+                    var division = pageState.viewingDivision;
+                    if (!division) {
+                        division = "6A";
+                        addDivision("6A");
+                    }
                     if (pageState.frqExists) {
                         var frqResponses = [];
                         frqResponses.length = pageState.frqProblemMap.length;
                         frqResponses.fill(0);
                         newTeam = new Team({
                             tname: result["tname"], school: "", tid: result["tid"],
-                            students: [], frq: 0, frqResponses: frqResponses, individual: false, division: "A6"
+                            students: [], frq: 0, frqResponses: frqResponses, individual: false, division: division
                         });
                     }
                     else {
                         newTeam = new Team({
                             tname: result["tname"], school: "", tid: result["tid"],
-                            students: [], frq: 0, individual: false, division: "A6"
+                            students: [], frq: 0, individual: false, division: division
                         });
                     }
                     newTeam.code = result["code"];
-                    dom.teamList.appendChild(newTeam.dom.tr);
+                    divisions[newTeam.division].teamDOM.appendChild(newTeam.dom.tr);
                     if (pageState.frqExists)
-                        dom.handsOnScoreboardTable.appendChild(newTeam.dom.frqTR);
+                        divisions[newTeam.division].handsOnDOM.appendChild(newTeam.dom.frqTR);
                     if (callback)
                         callback(newTeam);
                 }
@@ -2577,71 +2625,75 @@ function getPercentageCorrect(correct, incorrect) {
 function downloadScoreboard() {
     if (!pageState.isCreator)
         return;
-    var data = [["Name", "Written", "Hands-On", "Total"]];
-    for (var _i = 0, teamScoreboard_1 = teamScoreboard; _i < teamScoreboard_1.length; _i++) {
-        var team = teamScoreboard_1[_i];
-        var totalScore = 0;
-        var teamData = [team.tname.replace(/[^a-zA-Z0-9 ]/g, '')];
+    var data = [];
+    for (var division in divisions) {
+        data.push([division]);
+        data.push(["Name", "Written", "Hands-On", "Total"]);
+        for (var _i = 0, _a = divisions[division].teamScoreboard; _i < _a.length; _i++) {
+            var team = _a[_i];
+            var totalScore = 0;
+            var teamData = [team.tname.replace(/[^a-zA-Z0-9 ]/g, '')];
+            if (pageState.mcExists) {
+                totalScore += team.mcScore;
+                teamData.push("" + team.mcScore);
+            }
+            if (pageState.frqExists) {
+                totalScore += team.frqScore;
+                teamData.push("" + team.frqScore);
+            }
+            teamData.push("" + totalScore);
+            data.push(teamData);
+        }
+        data.push([]);
         if (pageState.mcExists) {
-            totalScore += team.mcScore;
-            teamData.push("" + team.mcScore);
+            data.push(["Written Scoreboard"]);
+            data.push(["Name", "Team", "Correct", "Incorrect", "% Correct", "Total"]);
+            for (var _b = 0, _c = divisions[division].writtenScoreboard; _b < _c.length; _b++) {
+                var student = _c[_b];
+                if (student.type == StudentType.ALTERNATE)
+                    continue;
+                var mcCorrect = "";
+                var mcIncorrect = "";
+                var mcPercentCorrect = "";
+                var mcScoreString = "Not Taken";
+                if (student.mcScore != null) {
+                    mcCorrect = "" + student.mcNumCorrect;
+                    mcIncorrect = "" + student.mcNumIncorrect;
+                    mcPercentCorrect = "" + getPercentageCorrect(student.mcNumCorrect, student.mcNumIncorrect);
+                    mcScoreString = "" + student.mcScore;
+                }
+                var studentData = [student.name.replace(/[^a-zA-Z0-9 ]/g, ''),
+                    student.team.tname.replace(/[^a-zA-Z0-9 ]/g, ''), mcCorrect, mcIncorrect, mcPercentCorrect, mcScoreString];
+                data.push(studentData);
+            }
         }
+        data.push([]);
         if (pageState.frqExists) {
-            totalScore += team.frqScore;
-            teamData.push("" + team.frqScore);
-        }
-        teamData.push("" + totalScore);
-        data.push(teamData);
-    }
-    data.push([]);
-    if (pageState.mcExists) {
-        data.push(["Written Scoreboard"]);
-        data.push(["Name", "Team", "Correct", "Incorrect", "% Correct", "Total"]);
-        for (var _a = 0, writtenTestScoreboard_2 = writtenTestScoreboard; _a < writtenTestScoreboard_2.length; _a++) {
-            var student = writtenTestScoreboard_2[_a];
-            if (student.type == StudentType.ALTERNATE)
-                continue;
-            var mcCorrect = "";
-            var mcIncorrect = "";
-            var mcPercentCorrect = "";
-            var mcScoreString = "Not Taken";
-            if (student.mcScore != null) {
-                mcCorrect = "" + student.mcNumCorrect;
-                mcIncorrect = "" + student.mcNumIncorrect;
-                mcPercentCorrect = "" + getPercentageCorrect(student.mcNumCorrect, student.mcNumIncorrect);
-                mcScoreString = "" + student.mcScore;
+            data.push(["Hands-On Scoreboard"]);
+            var frqHeader = ["", "Total"];
+            for (var _d = 0, _e = pageState.frqProblemMap; _d < _e.length; _d++) {
+                var problem = _e[_d];
+                frqHeader.push(problem);
             }
-            var studentData = [student.name.replace(/[^a-zA-Z0-9 ]/g, ''),
-                student.team.tname.replace(/[^a-zA-Z0-9 ]/g, ''), mcCorrect, mcIncorrect, mcPercentCorrect, mcScoreString];
-            data.push(studentData);
-        }
-    }
-    data.push([]);
-    if (pageState.frqExists) {
-        data.push(["Hands-On Scoreboard"]);
-        var frqHeader = ["", "Total"];
-        for (var _b = 0, _c = pageState.frqProblemMap; _b < _c.length; _b++) {
-            var problem = _c[_b];
-            frqHeader.push(problem);
-        }
-        data.push(frqHeader);
-        for (var _d = 0, handsOnScoreboard_2 = handsOnScoreboard; _d < handsOnScoreboard_2.length; _d++) {
-            var team = handsOnScoreboard_2[_d];
-            var frqTeamData = [team.tname.replace(/[^a-zA-Z0-9 ]/g, ''), "" + team.frqScore];
-            for (var _e = 0, _f = team.frqResponses; _e < _f.length; _e++) {
-                var frqResponse = _f[_e];
-                if (frqResponse > 0) {
-                    frqTeamData.push("" + (Math.abs(pageState.frqMaxPoints) - Math.abs(frqResponse - 1) * Math.abs(pageState.frqIncorrectPenalty)));
+            data.push(frqHeader);
+            for (var _f = 0, _g = divisions[division].handsOnScoreboard; _f < _g.length; _f++) {
+                var team = _g[_f];
+                var frqTeamData = [team.tname.replace(/[^a-zA-Z0-9 ]/g, ''), "" + team.frqScore];
+                for (var _h = 0, _j = team.frqResponses; _h < _j.length; _h++) {
+                    var frqResponse = _j[_h];
+                    if (frqResponse > 0) {
+                        frqTeamData.push("" + (Math.abs(pageState.frqMaxPoints) - Math.abs(frqResponse - 1) * Math.abs(pageState.frqIncorrectPenalty)));
+                    }
+                    else if (frqResponse == 0) {
+                        frqTeamData.push("0");
+                    }
+                    else {
+                        var tries = Math.abs(frqResponse);
+                        frqTeamData.push("" + tries);
+                    }
                 }
-                else if (frqResponse == 0) {
-                    frqTeamData.push("0");
-                }
-                else {
-                    var tries = Math.abs(frqResponse);
-                    frqTeamData.push("" + tries);
-                }
+                data.push(frqTeamData);
             }
-            data.push(frqTeamData);
         }
     }
     exportCSV(data, ",", "scoreboard");
@@ -2747,4 +2799,14 @@ function showResetSubmissions() {
 }
 function closeResetSubmissions() {
     dom.resetConfirmationCnt.style.display = "none";
+}
+function showDeleteTeams() {
+    dom.deleteTeamsConfirmationCnt.style.display = "block";
+}
+function closeDeleteTeams() {
+    dom.deleteTeamsConfirmationCnt.style.display = "none";
+}
+function deleteTeams() {
+    ws.send("[\"deleteAllTeams\"]");
+    closeDeleteTeams();
 }
