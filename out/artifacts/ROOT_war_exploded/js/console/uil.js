@@ -2547,7 +2547,7 @@ function parseExcel(file) {
                 var cols = line.split("\t");
                 var tname = void 0;
                 var splitName = cols[2].split("."); // last name, first name
-                var type = cols[3].toLowerCase(); // Either I, A, or empty. If I or A, they are on their own team as an individual. If A, they are marked as an alternate on that team.
+                var type = cols[3] ? cols[3].toLowerCase() : ""; // Either I, A, or empty. If I or A, they are on their own team as an individual. If A, they are marked as an alternate on that team.
                 if (type != "i" && type != "a") {
                     tname = proper(cols[1].split(",")[0].replace(" H S", " HS").replace(/["']/g, "").trim());
                     if (!teams[tname]) {
