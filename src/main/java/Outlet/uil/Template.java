@@ -998,7 +998,8 @@ public class Template {
                 "<p id='uploadRoster' class='creatorOnly'><span>Upload Roster</span><img src='/res/upload.svg' onclick='uploadRosterProxy()'/>" +
                 "</p><input id='uploadRosterProxy' type='file' style='display:none' onchange='uploadRoster()'/>" +
                 "<div id='generalScoreboard'><table id='teamList'></table></div>";
-        if(mcTest.exists) scoreboardHTML += "<div id='writtenScoreboard'><table id='writtenScoreboardTable'></table></div>";
+        if(mcTest.exists) scoreboardHTML += "<div id='writtenScoreboard'><div id='showAlternates'><label>Show Alternates</label>" +
+                "<input type='checkbox' onclick='toggleShowAlternates()'/></div><table id='writtenScoreboardTable'></table></div>";
         if(frqTest.exists) scoreboardHTML += "<div id='handsOnScoreboard'><table id='handsOnScoreboardTable'></table></div>";
         scoreboardHTML += "</div><div id='teamCnt'><h1 id='openTeamName'></h1>" +
                 "<div id='teamControls' class='creatorOnly'><img class='editTeam' id='deleteTeam' onclick='Team.showDeleteConfirmation()' src='/res/console/delete.svg'>" +

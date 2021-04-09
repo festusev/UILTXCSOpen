@@ -356,6 +356,13 @@
 #handsOnScoreboard {
     margin-top: 1rem;
 }
+#showAlternates {
+    margin-top: 1rem;
+}
+#showAlternates input {
+    cursor: pointer;
+    margin-left: 1rem;
+}
 #teamCnt {
     width: calc(50% - 2rem);
     background-color: white;
@@ -1155,6 +1162,12 @@
 }
 #writtenScoreboardTable .student.selected {
     background-color: var(--sec-light);
+}
+.alternateStudent {
+    display: none;
+}
+.showAlternates .alternateStudent {
+    display: table-row;
 }
 ins {
     text-decoration: none;

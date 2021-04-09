@@ -61,7 +61,8 @@ var pageState = {
     deletingObject: null,
     saveTeamCallbacks: [],
     frqSortMethod: null,
-    viewingDivision: null // The division we are viewing
+    viewingDivision: null,
+    showAlternates: false // If the written tab should show alternates
 };
 var config = {
     TEXT: {
@@ -494,8 +495,7 @@ var config = {
                     var writtenTestFragment = document.createDocumentFragment();
                     for (var _c = 0, _d = divisions[division].writtenScoreboard; _c < _d.length; _c++) {
                         var student = _d[_c];
-                        if (student.type == StudentType.ALTERNATE)
-                            continue;
+                        // if (!pageState.showAlternates && student.type == StudentType.ALTERNATE) continue;
                         writtenTestFragment.appendChild(student.dom.tr);
                     }
                     divisions[division].writtenDOM.appendChild(writtenTestFragment);
@@ -958,6 +958,8 @@ var Student = /** @class */ (function () {
         if (pageState.mcExists && team != null) {
             this.dom.tr = document.createElement("tr");
             this.dom.tr.classList.add("student");
+            if (this.type == StudentType.ALTERNATE)
+                this.dom.tr.classList.add("alternateStudent");
             this.dom.tr.onclick = function () {
                 Team.toggleTeam(team);
             };
@@ -2521,6 +2523,13 @@ function searchForStudent(input) {
     var data = ["ssearch", input.value];
     ws.send(JSON.stringify(data));
 }
+function proper(mySentence) {
+    var words = mySentence.split(" ");
+    for (var i = 0; i < words.length; i++) {
+        words[i] = words[i][0].toUpperCase() + words[i].substr(1);
+    }
+    return words.join(" ");
+}
 function parseExcel(file) {
     var reader = new FileReader();
     reader.onload = function (e) {
@@ -2536,15 +2545,30 @@ function parseExcel(file) {
             var line = lines_3[_i];
             try {
                 var cols = line.split("\t");
-                var tname = cols[1].split(",")[0].replace(" H S", " HS").replace(/["']/g, "").trim();
-                if (!teams[tname]) {
+                var tname = void 0;
+                var splitName = cols[2].split("."); // last name, first name
+                var type = cols[3].toLowerCase(); // Either I, A, or empty. If I or A, they are on their own team as an individual. If A, they are marked as an alternate on that team.
+                if (type != "i" && type != "a") {
+                    tname = proper(cols[1].split(",")[0].replace(" H S", " HS").replace(/["']/g, "").trim());
+                    if (!teams[tname]) {
+                        numTeams++;
+                        var division = cols[0].split(" ")[0]; // Like 6A
+                        teams[tname] = { division: division, students: [] };
+                    }
+                }
+                else { // This is an individual team
+                    var baseTname = proper(splitName[1].trim() + " " + splitName[0].trim());
+                    tname = baseTname;
+                    var i = 1;
+                    while (teams[tname]) { // There is another team with the same name, so we add on numbers
+                        tname = baseTname + i;
+                        i++;
+                    }
                     numTeams++;
                     var division = cols[0].split(" ")[0]; // Like 6A
-                    var divisionReversed = "" + division.charAt(1) + division.charAt(0); // Like A6
-                    teams[tname] = { division: divisionReversed, students: [] };
+                    teams[tname] = { division: division, students: [] };
                 }
-                var splitName = cols[2].split("."); // last name, first name
-                teams[tname].students.push([splitName[1].trim(), splitName[0].trim()]);
+                teams[tname].students.push([splitName[1].trim(), splitName[0].trim(), type]);
             }
             catch (e) { }
         }
@@ -2809,4 +2833,22 @@ function closeDeleteTeams() {
 function deleteTeams() {
     ws.send("[\"deleteAllTeams\"]");
     closeDeleteTeams();
+}
+function toggleShowAlternates() {
+    if (pageState.showAlternates) {
+        document.body.classList.remove("showAlternates");
+        pageState.showAlternates = false;
+        var team = pageState.openTeam;
+        if (team && team.individual) { // Check if this student is alternate
+            var student = team.students[0];
+            if (student) {
+                if (student.type == StudentType.ALTERNATE)
+                    Team.toggleTeam(null, false);
+            }
+        }
+    }
+    else {
+        document.body.classList.add("showAlternates");
+        pageState.showAlternates = true;
+    }
 }

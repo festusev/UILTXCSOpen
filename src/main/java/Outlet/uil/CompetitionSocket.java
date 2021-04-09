@@ -676,12 +676,18 @@ public class CompetitionSocket {
                             JsonArray studentA = studentE.getAsJsonArray();
                             String fname = studentA.get(0).getAsString();
                             String lname = studentA.get(1).getAsString();
+                            String type = studentA.get(2).getAsString().toLowerCase();    // Either I, A, or empty. If I or A, they are on their own team as an individual. If A, they are marked as an alternate on that team.
 
                             if (entry.individual && entry.uids.size() >= 1) {
                                 continue;
                             } else if (entry.uids.size() >= competition.teamSize) { // the team is entirely full
                                 continue;
                             }
+
+                            boolean isAlt = type.equals("a");
+                            boolean individual = isAlt || type.equals("i");
+
+                            entry.individual = individual;
 
                             String unameBase = (fname + lname).toLowerCase().replaceAll("[^a-zA-Z0-9]", "");
                             String uname = unameBase;
@@ -690,8 +696,6 @@ public class CompetitionSocket {
                                 uname = unameBase + x;
                                 x++;
                             }
-
-                            uname = uname;
 
                             leftLimit = 48; // numeral '0'
                             rightLimit = 90; // letter 'Z'
@@ -705,7 +709,10 @@ public class CompetitionSocket {
                                 Conn.finishRegistration(uname, password, fname, lname, "", false, true);
                                 Student student = StudentMap.getByEmail(uname);
                                 student.cids.put(competition.template.cid, entry);
-                                entry.uids.put(student.uid, UILEntry.StudentType.PRIMARY);
+
+                                if(isAlt) {
+                                    entry.uids.put(student.uid, UILEntry.StudentType.ALTERNATE);
+                                } else entry.uids.put(student.uid, UILEntry.StudentType.PRIMARY);
                             } catch (SQLException e) {
                                 e.printStackTrace();
                             }

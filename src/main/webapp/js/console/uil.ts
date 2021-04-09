@@ -29,7 +29,8 @@ let pageState = {
     saveTeamCallbacks: [],   // A list of functions as callbacks to saving a team. Each time a "scoreboardOpenTeamFeedback" message comes back, it calls the first item in this queue
 
     frqSortMethod : null,    // The sort method
-    viewingDivision : null    // The division we are viewing
+    viewingDivision : null,    // The division we are viewing
+    showAlternates : false  // If the written tab should show alternates
 };
 
 const config = {
@@ -513,6 +514,7 @@ const config = {
                 dom.divisionSelector.appendChild(divisionOption);
             }
 
+
             for(let division in divisions) {
                 if (pageState.mcExists) {
                     divisions[division].writtenScoreboard.sort(function (s1: Student, s2: Student) {
@@ -530,7 +532,7 @@ const config = {
 
                     let writtenTestFragment = document.createDocumentFragment();
                     for (let student of divisions[division].writtenScoreboard) {
-                        if (student.type == StudentType.ALTERNATE) continue;
+                        // if (!pageState.showAlternates && student.type == StudentType.ALTERNATE) continue;
                         writtenTestFragment.appendChild(student.dom.tr);
                     }
                     divisions[division].writtenDOM.appendChild(writtenTestFragment);
@@ -1033,6 +1035,7 @@ class Student {
         if(pageState.mcExists && team != null) {
             this.dom.tr = document.createElement("tr");
             this.dom.tr.classList.add("student");
+            if(this.type == StudentType.ALTERNATE) this.dom.tr.classList.add("alternateStudent");
             this.dom.tr.onclick = function() {
                 Team.toggleTeam(team);
             };
@@ -2775,6 +2778,16 @@ function searchForStudent(input: HTMLInputElement) {
     ws.send(JSON.stringify(data));
 }
 
+function proper(mySentence:string):string {
+    const words = mySentence.split(" ");
+
+    for (let i = 0; i < words.length; i++) {
+        words[i] = words[i][0].toUpperCase() + words[i].substr(1);
+    }
+
+    return words.join(" ");
+}
+
 function parseExcel(file: File) {
     let reader = new FileReader();
 
@@ -2788,22 +2801,39 @@ function parseExcel(file: File) {
         lines.shift();
         lines.shift();
 
-        let teams: {[tname:string]:{division:string, students:[string,string][]}} = {};
+        let teams: {[tname:string]:{division:string, students:[string,string,string][]}} = {};
         let numTeams: number = 0;
         for(let line of lines) {
             try {
                 let cols = line.split("\t");
 
-                let tname = cols[1].split(",")[0].replace(" H S", " HS").replace(/["']/g, "").trim();
-                if (!teams[tname]) {
+                let tname:string;
+                let splitName: string[] = cols[2].split("."); // last name, first name
+                let type: string = cols[3].toLowerCase(); // Either I, A, or empty. If I or A, they are on their own team as an individual. If A, they are marked as an alternate on that team.
+                if(type != "i" && type != "a") {
+                    tname = proper(cols[1].split(",")[0].replace(" H S", " HS").replace(/["']/g, "").trim());
+
+                    if (!teams[tname]) {
+                        numTeams++;
+                        let division = cols[0].split(" ")[0];   // Like 6A
+                        teams[tname] = {division:division,students:[]};
+                    }
+                } else {    // This is an individual team
+                    let baseTname:string = proper(splitName[1].trim() + " " + splitName[0].trim());
+                    tname = baseTname;
+
+                    let i = 1;
+                    while(teams[tname]) {   // There is another team with the same name, so we add on numbers
+                        tname = baseTname + i;
+                        i++;
+                    }
+
                     numTeams++;
                     let division = cols[0].split(" ")[0];   // Like 6A
-                    let divisionReversed = "" + division.charAt(1) + division.charAt(0); // Like A6
-                    teams[tname] = {division:divisionReversed,students:[]};
+                    teams[tname] = {division:division,students:[]};
                 }
 
-                let splitName: string[] = cols[2].split("."); // last name, first name
-                teams[tname].students.push([splitName[1].trim(), splitName[0].trim()]);
+                teams[tname].students.push([splitName[1].trim(), splitName[0].trim(), type]);
             } catch(e) {}
         }
 
@@ -3112,3 +3142,20 @@ function deleteTeams() {
     closeDeleteTeams();
 }
 
+function toggleShowAlternates() {
+    if(pageState.showAlternates) {
+        document.body.classList.remove("showAlternates");
+        pageState.showAlternates = false;
+
+        let team:Team = pageState.openTeam;
+        if(team && team.individual) {   // Check if this student is alternate
+            let student:Student = team.students[0];
+            if(student) {
+                if(student.type == StudentType.ALTERNATE) Team.toggleTeam(null, false);
+            }
+        }
+    } else {
+        document.body.classList.add("showAlternates");
+        pageState.showAlternates = true;
+    }
+}
