@@ -2821,7 +2821,8 @@ function parseExcel(file: File) {
                         teams[tname] = {division:division,students:[]};
                     }
                 } else {    // This is an individual team
-                    let baseTname:string = proper(splitName[1].trim() + " " + splitName[0].trim());
+                    let baseTname:string = proper(cols[1].split(",")[0].replace(" H S", " HS").replace(/["']/g, "").trim()) + "-Individual";
+                    // proper(splitName[1].trim() + " " + splitName[0].trim());
                     tname = baseTname;
 
                     let i = 1;

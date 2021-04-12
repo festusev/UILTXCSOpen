@@ -119,12 +119,12 @@ public class UILEntry {
 
     public String getTname() {
         String name = tname;
-        if(individual) {
+        /*if(individual) {
             short uid = 0;
             for(short u: uids.keySet()) uid = u;
             Student student = StudentMap.getByUID(uid);
             name = student.getName();
-        }
+        }*/
         return name;
     }
 

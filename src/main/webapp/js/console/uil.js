@@ -2564,7 +2564,8 @@ function parseExcel(file) {
                     }
                 }
                 else { // This is an individual team
-                    var baseTname = proper(splitName[1].trim() + " " + splitName[0].trim());
+                    var baseTname = proper(cols[1].split(",")[0].replace(" H S", " HS").replace(/["']/g, "").trim()) + "-Individual";
+                    // proper(splitName[1].trim() + " " + splitName[0].trim());
                     tname = baseTname;
                     var i = 1;
                     while (teams[tname]) { // There is another team with the same name, so we add on numbers

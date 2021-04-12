@@ -808,7 +808,7 @@ public class Template {
                     "<script>requestLoadScoreboard()</script>";
 
         String postfix = "";    // The controls to start and stop portions of the competition. Only for the creator.
-        if(userStatus.creator) {
+        if(userStatus.admin) {
             postfix = "<li id='sectionControls'><button id='sectionControlsButton'>Controls</button><div id='sectionControlsList'>";
             if(mcTest.exists) {
                 if(competitionStatus.mcDuring) postfix += "<p onclick='stopWritten()'>Stop Written</p>";
