@@ -253,7 +253,7 @@ public class CompetitionSocket {
                         return;
                     } else if(students.size() == 0) {   // Delete this team
                         competition.template.deleteEntry(entry);
-                        competition.template.updateScoreboard();
+                        competition.template.updateScoreboardHelper();
                         return;
                     }
                 }
@@ -348,7 +348,7 @@ public class CompetitionSocket {
 
                 entry.updateAll();
 
-                competition.template.updateScoreboard();
+                competition.template.updateScoreboardHelper();
 
                 send("{\"action\":\"scoreboardOpenTeamFeedback\",\"isError\":false,\"msg\":\"Team saved successfully.\"}");
             } else if (action.equals("fetchGlobalTeams")) {  // Return a list of the global teams
@@ -492,7 +492,7 @@ public class CompetitionSocket {
 
                             entry.insert();
                             competition.entries.addEntry(entry);
-                            competition.template.updateScoreboard();
+                            competition.template.updateScoreboardHelper();
 
                             JsonObject entryJSON = new JsonObject();
                             entryJSON.addProperty("action", "addExistingTeam");
@@ -523,7 +523,7 @@ public class CompetitionSocket {
                 short tid = data.get(1).getAsShort();
                 UILEntry entry = competition.entries.getByTid(tid);
                 competition.template.deleteEntry(entry);
-                competition.template.updateScoreboard();
+                competition.template.updateScoreboardHelper();
             } else if (action.equals("deleteStudent")) {
                 short tid = data.get(1).getAsShort();
                 short uid = data.get(2).getAsShort();
@@ -624,9 +624,9 @@ public class CompetitionSocket {
                     // if (isAlt) entry.altUID = student.uid;
 
                     entry.updateUIDS();
-                    competition.template.updateScoreboard();
+                    competition.template.updateScoreboardHelper();
 
-                    JsonObject ret = new JsonObject();
+                    /*JsonObject ret = new JsonObject();
                     ret.addProperty("action", "addTempStudent");
                     ret.addProperty("name", student.getName());
                     ret.addProperty("uname", student.email);
@@ -634,7 +634,7 @@ public class CompetitionSocket {
                     ret.addProperty("uid", student.uid);
                     ret.addProperty("tid", tid);
 
-                    send(ret.toString());
+                    send(ret.toString());*/
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -724,7 +724,7 @@ public class CompetitionSocket {
                     entry.division = division;
                     entry.insert();
                 });
-                competition.template.updateScoreboard();
+                competition.template.updateScoreboardHelper();
                 send("{\"action\":\"rosterUploaded\"}");
             } else if(action.equals("publishGradedFRQ")) {  // Makes the result of an frq submission available to the team that submitted it
                 int id = data.get(1).getAsInt();
@@ -780,7 +780,7 @@ public class CompetitionSocket {
                     competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
                             competition.teamSize, competition.template.name, competition.template.description,
                             mcTest, competition.template.frqTest, competition.getJudges(), competition.template.showScoreboard);
-                    competition.template.updateScoreboard();
+                    competition.template.updateScoreboardHelper();
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -795,7 +795,7 @@ public class CompetitionSocket {
                     competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
                             competition.teamSize, competition.template.name, competition.template.description,
                             mcTest, competition.template.frqTest, competition.getJudges(), competition.template.showScoreboard);
-                    competition.template.updateScoreboard();
+                    competition.template.updateScoreboardHelper();
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -810,7 +810,7 @@ public class CompetitionSocket {
                     competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
                             competition.teamSize, competition.template.name, competition.template.description,
                             competition.template.mcTest, frqTest, competition.getJudges(), competition.template.showScoreboard);
-                    competition.template.updateScoreboard();
+                    competition.template.updateScoreboardHelper();
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -824,7 +824,7 @@ public class CompetitionSocket {
                     competition.update((Teacher)user, true, competition.isPublic, competition.alternateExists,
                             competition.teamSize, competition.template.name, competition.template.description,
                             competition.template.mcTest, frqTest, competition.getJudges(), competition.template.showScoreboard);
-                    competition.template.updateScoreboard();
+                    competition.template.updateScoreboardHelper();
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -906,7 +906,7 @@ public class CompetitionSocket {
                     entry.update();
                 }
                 competition.clarifications.clear();
-                competition.template.updateScoreboard();
+                competition.template.updateScoreboardHelper();
                 try {
                     competition.update();
                 } catch (SQLException e) {
@@ -920,7 +920,7 @@ public class CompetitionSocket {
                 }
 
                 competition.clarifications.clear();
-                competition.template.updateScoreboard();
+                competition.template.updateScoreboardHelper();
                 try {
                     competition.update();
                 } catch (SQLException e) {

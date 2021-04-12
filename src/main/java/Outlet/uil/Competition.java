@@ -500,14 +500,13 @@ public class Competition {
                         if(submission != null && submission.finished) {
                             System.out.println("Finished");
                             if(judgement.equals("Correct")) {
-                                submission.answers[probNum] = template.mcTest.KEY[probNum][0];
+                                submission.answers[probNum].value = MCSubmission.MCAnswer.CORRECT;
                             } else if(judgement.equals("Incorrect")) {
-                                if(template.mcTest.KEY[probNum][0].equals("a")) submission.answers[probNum] = "b";
-                                else submission.answers[probNum] = "a";
+                                submission.answers[probNum].value = MCSubmission.MCAnswer.INCORRECT;
                             } else {
-                                submission.answers[probNum] = MCTest.SKIP_CODE;
+                                submission.answers[probNum].value = MCSubmission.MCAnswer.SKIPPED;
                             }
-                            submission = entry.scoreMC(uid, submission.answers);
+                            submission.scoringReport = template.mcTest.getScoringReport(submission.answers);
                             System.out.println("SCORING REPORT="+gson.toJson(submission.scoringReport));
                             template.updateScoreboard();
 
@@ -544,7 +543,7 @@ public class Competition {
                         UILEntry entry = new UILEntry(tname, code, this);
                         entry.insert();
                         entries.addEntry(entry);
-                        template.updateScoreboard();
+                        template.updateScoreboardHelper();
 
                         JsonObject data = new JsonObject();
                         data.addProperty("status", "success");
@@ -579,7 +578,15 @@ public class Competition {
                 else writer.write("{\"frqProblemsHTML\":\""+template.getFRQProblems(temp)+"\"}");
             } else if (action.equals("submitMC")) {
                 if(competitionStatus.mcDuring || competitionStatus.mcOverflow) {    // submissions are open
-                    String[] answers = gson.fromJson(request.getParameter("answers"), String[].class);
+                    String answersS = request.getParameter("answers");
+                    System.out.println(user.uid + " submitted in time, answers:"+answersS);
+                    String[] answersArray = gson.fromJson(answersS, String[].class);
+
+                    Pair<String, MCSubmission.MCAnswer>[] answers = new Pair[answersArray.length];
+                    for(int i=0;i<answersArray.length;i++) {
+                        answers[i] = new Pair<String, MCSubmission.MCAnswer>(answersArray[i], MCSubmission.MCAnswer.SKIPPED);
+                    }
+
                     MCSubmission submission = temp.scoreMC(user.uid, answers);
                     writer.write("{\"mcHTML\":\"" + template.getFinishedMC(submission, temp.tid, user.uid, competitionStatus) + "\"}");
                     temp.update();
@@ -596,6 +603,7 @@ public class Competition {
                         CompetitionSocket.sendToUser(template.cid, judgeUID, obj.toString());
                     }
                 } else {    // Submissions are closed
+                    System.out.println(user.uid + " submitted out of time");
                     writer.write("{\"mcHTML\":\"" + template.getMCHTML(user,UserStatus.getCompeteStatus(user, this), competitionStatus) + "\"}");
                 }
                 return;
@@ -703,7 +711,7 @@ public class Competition {
                     else entry.uids.put(user.uid, UILEntry.StudentType.PRIMARY);
 
                     entry.updateUIDS();
-                    template.updateScoreboard();
+                    template.updateScoreboardHelper();
                     writer.write("{\"status\":\"success\",\"reload\":\"/uil\"}");
 
                     // Tell the existing team members to get a new html
@@ -758,7 +766,7 @@ public class Competition {
                 entry.insert();
                 entries.addEntry(entry);
                 user.cids.put(template.cid, entry);
-                template.updateScoreboard();
+                template.updateScoreboardHelper();
 
                 JsonObject data = new JsonObject();
                 data.addProperty("status", "success");

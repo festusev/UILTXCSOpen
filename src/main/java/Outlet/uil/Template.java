@@ -333,6 +333,11 @@ public class Template {
     }
 
     public String getColumnsHTML(User uData, UserStatus userStatus, CompetitionStatus competitionStatus){
+        if(!scoreboardInitialized) {
+            updateScoreboardHelper();
+            scoreboardInitialized = true;
+        }
+
         // First, we determine whether to put a "Sign Up" button, a message saying "Your team is signed up for this
         // competition", a message saying "You must belong to a team to sign up", or a message saying
         // "you must be logged in to sign up for this competition"
@@ -541,7 +546,7 @@ public class Template {
         }
         html += "</tr>";
         for(int i=1; i<= mcTest.NUM_PROBLEMS; i++) {
-            String answer = submission.answers[i-1];
+            Pair<String, MCSubmission.MCAnswer> answer = submission.answers[i-1];
             if (mcTest.KEY[i - 1][1].equals("0")) {   // This is a MC problem
                 html += "<tr class='mcQuestion'><td>" + i + "</td>";
                 for (char c : mcTest.options) {
@@ -555,11 +560,11 @@ public class Template {
                 html += "<tr class='mcQuestion saqQuestion'><td>" + i + "</td>";
 
                 String correctAnswer = "";
-                if(!answer.equals(mcTest.KEY[i-1][0])) {
+                if(answer.value != MCSubmission.MCAnswer.CORRECT) {
                     correctAnswer = "<p class='mcTextCorrectAnswer'>"+ StringEscapeUtils.escapeHtml4(mcTest.KEY[i-1][0])+"</p>";
                 }
-                String tempAnswer = answer;
-                if(tempAnswer.equals(MCTest.SKIP_CODE)) tempAnswer = "";
+                String tempAnswer = answer.key;
+                if(answer.value == MCSubmission.MCAnswer.SKIPPED) tempAnswer = "";
                 html += "<td colspan='5'><span>"+StringEscapeUtils.escapeHtml4(tempAnswer)+"</span>"+
                         correctAnswer+"</td>";
             }
@@ -571,8 +576,8 @@ public class Template {
             String correctString = "";
             String incorrectString = "";
             String skippedString = "";
-            if(answer.equals(mcTest.KEY[i-1][0])) correctString = " selected";
-            else if(answer.equals(MCTest.SKIP_CODE)) skippedString = " selected";
+            if(answer.value == MCSubmission.MCAnswer.CORRECT) correctString = " selected";
+            else if(answer.value == MCSubmission.MCAnswer.SKIPPED) skippedString = " selected";
             else incorrectString = " selected";
             html += "<option "+correctString+">Correct</option><option "+incorrectString+">Incorrect</option><option "+
                     skippedString+">Skipped</option></select></td></tr>";
@@ -881,35 +886,11 @@ public class Template {
 
     // Makes sure that the scoreboard has been initialized
     public String getScoreboardHTML() {
-        if(!scoreboardInitialized) {
-            updateScoreboard();
-            scoreboardInitialized = true;
-        }
         return scoreboardHTML;
     }
 
-    public synchronized void updateScoreboard(){
-        /*try {
-            allTeams = competition.getAllEntries();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return;
-        }*/
-
-        /*if(!scoreboardSocketScheduled) {    // Schedule a timer to send the updated scoreboard to the connected sockets
-            scoreboardSocketScheduled = true;
-            Timer task = new Timer();
-            task.schedule(new TimerTask() {
-                @Override
-                public void run() {
-
-                    task.cancel();
-                    task.purge();
-                }
-            }, 1000);
-        }*/
-
-
+    public void updateScoreboardHelper() {
+        scoreboardSocketScheduled = false;
 
         // This will store the json scoreboard information
         scoreboardData = new JsonArray();
@@ -923,12 +904,12 @@ public class Template {
 
             // entry.getMCScore();
 
-            /*teamList += "<tr><td>" + rank + "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td>";
-            if (competition.isPublic) teamList += "<td>" + StringEscapeUtils.escapeHtml4(entry.school) + "</td>";
-            int mcScore = entry.getMCScore();
-            teamList += "<td class='right'>" + ((frqTest.exists && mcTest.exists) ? mcScore : "") + "</td><td class='right'>" +
-                    (frqTest.exists ? entry.frqScore : mcScore) + "</td>";
-            if(frqTest.exists && mcTest.exists) teamList += "<td class='right'>" + (entry.frqScore + mcScore) + "</td></tr>";*/
+                        /*teamList += "<tr><td>" + rank + "</td><td>" + StringEscapeUtils.escapeHtml4(entry.tname) + "</td>";
+                        if (competition.isPublic) teamList += "<td>" + StringEscapeUtils.escapeHtml4(entry.school) + "</td>";
+                        int mcScore = entry.getMCScore();
+                        teamList += "<td class='right'>" + ((frqTest.exists && mcTest.exists) ? mcScore : "") + "</td><td class='right'>" +
+                                (frqTest.exists ? entry.frqScore : mcScore) + "</td>";
+                        if(frqTest.exists && mcTest.exists) teamList += "<td class='right'>" + (entry.frqScore + mcScore) + "</td></tr>";*/
 
             JsonObject entryJSON = new JsonObject();
             entryJSON.addProperty("tname", entry.getTname());
@@ -1028,6 +1009,31 @@ public class Template {
         }
     }
 
+    public synchronized void updateScoreboard(){
+        /*try {
+            allTeams = competition.getAllEntries();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return;
+        }*/
+
+        if(!scoreboardSocketScheduled) {    // Schedule a timer to send the updated scoreboard to the connected sockets
+            scoreboardSocketScheduled = true;
+            Timer task = new Timer();
+            task.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    if(!scoreboardSocketScheduled) return;
+
+                    updateScoreboardHelper();
+
+                    task.cancel();
+                    task.purge();
+                }
+            }, 10000);
+        }
+    }
+
     /***
      * Deletes a team's entry and updates the scoreboard.
      * @param entry
@@ -1071,12 +1077,6 @@ public class Template {
     }
 }
 
-class UpdateScoreboard extends TimerTask {
-    public Template template;
-    public void run() {
-        template.updateScoreboard();
-    }
-}
 
 class UserStatus {
     boolean signedUp;

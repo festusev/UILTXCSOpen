@@ -535,8 +535,10 @@ var config = {
                 dom.bottomOutOf.innerText = bottomOutOf;
             }
             dom.teamList.innerHTML = "";
-            dom.writtenScoreboardTable.innerHTML = "";
-            dom.handsOnScoreboardTable.innerHTML = "";
+            if (pageState.mcExists)
+                dom.writtenScoreboardTable.innerHTML = "";
+            if (pageState.frqExists)
+                dom.handsOnScoreboardTable.innerHTML = "";
             if (pageState.isCreator) {
                 var selectStudentFromClassFragment = document.createDocumentFragment(); // Add in the students from their class
                 var _loop_2 = function (classStudent) {
@@ -1222,7 +1224,8 @@ var Team = /** @class */ (function () {
         }
         try {
             dom.teamList.removeChild(this.dom.tr);
-            dom.handsOnScoreboardTable.removeChild(this.dom.frqTR);
+            if (pageState.frqExists)
+                dom.handsOnScoreboardTable.removeChild(this.dom.frqTR);
         }
         catch (e) { }
         dom.teamCnt.style.display = "none";
@@ -1568,10 +1571,14 @@ function selectDivision(division) {
     pageState.viewingDivision = division;
     dom.teamList.innerHTML = "";
     dom.teamList.appendChild(divisions[division].teamDOM);
-    dom.writtenScoreboardTable.innerHTML = "";
-    dom.writtenScoreboardTable.appendChild(divisions[division].writtenDOM);
-    dom.handsOnScoreboardTable.innerHTML = "";
-    dom.handsOnScoreboardTable.appendChild(divisions[division].handsOnDOM);
+    if (pageState.mcExists) {
+        dom.writtenScoreboardTable.innerHTML = "";
+        dom.writtenScoreboardTable.appendChild(divisions[division].writtenDOM);
+    }
+    if (pageState.frqExists) {
+        dom.handsOnScoreboardTable.innerHTML = "";
+        dom.handsOnScoreboardTable.appendChild(divisions[division].handsOnDOM);
+    }
 }
 // Starts the load scoreboard
 // @ts-ignore

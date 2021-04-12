@@ -101,7 +101,7 @@ public class UILEntry {
             JsonObject column = JsonParser.parseString(rs.getString("mc")).getAsJsonObject();
             Set<String> keys = column.keySet();
             for (String key : keys) {
-                MCSubmission submission = MCSubmission.deserialize(column.get(key).getAsJsonArray());
+                MCSubmission submission = MCSubmission.deserialize(column.get(key).getAsJsonArray(), competition);
                 mc.put(Short.parseShort(key), submission);
             }
         }
@@ -234,7 +234,7 @@ public class UILEntry {
             }
         }
 
-        competition.template.updateScoreboard();
+        competition.template.updateScoreboardHelper();
 
         if(u.temp) {    // They are a temporary user, so delete their account
             Connection conn = getConnection();
@@ -397,10 +397,11 @@ public class UILEntry {
      * @param answers
      * @return short[3]
      */
-    public MCSubmission scoreMC(short uid, String[] answers) {
-        if(!competition.template.mcTest.exists) return new MCSubmission(answers,new short[]{0,0,0,0}, true);
+    public MCSubmission scoreMC(short uid, Pair<String, MCSubmission.MCAnswer>[] answers) {
+        if(!competition.template.mcTest.exists) return new MCSubmission(answers, true);
 
-        MCSubmission entry = new MCSubmission(answers, competition.template.mcTest.score(answers), true);
+        MCSubmission entry = new MCSubmission(answers, true);
+        entry.scoringReport = competition.template.mcTest.score(answers);
         mc.put(uid, entry);
         update();
         return entry;

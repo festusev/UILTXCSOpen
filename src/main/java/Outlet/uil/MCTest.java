@@ -96,28 +96,36 @@ public class MCTest {
         }
     }
 
-    public short[] score(String[] answers){
+    public short[] getScoringReport(Pair<String, MCSubmission.MCAnswer>[] answers) {
         if(answers.length != KEY.length) return new short[]{0,0,0,0};
 
         short[] report = new short[4];
         for(int i=0; i<NUM_PROBLEMS;i++) {
-            try{    /* If the answer is numeric, treat it so */
-                double key = Double.parseDouble(KEY[i][0]);
-                double answer = Double.parseDouble(answers[i]);
+            Pair<String, MCSubmission.MCAnswer> answer = answers[i];
+            if(answer.value == MCSubmission.MCAnswer.CORRECT) report[1] ++;
+            else if(answer.value == MCSubmission.MCAnswer.INCORRECT) report[3] ++;
+            else report[2] ++;
+        }
+        report[0] = (short)(report[1]*Math.abs(CORRECT_PTS) + report[2]*SKIPPED_PTS + -1*report[3]*Math.abs(INCORRECT_PTS));
+        return report;
+    }
 
-                if(key == answer) {
-                    report[1] += 1;
-                } else {
-                    report[3] += 1;
-                }
-            } catch(NumberFormatException e) {
-                if (answers[i].equals(KEY[i][0])) {
-                    report[1] += 1;
-                } else if (answers[i].equals(SKIP_CODE)) {
-                    report[2] += 1;
-                } else {
-                    report[3] += 1;
-                }
+    public short[] score(Pair<String, MCSubmission.MCAnswer>[] answers){
+        if(answers.length != KEY.length) return new short[]{0,0,0,0};
+
+        short[] report = new short[4];
+        for(int i=0; i<NUM_PROBLEMS;i++) {
+            Pair<String, MCSubmission.MCAnswer> answer = answers[i];
+
+            if (answers[i].key.equals(SKIP_CODE)) { // Checking for skip must come first, in case that the regex matches the skip
+                report[2] += 1;
+                answer.value = MCSubmission.MCAnswer.SKIPPED;
+            } else if (answers[i].key.matches(KEY[i][0])) {
+                report[1] += 1;
+                answer.value = MCSubmission.MCAnswer.CORRECT;
+            } else {
+                report[3] += 1;
+                answer.value = MCSubmission.MCAnswer.INCORRECT;
             }
         }
         report[0] = (short)(report[1]*Math.abs(CORRECT_PTS) + report[2]*SKIPPED_PTS + -1*report[3]*Math.abs(INCORRECT_PTS));
@@ -141,14 +149,15 @@ public class MCTest {
                 MCSubmission oldSubmission = entry.mc.get(uid);
                 if(oldSubmission == null) continue;
 
-                String[] newAnswers = new String[mcIndices.length];
+                Pair<String, MCSubmission.MCAnswer>[] newAnswers = new Pair[mcIndices.length];
                 for(int i=0;i<mcIndices.length;i++) {
                     // If greater than or equal to 0, index is the old index of this problem. If it is new, it is -1.
                     short index = mcIndices[i];
                     if(index >= 0) newAnswers[i] = oldSubmission.answers[index];
-                    else newAnswers[i] = SKIP_CODE;
+                    else newAnswers[i] = new Pair<String, MCSubmission.MCAnswer>("", MCSubmission.MCAnswer.SKIPPED);
                 }
-                MCSubmission newSubmission = new MCSubmission(newAnswers, this.score(newAnswers), true);
+                MCSubmission newSubmission = new MCSubmission(newAnswers, true);
+                newSubmission.scoringReport = this.getScoringReport(newAnswers);
                 entry.mc.put(uid, newSubmission);
             }
             entry.update();

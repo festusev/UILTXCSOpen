@@ -387,7 +387,9 @@
     display: table-cell;
     padding-right: 1rem;
 }
-
+#teamCnt .success, #teamCnt .error {
+    margin-top:1rem;
+}
 #openTeamName {
     box-sizing: border-box;
     overflow: hidden;

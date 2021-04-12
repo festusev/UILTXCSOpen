@@ -685,7 +685,7 @@ public class UIL extends HttpServlet{
 
             try {
                 competition.update(u, true, isPublic, alternateExists, numNonAlts, name, description, mcTest, frqTest,judges,showScoreboard);
-                competition.template.updateScoreboard();
+                competition.template.updateScoreboardHelper();
             } catch (SQLException e) {
                 e.printStackTrace();
                 writer.write("{\"error\":\""+Dynamic.SERVER_ERROR+"\"}");
