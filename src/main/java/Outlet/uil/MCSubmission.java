@@ -107,7 +107,7 @@ public class MCSubmission{
             }
 
             MCSubmission submission = new MCSubmission(responses, Boolean.parseBoolean(data.get(1).getAsString()));
-            submission.scoringReport = competition.template.mcTest.getScoringReport(responses);
+            submission.scoringReport = competition.template.mcTest.getScoringReportAndUpdateStats(responses);
             return submission;
         }
     }

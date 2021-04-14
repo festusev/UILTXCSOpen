@@ -81,6 +81,7 @@
     padding: 6px 0;
 }
 
+
 #upperHalf{
     list-style: none;
     background-color:white;
@@ -158,6 +159,31 @@
 
 #resetDeleteCnt img {
     margin: 0;
+}
+
+#mcColumn .row {
+    background-color: white;
+    width: calc(70% - 15rem);
+    position: fixed;
+    box-sizing: border-box;
+    padding-top:2rem;
+}
+#mcColumnCenter .row {
+}
+#mcColumn.mcSubmissionList .row {
+    position: relative;
+    width: 100%;
+    margin-top: 0;
+}
+#mcColumn.mcSubmissionList #mcColumn_submissionList {
+    margin: auto;
+    margin-top: 5rem;
+}
+#mcColumn .subtitle {
+    overflow:auto;
+    height:5.5rem;
+}
+#mcQuestions {
 }
 
 /* Links inside the dropdown */
@@ -527,15 +553,50 @@
 #frqColumn .head-row {
     width:100%;
 }
+#mcColumn {
+    padding: 0;
+}
+#mcColumn.mcSubmissionList {
+    padding: 0 1rem;
+}
+#mcColumn.block {
+    display: block;
+}
 #mcColumn .chngButton{
     margin:auto;
     margin-top:10px;
+}
+
+#mcColumnCenter {
+    display: block;
+    padding: 0;
+    width: 70%;
+    /* height: 100%; */
+    margin: auto;
+    margin-top: 7rem;
+    margin-bottom: 5rem;
+    background-color:white;
+    box-shadow: var(--shadow);
+    padding: 0 2rem 2rem 2rem;
+    box-sizing:border-box;
+}
+
+#mcColumnTop {
+    width:calc(70% - 10rem);
+    height: 9rem;
+    position: fixed;
+    margin-top:-9rem;
+    margin-left:-2.5rem;
+    background-color:#fafbfcff;
 }
 .mcSubmissionList {
     padding: 1rem;
     box-shadow: none !important;
     background-color:unset !important;
     display: flex;
+}
+.mcSubmissionList #mcColumnTop {
+    margin-left: -10rem;
 }
 #mcColumn_submissionList {
     background-color: white;
@@ -569,20 +630,25 @@
     text-align: center;
     padding-bottom:1em;
 }
-
-#mcQuestions{
+#mcQuestionsCnt {
+    padding-top: 18rem;
+}
+.mcSubmissionList #mcQuestionsCnt {
+    padding-top:0;
+}
+#mcColumn table{
     width:100%;
     text-align:center;
 }
-#mcQuestions tr *:first-child{
+#mcColumn table td:first-child, #mcColumn table th:first-child{
     text-align:left;
 }
 
-#mcQuestions th{
+#mcColumn table th{
     font-weight:bold;
     border-bottom:1px solid lightgray;
 }
-#mcQuestions tr * {
+#mcColumn tr * {
     vertical-align: middle;
     padding:5px;
 }
@@ -847,6 +913,10 @@
     width: 100%;
     box-sizing: border-box;
     position: relative;
+}
+.mcSubmissionEditor {
+    margin-top: 5rem;
+    margin-left: 2rem;
 }
 .hideFRQSubmission {
     height: 2rem;
@@ -1188,7 +1258,6 @@ del {
         display: none !important;
     }
     #leftBar {
-        display: none;
     }
     #columns {
         max-width: 100%;
@@ -1243,7 +1312,7 @@ del {
         margin: 0px;
         padding: 1rem 2rem;
     }
-    #aboutColumn, #mcColumn {
+    #aboutColumn {
         padding: 10px;
     }
     .frqSubmissionEditor {

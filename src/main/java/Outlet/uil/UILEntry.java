@@ -84,7 +84,7 @@ public class UILEntry {
         frqScore = 0;
 
         // competition.entries.addEntry(this);
-    };
+    }
 
     public UILEntry(ResultSet rs, Competition comp) throws SQLException {
         tname = rs.getString("name");

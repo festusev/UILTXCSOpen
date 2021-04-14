@@ -14,6 +14,8 @@ public class MCTest {
 
     public final String NAME = "Written";
     public String[][] KEY; // The answer key. Each problem is a String tuple with the first value being the answer and the second being the answer type ("0","1")
+    // [number,number]
+    public Integer[][] STATS;   // A list of the stats for each problem. The first stat is the # people who got it correct, second is # people who attempted it
     // The key string cannot be longer than 40 characters
     public short NUM_PROBLEMS;
     public short CORRECT_PTS;   // Number of points for getting a question correct
@@ -38,7 +40,7 @@ public class MCTest {
 
     public MCTest() {
         exists = false;KEY= new String[0][];NUM_PROBLEMS = 0; CORRECT_PTS =0;INCORRECT_PTS=0;
-        TIME_TEXT = ""; INSTRUCTIONS = ""; TIME = 0; MAX_POINTS=0;TEST_LINK="";AUTO_GRADE = true;graded = true;NUM_SCORES_TO_KEEP=0;
+        TIME_TEXT = ""; INSTRUCTIONS = ""; TIME = 0; MAX_POINTS=0;TEST_LINK="";AUTO_GRADE = true;graded = true;NUM_SCORES_TO_KEEP=0;STATS = new Integer[0][];
     }
 
 
@@ -94,6 +96,10 @@ public class MCTest {
 
             closes = new Countdown(opensString);
         }
+        STATS = new Integer[key.length][];
+        for(int i=0;i<key.length;i++) {
+            STATS[i] = new Integer[]{0,0};
+        }
     }
 
     public short[] getScoringReport(Pair<String, MCSubmission.MCAnswer>[] answers) {
@@ -110,6 +116,25 @@ public class MCTest {
         return report;
     }
 
+    public short[] getScoringReportAndUpdateStats(Pair<String, MCSubmission.MCAnswer>[] answers) {
+        if(answers.length != KEY.length) return new short[]{0,0,0,0};
+
+        short[] report = new short[4];
+        for(int i=0; i<NUM_PROBLEMS;i++) {
+            Pair<String, MCSubmission.MCAnswer> answer = answers[i];
+            if(answer.value == MCSubmission.MCAnswer.SKIPPED) report[2] ++;
+            else {
+                STATS[i][1] ++;
+                if (answer.value == MCSubmission.MCAnswer.CORRECT) {
+                    report[1]++;
+                    STATS[i][0] ++;
+                } else report[3]++;   // Incorrect
+            }
+        }
+        report[0] = (short)(report[1]*Math.abs(CORRECT_PTS) + report[2]*SKIPPED_PTS + -1*report[3]*Math.abs(INCORRECT_PTS));
+        return report;
+    }
+
     public short[] score(Pair<String, MCSubmission.MCAnswer>[] answers){
         if(answers.length != KEY.length) return new short[]{0,0,0,0};
 
@@ -120,12 +145,16 @@ public class MCTest {
             if (answers[i].key.equals(SKIP_CODE)) { // Checking for skip must come first, in case that the regex matches the skip
                 report[2] += 1;
                 answer.value = MCSubmission.MCAnswer.SKIPPED;
-            } else if (answers[i].key.matches(KEY[i][0])) {
-                report[1] += 1;
-                answer.value = MCSubmission.MCAnswer.CORRECT;
             } else {
-                report[3] += 1;
-                answer.value = MCSubmission.MCAnswer.INCORRECT;
+                STATS[i][1]++;
+                if (answers[i].key.matches(KEY[i][0])) {
+                    report[1] += 1;
+                    answer.value = MCSubmission.MCAnswer.CORRECT;
+                    STATS[i][0]++;
+                } else {
+                    report[3] += 1;
+                    answer.value = MCSubmission.MCAnswer.INCORRECT;
+                }
             }
         }
         report[0] = (short)(report[1]*Math.abs(CORRECT_PTS) + report[2]*SKIPPED_PTS + -1*report[3]*Math.abs(INCORRECT_PTS));
@@ -143,6 +172,11 @@ public class MCTest {
      * @param competition
      */
     public void updateSubmissions(short[] mcIndices, int oldNumProblems, Competition competition) {
+        STATS = new Integer[STATS.length][];    // Reset the stats
+        for(int i=0;i<STATS.length;i++) {
+            STATS[i] = new Integer[]{0,0};
+        }
+
         for(UILEntry entry: competition.entries.allEntries) {
             Set<Short> uids = entry.mc.keySet();
             for(short uid: uids) {
@@ -157,7 +191,7 @@ public class MCTest {
                     else newAnswers[i] = new Pair<String, MCSubmission.MCAnswer>("", MCSubmission.MCAnswer.SKIPPED);
                 }
                 MCSubmission newSubmission = new MCSubmission(newAnswers, true);
-                newSubmission.scoringReport = this.getScoringReport(newAnswers);
+                newSubmission.scoringReport = this.score(newAnswers);
                 entry.mc.put(uid, newSubmission);
             }
             entry.update();

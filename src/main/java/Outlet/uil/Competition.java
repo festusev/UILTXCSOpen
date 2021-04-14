@@ -499,9 +499,18 @@ public class Competition {
                         MCSubmission submission = entry.mc.get(uid);
                         if(submission != null && submission.finished) {
                             System.out.println("Finished");
+                            if(submission.answers[probNum].value != MCSubmission.MCAnswer.SKIPPED) {    // If they hadn't skipped this problem, then update the stats
+                                template.mcTest.STATS[probNum][1]--;
+                                if(submission.answers[probNum].value == MCSubmission.MCAnswer.CORRECT) {
+                                    template.mcTest.STATS[probNum][0]--;
+                                }
+                            }
                             if(judgement.equals("Correct")) {
+                                template.mcTest.STATS[probNum][1]++;
+                                template.mcTest.STATS[probNum][0]++;
                                 submission.answers[probNum].value = MCSubmission.MCAnswer.CORRECT;
                             } else if(judgement.equals("Incorrect")) {
+                                template.mcTest.STATS[probNum][1]++;
                                 submission.answers[probNum].value = MCSubmission.MCAnswer.INCORRECT;
                             } else {
                                 submission.answers[probNum].value = MCSubmission.MCAnswer.SKIPPED;

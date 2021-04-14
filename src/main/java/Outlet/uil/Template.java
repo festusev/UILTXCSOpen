@@ -105,15 +105,21 @@ public class Template {
                     "<p class='subtitle'>Once you do, you will have " + mc.TIME_TEXT + " to finish.</p>" +
                     "<button id='mcBegin' onclick='beginMC()' class='chngButton'>Begin</button>" +
                     "</div>";*/
-            mcHTML[0] = "<div id='mcColumn' class='column' style='display:none;'>" +
-                    "<h1>"+mcTest.NAME+"</h1>" +
+            mcHTML[0] = "<div id='mcColumn' class='column' style='display:none;'><div id='mcColumnCenter'>" +
+                    "<div id='mcColumnTop'></div><div class='row head-row'><h1>"+mcTest.NAME+"</h1>" +
                     "<p class='subtitle'><span>Instructions: </span>" + StringEscapeUtils.escapeHtml4(mcTest.INSTRUCTIONS).replaceAll("\n","<br>") +
                     "<br><b>Test Packet: </b><a href='"+StringEscapeUtils.escapeHtml4(mcTest.TEST_LINK)+"' class='link' target='_blank'>link</a></p><div id='mcTestTimer'>";
 
-            mcHTML[1] = "</div><button class='chngButton' onclick='submitMC();'>Submit</button><table id='mcQuestions'><tr><th>#</th>";
+            mcHTML[1] = "</div><button class='chngButton' onclick='submitMC();'>Submit</button><table>" +
+                    "<colgroup><col style='width:10%'><col style='width:18%'>" +
+                    "<col style='width:18%'><col style='width:18%'><col style='width:18%'><col style='width:18%'></colgroup>" +
+                    "<tr><th>#</th>";
             for(char c: mcTest.options) {
                 mcHTML[1] += "<th>"+c+"</th>";
             }
+            mcHTML[1] += "</tr></table></div><div id='mcQuestionsCnt'><table id='mcQuestions'>" +
+                    "<colgroup><col style='width:10%'><col style='width:18%'>" +
+                    "<col style='width:18%'><col style='width:18%'><col style='width:18%'><col style='width:18%'></colgroup>";
             // mcHTML[2] += "<th>Skip</th><tr>";
             // short firstHalf = (short)Math.ceil(mcTest.NUM_PROBLEMS/2.0);
             for(int i=1; i<= mcTest.NUM_PROBLEMS; i++) {
@@ -127,7 +133,7 @@ public class Template {
                     mcHTML[1] += "<td colspan='5'><input type='text' maxlength='40' class='mcText' onchange='setSAQChoice(" + i + ",this)'></td>";
                 }
             }
-            mcHTML[1]+="</table></div>";
+            mcHTML[1]+="</table></div></div></div>";
 
             // answersHTML+="<div class='row'><h2>MC</h2><p><b>Test Packet: </b><a href='"+mcTest.TEST_LINK+"' class='link'>link</a><br><b>Answers: </b>"+answers+"<p></div>";
         }
@@ -464,6 +470,7 @@ public class Template {
                     "</div>" +
                     "<div class='row'>" + sendMC +
                     "<p>Test Packet: <a class='link' target='_blank' href='" + StringEscapeUtils.escapeHtml4(mcTest.TEST_LINK) + "'>link</a></p>" +
+                    "<a id='downloadWrittenStatistics' onclick='downloadWrittenStatistics()' class='link'>Download Written Statistics</a>" +
                     "<p><b>Submissions:</b></p>";
 
             html += "<table id='mcSubmissions'><tr id='mcSubmissionsTr'><th>Name</th><th>Team</th><th>Score</th></tr>";
@@ -482,15 +489,15 @@ public class Template {
 
             return html;
         } else if(competitionStatus.mcFinished) {
-            String html =  "<div id='mcColumn' class='column' style='display:none;'>" +
-                    "<div class='row head-row'>" +
+            String html =  "<div id='mcColumn' class='column mcSubmissionList' style='display:none;'>" +
+                    "<div id='mcColumn_submissionList'><div id='mcColumnTop'></div><div class='row head-row'>" +
                     "<h1>Written</h1>" +
                     "</div>" +
                     "<div class='row'>" +
                     "<p>Test Packet: <a class='link' target='_blank' href='" + StringEscapeUtils.escapeHtml4(mcTest.TEST_LINK) + "'>link</a></p>" +
                     "<p>Answer Key</p>";
 
-            html += "<table id='mcQuestions'><tr><th>#</th>";
+            html += "<div id='mcQuestionsCnt'><table id='mcQuestions'><tr><th>#</th>";
             for(char c: mcTest.options) {
                 html += "<th>"+c+"</th>";
             }
@@ -510,7 +517,7 @@ public class Template {
                             StringEscapeUtils.escapeHtml4(mcTest.KEY[i-1][0])+"</p></td>";
                 }
             }
-            html += "</table></div></div>";
+            html += "</table></div></div></div></div>";
 
             return html;
         }
@@ -540,7 +547,7 @@ public class Template {
     public String getFinishedMCHelper(MCSubmission submission, short uid, boolean isTeacher, CompetitionStatus status) {
         if(status.mcDuring && !isTeacher) return "";    // If they aren't a teacher, don't let them see the finished mc.
 
-        String html = "<table id='mcQuestions'><tr><th>#</th>";
+        String html = "<div id='mcQuestionsCnt'><table id='mcQuestions'><tr><th>#</th>";
         for(char c: mcTest.options) {
             html += "<th>"+c+"</th>";
         }
@@ -551,7 +558,7 @@ public class Template {
                 html += "<tr class='mcQuestion'><td>" + i + "</td>";
                 for (char c : mcTest.options) {
                     String className = "";
-                    if ((""+c).equals(answer)) className = "mcSelected";
+                    if ((""+c).equals(answer.key)) className = "mcSelected";
                     else if(mcTest.KEY[i-1][0].charAt(0) == c) className = "mcCorrectAnswer";
 
                     html += "<td><div class='mcBubble "+className+"' data-val='" + c + "' style='cursor:unset'></div></td>";
@@ -582,22 +589,23 @@ public class Template {
             html += "<option "+correctString+">Correct</option><option "+incorrectString+">Incorrect</option><option "+
                     skippedString+">Skipped</option></select></td></tr>";
         }
-        html += "</table>";
+        html += "</table></div>";
         return html;
     }
     public String getFinishedMC(MCSubmission submission, short tid, short uid, CompetitionStatus status) {
-        if(!mcTest.graded || status.mcDuring) return "<div id='mcColumn' class='column' style='display:none;'><div class='row head-row'><h1>Written</h1><p>Written scores are hidden until the competition closes.</p></div></div>";
-        String html =  "<div id='mcColumn' class='column' style='display:none;'>" +
+        if(!mcTest.graded || status.mcDuring) return "<div id='mcColumn' class='column mcSubmissionList' style='display:none;'><div id='mcColumn_submissionList'>" +
+                "<div id='mcColumnTop'></div><div class='row head-row'><h1>Written</h1><p>Written scores are hidden until the competition closes.</p></div></div></div>";
+        String html =  "<div id='mcColumn' class='mcSubmissionList column block' style='display:none;'>" +
+                        "<div id='mcColumnCenter'>" +
                         "<div class='row head-row'>" +
                         "<h1>Written</h1>" +
                         "<h3>"+submission.scoringReport[0]+"/"+mcTest.MAX_POINTS+"</h3>" +
-                        "</div>" +
-                        "<div class='row'>" +
+                        // "<div class='row'>" +
                         "<p>Test Packet: <a href='" + mcTest.TEST_LINK + "' class='link' target='_blank'>link</a></p>" +
                         "<p>Correct: "+submission.scoringReport[1]+"</p>" +
                         "<p>Incorrect: "+submission.scoringReport[3]+"</p>" +
                         "<p>Skipped: "+submission.scoringReport[2]+"</p><br>" +
-                        "<p>Scoring Report</p>";
+                        "<p>Scoring Report</p></div>";
 
         return html + getFinishedMCHelper(submission, uid,false, status) + "</div></div>";
     }
@@ -980,7 +988,8 @@ public class Template {
                 "</p><input id='uploadRosterProxy' type='file' style='display:none' onchange='uploadRoster()'/>" +
                 "<div id='generalScoreboard'><table id='teamList'></table></div>";
         if(mcTest.exists) scoreboardHTML += "<div id='writtenScoreboard'><div id='showAlternates'><label>Show Alternates</label>" +
-                "<input type='checkbox' onclick='toggleShowAlternates()'/></div><table id='writtenScoreboardTable'></table></div>";
+                "<input type='checkbox' onclick='toggleShowAlternates()'/></div>" +
+                "<table id='writtenScoreboardTable'></table></div>";
         if(frqTest.exists) scoreboardHTML += "<div id='handsOnScoreboard'><table id='handsOnScoreboardTable'></table></div>";
         scoreboardHTML += "</div><div id='teamCnt'><h1 id='openTeamName'></h1>" +
                 "<div id='teamControls' class='creatorOnly'><img class='editTeam' id='deleteTeam' onclick='Team.showDeleteConfirmation()' src='/res/console/delete.svg'>" +

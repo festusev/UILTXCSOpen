@@ -719,6 +719,16 @@ const config = {
                 submission.dom.tr.classList.remove("blocked");
                 submission.blocked = false;
             }
+        },
+        "fetchWrittenStatistics" : function(response: {stats:[number,number][]}) {  // The first number is the # correct, the second is the # attempted
+            let data = [["Written Statistics"],[],["#","% Correct","# Correct","# Attempted"]];
+            for(let i=0;i<response.stats.length;i++) {
+                let question = response.stats[i];
+                let percentCorrect:number = 0;
+                if(question[1] > 0) percentCorrect = question[0]/question[1];
+                data.push([""+(i+1),(percentCorrect*100).toFixed(2),""+question[0],""+question[1]]);
+            }
+            exportCSV(data, ",", "scoreboard");
         }
     }
 };
@@ -2201,7 +2211,7 @@ function addSuccessBox(box:HTMLElement, success:string, timeout: boolean){
 var box = null;
 function submitFRQ(){
     if(!box) box = document.getElementById("submit");
-    addSuccessBox(box, "Scoring...", false);
+    addSuccessBox(box, "Submitting...", false);
 
     let probSelector = <HTMLSelectElement>document.getElementById("frqProblem");
     let probId = probSelector.options[probSelector.selectedIndex].value;
@@ -2222,7 +2232,7 @@ function submitFRQ(){
             if (xhr.status == 200) { // If an error occurred
                 const response = JSON.parse(xhr.responseText);
                 if(response["status"]=="success") {
-                    addSuccessBox(box, "SUCCESS: " + response["scored"], true);
+                    addSuccessBox(box, response["scored"], true);
                     $("frqProblem"+probId).hide();
                 } else {
                     addErrorBox(box, response["error"], true);
@@ -3161,4 +3171,8 @@ function toggleShowAlternates() {
         document.body.classList.add("showAlternates");
         pageState.showAlternates = true;
     }
+}
+
+function downloadWrittenStatistics() {
+    ws.send("[\"fetchWrittenStatistics\"]");
 }

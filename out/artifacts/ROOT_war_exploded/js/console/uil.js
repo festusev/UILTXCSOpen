@@ -686,6 +686,17 @@ var config = {
                 submission.dom.tr.classList.remove("blocked");
                 submission.blocked = false;
             }
+        },
+        "fetchWrittenStatistics": function (response) {
+            var data = [["Written Statistics"], [], ["#", "% Correct", "# Correct", "# Attempted"]];
+            for (var i = 0; i < response.stats.length; i++) {
+                var question = response.stats[i];
+                var percentCorrect = 0;
+                if (question[1] > 0)
+                    percentCorrect = question[0] / question[1];
+                data.push(["" + (i + 1), (percentCorrect * 100).toFixed(2), "" + question[0], "" + question[1]]);
+            }
+            exportCSV(data, ",", "scoreboard");
         }
     }
 };
@@ -2013,7 +2024,7 @@ var box = null;
 function submitFRQ() {
     if (!box)
         box = document.getElementById("submit");
-    addSuccessBox(box, "Scoring...", false);
+    addSuccessBox(box, "Submitting...", false);
     var probSelector = document.getElementById("frqProblem");
     var probId = probSelector.options[probSelector.selectedIndex].value;
     var fullPath = dom.frqTextfile.value;
@@ -2031,7 +2042,7 @@ function submitFRQ() {
             if (xhr.status == 200) { // If an error occurred
                 var response = JSON.parse(xhr.responseText);
                 if (response["status"] == "success") {
-                    addSuccessBox(box, "SUCCESS: " + response["scored"], true);
+                    addSuccessBox(box, response["scored"], true);
                     $("frqProblem" + probId).hide();
                 }
                 else {
@@ -2859,4 +2870,7 @@ function toggleShowAlternates() {
         document.body.classList.add("showAlternates");
         pageState.showAlternates = true;
     }
+}
+function downloadWrittenStatistics() {
+    ws.send("[\"fetchWrittenStatistics\"]");
 }

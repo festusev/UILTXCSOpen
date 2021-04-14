@@ -912,6 +912,13 @@ public class CompetitionSocket {
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
+
+                MCTest mc = competition.template.mcTest;
+                mc.STATS = new Integer[mc.STATS.length][];
+                for(int i=0;i<mc.STATS.length;i++) {
+                    mc.STATS[i] = new Integer[]{0,0};
+                }
+
                 broadcast(competition.template.cid, "{\"action\":\"reload\"}");
             } else if(action.equals("deleteAllTeams")) {
                 competition.frqSubmissions.clear();
@@ -970,6 +977,19 @@ public class CompetitionSocket {
                 }
                 object.add("frqSubmissions", submissionsJ);
 
+                CompetitionSocket.sendToUser(competition.template.cid, user.uid, object.toString());
+            } else if(action.equals("fetchWrittenStatistics")) {    // return a list of the written statistics
+                JsonArray array = new JsonArray();
+                for(Integer[] question: competition.template.mcTest.STATS) {
+                    JsonArray questionJ = new JsonArray();
+                    questionJ.add(question[0]);
+                    questionJ.add(question[1]);
+                    array.add(questionJ);
+                }
+
+                JsonObject object = new JsonObject();
+                object.addProperty("action","fetchWrittenStatistics");
+                object.add("stats", array);
                 CompetitionSocket.sendToUser(competition.template.cid, user.uid, object.toString());
             }
         }
