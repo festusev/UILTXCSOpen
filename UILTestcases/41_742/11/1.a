@@ -1,0 +1,25 @@
+FILE 1 Missing from FILE 2
+3,three,good
+8,goof,short
+FILE 2 Missing from FILE 1
+9,hobbit,googball
+Difference between Files
+7,house,short
+7,course,crank
+FILE A Missing from FILE B
+FILE B Missing from FILE A
+Habbit,H,Honolulu
+Wha,W,Waycar
+Difference between Files
+Airhead,A,Can
+Airhead,A,Hook
+UIL,U,Bob
+UIL,U,Canister
+FILE C Missing from FILE D
+1,G,T
+FILE D Missing from FILE C
+Difference between Files
+1,T,G
+1,H,G
+1,H,S
+1,C,S

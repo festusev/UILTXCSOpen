@@ -1,0 +1,32 @@
+import subprocess
+import time
+import os
+
+devnull = open(os.devnull, 'w')
+
+length = 41
+chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_-{}+=?'
+
+aaa = 0
+pic = 0
+
+for j in range(2000):
+	k = time.time()
+	subprocess.run(["./checkpass", 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}'],stdout=devnull, stderr=devnull)
+	pic += time.time()-k
+	k = time.time()
+	subprocess.run(["./checkpass", 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],stdout=devnull, stderr=devnull)
+	aaa += time.time()-k
+print(aaa)
+print(pic)
+
+for j in range(2000):
+	k = time.time()
+	subprocess.run(["./checkpass", 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],stdout=devnull, stderr=devnull)
+	aaa += time.time()-k
+	k = time.time()
+	subprocess.run(["./checkpass", 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}'],stdout=devnull, stderr=devnull)
+	pic += time.time()-k
+
+print(aaa)
+print(pic)
