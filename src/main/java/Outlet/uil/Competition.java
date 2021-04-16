@@ -174,7 +174,7 @@ public class Competition {
             // Now, create a table for the competition
             stmt = conn.prepareStatement("CREATE TABLE `c"+cid+"` (" +
                     "`tid` SMALLINT NOT NULL AUTO_INCREMENT UNIQUE," +
-                    "`name` VARCHAR(25) NOT NULL UNIQUE," +
+                    "`name` VARCHAR(50) NOT NULL UNIQUE," +
                     "`password` CHAR(153) NOT NULL," +
                     "`uids` TINYTEXT NOT NULL," +
                     "`mc` TEXT NOT NULL," +
