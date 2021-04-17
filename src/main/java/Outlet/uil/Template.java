@@ -1157,7 +1157,7 @@ class CompetitionStatus {
     public final boolean frqFinished;
     public final boolean frqDryRunMode; // If the frq is in the dry run mode
 
-    public static final long OVERFLOW_LENGTH = 1000*60;   // The length of time (milli) after submissions close when they are still accepted
+    public static final long OVERFLOW_LENGTH = 1000*120;   // The length of time (milli) after submissions close when they are still accepted
     CompetitionStatus(MCTest mcTest, FRQTest frqTest) {
         if(mcTest.exists) {
             if (!mcTest.opens.done()) {

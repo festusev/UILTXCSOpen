@@ -147,7 +147,7 @@ public class MCTest {
                 answer.value = MCSubmission.MCAnswer.SKIPPED;
             } else {
                 STATS[i][1]++;
-                if (answers[i].key.matches(KEY[i][0])) {
+                if (answers[i].key.equals(KEY[i][0])) { // use matches with regex
                     report[1] += 1;
                     answer.value = MCSubmission.MCAnswer.CORRECT;
                     STATS[i][0]++;

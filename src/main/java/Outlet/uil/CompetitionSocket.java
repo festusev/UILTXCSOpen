@@ -974,6 +974,9 @@ public class CompetitionSocket {
                     JsonArray submissionsJ = new JsonArray();
                     for (int i = 0; i < competition.frqSubmissions.size(); i++) {
                         FRQSubmission submission = competition.frqSubmissions.get(i);
+                        if(submission.problemNumber == 0 && !competition.template.frqTest.dryRunMode)  continue;
+                        if(submission.problemNumber > 0 && competition.template.frqTest.dryRunMode) continue;
+
                         submissionsJ.add(submission.getJSON(i));
                     }
                     object.add("frqSubmissions", submissionsJ);

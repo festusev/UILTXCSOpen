@@ -576,11 +576,9 @@ public class Competition {
             UILEntry temp = user.cids.get(template.cid);
             if(action.equals("leaveTeam")) {
                 int status = temp.leaveTeam(user);
-                if(status != 0) { ;
+                if(status != 0) {
                     writer.write("{\"status\":\"error\",\"error\":\"" + Dynamic.SERVER_ERROR + "\"}");
                     return;
-                } else {
-
                 }
             } else if(!competitionStatus.frqBefore && action.equals("grabFRQProblems")) {
                 if(temp.uids.get(user.uid) == UILEntry.StudentType.WRITTEN_SPECIALIST) writer.write("{\"frqProblemsHTML\":\"\"}");

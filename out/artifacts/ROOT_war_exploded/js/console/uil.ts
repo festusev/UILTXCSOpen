@@ -2082,23 +2082,40 @@ function submitMC(callback?:Function) {
         else answers.push('jieKYL');  // The character if they skipped it
     }
 
+    let xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            if (xhr.status == 200) { // If an error occurred
+                if(callback) callback();
+                else {
+                    const response = JSON.parse(xhr.responseText);
+
+                    let template = document.createElement('template');
+                    template.innerHTML = response["mcHTML"];
+                    dom.mc.replaceWith(template.content.firstChild);
+
+                    delete dom.cached[config.IDs.mc];
+                    dom.mc.style.display = "block";
+                    delete dom.cached[config.CLASSES.columns];
+                }
+            }
+        }
+    };
+
+    xhr.open('POST', window.location.href, true);
+
+    let formData = new FormData();
+    formData.append("answers", JSON.stringify(answers));
+    formData.append("action", "submitMC");
+    xhr.send(formData);
+
     $.ajax({
         url: window.location.href,
         method: "POST",
         data: {"action": "submitMC", "answers": JSON.stringify(answers)},
         success: function(result) {
             if(result!=null){
-                if(callback) callback();
-                else {
-                    let template = document.createElement('template');
-                    template.innerHTML = result["mcHTML"];
-                    dom.mc.replaceWith(template.content.firstChild);
 
-                    //  clearInterval(xmcTestTimer);
-                    delete dom.cached[config.IDs.mc];
-                    dom.mc.style.display = "block";
-                    delete dom.cached[config.CLASSES.columns];
-                }
             }
         }
     })
