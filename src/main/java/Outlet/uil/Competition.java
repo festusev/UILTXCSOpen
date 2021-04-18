@@ -400,8 +400,7 @@ public class Competition {
                     if (frqSubmissions.size() > id) {
                         FRQSubmission submission = frqSubmissions.get(id);
 
-                        boolean oldShowOutput = submission.showOutput();
-
+                        // boolean oldShowOutput = submission.showOutput();
                         switch (newResultId) {
                             case 0:
                                 submission.result = FRQSubmission.Result.CORRECT;
@@ -518,6 +517,8 @@ public class Competition {
                             submission.scoringReport = template.mcTest.getScoringReport(submission.answers);
                             System.out.println("SCORING REPORT="+gson.toJson(submission.scoringReport));
                             template.updateScoreboard();
+
+                            entry.update();
 
                             for(short teamMemberUID: entry.uids.keySet()) {
                                 CompetitionSocket.sendToUser(template.cid, teamMemberUID, "[\"reScoreMC\",\""+uid+"\",\""+submission.scoringReport[0]+"\"]");

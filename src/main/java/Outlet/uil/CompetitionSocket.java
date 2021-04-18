@@ -731,7 +731,7 @@ public class CompetitionSocket {
                     int id = data.get(1).getAsInt();
                     FRQSubmission submission = competition.frqSubmissions.get(id);
                     submission.graded = true;
-                    submission.entry.recalculateFRQScore(submission.problemNumber);
+                    // submission.entry.recalculateFRQScore(submission.problemNumber);
 
                     submission.entry.update();
                     submission.entry.socketSendFRQProblems();

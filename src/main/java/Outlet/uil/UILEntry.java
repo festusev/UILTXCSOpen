@@ -3,6 +3,7 @@ package Outlet.uil;
 import Outlet.*;
 import com.google.gson.*;
 
+import java.awt.*;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
@@ -109,8 +110,11 @@ public class UILEntry {
         if(comp.template.frqTest.exists) {
             frqResponses = FRQSubmission.parseList(rs.getString("frqResponses"), this);
 
-            for(int i=1,j=frqResponses.length;i<j;i++) {
-                frqScore += competition.template.frqTest.calcScore(frqResponses[i].key);
+            if(comp.template.frqTest.dryRunMode) frqScore = competition.template.frqTest.calcScore(frqResponses[0].key);
+            else {
+                for (int i = 1, j = frqResponses.length; i < j; i++) {
+                    frqScore += competition.template.frqTest.calcScore(frqResponses[i].key);
+                }
             }
         } else {
             frqResponses = new Pair[0];

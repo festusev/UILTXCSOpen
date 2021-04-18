@@ -203,8 +203,11 @@ public class FRQTest {
             }
             entry.frqResponses = newFRQSubmissions;
             entry.frqScore = 0;
-            for(int i=1,j=entry.frqResponses.length;i<j;i++) {
-                entry.frqScore += competition.template.frqTest.calcScore(entry.frqResponses[i].key);
+            if(dryRunMode) entry.frqScore = competition.template.frqTest.calcScore(entry.frqResponses[0].key);
+            else {
+                for (int i = 1, j = entry.frqResponses.length; i < j; i++) {
+                    entry.frqScore += competition.template.frqTest.calcScore(entry.frqResponses[i].key);
+                }
             }
             entry.update();
         }
